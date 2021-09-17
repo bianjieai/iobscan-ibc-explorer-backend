@@ -16,18 +16,18 @@ IbcStatisticsSchema.index({ update_at: -1 }, { background: true });
 IbcStatisticsSchema.statics = {
   // 查
   async findStatisticsRecord(statistics_name, cb) {
-    return await this.findOne({ statistics_name }, { _id: 0 }, cb);
+    return  this.findOne({ statistics_name }, { _id: 0 }, cb);
   },
 
   async findAllRecord() {
-    return await this.find({})
+    return  this.find({})
   },
 
   // 改
   async updateStatisticsRecord(statisticsRecord, cb) {
     const { statistics_name } = statisticsRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    return await this.findOneAndUpdate(
+    return  this.findOneAndUpdate(
       { statistics_name },
       statisticsRecord,
       options,
@@ -37,6 +37,6 @@ IbcStatisticsSchema.statics = {
 
   // 增
   async insertManyStatisticsRecord(statisticsRecord, cb) {
-    return await this.insertMany(statisticsRecord, { ordered: false }, cb);
+    return  this.insertMany(statisticsRecord, { ordered: false }, cb);
   },
 };

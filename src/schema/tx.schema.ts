@@ -35,21 +35,21 @@ TxSchema.index(
 TxSchema.statics = {
   async queryTxListSortHeight(query): Promise<any> {
     const { type, height, limit, status } = query;
-    return await this.find({ type, height: { $gt: height } })
+    return this.find({ type, height: { $gt: height } })
       .sort({ height: 1 })
       .limit(Number(limit));
   },
 
   async queryTxListSortUpdateAt(query): Promise<any> {
     const { type, limit, status } = query;
-    return await this.find({ type, status })
+    return this.find({ type, status })
       .sort({ update_at: 1 })
       .limit(Number(limit));
   },
 
   async queryTxListByPacketId(query): Promise<any> {
     const { type, limit, status, packet_id } = query;
-    return await this.find({
+    return this.find({
       'msgs.type': type,
       status,
       'msgs.msg.packet_id': packet_id,

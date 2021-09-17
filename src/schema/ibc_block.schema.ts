@@ -13,7 +13,7 @@ export const IbcBlockSchema = new mongoose.Schema(
 
 IbcBlockSchema.statics = {
   async findBlockByLastHeight() {
-    return await this.findOne({})
+    return this.findOne({})
       .sort({ height: -1 })
       .limit(1);
   },

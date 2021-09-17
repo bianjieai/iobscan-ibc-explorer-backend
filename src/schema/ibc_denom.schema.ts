@@ -20,11 +20,11 @@ IbcDenomSchema.index({ update_at: -1 }, { background: true });
 IbcDenomSchema.statics = {
   // 查
   async findCount() {
-    return await this.count();
+    return this.count();
   },
 
   // 增
   async insertManyDenom(ibcDenom, cb) {
-    return await this.insertMany(ibcDenom, { ordered: false }, cb);
+    return this.insertMany(ibcDenom, { ordered: false }, cb);
   },
 };

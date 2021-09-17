@@ -28,26 +28,25 @@ IbcTxSchema.index({ record_id: -1 }, { unique: true });
 IbcTxSchema.statics = {
   // 查
   async findCount(query) {
-    const result = await this.count(query);
-    return result;
+    return this.count(query);
   },
 
   async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType> {
-    return await this.find({}, { _id: 0 })
+    return this.find({}, { _id: 0 })
       .skip((Number(pageNum) - 1) * Number(pageSize))
       .limit(Number(pageSize));
   },
 
   async queryTxList(query): Promise<any> {
     const { status, limit } = query;
-    return await this.find({ status }, { _id: 0 })
+    return this.find({ status }, { _id: 0 })
       .sort({ update_at: 1 })
       .limit(Number(limit));
   },
 
   async distinctChainList(query) {
     const { type, dateNow, status } = query;
-    return await this.distinct(type, {
+    return this.distinct(type, {
       update_at: { $gte: String(dateNow - 24 * 60 * 60 * 1000) },
       status: { $in: status },
     });
@@ -57,11 +56,11 @@ IbcTxSchema.statics = {
   async updateIbcTx(ibcTx, cb) {
     const { record_id } = ibcTx;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    return await this.findOneAndUpdate({ record_id }, ibcTx, options, cb);
+    return this.findOneAndUpdate({ record_id }, ibcTx, options, cb);
   },
 
   // 增
   async insertTx(ibcTx, cb) {
-    return await this.insertMany(ibcTx, cb);
+    return this.insertMany(ibcTx, cb);
   },
 };

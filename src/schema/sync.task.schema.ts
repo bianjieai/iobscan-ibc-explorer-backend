@@ -11,6 +11,6 @@ export const SyncTaskSchema = new mongoose.Schema({
 
 SyncTaskSchema.statics = {
     async queryTaskCount(end_height:number=0,status:string="underway") {
-        return await this.find({'end_height':end_height,'status':status}).countDocuments()
+        return this.find({'end_height':end_height,'status':status}).countDocuments()
     }
 }

@@ -167,14 +167,22 @@ export class IbcTxTaskService {
                 base_denom,
                 denom_path,
               } = this.getDcMsg(tx, msgIndex);
+
               // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
-              const dc_chain_id = await this.chainModel.findDcChainId({
+              let dc_chain_id = '';
+              const result = await this.chainModel.findDcChainId({
                 sc_chain_id,
                 sc_port,
                 sc_channel,
                 dc_port,
                 dc_channel,
               });
+
+              if (result && result.ibc_info && result.ibc_info.length) {
+                dc_chain_id = result.ibc_info[0]['chain_id'];
+              } else {
+                dc_chain_id = '';
+              }
 
               ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}`;
               ibcTx.sc_addr = sc_addr;

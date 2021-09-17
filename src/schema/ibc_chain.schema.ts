@@ -14,17 +14,15 @@ IbcChainSchema.index({ chain_id: 1 }, { unique: true });
 IbcChainSchema.statics = {
   // 查
   async findCount(query): Promise<Number> {
-    return await this.count(query);
+    return this.count(query);
   },
 
   async aggregateFindChannels() {
-    return await this.aggregate([
-      { $group: { _id: '$ibc_info.paths.channel_id' } },
-    ]);
+    return this.aggregate([{ $group: { _id: '$ibc_info.paths.channel_id' } }]);
   },
 
   async findAll(): Promise<IbcChainType[]> {
-    return await this.find({});
+    return this.find({});
   },
 
   async findList(
@@ -32,18 +30,19 @@ IbcChainSchema.statics = {
     pageSize: number,
     chain_name?: String,
   ): Promise<IbcChainType[]> {
-    const result = await this.find(
+    return this.find(
       chain_name ? { chain_name: { $regex: chain_name } } : undefined,
     )
       .skip((Number(pageNum) - 1) * Number(pageSize))
       .limit(Number(pageSize));
-    return result;
   },
 
-  async findDcChainId(query): Promise<String> {
+  async findDcChainId(
+    query,
+  ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
     // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
     const { sc_chain_id, sc_port, sc_channel, dc_port, dc_channel } = query;
-    const result = await this.findOne(
+    return this.findOne(
       {
         chain_id: sc_chain_id,
         'ibc_info.paths.channel_id': sc_channel,
@@ -53,17 +52,12 @@ IbcChainSchema.statics = {
       },
       { 'ibc_info.chain_id': 1 },
     );
-    if (result && result.ibc_info && result.ibc_info.length) {
-      return result.ibc_info[0]['chain_id'];
-    } else {
-      return '';
-    }
   },
 
   // 改
   async updateChain(chain: IbcChainType) {
     const { chain_id } = chain;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    await this.findOneAndUpdate({ chain_id }, chain, options);
+    return this.findOneAndUpdate({ chain_id }, chain, options);
   },
 };

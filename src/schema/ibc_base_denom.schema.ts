@@ -20,10 +20,10 @@ IbcBaseDenomSchema.index({ update_at: -1 }, { background: true });
 IbcBaseDenomSchema.statics = {
   // 查
   async findCount() {
-    return await this.count();
+    return this.count();
   },
 
   async findAllRecord() {
-    return await this.find();
+    return this.find();
   },
 };
