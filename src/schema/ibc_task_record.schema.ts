@@ -20,23 +20,22 @@ IbcTaskRecordSchema.statics = {
   async findAll(): Promise<IbcTaskRecordType> {
     return this.find();
   },
-  async findTaskRecord(task_id, cb): Promise<IbcTaskRecordType> {
+  async findTaskRecord(task_id): Promise<IbcTaskRecordType> {
     return await this.findOne(
       { task_name: `sync_${task_id}_transfer` },
       { _id: 0 },
-      cb,
     );
   },
 
   // 改
-  async updateTaskRecord(taskRecord: IbcTaskRecordType, cb) {
+  async updateTaskRecord(taskRecord: IbcTaskRecordType) {
     const { task_name } = taskRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    return this.findOneAndUpdate({ task_name }, taskRecord, options, cb);
+    return this.findOneAndUpdate({ task_name }, taskRecord, options);
   },
 
   // 增
-  async insertManyTaskRecord(taskRecords: IbcTaskRecordType[], cb) {
-    return this.insertMany(taskRecords, { ordered: false }, cb);
+  async insertManyTaskRecord(taskRecords: IbcTaskRecordType[]) {
+    return this.insertMany(taskRecords, { ordered: false });
   },
 };

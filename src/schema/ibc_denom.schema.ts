@@ -24,7 +24,7 @@ IbcDenomSchema.statics = {
   },
 
   // 增
-  async insertManyDenom(ibcDenom, cb) {
-    return this.insertMany(ibcDenom, { ordered: false }, cb);
+  async insertManyDenom(ibcDenom) {
+    return this.insertMany(ibcDenom, { ordered: false });
   },
 };

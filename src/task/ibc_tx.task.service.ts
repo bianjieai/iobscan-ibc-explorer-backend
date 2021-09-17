@@ -212,7 +212,7 @@ export class IbcTxTaskService {
                 ibcTx.status = IbcTxStatus.SETTING;
               }
               // 插入 ibcTx
-              await this.ibcTxModel.insertTx(ibcTx, async err => {
+              await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
                 taskRecord.height = height;
                 // 记录最后一条交易记录内最后一个msg的高度
                 if (
@@ -457,9 +457,7 @@ export class IbcTxTaskService {
       create_at,
       update_at,
     };
-    await this.ibcDenomModel.insertManyDenom(ibcDenom, err => {
-      err && err.code === 11000 && console.log('denom重复');
-    });
+    await this.ibcDenomModel.insertManyDenom(ibcDenom);
   }
 
   // 统计Channel
@@ -480,9 +478,7 @@ export class IbcTxTaskService {
         update_at: dateNow,
         create_at: dateNow,
       };
-      await this.ibcChannelModel.insertManyChannel(ibcChannel, err => {
-        err && err.code === 11000 && console.log('channel重复');
-      });
+      await this.ibcChannelModel.insertManyChannel(ibcChannel);
     } else {
       ibcChannelRecord.update_at = dateNow;
       await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);

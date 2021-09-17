@@ -53,14 +53,14 @@ IbcTxSchema.statics = {
   },
 
   // 改
-  async updateIbcTx(ibcTx, cb) {
+  async updateIbcTx(ibcTx) {
     const { record_id } = ibcTx;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    return this.findOneAndUpdate({ record_id }, ibcTx, options, cb);
+    return this.findOneAndUpdate({ record_id }, ibcTx, options);
   },
 
   // 增
-  async insertTx(ibcTx, cb) {
+  async insertManyIbcTx(ibcTx, cb) {
     return this.insertMany(ibcTx, cb);
   },
 };

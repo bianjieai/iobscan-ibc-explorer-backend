@@ -36,7 +36,7 @@ IbcStatisticsSchema.statics = {
   },
 
   // 增
-  async insertManyStatisticsRecord(statisticsRecord, cb) {
-    return  this.insertMany(statisticsRecord, { ordered: false }, cb);
+  async insertManyStatisticsRecord(statisticsRecord) {
+    return  this.insertMany(statisticsRecord, { ordered: false });
   },
 };
