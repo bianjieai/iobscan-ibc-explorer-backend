@@ -23,13 +23,13 @@ export class IbcChainService {
   async queryList(
     query: IbcChainListReqDto,
   ): Promise<ListStruct<IbcChainListResDto>> {
-    const { pageNum, pageSize, chain_name } = query;
+    const { page_num, page_size, chain_name } = query;
     const ibcChainDatas = await this.ibcChainModel.findList(
-      pageNum,
-      pageSize,
+      page_num,
+      page_size,
       chain_name,
     );
     const res: IbcChainListResDto = ibcChainDatas;
-    return new ListStruct(res, pageNum, pageSize);
+    return new ListStruct(res, page_num, page_size);
   }
 }
