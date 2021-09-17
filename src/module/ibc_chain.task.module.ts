@@ -3,7 +3,7 @@ import { ChainHttp } from '../http/lcd/chain.http';
 import { IbcChainTaskService } from '../task/ibc_chain.task.service';
 
 @Module({
-  imports: [ChainHttp, IbcChainTaskService],
+  imports: [ChainHttp],
   providers: [IbcChainTaskService],
   exports: [IbcChainTaskService],
 })

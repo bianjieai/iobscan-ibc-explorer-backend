@@ -41,7 +41,7 @@ export class IbcTxTaskService {
   }
 
   // 获取所有静态模型
-  async getModels() {
+  async getModels(): Promise<void> {
     // ibcTaskRecordModel
     this.ibcTaskRecordModel = await this.connection.model(
       'ibcTaskRecordModel',
@@ -79,9 +79,8 @@ export class IbcTxTaskService {
   }
 
   // ibcTx 第一阶段（transfer）
-  async parseIbcTx(dateNow) {
+  async parseIbcTx(dateNow): Promise<void> {
     const allChains = await this.chainModel.findAll();
-
     allChains.forEach(async ({ chain_id }) => {
       // get taskRecord by chain_id
       const taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
@@ -207,7 +206,6 @@ export class IbcTxTaskService {
               // 插入 ibcTx
               await this.ibcTxModel.insertTx(ibcTx, async err => {
                 taskRecord.height = height;
-
                 // 记录最后一条交易记录内最后一个msg的高度
                 if (
                   txIndex === RecordLimit - 1 &&
@@ -220,7 +218,7 @@ export class IbcTxTaskService {
                   );
 
                   if (ibcTx.status !== IbcTxStatus.FAILED) {
-                    // 记录denom (ibc交易类型为只要不是Failed都会统计第一段)
+                    // 统计denom (ibc交易类型为只要不是Failed都会统计第一段)
                     this.parseDenom(
                       ibcTx.sc_chain_id,
                       sc_denom,
@@ -249,7 +247,7 @@ export class IbcTxTaskService {
   }
 
   // ibcTx 第二阶段（recv_packet || timoout_packet）
-  async changeIbcTxState(dateNow) {
+  async changeIbcTxState(dateNow): Promise<void> {
     const ibcTxs = await this.ibcTxModel.queryTxList({
       status: IbcTxStatus.PROCESSING,
       limit: RecordLimit,
@@ -382,7 +380,16 @@ export class IbcTxTaskService {
   }
 
   // 获取dc_port、dc_channel、sequence
-  getDcMsg(tx, msgIndex) {
+  getDcMsg(
+    tx,
+    msgIndex,
+  ): {
+    dc_port: string;
+    dc_channel: string;
+    sequence: string;
+    base_denom: string;
+    denom_path: string;
+  } {
     const msg = {
       dc_port: '',
       dc_channel: '',
@@ -423,7 +430,7 @@ export class IbcTxTaskService {
   }
 
   // 统计Denom
-  parseDenom(
+  async parseDenom(
     chain_id,
     denom,
     base_denom,
@@ -431,7 +438,7 @@ export class IbcTxTaskService {
     is_source_chain,
     create_at,
     update_at,
-  ) {
+  ): Promise<void> {
     const ibcDenom = {
       chain_id,
       denom,
@@ -442,13 +449,18 @@ export class IbcTxTaskService {
       create_at,
       update_at,
     };
-    this.ibcDenomModel.insertManyDenom(ibcDenom, err => {
+    await this.ibcDenomModel.insertManyDenom(ibcDenom, err => {
       err && err.code === 11000 && console.log('denom重复');
     });
   }
 
   // 统计Channel
-  parseChannel(sc_chain_id, dc_chain_id, channel_id, dateNow) {
+  async parseChannel(
+    sc_chain_id,
+    dc_chain_id,
+    channel_id,
+    dateNow,
+  ): Promise<void> {
     const ibcChannelRecord = this.ibcChannelModel.findChannelRecord(
       `${sc_chain_id}${dc_chain_id}${channel_id}`,
     );
@@ -460,12 +472,12 @@ export class IbcTxTaskService {
         update_at: dateNow,
         create_at: dateNow,
       };
-      this.ibcChannelModel.insertManyChannel(ibcChannel, err => {
+      await this.ibcChannelModel.insertManyChannel(ibcChannel, err => {
         err && err.code === 11000 && console.log('channel重复');
       });
     } else {
       ibcChannelRecord.update_at = dateNow;
-      this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
+      await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
     }
   }
 }

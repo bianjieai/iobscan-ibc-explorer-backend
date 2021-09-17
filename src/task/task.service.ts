@@ -43,7 +43,10 @@ export class TasksService {
     name: TaskEnum.statistics,
   })
   async syncStatistics() {
-    this.handleDoTask(TaskEnum.statistics, this.ibcStatisticsTaskService.doTask);
+    this.handleDoTask(
+      TaskEnum.statistics,
+      this.ibcStatisticsTaskService.doTask,
+    );
   }
 
   @Cron(cfg.taskCfg.executeTime.faultTolerance)

@@ -8,21 +8,28 @@ import { groupBy } from 'lodash';
 
 @Injectable()
 export class IbcChainTaskService {
+  private chainModel;
+
   constructor(@InjectConnection() private connection: Connection) {
     this.doTask = this.doTask.bind(this);
   }
 
-  async doTask(taskName?: TaskEnum): Promise<void>  {
-    this.parseChainConfig();
+  async doTask(taskName?: TaskEnum): Promise<void> {
+    await this.getModels();
+    await this.parseChainConfig();
+  }
+
+  async getModels(): Promise<void> {
+    this.chainModel = await this.connection.model(
+      'chainModel',
+      IbcChainSchema,
+      'chain_config',
+    );
   }
 
   // 获取并同步chainConfig配置表数据
-  async parseChainConfig(){
-    // 数据库读取配置
-    const allChains = await this.connection
-      .model('chainModel', IbcChainSchema, 'chain_config')
-      .findAll();
-
+  async parseChainConfig() {
+    const allChains = await this.chainModel.findAll();
     // 请求所有链配置的channels
     Promise.all(
       allChains.map(async chain => {
@@ -85,9 +92,7 @@ export class IbcChainTaskService {
         chain['ibc_info'] = ibcInfo;
 
         // 更新数据库
-        await this.connection
-          .model('chainModel', IbcChainSchema, 'chain_config')
-          .updateChain(chain);
+        await this.chainModel.updateChain(chain);
       });
     });
   }

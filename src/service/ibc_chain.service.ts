@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Model, Connection } from 'mongoose';
-import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 import { ListStruct } from '../api/ApiResult';
 import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
 import { IbcChainListReqDto, IbcChainListResDto } from '../dto/ibc_chain.dto';
@@ -11,7 +11,6 @@ import { params } from '../app.module';
 @Injectable()
 export class IbcChainService {
   constructor(
-    @InjectConnection() private connection: Connection,
     @InjectModel('IbcChain') private ibcChainModel: Model<IbcChainType>,
   ) {}
 

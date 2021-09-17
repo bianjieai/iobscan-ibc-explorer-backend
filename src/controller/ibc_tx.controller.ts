@@ -5,12 +5,15 @@ import { IbcTxService } from '../service/ibc_tx.service';
 import { IbcTxListReqDto, IbcTxListResDto } from '../dto/ibc_tx.dto';
 
 @ApiTags('IbcTxs')
-@Controller('ibcTx')
+@Controller('ibc')
 export class IbcTxController {
   constructor(private readonly ibcTxService: IbcTxService) {}
-  @Get('list')
-  async getRecordList(@Query() query: IbcTxListReqDto): Promise<Result<IbcTxListResDto>> {
-    const result = await this.ibcTxService.queryIbcTxList(query)
+
+  @Get('txs')
+  async getRecordList(
+    @Query() query: IbcTxListReqDto,
+  ): Promise<Result<IbcTxListResDto>> {
+    const result = await this.ibcTxService.queryIbcTxList(query);
     return new Result(result, 200);
   }
 }

@@ -5,12 +5,15 @@ import { IbcChainService } from '../service/ibc_chain.service';
 import { IbcChainListReqDto, IbcChainListResDto } from '../dto/ibc_chain.dto';
 
 @ApiTags('IbcChains')
-@Controller('ibcChain')
+@Controller('ibc')
 export class IbcChainController {
   constructor(private readonly ibcChainService: IbcChainService) {}
-  @Get('list')
-  async queryList(@Query() query: IbcChainListReqDto): Promise<Result<IbcChainListResDto>> {
-    const result = await this.ibcChainService.queryList(query)
+
+  @Get('chains')
+  async queryList(
+    @Query() query: IbcChainListReqDto,
+  ): Promise<Result<IbcChainListResDto>> {
+    const result = await this.ibcChainService.queryList(query);
     return new Result(result);
   }
 }
