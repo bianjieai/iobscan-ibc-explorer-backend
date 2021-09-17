@@ -18,6 +18,7 @@ export class IbcStatisticsTaskService {
   private ibcDenomModel;
   private ibcBaseDenomModel;
   private ibcChannelModel;
+
   constructor(@InjectConnection() private connection: Connection) {
     this.getModels();
     this.doTask = this.doTask.bind(this);

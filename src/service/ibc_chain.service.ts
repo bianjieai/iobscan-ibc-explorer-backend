@@ -1,18 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { IbcChainSchema } from '../schema/ibc_chain.schema';
 import { ListStruct } from '../api/ApiResult';
-import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
 import { IbcChainListReqDto, IbcChainListResDto } from '../dto/ibc_chain.dto';
-import { TxSchema } from '../schema/tx.schema';
-
-import { params } from '../app.module';
-
 @Injectable()
 export class IbcChainService {
-  constructor(
-    @InjectModel('IbcChain') private ibcChainModel: Model<IbcChainType>,
-  ) {}
+  private ibcChainModel;
+  constructor(@InjectConnection() private connection: Connection) {
+    this.getModels();
+  }
+
+  async getModels(): Promise<void> {
+    this.ibcChainModel = await this.connection.model(
+      'ibcChainModel',
+      IbcChainSchema,
+      'chain_config',
+    );
+  }
 
   // 分页查询，用于前端请求
   async queryList(
@@ -26,11 +31,5 @@ export class IbcChainService {
     );
     const res: IbcChainListResDto = ibcChainDatas;
     return new ListStruct(res, pageNum, pageSize);
-  }
-
-  // 查询数据库
-  async queryListFromDb(): Promise<any> {
-    const ibcChainDatas = await this.ibcChainModel.findList();
-    return ibcChainDatas;
   }
 }

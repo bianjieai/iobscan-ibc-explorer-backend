@@ -22,4 +22,8 @@ IbcBaseDenomSchema.statics = {
   async findCount() {
     return await this.count();
   },
+
+  async findAllRecord() {
+    return await this.find();
+  },
 };
