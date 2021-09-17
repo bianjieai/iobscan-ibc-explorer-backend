@@ -5,6 +5,7 @@ import { IbcStatisticsSchema } from '../schema/ibc_statistics.schema';
 import { IbcChainSchema } from '../schema/ibc_chain.schema';
 import { IbcTxSchema } from '../schema/ibc_tx.schema';
 import { IbcDenomSchema } from '../schema/ibc_denom.schema';
+import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
 import { IbcBaseDenomSchema } from '../schema/ibc_base_denom.schema';
 import { TaskEnum, IbcTxStatus, StatisticsNames } from '../constant';
 import { flatten } from 'lodash';
@@ -16,6 +17,7 @@ export class IbcStatisticsTaskService {
   private ibcTxModel;
   private ibcDenomModel;
   private ibcBaseDenomModel;
+  private ibcChannelModel;
   constructor(@InjectConnection() private connection: Connection) {
     this.getModels();
     this.doTask = this.doTask.bind(this);
@@ -40,6 +42,13 @@ export class IbcStatisticsTaskService {
       'chainModel',
       IbcChainSchema,
       'chain_config',
+    );
+
+    // ibcChannelSchema
+    this.ibcChannelModel = await this.connection.model(
+      'ibcChannelModel',
+      IbcChannelSchema,
+      'ibc_channel',
     );
 
     // ibcTxModel
@@ -92,6 +101,10 @@ export class IbcStatisticsTaskService {
     const chains_24hr = Array.from(new Set([...sc_chains, ...dc_chains]))
       .length;
 
+    // channels_24hr
+    const channels_24hr = await this.ibcChannelModel.findCount({
+      update_at: { $gte: dateNow - 24 * 60 * 60 * 1000 },
+    });
     // chain_all
     const chain_all = await this.chainModel.findCount();
 
@@ -124,6 +137,7 @@ export class IbcStatisticsTaskService {
     const parseCount = {
       tx_24hr_all,
       chains_24hr,
+      channels_24hr,
       chain_all,
       channel_all,
       tx_all,

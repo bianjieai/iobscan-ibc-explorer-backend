@@ -7,6 +7,7 @@ export const Delimiter = '|';
 export const StatisticsNames = [
   'tx_24hr_all',
   'chains_24hr',
+  'channels_24hr',
   'chain_all',
   'channel_all',
   'tx_all',

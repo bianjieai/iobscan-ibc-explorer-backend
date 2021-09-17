@@ -7,6 +7,7 @@ import { IbcTxSchema } from '../schema/ibc_tx.schema';
 import { TxSchema } from '../schema/tx.schema';
 import { IbcBlockSchema } from '../schema/ibc_block.schema';
 import { IbcTaskRecordSchema } from '../schema/ibc_task_record.schema';
+import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
 import { IbcDenomService } from 'src/service/ibc_denom.service';
 import {
@@ -23,6 +24,7 @@ export class IbcTxTaskService {
   private chainModel;
   private ibcTxModel;
   private ibcDenomModel;
+  private ibcChannelModel;
 
   constructor(
     @InjectConnection() private readonly connection: Connection,
@@ -66,6 +68,13 @@ export class IbcTxTaskService {
       'ibcDenomModel',
       IbcDenomSchema,
       'ibc_denom',
+    );
+
+    // ibcChannelModel
+    this.ibcChannelModel = await this.connection.model(
+      'ibcChannelModel',
+      IbcChannelSchema,
+      'ibc_channel',
     );
   }
 
@@ -210,21 +219,25 @@ export class IbcTxTaskService {
                     taskRecord,
                   );
 
-                  // 记录denom (ibc交易类型为只要不是Failed都会统计第一段)
                   if (ibcTx.status !== IbcTxStatus.FAILED) {
-                    const ibcDenom = {
-                      chain_id: ibcTx.sc_chain_id,
-                      denom: sc_denom,
-                      base_denom: ibcTx.base_denom,
-                      base_denom_chain_id: '',
+                    // 记录denom (ibc交易类型为只要不是Failed都会统计第一段)
+                    this.parseDenom(
+                      ibcTx.sc_chain_id,
+                      sc_denom,
+                      ibcTx.base_denom,
                       denom_path,
-                      is_source_chain: !Boolean(denom_path),
-                      create_at: dateNow,
-                      update_at: dateNow,
-                    };
-                    this.ibcDenomModel.insertManyDenom(ibcDenom, err => {
-                      err && err.code === 11000 && console.log('denom重复');
-                    });
+                      !Boolean(denom_path),
+                      dateNow,
+                      dateNow,
+                    );
+
+                    // 统计channel (ibc交易类型为只要不是Failed都会统计第一段)
+                    this.parseChannel(
+                      sc_chain_id,
+                      dc_chain_id,
+                      sc_channel,
+                      dateNow,
+                    );
                   }
                 }
               });
@@ -298,20 +311,25 @@ export class IbcTxTaskService {
               );
               // 更新ibcTx
               const result = this.ibcTxModel.updateIbcTx(ibcTx);
-              // 统计denom （当ibc交易成功时统计第二段）
-              const ibcDenom = {
-                chain_id: ibcTx.dc_chain_id,
-                denom: dc_denom,
-                base_denom: ibcTx.base_denom,
-                base_denom_chain_id: '',
+
+              // 统计denom（当ibc交易成功时统计第二段）
+              this.parseDenom(
+                ibcTx.dc_chain_id,
+                dc_denom,
+                ibcTx.base_denom,
                 denom_path,
-                is_source_chain: !Boolean(denom_path),
-                create_at: dateNow,
-                update_at: dateNow,
-              };
-              this.ibcDenomModel.insertManyDenom(ibcDenom, err => {
-                err && err.code === 11000 && console.log('denom重复');
-              });
+                !Boolean(denom_path),
+                dateNow,
+                dateNow,
+              );
+
+              // 统计Channel（当ibc交易成功时统计第二段）
+              this.parseChannel(
+                ibcTx.sc_chain_id,
+                ibcTx.dc_chain_id,
+                ibcTx.dc_channel,
+                dateNow,
+              );
             }
           });
       } else {
@@ -402,5 +420,52 @@ export class IbcTxTaskService {
         }
       });
     return msg;
+  }
+
+  // 统计Denom
+  parseDenom(
+    chain_id,
+    denom,
+    base_denom,
+    denom_path,
+    is_source_chain,
+    create_at,
+    update_at,
+  ) {
+    const ibcDenom = {
+      chain_id,
+      denom,
+      base_denom,
+      base_denom_chain_id: '',
+      denom_path,
+      is_source_chain,
+      create_at,
+      update_at,
+    };
+    this.ibcDenomModel.insertManyDenom(ibcDenom, err => {
+      err && err.code === 11000 && console.log('denom重复');
+    });
+  }
+
+  // 统计Channel
+  parseChannel(sc_chain_id, dc_chain_id, channel_id, dateNow) {
+    const ibcChannelRecord = this.ibcChannelModel.findChannelRecord(
+      `${sc_chain_id}${dc_chain_id}${channel_id}`,
+    );
+
+    if (!ibcChannelRecord) {
+      const ibcChannel = {
+        channel_id: channel_id,
+        record_id: `${sc_chain_id}${dc_chain_id}${channel_id}`,
+        update_at: dateNow,
+        create_at: dateNow,
+      };
+      this.ibcChannelModel.insertManyChannel(ibcChannel, err => {
+        err && err.code === 11000 && console.log('channel重复');
+      });
+    } else {
+      ibcChannelRecord.update_at = dateNow;
+      this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
+    }
   }
 }
