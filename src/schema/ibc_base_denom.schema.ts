@@ -1,4 +1,5 @@
 import * as mongoose from 'mongoose';
+import { dateNow } from '../helper/date.helper'
 
 export const IbcBaseDenomSchema = new mongoose.Schema(
   {
@@ -8,8 +9,14 @@ export const IbcBaseDenomSchema = new mongoose.Schema(
     scale: String,
     icon: String,
     is_main_token: Boolean,
-    create_at: String,
-    update_at: String,
+    create_at: {
+      type: String,
+      default: dateNow,
+    },
+    update_at: {
+      type: String,
+      default: dateNow,
+    },
   },
   { versionKey: false },
 );

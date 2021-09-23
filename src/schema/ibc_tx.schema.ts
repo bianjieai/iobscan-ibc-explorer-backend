@@ -1,5 +1,6 @@
 import * as mongoose from 'mongoose';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
+import { dateNow } from '../helper/date.helper';
 
 export const IbcTxSchema = new mongoose.Schema({
   record_id: String,
@@ -19,8 +20,14 @@ export const IbcTxSchema = new mongoose.Schema({
   log: Array,
   denoms: Array,
   base_denom: String,
-  create_at: String,
-  update_at: String,
+  create_at: {
+    type: String,
+    default: dateNow,
+  },
+  update_at: {
+    type: String,
+    default: dateNow,
+  },
 });
 
 IbcTxSchema.index({ record_id: -1 }, { unique: true });
@@ -32,7 +39,7 @@ IbcTxSchema.statics = {
   },
 
   async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType> {
-    return this.find({}, { _id: 0 })
+    return this.find({ status: { "$in": [ 1, 2, 3, 4 ] }}, { _id: 0 })
       .skip((Number(pageNum) - 1) * Number(pageSize))
       .limit(Number(pageSize));
   },

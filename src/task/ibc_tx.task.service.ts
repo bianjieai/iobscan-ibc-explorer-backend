@@ -16,6 +16,7 @@ import {
   TxStatus,
   IbcTxStatus,
   RecordLimit,
+  IbcTaskRecordStatus,
 } from '../constant';
 
 @Injectable()
@@ -60,7 +61,7 @@ export class IbcTxTaskService {
     this.ibcTxModel = await this.connection.model(
       'ibcTxModel',
       IbcTxSchema,
-      'ibc_txs_test',
+      'ex_ibc_tx',
     );
 
     // ibcDenomModel
@@ -81,6 +82,7 @@ export class IbcTxTaskService {
   // ibcTx 第一阶段（transfer）
   async parseIbcTx(dateNow): Promise<void> {
     const allChains = await this.chainModel.findAll();
+
     allChains.forEach(async ({ chain_id }) => {
       // get taskRecord by chain_id
       const taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
@@ -89,12 +91,14 @@ export class IbcTxTaskService {
         // 如果没有定时任务记录则新建
         await this.ibcTaskRecordModel.insertManyTaskRecord({
           task_name: `sync_${chain_id}_transfer`,
-          status: 'open',
+          status: IbcTaskRecordStatus.OPEN,
           height: 0,
           create_at: `${dateNow}`,
           update_at: `${dateNow}`,
         });
       } else {
+        // 如果定时任务记录状态是close则跳过
+        if (taskRecord.status === IbcTaskRecordStatus.CLOSE) return;
         const txModel = await this.connection.model(
           'txModel',
           TxSchema,
@@ -134,7 +138,7 @@ export class IbcTxTaskService {
                 sc_tx_info: {},
                 dc_tx_info: {},
                 refunded_tx_info: {},
-                log: '',
+                log: {},
                 denoms: [],
                 base_denom: '',
                 create_at: '',
@@ -158,15 +162,14 @@ export class IbcTxTaskService {
               const sc_addr = msg.msg.sender;
               const dc_addr = msg.msg.receiver;
               const sc_denom = msg.msg.token.denom;
-              const msg_amount = msg;
-
+              const msg_amount = msg.msg.token;
               const {
                 dc_port,
                 dc_channel,
                 sequence,
                 base_denom,
                 denom_path,
-              } = this.getDcMsg(tx, msgIndex);
+              } = this.getIbcInfoFromEventsMsg(tx, msgIndex);
 
               // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
               let dc_chain_id = '';
@@ -205,8 +208,9 @@ export class IbcTxTaskService {
                 height,
                 fee,
                 msg_amount,
+                msg,
               };
-              ibcTx.log = log;
+              ibcTx.log['sc_log'] = log;
               // 如果没找到对应的 dc_chain_id
               if (!dc_chain_id) {
                 ibcTx.status = IbcTxStatus.SETTING;
@@ -233,6 +237,7 @@ export class IbcTxTaskService {
                       ibcTx.base_denom,
                       denom_path,
                       !Boolean(denom_path),
+                      dateNow,
                       dateNow,
                       dateNow,
                     );
@@ -274,26 +279,17 @@ export class IbcTxTaskService {
         type: TxType.recv_packet,
         limit: RecordLimit,
         status: TxStatus.SUCCESS,
-        packet_id: ibcTx.sc_tx_info.msg_amount.msg.packet_id,
+        packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
       });
 
       // txs have status is success's tx?
       if (txs.length) {
-        const counter_party_tx =
-          txModel &&
-          (
-            await txModel.queryTxListByPacketId({
-              type: TxType.recv_packet,
-              limit: RecordLimit,
-              packet_id: ibcTx.sc_tx_info.msg_amount.msg.packet_id,
-              status: TxStatus.SUCCESS,
-            })
-          )[0];
+        const counter_party_tx = txs[0];
         counter_party_tx &&
           counter_party_tx.msgs.forEach(msg => {
             if (
               msg.type === TxType.recv_packet &&
-              ibcTx.sc_tx_info.msg_amount.msg.packet_id === msg.msg.packet_id
+              ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
             ) {
               const {
                 dc_denom,
@@ -306,7 +302,8 @@ export class IbcTxTaskService {
                 time: counter_party_tx.time,
                 height: counter_party_tx.height,
                 fee: counter_party_tx.fee,
-                msg_amount: msg,
+                msg_amount: msg.msg.token,
+                msg,
               };
               ibcTx.update_at = dateNow;
               // 插入目标链denom
@@ -325,6 +322,7 @@ export class IbcTxTaskService {
                 ibcTx.base_denom,
                 denom_path,
                 !Boolean(denom_path),
+                dateNow,
                 dateNow,
                 dateNow,
               );
@@ -348,9 +346,9 @@ export class IbcTxTaskService {
         // 超时高度  目标链高度
         const { height, time } = await blockModel.findBlockByLastHeight();
         const ibcHeight =
-          ibcTx.sc_tx_info.msg_amount.msg.timeout_height.revision_height;
-        const ibcTime = ibcTx.sc_tx_info.msg_amount.msg.timeout_timestamp;
-        if (ibcHeight > height || ibcTime > time) {
+          ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
+        const ibcTime = ibcTx.sc_tx_info.msg.msg.timeout_timestamp;
+        if (ibcHeight < height || ibcTime < time) {
           const txModel = await this.connection.model(
             'txModel',
             TxSchema,
@@ -360,13 +358,13 @@ export class IbcTxTaskService {
             type: TxType.timeout_packet,
             limit: RecordLimit,
             status: TxStatus.SUCCESS,
-            packet_id: ibcTx.sc_tx_info.msg_amount.msg.packet_id,
+            packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
           })[0];
           refunded_tx &&
             refunded_tx.msgs.forEach(msg => {
               if (
                 msg.type === TxType.timeout_packet &&
-                ibcTx.sc_tx_info.msg_amount.msg.packet_id === msg.msg.packet_id
+                ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
               ) {
                 ibcTx.status = IbcTxStatus.REFUNDED;
                 ibcTx.refunded_tx_info = {
@@ -375,11 +373,12 @@ export class IbcTxTaskService {
                   time: refunded_tx.time,
                   height: refunded_tx.height,
                   fee: refunded_tx.fee,
-                  msg_amount: msg,
+                  msg_amount: msg.msg.token,
+                  msg,
                 };
                 ibcTx.update_at = dateNow;
                 // 更新ibcTx
-                const result = this.ibcTxModel.updateIbcTx(ibcTx);
+                this.ibcTxModel.updateIbcTx(ibcTx);
               }
             });
         }
@@ -388,7 +387,7 @@ export class IbcTxTaskService {
   }
 
   // 获取dc_port、dc_channel、sequence
-  getDcMsg(
+  getIbcInfoFromEventsMsg(
     tx,
     msgIndex,
   ): {
@@ -427,7 +426,7 @@ export class IbcTxTaskService {
                 msg.base_denom = denomOriginSplit[denomOriginSplit.length - 1];
                 msg.denom_path = denomOriginSplit
                   .slice(0, denomOriginSplit.length - 1)
-                  .join('');
+                  .join('/');
               default:
                 break;
             }
@@ -446,18 +445,28 @@ export class IbcTxTaskService {
     is_source_chain,
     create_at,
     update_at,
+    dateNow,
   ): Promise<void> {
-    const ibcDenom = {
+    const ibcDenomRecord = await this.ibcDenomModel.findDenomRecord(
       chain_id,
       denom,
-      base_denom,
-      base_denom_chain_id: '',
-      denom_path,
-      is_source_chain,
-      create_at,
-      update_at,
-    };
-    await this.ibcDenomModel.insertManyDenom(ibcDenom);
+    );
+
+    if (!ibcDenomRecord) {
+      const ibcDenom = {
+        chain_id,
+        denom,
+        base_denom,
+        denom_path,
+        is_source_chain,
+        create_at,
+        update_at,
+      };
+      await this.ibcDenomModel.insertManyDenom(ibcDenom);
+    } else {
+      ibcDenomRecord.update_at = dateNow;
+      await this.ibcDenomModel.updateDenomRecord(ibcDenomRecord);
+    }
   }
 
   // 统计Channel
@@ -467,7 +476,16 @@ export class IbcTxTaskService {
     channel_id,
     dateNow,
   ): Promise<void> {
-    const ibcChannelRecord = this.ibcChannelModel.findChannelRecord(
+    // 获取所有配置过的channels
+    const channels_all_record = await this.getChannelsConfig();
+
+    const isFindRecord = channels_all_record.find(channel => {
+      return channel.channel_id === channel_id;
+    });
+    // 如果当前channel_id没有配置过则跳过
+    if (!isFindRecord) return;
+
+    const ibcChannelRecord = await this.ibcChannelModel.findChannelRecord(
       `${sc_chain_id}${dc_chain_id}${channel_id}`,
     );
 
@@ -483,5 +501,24 @@ export class IbcTxTaskService {
       ibcChannelRecord.update_at = dateNow;
       await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
     }
+  }
+
+  // 获取配置过的channels
+  async getChannelsConfig() {
+    const channels_all_record = [];
+
+    const allChains = await this.chainModel.findAll();
+    allChains.forEach(chain => {
+      chain.ibc_info.forEach(ibc_info_item => {
+        ibc_info_item.paths.forEach(channel => {
+          channels_all_record.push({
+            channel_id: channel.channel_id,
+            state: channel.state,
+          });
+        });
+      });
+    });
+
+    return channels_all_record;
   }
 }

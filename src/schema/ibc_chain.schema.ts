@@ -25,16 +25,8 @@ IbcChainSchema.statics = {
     return this.find({});
   },
 
-  async findList(
-    pageNum: number,
-    pageSize: number,
-    chain_name?: String,
-  ): Promise<IbcChainType[]> {
-    return this.find(
-      chain_name ? { chain_name: { $regex: chain_name } } : undefined,
-    )
-      .skip((Number(pageNum) - 1) * Number(pageSize))
-      .limit(Number(pageSize));
+  async findList(): Promise<IbcChainType[]> {
+    return this.find()
   },
 
   async findDcChainId(

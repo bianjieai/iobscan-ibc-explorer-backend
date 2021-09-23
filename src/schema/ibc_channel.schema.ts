@@ -1,11 +1,18 @@
 import * as mongoose from 'mongoose';
+import { dateNow } from '../helper/date.helper';
 
 export const IbcChannelSchema = new mongoose.Schema(
   {
     channel_id: String,
     record_id: String,
-    update_at: String,
-    create_at: String,
+    create_at: {
+      type: String,
+      default: dateNow,
+    },
+    update_at: {
+      type: String,
+      default: dateNow,
+    },
   },
   { versionKey: false },
 );

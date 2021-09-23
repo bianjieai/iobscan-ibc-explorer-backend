@@ -9,7 +9,7 @@ import { IbcTxSchema } from '../schema/ibc_tx.schema';
       {
         name: 'IbcTx',
         schema: IbcTxSchema,
-        collection: 'ibc_record',
+        collection: 'ex_ibc_tx',
       },
     ]),
   ],

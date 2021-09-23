@@ -1,16 +1,24 @@
 import * as mongoose from 'mongoose';
 import { IbcTaskRecordType } from '../types/schemaTypes/ibc_task_record.interface';
+import { dateNow } from '../helper/date.helper';
+import { IbcTaskRecordStatus } from '../constant';
 
 export const IbcTaskRecordSchema = new mongoose.Schema({
   _id: String,
   task_name: String,
   status: {
     type: String,
-    default: 'open',
+    default: IbcTaskRecordStatus.OPEN,
   },
   height: Number,
-  create_at: String,
-  update_at: String,
+  create_at: {
+    type: String,
+    default: dateNow,
+  },
+  update_at: {
+    type: String,
+    default: dateNow,
+  },
 });
 
 IbcTaskRecordSchema.index({ task_name: 1 }, { unique: true });

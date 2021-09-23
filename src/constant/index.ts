@@ -10,6 +10,8 @@ export const StatisticsNames = [
   'channels_24hr',
   'chain_all',
   'channel_all',
+  'channel_opened',
+  'channel_closed',
   'tx_all',
   'tx_success',
   'tx_failed',
@@ -142,6 +144,11 @@ export enum IbcTxStatus {
   PROCESSING = 3,
   REFUNDED = 4,
   SETTING = 5,
+}
+
+export enum IbcTaskRecordStatus {
+  OPEN = 'open',
+  CLOSE = 'close'
 }
 
 export const IdentityLimitSize = 1000;

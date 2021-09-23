@@ -14,9 +14,8 @@ import { IbcChainModule } from './module/ibc_chain.module';
 import { IbcStatisticsTaskModule } from './module/ibc_statistics.task.module';
 import { IbcStatisticsModule } from './module/ibc_statistics.module';
 import { IbcBaseDenomModule } from './module/ibc_base_denom.module';
-// const url: string = `mongodb://${cfg.dbCfg.user}:${cfg.dbCfg.psd}@${cfg.dbCfg.dbAddr}/${cfg.dbCfg.dbName}`;
-// const url: string = `mongodb://iris:irispassword@10.1.4.66:27018/rainbow-server`;
-const url: string = `mongodb://localhost:27017/ibc-db`;
+const url: string = `mongodb://${cfg.dbCfg.user}:${cfg.dbCfg.psd}@${cfg.dbCfg.dbAddr}/${cfg.dbCfg.dbName}`;
+// const url: string = `mongodb://localhost:27017/ibc-db`;
 export const params = {
   imports: [
     MongooseModule.forRoot(url),

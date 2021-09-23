@@ -35,7 +35,7 @@ TxSchema.index(
 TxSchema.statics = {
   async queryTxListSortHeight(query): Promise<any> {
     const { type, height, limit, status } = query;
-    return this.find({ type, height: { $gt: height } })
+    return this.find({ 'msgs.type': type, height: { $gt: height } })
       .sort({ height: 1 })
       .limit(Number(limit));
   },

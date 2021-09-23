@@ -110,11 +110,38 @@ export class IbcStatisticsTaskService {
     const chain_all = await this.chainModel.findCount();
 
     // channel_all
-    const channels_arr = await this.chainModel.aggregateFindChannels();
-    let channel_all = 0;
-    channels_arr.forEach(channels => {
-      channel_all += flatten(channels['_id']).length;
-    });
+    // const channels_arr = await this.chainModel.aggregateFindChannels();
+    // let channel_all = 0;
+    // channels_arr.forEach(channels => {
+    //   channel_all += flatten(channels['_id']).length;
+    // });
+
+    const chain_all_record = await this.chainModel.findAll()
+    let channels_all_record = []
+    chain_all_record.forEach(chain => {
+      chain.ibc_info.forEach(ibc_info_item => {
+        ibc_info_item.paths.forEach(channel => {
+          channels_all_record.push({
+            channel_id: channel.channel_id,
+            state: channel.state,
+          })
+        })
+      })
+    })
+
+    // channel_all
+    const channel_all = channels_all_record.length
+
+    // channel_opened
+    const channel_opened = channels_all_record.filter(channel => {
+      return channel.state === 'STATE_OPEN'
+    }).length
+
+    // channel_closed
+    const channel_closed = channels_all_record.filter(channel => {
+      return channel.state === 'STATE_CLOSED'
+    }).length
+
 
     // tx_all
     const tx_all = await this.ibcTxModel.findCount();
@@ -141,6 +168,8 @@ export class IbcStatisticsTaskService {
       channels_24hr,
       chain_all,
       channel_all,
+      channel_opened,
+      channel_closed,
       tx_all,
       tx_success,
       tx_failed,

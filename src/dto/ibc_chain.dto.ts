@@ -6,4 +6,10 @@ export class IbcChainListReqDto extends PagingReqDto {
     chain_name?: string;
 }
 
-export class IbcChainListResDto {}
+export class IbcChainListResDto {
+    chain_id: string;
+    icon: string;
+    chain_name: string;
+    lcd: string;
+    ibc_info: object;
+}

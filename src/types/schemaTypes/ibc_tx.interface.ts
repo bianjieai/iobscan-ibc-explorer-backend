@@ -13,7 +13,7 @@ export interface IbcTxType {
   sc_tx_info: object;
   dc_tx_info: object;
   refunded_tx_info?: object;
-  log: string;
+  log: object;
   denoms: string[];
   base_denom: string;
   create_at: string;

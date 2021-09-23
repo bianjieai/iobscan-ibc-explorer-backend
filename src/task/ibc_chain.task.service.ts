@@ -53,9 +53,9 @@ export class IbcChainTaskService {
 
       // 为channelsObj设值
       allChains.forEach(chain => {
-        channelsObj[`${chain['chain_id']}`] = {};
+        channelsObj[chain['chain_id']] = {};
         chain['ibc_info'].forEach(channel => {
-          channelsObj[`${chain['chain_id']}`][
+          channelsObj[chain['chain_id']][
             `${channel.channel_id}/${channel.port_id}/${channel.counterparty.channel_id}/${channel.counterparty.port_id}`
           ] = `${channel.sc_chain_id}${Delimiter}${channel.state}`;
         });
@@ -92,7 +92,7 @@ export class IbcChainTaskService {
         chain['ibc_info'] = ibcInfo;
 
         // 更新数据库
-        await this.chainModel.updateChain(chain);
+        this.chainModel.updateChain(chain);
       });
     });
   }

@@ -30,7 +30,10 @@ const {
     PROPLSAL,
     PROPOSALS_LIMIT,
     ACCOUNT_EXECUTE_TIME,
-    ACCOUNT_INFO_EXECUTE_TIME
+    ACCOUNT_INFO_EXECUTE_TIME,
+    IBCTX_EXECUTE_TIME,
+    IBCCHAIN_EXECUTE_TIME,
+    IBCSTATISTICS_EXECUTE_TIME,
 } = process.env;
 export const cfg = {
     env: NODE_ENV,
@@ -51,9 +54,9 @@ export const cfg = {
             heartbeatRate:Number(HEARTBEAT_RATE || 10000),
         },
         executeTime:{
-            tx: '*/10 * * * * *',
-            chain: '*/10 * * * * *',
-            statistics: '*/10 * * * * *',
+            tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
+            chain: IBCCHAIN_EXECUTE_TIME || '15 * * * * *',
+            statistics: IBCSTATISTICS_EXECUTE_TIME || '15 * * * * *',
             denom:DENOM_EXECUTE_TIME || '1 * * * * *',
             nft:NFT_EXECUTE_TIME || '21 * * * * *',
             txServiceName:TX_SERVICE_NAME_EXECUTE_TIME || '30 * * * * *',

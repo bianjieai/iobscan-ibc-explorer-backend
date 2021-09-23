@@ -20,16 +20,9 @@ export class IbcChainService {
   }
 
   // 分页查询，用于前端请求
-  async queryList(
-    query: IbcChainListReqDto,
-  ): Promise<ListStruct<IbcChainListResDto>> {
-    const { page_num, page_size, chain_name } = query;
-    const ibcChainDatas = await this.ibcChainModel.findList(
-      page_num,
-      page_size,
-      chain_name,
-    );
+  async queryList(): Promise<IbcChainListResDto> {
+    const ibcChainDatas = await this.ibcChainModel.findList();
     const res: IbcChainListResDto = ibcChainDatas;
-    return new ListStruct(res, page_num, page_size);
+    return res;
   }
 }
