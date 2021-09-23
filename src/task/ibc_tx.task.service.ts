@@ -421,6 +421,7 @@ export class IbcTxTaskService {
                 msg.sequence = attr.value;
                 break;
               case 'packet_data':
+                // todo JSON.parse 容错
                 const packet_data = JSON.parse(attr.value);
                 const denomOrigin = packet_data.denom;
                 const denomOriginSplit = denomOrigin.split('/');

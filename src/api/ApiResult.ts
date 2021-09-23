@@ -4,19 +4,16 @@ import {
     HttpException,
     HttpStatus,
 } from '@nestjs/common';
-import { GovVoterStatistical } from '../types/gov.interface'
 export class ListStruct<T> implements IListStructBase<T> {
     data: T;
     pageNum: number;
     pageSize: number;
     count?: number;
-    statistical?: GovVoterStatistical;
-    constructor(data: T,pageNum: number, pageSize: number, count?: number,statistical?:GovVoterStatistical) {
+    constructor(data: T,pageNum: number, pageSize: number, count?: number) {
         this.data = data;
         this.pageNum = pageNum;
         this.pageSize = pageSize;
         if (count || count === 0) this.count = count;
-        if (statistical) this.statistical = statistical;
     }
 }
 
