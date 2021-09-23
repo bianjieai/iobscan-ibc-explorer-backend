@@ -1,3 +1,5 @@
+// todo 无效变量待删除
+
 export function getReqContextIdWithReqId(requestId:string):string{
     if (requestId && requestId.length && requestId.length>=80) {
         return requestId.substr(0,80).toUpperCase();

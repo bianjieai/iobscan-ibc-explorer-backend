@@ -1,6 +1,8 @@
 import { cfg } from '../config/config';
 
-export const RecordLimit = 3;
+// todo 无效变量待删除
+
+export const RecordLimit = 100;
 
 export const Delimiter = '|';
 

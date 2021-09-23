@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-
+// todo  无效变量待删除
 const {
     LCD_ADDR,
     RPC_ADDR,

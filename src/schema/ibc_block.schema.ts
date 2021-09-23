@@ -12,6 +12,7 @@ export const IbcBlockSchema = new mongoose.Schema(
 );
 
 IbcBlockSchema.statics = {
+  //todo  1.rename： findBlockByLastHeight => findLatestBlock    2.方法声明未明确返回值类型
   async findBlockByLastHeight() {
     return this.findOne({})
       .sort({ height: -1 })

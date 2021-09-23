@@ -10,7 +10,8 @@ export const IbcChainSchema = new mongoose.Schema({
 });
 
 IbcChainSchema.index({ chain_id: 1 }, { unique: true });
-
+// todo query=>明确具体查询参数, 所有 Schema 中方法的查询条件都必须是明确的。
+// todo 1. 声明入参未明确类型   2.schema 中只做查询操作， 数据处理逻辑建议放到 service 里
 IbcChainSchema.statics = {
   // 查
   async findCount(query): Promise<Number> {

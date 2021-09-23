@@ -1,4 +1,5 @@
 import { TxType } from '../constant';
+// todo 无效变量待删除
 
 export function stakingTypes():string[]{
     return [
