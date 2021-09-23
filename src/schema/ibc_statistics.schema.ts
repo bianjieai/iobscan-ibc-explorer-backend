@@ -17,6 +17,8 @@ export const IbcStatisticsSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
+// todo 冗余的索引
+
 IbcStatisticsSchema.index({ statistics_name: 1 }, { unique: true });
 IbcStatisticsSchema.index({ update_at: -1 }, { background: true });
 
@@ -30,6 +32,7 @@ IbcStatisticsSchema.statics = {
     return this.find();
   },
 
+  // cb、async/await
   // 改
   async updateStatisticsRecord(statisticsRecord, cb) {
     const { statistics_name } = statisticsRecord;

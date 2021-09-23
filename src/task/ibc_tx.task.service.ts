@@ -105,6 +105,7 @@ export class IbcTxTaskService {
           `sync_${chain_id}_tx`,
         );
 
+        // todo RecordLimit 环境变量
         const txs = await txModel.queryTxListSortHeight({
           type: TxType.transfer,
           height: taskRecord.height,

@@ -11,6 +11,8 @@ export class IbcStatisticsService {
     this.getModels();
   }
 
+  // todo res 未使用 dto
+
   // 获取所有静态模型
   async getModels(): Promise<void> {
     // ibcStatisticsModel

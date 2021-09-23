@@ -24,6 +24,7 @@ IbcDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
 IbcDenomSchema.index({ update_at: -1 }, { background: true });
 
 IbcDenomSchema.statics = {
+  // todo 方法声明规范
   // 查
   async findCount() {
     return this.count();

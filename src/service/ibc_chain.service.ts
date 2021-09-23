@@ -19,6 +19,7 @@ export class IbcChainService {
     );
   }
 
+  // todo 接口处理结果未使用 res dot
   // 分页查询，用于前端请求
   async queryList(): Promise<IbcChainListResDto> {
     const ibcChainDatas = await this.ibcChainModel.findList();

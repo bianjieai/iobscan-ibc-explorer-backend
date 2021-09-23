@@ -33,7 +33,9 @@ TxSchema.index(
 
 // 	txs
 TxSchema.statics = {
+  // todo 注意同一高度多交易情况处理
   async queryTxListSortHeight(query): Promise<any> {
+    // todo type => msgs.type
     const { type, height, limit, status } = query;
     return this.find({ 'msgs.type': type, height: { $gt: height } })
       .sort({ height: 1 })

@@ -33,6 +33,7 @@ export const IbcTxSchema = new mongoose.Schema({
 IbcTxSchema.index({ record_id: -1 }, { unique: true });
 
 IbcTxSchema.statics = {
+  // todo 方法命名规范  明确query入参类型
   // 查
   async findCount(query) {
     return this.count(query);

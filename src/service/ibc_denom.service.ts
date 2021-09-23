@@ -4,6 +4,8 @@ import sha256 from 'sha256';
 export class IbcDenomService {
   constructor() {}
 
+  // todo 工具方法建议在对应 helper 中实现
+
   getDcDenom(msg) {
     let result = '';
     let dc_denom_origin = '';
