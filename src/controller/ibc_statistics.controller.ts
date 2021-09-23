@@ -11,6 +11,6 @@ export class IbcStatisticsController {
   @Get('statistics')
   async getAllRecord() {
     const result = await this.ibcStatisticsService.findAllRecord();
-    return new Result(result, 200);
+    return new Result(result);
   }
 }

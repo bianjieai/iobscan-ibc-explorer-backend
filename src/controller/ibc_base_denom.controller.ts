@@ -11,6 +11,6 @@ export class IbcBaseDenomController {
   @Get('baseDenoms')
   async getAllRecord() {
     const result = await this.ibcBaseDenomService.findAllRecord();
-    return new Result(result, 200);
+    return new Result(result);
   }
 }
