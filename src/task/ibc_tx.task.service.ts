@@ -263,15 +263,8 @@ export class IbcTxTaskService {
             await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
               taskRecord.height = height;
 
-              // 记录最后一条交易记录内最后一个msg的高度
-              if (
-                txIndex === RecordLimit - 1 &&
-                msgIndex === tx.msgs.length - 1 &&
-                !err
-              ) {
-                // 更新 taskRecord
-                await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
-              }
+              // 更新 taskRecord
+              await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
 
               if (ibcTx.status !== IbcTxStatus.FAILED) {
                 // 统计denom (ibc交易类型为只要不是Failed都会统计第一段)
