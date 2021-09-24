@@ -1,6 +1,7 @@
 import * as mongoose from 'mongoose';
 import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
 
+// todo 增加update  create time
 export const IbcChainSchema = new mongoose.Schema({
   chain_id: String,
   icon: String,
@@ -30,7 +31,7 @@ IbcChainSchema.statics = {
     return this.find()
   },
 
-  async findDcChainId(
+  async findDcChain(
     query,
   ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
     // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
@@ -42,8 +43,7 @@ IbcChainSchema.statics = {
         'ibc_info.paths.port_id': sc_port,
         'ibc_info.paths.counterparty.channel_id': dc_channel,
         'ibc_info.paths.counterparty.port_id': dc_port,
-      },
-      { 'ibc_info.chain_id': 1 },
+      }
     );
   },
 

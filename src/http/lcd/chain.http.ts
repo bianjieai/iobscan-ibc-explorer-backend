@@ -1,5 +1,7 @@
 import { HttpService, Injectable } from '@nestjs/common';
 import { Logger } from '../../logger';
+
+// todo 需要对lcd 增加dto
 @Injectable()
 export class ChainHttp {
   static async getIbcChannels(lcdAddr) {

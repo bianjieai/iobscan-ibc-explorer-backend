@@ -83,10 +83,10 @@ export class IbcTxTaskService {
   async parseIbcTx(dateNow): Promise<void> {
     const allChains = await this.chainModel.findAll();
 
+    // todo 此处最好每条链设置一个定时任务
     allChains.forEach(async ({ chain_id }) => {
       // get taskRecord by chain_id
-      const taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
-
+      let taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
       if (!taskRecord) {
         // 如果没有定时任务记录则新建
         await this.ibcTaskRecordModel.insertManyTaskRecord({
@@ -96,167 +96,191 @@ export class IbcTxTaskService {
           create_at: `${dateNow}`,
           update_at: `${dateNow}`,
         });
+        // 此处需重新赋值taskRecord
+        taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
       } else {
         // 如果定时任务记录状态是close则跳过
         if (taskRecord.status === IbcTaskRecordStatus.CLOSE) return;
-        const txModel = await this.connection.model(
-          'txModel',
-          TxSchema,
-          `sync_${chain_id}_tx`,
-        );
+      }
+      // todo 此处需要改为初始化判断一次record
+      const txModel = await this.connection.model(
+        'txModel',
+        TxSchema,
+        `sync_${chain_id}_tx`,
+      );
 
-        // todo RecordLimit 环境变量
-        const txs = await txModel.queryTxListSortHeight({
-          type: TxType.transfer,
-          height: taskRecord.height,
-          limit: RecordLimit,
-        });
+      let txs = []
+      const txsByLimit = await txModel.queryTxListSortHeight({
+        type: TxType.transfer,
+        height: taskRecord.height,
+        limit: RecordLimit,
+      });
 
-        // 遍历tx
-        txs.forEach((tx, txIndex) => {
-          const height = tx.height;
-          const log = tx.log;
-          const time = tx.time;
-          const hash = tx.tx_hash;
-          const status = tx.status;
-          const fee = tx.fee;
-          // 遍历msg
-          tx.msgs.forEach(async (msg, msgIndex) => {
-            // 判断msg Type为transfer
-            if (msg.type === TxType.transfer) {
-              const ibcTx: IbcTxType = {
-                record_id: '',
-                sc_addr: '',
-                dc_addr: '',
-                sc_port: '',
-                sc_channel: '',
-                sc_chain_id: '',
-                dc_port: '',
-                dc_channel: '',
-                dc_chain_id: '',
-                sequence: '',
-                status: 0,
-                sc_tx_info: {},
-                dc_tx_info: {},
-                refunded_tx_info: {},
-                log: {},
-                denoms: [],
-                base_denom: '',
-                create_at: '',
-                update_at: '',
-              };
-              // 根据tx 状态判断ibcTx状态
-              switch (tx.status) {
-                case TxStatus.SUCCESS:
-                  ibcTx.status = IbcTxStatus.PROCESSING;
-                  break;
-                case TxStatus.FAILED:
-                  ibcTx.status = IbcTxStatus.FAILED;
-                  break;
-                default:
-                  break;
-              }
+      const txsByHeight = await txModel.queryTxListByHeight(txsByLimit[txsByLimit.length - 1].height)
 
-              const sc_chain_id = JSON.parse(JSON.stringify(tx)).chain_id;
-              const sc_port = msg.msg.source_port;
-              const sc_channel = msg.msg.source_channel;
-              const sc_addr = msg.msg.sender;
-              const dc_addr = msg.msg.receiver;
-              const sc_denom = msg.msg.token.denom;
-              const msg_amount = msg.msg.token;
-              const {
-                dc_port,
-                dc_channel,
-                sequence,
-                base_denom,
-                denom_path,
-              } = this.getIbcInfoFromEventsMsg(tx, msgIndex);
+      // 对象数组去重
+      const hash = {};
+      txs = [...txsByLimit, ...txsByHeight].reduce((item, next)=>{
+          hash[next.tx_hash] ? '' : hash[next.tx_hash] = true && item.push(next);
+          return item;
+      },[])
 
-              // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
-              let dc_chain_id = '';
-              const result = await this.chainModel.findDcChainId({
-                sc_chain_id,
-                sc_port,
-                sc_channel,
-                dc_port,
-                dc_channel,
+      // 遍历tx
+      txs.forEach((tx, txIndex) => {
+        const height = tx.height;
+        const log = tx.log;
+        const time = tx.time;
+        const hash = tx.tx_hash;
+        const status = tx.status;
+        const fee = tx.fee;
+        // 遍历msg
+        tx.msgs.forEach(async (msg, msgIndex) => {
+          // 判断msg Type为transfer
+          if (msg.type === TxType.transfer) {
+            const ibcTx: IbcTxType = {
+              record_id: '',
+              sc_addr: '',
+              dc_addr: '',
+              sc_port: '',
+              sc_channel: '',
+              sc_chain_id: '',
+              dc_port: '',
+              dc_channel: '',
+              dc_chain_id: '',
+              sequence: '',
+              status: 0,
+              sc_tx_info: {},
+              dc_tx_info: {},
+              refunded_tx_info: {},
+              log: {},
+              denoms: [],
+              base_denom: '',
+              create_at: '',
+              update_at: '',
+            };
+            // 根据tx 状态判断ibcTx状态
+            switch (tx.status) {
+              case TxStatus.SUCCESS:
+                ibcTx.status = IbcTxStatus.PROCESSING;
+                break;
+              case TxStatus.FAILED:
+                ibcTx.status = IbcTxStatus.FAILED;
+                break;
+              default:
+                break;
+            }
+
+            const sc_chain_id = JSON.parse(JSON.stringify(tx)).chain_id;
+            const sc_port = msg.msg.source_port;
+            const sc_channel = msg.msg.source_channel;
+            const sc_addr = msg.msg.sender;
+            const dc_addr = msg.msg.receiver;
+            const sc_denom = msg.msg.token.denom;
+            const msg_amount = msg.msg.token;
+            const {
+              dc_port,
+              dc_channel,
+              sequence,
+              base_denom,
+              denom_path,
+            } = this.getIbcInfoFromEventsMsg(tx, msgIndex);
+
+            // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
+            let dc_chain_id = '';
+            const result = await this.chainModel.findDcChain({
+              sc_chain_id,
+              sc_port,
+              sc_channel,
+              dc_port,
+              dc_channel,
+            });
+
+            if (result && result.ibc_info && result.ibc_info.length) {
+              // fix  [0]可能获取不到
+              result.ibc_info.forEach(info_item => {
+                info_item.paths.forEach(path_item => {
+                  if (
+                    path_item.channel_id === sc_channel &&
+                    path_item.port_id === sc_port &&
+                    path_item.counterparty.channel_id === dc_channel &&
+                    path_item.counterparty.port_id === dc_port
+                  ) {
+                    dc_chain_id = info_item.chain_id;
+                  }
+                });
               });
+            } else {
+              dc_chain_id = '';
+            }
 
-              if (result && result.ibc_info && result.ibc_info.length) {
-                dc_chain_id = result.ibc_info[0]['chain_id'];
-              } else {
-                dc_chain_id = '';
-              }
+            ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}`;
+            ibcTx.sc_addr = sc_addr;
+            ibcTx.dc_addr = dc_addr;
+            ibcTx.sc_port = sc_port;
+            ibcTx.sc_channel = sc_channel;
+            ibcTx.sc_chain_id = sc_chain_id;
+            ibcTx.dc_port = dc_port;
+            ibcTx.dc_channel = dc_channel;
+            ibcTx.dc_chain_id = dc_chain_id;
+            ibcTx.sequence = sequence;
+            ibcTx.denoms.push(sc_denom);
+            ibcTx.base_denom = base_denom;
+            ibcTx.create_at = dateNow;
+            ibcTx.update_at = dateNow;
+            ibcTx.sc_tx_info = {
+              hash,
+              status,
+              time,
+              height,
+              fee,
+              msg_amount,
+              msg,
+            };
+            ibcTx.log['sc_log'] = log;
+            // 如果没找到对应的 dc_chain_id
+            if (!dc_chain_id) {
+              ibcTx.status = IbcTxStatus.SETTING;
+            }
+            // 插入 ibcTx
+            await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
+              taskRecord.height = height;
+              // 记录最后一条交易记录内最后一个msg的高度
+              if (
+                txIndex === RecordLimit - 1 &&
+                msgIndex === tx.msgs.length - 1 &&
+                !err
+              ) {
+                // 更新 taskRecord
+                const result = await this.ibcTaskRecordModel.updateTaskRecord(
+                  taskRecord,
+                );
 
-              ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}`;
-              ibcTx.sc_addr = sc_addr;
-              ibcTx.dc_addr = dc_addr;
-              ibcTx.sc_port = sc_port;
-              ibcTx.sc_channel = sc_channel;
-              ibcTx.sc_chain_id = sc_chain_id;
-              ibcTx.dc_port = dc_port;
-              ibcTx.dc_channel = dc_channel;
-              ibcTx.dc_chain_id = dc_chain_id;
-              ibcTx.sequence = sequence;
-              ibcTx.denoms.push(sc_denom);
-              ibcTx.base_denom = base_denom;
-              ibcTx.create_at = dateNow;
-              ibcTx.update_at = dateNow;
-              ibcTx.sc_tx_info = {
-                hash,
-                status,
-                time,
-                height,
-                fee,
-                msg_amount,
-                msg,
-              };
-              ibcTx.log['sc_log'] = log;
-              // 如果没找到对应的 dc_chain_id
-              if (!dc_chain_id) {
-                ibcTx.status = IbcTxStatus.SETTING;
-              }
-              // 插入 ibcTx
-              await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
-                taskRecord.height = height;
-                // 记录最后一条交易记录内最后一个msg的高度
-                if (
-                  txIndex === RecordLimit - 1 &&
-                  msgIndex === tx.msgs.length - 1 &&
-                  !err
-                ) {
-                  // 更新 taskRecord
-                  const result = await this.ibcTaskRecordModel.updateTaskRecord(
-                    taskRecord,
+                if (ibcTx.status !== IbcTxStatus.FAILED) {
+                  // 统计denom (ibc交易类型为只要不是Failed都会统计第一段)
+                  this.parseDenom(
+                    ibcTx.sc_chain_id,
+                    sc_denom,
+                    ibcTx.base_denom,
+                    denom_path,
+                    !Boolean(denom_path),
+                    dateNow,
+                    dateNow,
+                    dateNow,
                   );
 
-                  if (ibcTx.status !== IbcTxStatus.FAILED) {
-                    // 统计denom (ibc交易类型为只要不是Failed都会统计第一段)
-                    this.parseDenom(
-                      ibcTx.sc_chain_id,
-                      sc_denom,
-                      ibcTx.base_denom,
-                      denom_path,
-                      !Boolean(denom_path),
-                      dateNow,
-                      dateNow,
-                      dateNow,
-                    );
-
-                    // 统计channel (ibc交易类型为只要不是Failed都会统计第一段)
-                    this.parseChannel(
-                      sc_chain_id,
-                      dc_chain_id,
-                      sc_channel,
-                      dateNow,
-                    );
-                  }
+                  // 统计channel (ibc交易类型为只要不是Failed都会统计第一段)
+                  this.parseChannel(
+                    sc_chain_id,
+                    dc_chain_id,
+                    sc_channel,
+                    dateNow,
+                  );
                 }
-              });
-            }
-          });
+              }
+            });
+          }
         });
-      }
+      });
     });
   }
 

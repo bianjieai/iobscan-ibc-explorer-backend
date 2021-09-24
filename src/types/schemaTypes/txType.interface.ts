@@ -1,4 +1,4 @@
-
+// todo delete
 export interface ITxTypeStruct {
     typeName:string,
     create_time:number,

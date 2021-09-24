@@ -1,4 +1,5 @@
 #!/bin/bash
+# todo 需要根据环境配置变量
 
 function use_dev(){
   export NODE_ENV=development&&

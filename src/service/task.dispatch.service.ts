@@ -44,7 +44,6 @@ export class TaskDispatchService {
             } else {
                 Logger.warn(`${name}: task has not been registered, but it couldn't register successfully!`);
                 return false;
-
             }
         }
     }

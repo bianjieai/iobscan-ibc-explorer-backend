@@ -20,7 +20,6 @@ export const IbcStatisticsSchema = new mongoose.Schema(
 // todo 冗余的索引
 
 IbcStatisticsSchema.index({ statistics_name: 1 }, { unique: true });
-IbcStatisticsSchema.index({ update_at: -1 }, { background: true });
 
 IbcStatisticsSchema.statics = {
   // 查

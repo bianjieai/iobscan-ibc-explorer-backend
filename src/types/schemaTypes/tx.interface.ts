@@ -1,5 +1,6 @@
 import { IQueryBase } from '../index';
 
+// todo delete
 export interface ITxsQuery extends IQueryBase {
 	type?:string,
 	status?:string,
