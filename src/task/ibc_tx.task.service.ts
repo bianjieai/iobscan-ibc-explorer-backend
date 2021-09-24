@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
+import { IbcChainConfigSchema } from '../schema/ibc_chain_config.schema';
 import { IbcChainSchema } from '../schema/ibc_chain.schema';
 import { IbcDenomSchema } from '../schema/ibc_denom.schema';
 import { IbcTxSchema } from '../schema/ibc_tx.schema';
@@ -22,10 +23,14 @@ import {
 @Injectable()
 export class IbcTxTaskService {
   private ibcTaskRecordModel;
-  private chainModel;
+  private chainConfigModel;
+  private ibcChainModel;
   private ibcTxModel;
   private ibcDenomModel;
   private ibcChannelModel;
+
+  // 获取所有配置过的channels
+  private channels_all_record;
 
   constructor(
     @InjectConnection() private readonly connection: Connection,
@@ -36,7 +41,7 @@ export class IbcTxTaskService {
   }
 
   async doTask(taskName?: TaskEnum): Promise<void> {
-    const dateNow = String(new Date().getTime());
+    const dateNow = String(Math.floor(new Date().getTime() / 1000));
     this.parseIbcTx(dateNow);
     this.changeIbcTxState(dateNow);
   }
@@ -50,11 +55,18 @@ export class IbcTxTaskService {
       'ibc_task_record',
     );
 
-    // chainModel
-    this.chainModel = await this.connection.model(
-      'chainModel',
-      IbcChainSchema,
+    // chainConfigModel
+    this.chainConfigModel = await this.connection.model(
+      'chainConfigModel',
+      IbcChainConfigSchema,
       'chain_config',
+    );
+
+    // ibcChainModel
+    this.ibcChainModel = await this.connection.model(
+      'ibcChainModel',
+      IbcChainSchema,
+      'ibc_chain',
     );
 
     // ibcTxModel
@@ -81,7 +93,7 @@ export class IbcTxTaskService {
 
   // ibcTx 第一阶段（transfer）
   async parseIbcTx(dateNow): Promise<void> {
-    const allChains = await this.chainModel.findAll();
+    const allChains = await this.chainConfigModel.findAll();
 
     // todo 此处最好每条链设置一个定时任务
     allChains.forEach(async ({ chain_id }) => {
@@ -116,18 +128,20 @@ export class IbcTxTaskService {
         limit: RecordLimit,
       });
 
-      const txsByHeight = await txModel.queryTxListByHeight(
-        TxType.transfer,
-        txsByLimit[txsByLimit.length - 1].height,
-      );
+      const txsByHeight = txsByLimit.length
+        ? await txModel.queryTxListByHeight(
+            TxType.transfer,
+            txsByLimit[txsByLimit.length - 1].height,
+          )
+        : [];
 
       // 对象数组去重
       const hash = {};
-      txs = [...txsByLimit, ...txsByHeight].reduce((item, next) => {
+      txs = [...txsByLimit, ...txsByHeight].reduce((txsResult, next) => {
         hash[next.tx_hash]
           ? ''
-          : (hash[next.tx_hash] = true && item.push(next));
-        return item;
+          : (hash[next.tx_hash] = true) && txsResult.push(next);
+        return txsResult;
       }, []);
 
       // 遍历tx
@@ -192,7 +206,7 @@ export class IbcTxTaskService {
 
             // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
             let dc_chain_id = '';
-            const result = await this.chainModel.findDcChain({
+            const result = await this.chainConfigModel.findDcChain({
               sc_chain_id,
               sc_port,
               sc_channel,
@@ -201,7 +215,6 @@ export class IbcTxTaskService {
             });
 
             if (result && result.ibc_info && result.ibc_info.length) {
-              // fix  [0]可能获取不到
               result.ibc_info.forEach(info_item => {
                 info_item.paths.forEach(path_item => {
                   if (
@@ -249,6 +262,7 @@ export class IbcTxTaskService {
             // 插入 ibcTx
             await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
               taskRecord.height = height;
+
               // 记录最后一条交易记录内最后一个msg的高度
               if (
                 txIndex === RecordLimit - 1 &&
@@ -256,31 +270,32 @@ export class IbcTxTaskService {
                 !err
               ) {
                 // 更新 taskRecord
-                const result = await this.ibcTaskRecordModel.updateTaskRecord(
-                  taskRecord,
+                await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
+              }
+
+              if (ibcTx.status !== IbcTxStatus.FAILED) {
+                // 统计denom (ibc交易类型为只要不是Failed都会统计第一段)
+                this.parseDenom(
+                  ibcTx.sc_chain_id,
+                  sc_denom,
+                  ibcTx.base_denom,
+                  denom_path,
+                  !Boolean(denom_path),
+                  dateNow,
+                  dateNow,
+                  dateNow,
                 );
 
-                if (ibcTx.status !== IbcTxStatus.FAILED) {
-                  // 统计denom (ibc交易类型为只要不是Failed都会统计第一段)
-                  this.parseDenom(
-                    ibcTx.sc_chain_id,
-                    sc_denom,
-                    ibcTx.base_denom,
-                    denom_path,
-                    !Boolean(denom_path),
-                    dateNow,
-                    dateNow,
-                    dateNow,
-                  );
+                // 统计channel (ibc交易类型为只要不是Failed都会统计第一段)
+                this.parseChannel(
+                  sc_chain_id,
+                  dc_chain_id,
+                  sc_channel,
+                  dateNow,
+                );
 
-                  // 统计channel (ibc交易类型为只要不是Failed都会统计第一段)
-                  this.parseChannel(
-                    sc_chain_id,
-                    dc_chain_id,
-                    sc_channel,
-                    dateNow,
-                  );
-                }
+                // 统计chain (ibc交易类型为只要不是Failed都会统计第一段)
+                this.parseChain(sc_chain_id, dateNow);
               }
             });
           }
@@ -343,7 +358,7 @@ export class IbcTxTaskService {
                 '',
               );
               // 更新ibcTx
-              const result = this.ibcTxModel.updateIbcTx(ibcTx);
+              this.ibcTxModel.updateIbcTx(ibcTx);
 
               // 统计denom（当ibc交易成功时统计第二段）
               this.parseDenom(
@@ -364,6 +379,9 @@ export class IbcTxTaskService {
                 ibcTx.dc_channel,
                 dateNow,
               );
+
+              // 统计Chain
+              this.parseChain(ibcTx.dc_channel, dateNow);
             }
           });
       } else {
@@ -507,12 +525,11 @@ export class IbcTxTaskService {
     channel_id,
     dateNow,
   ): Promise<void> {
-    // 获取所有配置过的channels
     const channels_all_record = await this.getChannelsConfig();
-
     const isFindRecord = channels_all_record.find(channel => {
-      return channel.channel_id === channel_id;
+      return channel.record_id === `${sc_chain_id}${dc_chain_id}${channel_id}`;
     });
+
     // 如果当前channel_id没有配置过则跳过
     if (!isFindRecord) return;
 
@@ -522,8 +539,7 @@ export class IbcTxTaskService {
 
     if (!ibcChannelRecord) {
       const ibcChannel = {
-        channel_id: channel_id,
-        record_id: `${sc_chain_id}${dc_chain_id}${channel_id}`,
+        ...isFindRecord,
         update_at: dateNow,
         create_at: dateNow,
       };
@@ -534,17 +550,44 @@ export class IbcTxTaskService {
     }
   }
 
+  // 统计Chain
+  async parseChain(chain_id, dateNow) {
+    const ibcChainRecord = await this.ibcChainModel.findById(chain_id);
+
+    if (!ibcChainRecord) {
+      const allChainsConfig = await this.chainConfigModel.findAll();
+      const findChainConfig = allChainsConfig.find(chainConfig => {
+        return chainConfig.chain_id === chain_id;
+      });
+      if (!findChainConfig) return;
+      const ibcChain = {
+        chain_id,
+        chain_name: findChainConfig ? findChainConfig.chain_name : '',
+        icon: findChainConfig ? findChainConfig.icon : '',
+        create_at: dateNow,
+        update_at: dateNow,
+      };
+
+      this.ibcChainModel.insertManyChain(ibcChain);
+    } else {
+      ibcChainRecord.update_at = dateNow;
+      this.ibcChainModel.updateChainRecord(ibcChainRecord);
+    }
+  }
+
   // 获取配置过的channels
   async getChannelsConfig() {
     const channels_all_record = [];
 
-    const allChains = await this.chainModel.findAll();
+    const allChains = await this.chainConfigModel.findAll();
     allChains.forEach(chain => {
       chain.ibc_info.forEach(ibc_info_item => {
-        ibc_info_item.paths.forEach(channel => {
+        ibc_info_item.paths.forEach(path_item => {
+          // 统计转出channel_id
           channels_all_record.push({
-            channel_id: channel.channel_id,
-            state: channel.state,
+            channel_id: path_item.channel_id,
+            record_id: `${chain.chain_id}${ibc_info_item.chain_id}${path_item.channel_id}`,
+            state: path_item.state,
           });
         });
       });

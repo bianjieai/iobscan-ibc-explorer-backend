@@ -55,7 +55,7 @@ IbcTxSchema.statics = {
   async distinctChainList(query) {
     const { type, dateNow, status } = query;
     return this.distinct(type, {
-      update_at: { $gte: String(dateNow - 24 * 60 * 60 * 1000) },
+      update_at: { $gte: String(dateNow - 24 * 60 * 60) },
       status: { $in: status },
     });
   },

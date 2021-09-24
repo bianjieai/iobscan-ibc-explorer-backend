@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
-import { IbcChainSchema } from '../schema/ibc_chain.schema';
+import { IbcChainConfigSchema } from '../schema/ibc_chain_config.schema';
 import { TaskEnum, Delimiter } from '../constant';
 import { ChainHttp } from '../http/lcd/chain.http';
 import { groupBy } from 'lodash';
 
 @Injectable()
-export class IbcChainTaskService {
-  private chainModel;
+export class IbcChainConfigTaskService {
+  private chainConfigModel;
 
   constructor(@InjectConnection() private connection: Connection) {
     this.doTask = this.doTask.bind(this);
@@ -20,16 +20,16 @@ export class IbcChainTaskService {
   }
 
   async getModels(): Promise<void> {
-    this.chainModel = await this.connection.model(
-      'chainModel',
-      IbcChainSchema,
+    this.chainConfigModel = await this.connection.model(
+      'chainConfigModel',
+      IbcChainConfigSchema,
       'chain_config',
     );
   }
 
   // 获取并同步chainConfig配置表数据
   async parseChainConfig() {
-    const allChains = await this.chainModel.findAll();
+    const allChains = await this.chainConfigModel.findAll();
     // 请求所有链配置的channels
     Promise.all(
       allChains.map(async chain => {
@@ -92,7 +92,7 @@ export class IbcChainTaskService {
         chain['ibc_info'] = ibcInfo;
 
         // 更新数据库
-        this.chainModel.updateChain(chain);
+        this.chainConfigModel.updateChain(chain);
       });
     });
   }

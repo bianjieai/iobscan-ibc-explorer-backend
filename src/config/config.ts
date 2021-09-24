@@ -54,13 +54,13 @@ export const cfg = {
             heartbeatRate:Number(HEARTBEAT_RATE || 10000),
         },
         executeTime:{
-            // tx: '*/5 * * * * *',
-            // chain: '*/5 * * * * *',
-            // statistics: '*/5 * * * * *',
+            // tx: '*/19 * * * * *',
+            // chain: '*/19 * * * * *',
+            // statistics: '*/19 * * * * *',
             tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
             chain: IBCCHAIN_EXECUTE_TIME || '15 * * * * *',
             statistics: IBCSTATISTICS_EXECUTE_TIME || '15 * * * * *',
-            // split
+
             denom:DENOM_EXECUTE_TIME || '1 * * * * *',
             nft:NFT_EXECUTE_TIME || '21 * * * * *',
             txServiceName:TX_SERVICE_NAME_EXECUTE_TIME || '30 * * * * *',

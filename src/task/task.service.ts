@@ -9,13 +9,13 @@ import { Logger } from '../logger';
 import { IRandomKey } from '../types';
 import { taskLoggerHelper } from '../helper/task.log.helper';
 import { IbcTxTaskService } from './ibc_tx.task.service';
-import { IbcChainTaskService } from '../task/ibc_chain.task.service';
+import { IbcChainConfigTaskService } from './ibc_chain_config.task.service';
 import { IbcStatisticsTaskService } from './ibc_statistics.task.service';
 @Injectable()
 export class TasksService {
   constructor(
     private readonly taskDispatchService: TaskDispatchService,
-    private readonly ibcChainTaskService: IbcChainTaskService,
+    private readonly ibcChainConfigTaskService: IbcChainConfigTaskService,
     private readonly ibcTxTaskService: IbcTxTaskService,
     private readonly ibcStatisticsTaskService: IbcStatisticsTaskService,
   ) {
@@ -27,7 +27,7 @@ export class TasksService {
     name: TaskEnum.chain,
   })
   async syncChain() {
-    this.handleDoTask(TaskEnum.chain, this.ibcChainTaskService.doTask);
+    this.handleDoTask(TaskEnum.chain, this.ibcChainConfigTaskService.doTask);
   }
 
   // ex_ibc_tx定时任务

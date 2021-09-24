@@ -9,7 +9,7 @@ import { cfg } from './config/config';
 import { TaskDispatchModule } from './module/task.dispatch.module';
 import { IbcTxTaskModule } from './module/ibc_tx.task.module';
 import { IbcTxModule } from './module/ibc_tx.module';
-import { IbcChainTaskModule } from './module/ibc_chain.task.module';
+import { IbcChainConfigTaskModule } from './module/ibc_chain_config.task.module';
 import { IbcChainModule } from './module/ibc_chain.module';
 import { IbcStatisticsTaskModule } from './module/ibc_statistics.task.module';
 import { IbcStatisticsModule } from './module/ibc_statistics.module';
@@ -23,7 +23,7 @@ export const params = {
     TaskDispatchModule,
     IbcTxTaskModule,
     IbcTxModule,
-    IbcChainTaskModule,
+    IbcChainConfigTaskModule,
     IbcChainModule,
     IbcStatisticsTaskModule,
     IbcStatisticsModule,
