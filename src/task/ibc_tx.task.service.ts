@@ -109,21 +109,26 @@ export class IbcTxTaskService {
         `sync_${chain_id}_tx`,
       );
 
-      let txs = []
+      let txs = [];
       const txsByLimit = await txModel.queryTxListSortHeight({
         type: TxType.transfer,
         height: taskRecord.height,
         limit: RecordLimit,
       });
 
-      const txsByHeight = await txModel.queryTxListByHeight(txsByLimit[txsByLimit.length - 1].height)
+      const txsByHeight = await txModel.queryTxListByHeight(
+        TxType.transfer,
+        txsByLimit[txsByLimit.length - 1].height,
+      );
 
       // 对象数组去重
       const hash = {};
-      txs = [...txsByLimit, ...txsByHeight].reduce((item, next)=>{
-          hash[next.tx_hash] ? '' : hash[next.tx_hash] = true && item.push(next);
-          return item;
-      },[])
+      txs = [...txsByLimit, ...txsByHeight].reduce((item, next) => {
+        hash[next.tx_hash]
+          ? ''
+          : (hash[next.tx_hash] = true && item.push(next));
+        return item;
+      }, []);
 
       // 遍历tx
       txs.forEach((tx, txIndex) => {
