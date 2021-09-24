@@ -4,9 +4,9 @@
 function use_dev(){
   export NODE_ENV=development&&
   export DB_ADDR=192.168.150.40:27017&&
-  export DB_USER=iris&&
-  export DB_PASSWD=irispassword&&
-  export DB_DATABASE=iobscan-iris&&
+  export DB_USER=ibc&&
+  export DB_PASSWD=ibcpassword&&
+  export DB_DATABASE=iobscan-ibc&&
   export LCD_ADDR=http://192.168.150.40:1317&&
   env
 }
