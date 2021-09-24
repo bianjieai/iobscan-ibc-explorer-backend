@@ -11,6 +11,7 @@ import { IbcTaskRecordSchema } from '../schema/ibc_task_record.schema';
 import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
 import { IbcDenomService } from 'src/service/ibc_denom.service';
+import { JSONparse, JSONstringify } from '../util/util';
 import {
   TaskEnum,
   TxType,
@@ -189,7 +190,7 @@ export class IbcTxTaskService {
                 break;
             }
 
-            const sc_chain_id = JSON.parse(JSON.stringify(tx)).chain_id;
+            const sc_chain_id = JSONparse(JSONstringify(tx)).chain_id;
             const sc_port = msg.msg.source_port;
             const sc_channel = msg.msg.source_channel;
             const sc_addr = msg.msg.sender;

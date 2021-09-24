@@ -153,7 +153,7 @@ export enum IbcTaskRecordStatus {
   CLOSE = 'close'
 }
 
-export const IdentityLimitSize = 1000;
+export const IdentityLimitSize = 100;
 
 export enum LoggerLevel {
   ALL = 'ALL',
