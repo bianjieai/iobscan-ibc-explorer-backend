@@ -31,7 +31,7 @@ export class IbcStatisticsTaskService {
     this.parseIbcStatistics(dateNow);
   }
 
-  // 获取所有静态模型
+  // getModels
   async getModels(): Promise<void> {
     // ibcStatisticsModel
     this.ibcStatisticsModel = await this.connection.model(
@@ -83,7 +83,7 @@ export class IbcStatisticsTaskService {
     );
   }
 
-  // 同步首页数量
+  // sync count
   async parseIbcStatistics(dateNow): Promise<void> {
     // tx_24hr_all
     const tx_24hr_all = await this.ibcTxModel.findCount({
@@ -91,7 +91,7 @@ export class IbcStatisticsTaskService {
     });
 
     // chains_24hr_all
-    const chains_24hr = await this.ibcChainModel.countActive()
+    const chains_24hr = await this.ibcChainModel.countActive();
 
     // channels_24hr
     const channels_24hr = await this.ibcChannelModel.findCount({
@@ -107,32 +107,31 @@ export class IbcStatisticsTaskService {
     //   channel_all += flatten(channels['_id']).length;
     // });
 
-    const chain_all_record = await this.chainConfigModel.findAll()
-    let channels_all_record = []
+    const chain_all_record = await this.chainConfigModel.findAll();
+    let channels_all_record = [];
     chain_all_record.forEach(chain => {
       chain.ibc_info.forEach(ibc_info_item => {
         ibc_info_item.paths.forEach(channel => {
           channels_all_record.push({
             channel_id: channel.channel_id,
             state: channel.state,
-          })
-        })
-      })
-    })
+          });
+        });
+      });
+    });
 
     // channel_all
-    const channel_all = channels_all_record.length
+    const channel_all = channels_all_record.length;
 
     // channel_opened
     const channel_opened = channels_all_record.filter(channel => {
-      return channel.state === 'STATE_OPEN'
-    }).length
+      return channel.state === 'STATE_OPEN';
+    }).length;
 
     // channel_closed
     const channel_closed = channels_all_record.filter(channel => {
-      return channel.state === 'STATE_CLOSED'
-    }).length
-
+      return channel.state === 'STATE_CLOSED';
+    }).length;
 
     // tx_all
     const tx_all = await this.ibcTxModel.findCount();
@@ -173,7 +172,6 @@ export class IbcStatisticsTaskService {
         statistics_name,
       );
       if (!statisticsRecord) {
-        // 如果不存在则新建
         await this.ibcStatisticsModel.insertManyStatisticsRecord({
           statistics_name,
           count: parseCount[statistics_name],
@@ -181,7 +179,6 @@ export class IbcStatisticsTaskService {
           update_at: dateNow,
         });
       } else {
-        // 否则更新
         statisticsRecord.count = parseCount[statistics_name];
         statisticsRecord.update_at = dateNow;
         await this.ibcStatisticsModel.updateStatisticsRecord(statisticsRecord);

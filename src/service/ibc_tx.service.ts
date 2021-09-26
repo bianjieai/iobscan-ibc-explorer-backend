@@ -3,7 +3,7 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ListStruct } from '../api/ApiResult';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
-import { IbcTxListReqDto, IbcTxListResDto } from '../dto/ibc_tx.dto';
+import { IbcTxListReqDto, IbcTxResDto } from '../dto/ibc_tx.dto';
 @Injectable()
 export class IbcTxService {
   constructor(
@@ -12,9 +12,9 @@ export class IbcTxService {
 
   async queryIbcTxList(
     query: IbcTxListReqDto,
-  ): Promise<ListStruct<IbcTxListResDto[]>> {
+  ): Promise<ListStruct<IbcTxResDto[]>> {
     const { page_num, page_size } = query;
-    const ibcTxDatas = await this.ibcTxModel.findTxList(
+    const ibcTxDatas : IbcTxResDto[] = await this.ibcTxModel.findTxList(
       page_num,
       page_size,
     );

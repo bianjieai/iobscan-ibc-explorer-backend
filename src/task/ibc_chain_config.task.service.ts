@@ -27,10 +27,10 @@ export class IbcChainConfigTaskService {
     );
   }
 
-  // 获取并同步chainConfig配置表数据
+  // get and sync chainConfig datas
   async parseChainConfig() {
     const allChains = await this.chainConfigModel.findAll();
-    // 请求所有链配置的channels
+    // request configed allchannels
     Promise.all(
       allChains.map(async chain => {
         let channels = await ChainHttp.getIbcChannels(chain.lcd);
@@ -51,7 +51,7 @@ export class IbcChainConfigTaskService {
         return chain['chain_id'];
       });
 
-      // 为channelsObj设值
+      // set channelsObj datas
       allChains.forEach(chain => {
         channelsObj[chain['chain_id']] = {};
         chain['ibc_info'].forEach(channel => {
@@ -61,7 +61,7 @@ export class IbcChainConfigTaskService {
         });
       });
 
-      // 从channelsObj取值
+      // get datas from channelsObj
       allChains.forEach(async chain => {
         chain['ibc_info'].forEach(channel => {
           allChainsId.forEach(chainId => {
@@ -78,12 +78,12 @@ export class IbcChainConfigTaskService {
           });
         });
 
-        // 过滤未配置的channels
+        // filter unconfig channels
         chain['ibc_info'] = chain['ibc_info'].filter(channel => {
           return channel.hasOwnProperty('chain_id');
         });
 
-        // 分组数据
+        // groupby datas
         const ibcInfoGroupBy = groupBy(chain['ibc_info'], 'chain_id');
         const ibcInfo = [];
         Object.keys(ibcInfoGroupBy).forEach(chain_id => {
@@ -91,7 +91,7 @@ export class IbcChainConfigTaskService {
         });
         chain['ibc_info'] = ibcInfo;
 
-        // 更新数据库
+        // update
         this.chainConfigModel.updateChain(chain);
       });
     });

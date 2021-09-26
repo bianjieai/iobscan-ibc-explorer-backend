@@ -4,7 +4,7 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { IbcChainConfigSchema } from '../schema/ibc_chain_config.schema';
 import { IbcChainSchema } from '../schema/ibc_chain.schema';
 import { ListStruct } from '../api/ApiResult';
-import { IbcChainListReqDto, IbcChainListResDto } from '../dto/ibc_chain.dto';
+import { IbcChainResultResDto } from '../dto/ibc_chain.dto';
 @Injectable()
 export class IbcChainService {
   private ibcChainConfigModel;
@@ -27,9 +27,8 @@ export class IbcChainService {
     );
   }
 
-  // todo 接口处理结果未使用 res dot
-  // 分页查询，用于前端请求
-  async queryList(): Promise<any> {
+  // 用于前端请求
+  async queryList(): Promise<IbcChainResultResDto> {
     const ibcChainAllDatas = await this.ibcChainConfigModel.findList();
     const ibcChainActiveDatas = await this.ibcChainModel.findActive();
     const ibcChainInActiveDatas = ibcChainAllDatas.filter(item => {
@@ -37,10 +36,10 @@ export class IbcChainService {
         return subItem.chain_id !== item.chain_id;
       });
     });
-    return {
+    return new IbcChainResultResDto({
       all: ibcChainAllDatas,
       active: ibcChainActiveDatas,
       inactive: ibcChainInActiveDatas,
-    };
+    })
   }
 }

@@ -1,12 +1,6 @@
-import { Injectable } from '@nestjs/common';
 import sha256 from 'sha256';
-@Injectable()
-export class IbcDenomService {
-  constructor() {}
 
-  // todo 工具方法建议在对应 helper 中实现
-
-  getDcDenom(msg) {
+export function getDcDenom(msg) {
     let result = '';
     let dc_denom_origin = '';
     const {
@@ -37,4 +31,3 @@ export class IbcDenomService {
 
     return { dc_denom: result, dc_denom_origin };
   }
-}

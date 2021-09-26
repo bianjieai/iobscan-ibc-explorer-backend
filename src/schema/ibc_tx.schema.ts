@@ -35,24 +35,24 @@ IbcTxSchema.index({ record_id: -1 }, { unique: true });
 IbcTxSchema.statics = {
   // todo 方法命名规范  明确query入参类型
   // 查
-  async findCount(query) {
+  async findCount(query): Promise<number> {
     return this.count(query);
   },
 
-  async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType> {
-    return this.find({ status: { "$in": [ 1, 2, 3, 4 ] }}, { _id: 0 })
+  async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType[]> {
+    return this.find({ status: { $in: [1, 2, 3, 4] } }, { _id: 0 })
       .skip((Number(pageNum) - 1) * Number(pageSize))
       .limit(Number(pageSize));
   },
 
-  async queryTxList(query): Promise<any> {
+  async queryTxList(query): Promise<IbcTxType[]> {
     const { status, limit } = query;
     return this.find({ status }, { _id: 0 })
       .sort({ update_at: 1 })
       .limit(Number(limit));
   },
 
-  async distinctChainList(query) {
+  async distinctChainList(query): Promise<any> {
     const { type, dateNow, status } = query;
     return this.distinct(type, {
       update_at: { $gte: String(dateNow - 24 * 60 * 60) },
@@ -61,14 +61,14 @@ IbcTxSchema.statics = {
   },
 
   // 改
-  async updateIbcTx(ibcTx) {
+  async updateIbcTx(ibcTx): Promise<void> {
     const { record_id } = ibcTx;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ record_id }, ibcTx, options);
   },
 
   // 增
-  async insertManyIbcTx(ibcTx, cb) {
+  async insertManyIbcTx(ibcTx, cb): Promise<void> {
     return this.insertMany(ibcTx, cb);
   },
 };

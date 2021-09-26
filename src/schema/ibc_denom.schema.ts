@@ -1,4 +1,5 @@
 import * as mongoose from 'mongoose';
+import { IbcDenomType } from '../types/schemaTypes/ibc_denom.interface';
 import { dateNow } from '../helper/date.helper';
 
 export const IbcDenomSchema = new mongoose.Schema(
@@ -7,7 +8,7 @@ export const IbcDenomSchema = new mongoose.Schema(
     denom: String,
     base_denom: String,
     denom_path: String,
-    is_source_chain: String,
+    is_source_chain: Boolean,
     create_at: {
       type: String,
       default: dateNow,
@@ -24,27 +25,24 @@ IbcDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
 IbcDenomSchema.index({ update_at: -1 }, { background: true });
 
 IbcDenomSchema.statics = {
-  // todo 方法声明规范
-  // 查
-  async findCount() {
+  // find
+  async findCount(): Promise<number> {
     return this.count();
   },
 
-  async findDenomRecord(chain_id, denom) {
+  async findDenomRecord(chain_id, denom): Promise<IbcDenomType> {
     return this.findOne({ chain_id, denom }, { _id: 0 });
   },
 
-  // 改
-  async updateDenomRecord(denomRecord) {
+  // update
+  async updateDenomRecord(denomRecord): Promise<void> {
     const { chain_id, denom } = denomRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ chain_id, denom }, denomRecord, options);
   },
 
   // 增
-  async insertManyDenom(ibcDenom) {
+  async insertManyDenom(ibcDenom): Promise<void> {
     return this.insertMany(ibcDenom, { ordered: false });
   },
-
-
 };

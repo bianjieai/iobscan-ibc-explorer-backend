@@ -1,7 +1,6 @@
 import * as mongoose from 'mongoose';
-import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
+import { IbcChainConfigType } from '../types/schemaTypes/ibc_chain_config.interface';
 
-// todo 增加update  create time
 export const IbcChainConfigSchema = new mongoose.Schema({
   chain_id: String,
   icon: String,
@@ -11,23 +10,21 @@ export const IbcChainConfigSchema = new mongoose.Schema({
 });
 
 IbcChainConfigSchema.index({ chain_id: 1 }, { unique: true });
-// todo query=>明确具体查询参数, 所有 Schema 中方法的查询条件都必须是明确的。
-// todo 1. 声明入参未明确类型   2.schema 中只做查询操作， 数据处理逻辑建议放到 service 里
 IbcChainConfigSchema.statics = {
   // 查
   async findCount(query): Promise<Number> {
     return this.count(query);
   },
 
-  async aggregateFindChannels() {
+  async aggregateFindChannels(): Promise<any> {
     return this.aggregate([{ $group: { _id: '$ibc_info.paths.channel_id' } }]);
   },
 
-  async findAll(): Promise<IbcChainType[]> {
+  async findAll(): Promise<IbcChainConfigType[]> {
     return this.find({})
   },
 
-  async findList(): Promise<IbcChainType[]> {
+  async findList(): Promise<IbcChainConfigType[]> {
     return this.find().collation( { locale: 'en_US' } ).sort({'chain_id': 1});
   },
 
@@ -48,7 +45,7 @@ IbcChainConfigSchema.statics = {
   },
 
   // 改
-  async updateChain(chain: IbcChainType) {
+  async updateChain(chain: IbcChainConfigType) {
     const { chain_id } = chain;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ chain_id }, chain, options);

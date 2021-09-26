@@ -1,4 +1,5 @@
 import * as mongoose from 'mongoose';
+import { IbcChannelType } from '../types/schemaTypes/ibc_channel.interface';
 import { dateNow } from '../helper/date.helper';
 
 export const IbcChannelSchema = new mongoose.Schema(
@@ -22,23 +23,23 @@ IbcChannelSchema.index({ update_at: -1 }, { background: true });
 
 IbcChannelSchema.statics = {
   // 查
-  async findCount(query) {
+  async findCount(query): Promise<number> {
     return this.count(query);
   },
 
-  async findChannelRecord(record_id) {
+  async findChannelRecord(record_id): Promise<IbcChannelType> {
     return this.findOne({ record_id }, { _id: 0 });
   },
 
   // 改
-  async updateChannelRecord(channelRecord) {
+  async updateChannelRecord(channelRecord): Promise<void> {
     const { record_id } = channelRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ record_id }, channelRecord, options);
   },
 
   // 增
-  async insertManyChannel(ibcChannel) {
+  async insertManyChannel(ibcChannel): Promise<void> {
     return this.insertMany(ibcChannel, { ordered: false });
   },
 };

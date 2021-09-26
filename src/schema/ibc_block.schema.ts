@@ -1,5 +1,5 @@
 import * as mongoose from 'mongoose';
-
+import { IbcBlockType } from '../types/schemaTypes/ibc_block.interface';
 export const IbcBlockSchema = new mongoose.Schema(
   {
     height: Number,
@@ -12,9 +12,8 @@ export const IbcBlockSchema = new mongoose.Schema(
 );
 
 IbcBlockSchema.statics = {
-  //todo  1.rename： findBlockByLastHeight => findLatestBlock    2.方法声明未明确返回值类型
-  async findBlockByLastHeight() {
-    return this.findOne({})
+  async findLatestBlock(): Promise<IbcBlockType> {
+    return this.findOne()
       .sort({ height: -1 })
       .limit(1);
   },

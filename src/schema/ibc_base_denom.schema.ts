@@ -1,12 +1,13 @@
 import * as mongoose from 'mongoose';
-import { dateNow } from '../helper/date.helper'
+import { IbcBaseDenomType } from '../types/schemaTypes/ibc_base_denom.interface';
+import { dateNow } from '../helper/date.helper';
 
 export const IbcBaseDenomSchema = new mongoose.Schema(
   {
     chain_id: String,
     denom: String,
     symbol: String,
-    scale: String,
+    scale: Number,
     icon: String,
     is_main_token: Boolean,
     create_at: {
@@ -24,14 +25,12 @@ export const IbcBaseDenomSchema = new mongoose.Schema(
 IbcBaseDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
 IbcBaseDenomSchema.index({ update_at: -1 }, { background: true });
 
-// todo 未确定返回值类型
 IbcBaseDenomSchema.statics = {
-  // 查
-  async findCount() {
+  async findCount(): Promise<number> {
     return this.count();
   },
 
-  async findAllRecord() {
+  async findAllRecord(): Promise<IbcBaseDenomType[]> {
     return this.find();
   },
 };
