@@ -1,3 +1,5 @@
+import { IbcBaseDenomType } from '../types/schemaTypes/ibc_base_denom.interface';
+
 export class IbcBaseDenomResDto {
   chain_id: string;
   denom: string;
@@ -27,5 +29,21 @@ export class IbcBaseDenomResDto {
     this.is_main_token = is_main_token;
     this.create_at = create_at;
     this.update_at = update_at;
+  }
+
+  static bundleData(value: IbcBaseDenomType[] = []) {
+    const datas: IbcBaseDenomResDto[] = value.map((item: any) => {
+      return {
+        chain_id: item.chain_id,
+        denom: item.denom,
+        symbol: item.symbol,
+        scale: item.scale,
+        icon: item.icon,
+        is_main_token: item.is_main_token,
+        create_at: item.create_at,
+        update_at: item.update_at,
+      }
+    })
+    return datas
   }
 }

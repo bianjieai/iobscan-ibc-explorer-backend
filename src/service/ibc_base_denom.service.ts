@@ -23,7 +23,7 @@ export class IbcBaseDenomService {
 
   // 获取所有记录
   async findAllRecord(): Promise<IbcBaseDenomResDto[]> {
-    const result: IbcBaseDenomResDto[] = this.ibcBaseDenomModel.findAllRecord()
+    const result: IbcBaseDenomResDto[] = IbcBaseDenomResDto.bundleData(await this.ibcBaseDenomModel.findAllRecord())
     return result;
   }
 }

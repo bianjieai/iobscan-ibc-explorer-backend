@@ -2,21 +2,80 @@ import { PagingReqDto } from './base.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class IbcTxListReqDto extends PagingReqDto {
-    @ApiPropertyOptional()
-    page_num?: number;
-    @ApiPropertyOptional()
-    page_size?: number
+  @ApiPropertyOptional()
+  page_num?: number;
+  @ApiPropertyOptional()
+  page_size?: number;
 }
 
 export class IbcTxResDto {
-    record_id: string;
-    sc_addr: string;
-    dc_addr: string;
-    sc_chain_id: string;
-    dc_chain_id: string;
-    status: number;
-    sc_tx_info: object;
-    dc_tx_info?: object;
-    base_denom: string;
-    update_at: string;
+  record_id: string;
+  sc_addr: string;
+  dc_addr: string;
+  sc_chain_id: string;
+  dc_chain_id: string;
+  sc_port: string;
+  dc_port: string;
+  sc_channel: string;
+  dc_channel: string;
+  status: number;
+  sc_tx_info: object;
+  dc_tx_info?: object;
+  refunded_tx_info?: object;
+  base_denom: string;
+  update_at: string;
+  sequence: string;
+  log: object;
+  denoms: string[];
+  create_at: string;
+
+  constructor(value: any) {
+    const {
+      record_id,
+      sc_addr,
+      dc_addr,
+      sc_chain_id,
+      dc_chain_id,
+      sc_port,
+      dc_port,
+      sc_channel,
+      dc_channel,
+      status,
+      sc_tx_info,
+      dc_tx_info,
+      refunded_tx_info,
+      base_denom,
+      update_at,
+      sequence,
+      log,
+      denoms,
+      create_at,
+    } = value;
+    this.record_id = record_id;
+    this.sc_addr = sc_addr || '';
+    this.dc_addr = dc_addr || '';
+    this.sc_chain_id = sc_chain_id || '';
+    this.dc_chain_id = dc_chain_id || '';
+    this.sc_port = sc_port || '';
+    this.dc_port = dc_port || '';
+    this.sc_channel = sc_channel || '';
+    this.dc_channel = dc_channel || '';
+    this.status = status;
+    this.sc_tx_info = sc_tx_info || {};
+    this.dc_tx_info = dc_tx_info || {};
+    this.refunded_tx_info = refunded_tx_info || {};
+    this.base_denom = base_denom || '';
+    this.update_at = update_at || '';
+    this.sequence = sequence || '';
+    this.log = log || {};
+    this.denoms = denoms || [];
+    this.create_at = create_at || '';
+  }
+
+  static bundleData(value: any): IbcTxResDto[] {
+    const datas: IbcTxResDto[] = value.map((item: any) => {
+      return new IbcTxResDto(item);
+    });
+    return datas;
+  }
 }

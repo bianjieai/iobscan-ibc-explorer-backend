@@ -1,18 +1,19 @@
 import { HttpService, Injectable } from '@nestjs/common';
 import { Logger } from '../../logger';
-
+import { LcdChannelDto } from '../../dto/http.dto'
+import { LcdChannelType } from '../../types/lcd.interface'
 // todo 需要对lcd 增加dto
 @Injectable()
 export class ChainHttp {
   static async getIbcChannels(lcdAddr) {
-    const ibcChannelsUrl = `${lcdAddr}/ibc/core/channel/v1beta1/channels`;
+    const ibcChannelsUrl: string = `${lcdAddr}/ibc/core/channel/v1beta1/channels`;
     try {
-      let ibcChannels: any = await new HttpService()
+      let ibcChannels: LcdChannelType[] = await new HttpService()
         .get(ibcChannelsUrl)
         .toPromise()
         .then(result => result.data.channels);
       if (ibcChannels) {
-        return ibcChannels;
+        return LcdChannelDto.bundleData(ibcChannels);
       } else {
         Logger.warn(
           'api-error:',

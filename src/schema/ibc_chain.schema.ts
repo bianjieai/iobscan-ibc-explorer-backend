@@ -25,7 +25,7 @@ IbcChainSchema.statics = {
   async findActive(): Promise<IbcChainType[]> {
     return this.find({
       update_at: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
-    });
+    }).collation( { locale: 'en_US' } ).sort({'chain_id': 1});
   },
 
   async countActive(): Promise<number> {

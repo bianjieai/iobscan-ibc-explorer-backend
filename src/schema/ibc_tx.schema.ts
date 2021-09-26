@@ -17,7 +17,10 @@ export const IbcTxSchema = new mongoose.Schema({
   sc_tx_info: Object,
   dc_tx_info: Object,
   refunded_tx_info: Object,
-  log: Array,
+  log: {
+    sc_log: String,
+    dc_log: String,
+  },
   denoms: Array,
   base_denom: String,
   create_at: {
@@ -33,7 +36,7 @@ export const IbcTxSchema = new mongoose.Schema({
 IbcTxSchema.index({ record_id: -1 }, { unique: true });
 
 IbcTxSchema.statics = {
-
+  // todo query
   async findCount(query): Promise<number> {
     return this.count(query);
   },

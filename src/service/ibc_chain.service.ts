@@ -3,8 +3,9 @@ import { Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
 import { IbcChainConfigSchema } from '../schema/ibc_chain_config.schema';
 import { IbcChainSchema } from '../schema/ibc_chain.schema';
-import { ListStruct } from '../api/ApiResult';
-import { IbcChainResultResDto } from '../dto/ibc_chain.dto';
+import { IbcChainConfigType } from '../types/schemaTypes/ibc_chain_config.interface';
+import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
+import { IbcChainResDto, IbcChainResultResDto } from '../dto/ibc_chain.dto';
 @Injectable()
 export class IbcChainService {
   private ibcChainConfigModel;
@@ -27,19 +28,19 @@ export class IbcChainService {
     );
   }
 
-  // 用于前端请求
   async queryList(): Promise<IbcChainResultResDto> {
-    const ibcChainAllDatas = await this.ibcChainConfigModel.findList();
-    const ibcChainActiveDatas = await this.ibcChainModel.findActive();
-    const ibcChainInActiveDatas = ibcChainAllDatas.filter(item => {
-      return ibcChainActiveDatas.find(subItem => {
+    const ibcChainAllDatas: IbcChainConfigType[] = await this.ibcChainConfigModel.findList();
+    const ibcChainActiveDatas: IbcChainType[] = await this.ibcChainModel.findActive();
+    const ibcChainInActiveDatas: IbcChainConfigType[] = ibcChainAllDatas.filter((item: IbcChainConfigType) => {
+      return ibcChainActiveDatas.find((subItem: IbcChainType) => {
         return subItem.chain_id !== item.chain_id;
       });
     });
+
     return new IbcChainResultResDto({
-      all: ibcChainAllDatas,
-      active: ibcChainActiveDatas,
-      inactive: ibcChainInActiveDatas,
-    })
+      all: IbcChainResDto.bundleData(ibcChainAllDatas),
+      active: IbcChainResDto.bundleData(ibcChainActiveDatas),
+      inactive: IbcChainResDto.bundleData(ibcChainInActiveDatas),
+    });
   }
 }

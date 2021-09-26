@@ -23,7 +23,9 @@ export class IbcStatisticsService {
 
   // 获取所有记录
   async findAllRecord(): Promise<IbcStatisticsResDto[]> {
-    const result: IbcStatisticsResDto[] = this.ibcStatisticsModel.findAllRecord();
+    const result: IbcStatisticsResDto[] = IbcStatisticsResDto.bundleData(
+      await this.ibcStatisticsModel.findAllRecord(),
+    );
     return result;
   }
 }
