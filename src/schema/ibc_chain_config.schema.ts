@@ -24,11 +24,11 @@ IbcChainConfigSchema.statics = {
   },
 
   async findAll(): Promise<IbcChainType[]> {
-    return this.find({});
+    return this.find({})
   },
 
   async findList(): Promise<IbcChainType[]> {
-    return this.find()
+    return this.find().collation( { locale: 'en_US' } ).sort({'chain_id': 1});
   },
 
   async findDcChain(
