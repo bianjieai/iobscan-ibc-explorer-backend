@@ -1,6 +1,7 @@
 import { IbcBaseDenomType } from '../types/schemaTypes/ibc_base_denom.interface';
+import { BaseResDto } from './base.dto'
 
-export class IbcBaseDenomResDto {
+export class IbcBaseDenomResDto extends BaseResDto {
   chain_id: string;
   denom: string;
   symbol: string;
@@ -11,6 +12,7 @@ export class IbcBaseDenomResDto {
   update_at: string;
 
   constructor(value) {
+    super()
     const {
       chain_id,
       denom,

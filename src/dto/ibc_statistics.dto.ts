@@ -1,8 +1,11 @@
-export class IbcStatisticsResDto {
+import { BaseResDto } from './base.dto'
+
+export class IbcStatisticsResDto extends BaseResDto {
   statistics_name: string;
   count: string;
 
   constructor(value) {
+    super()
     const { statistics_name, count } = value;
     this.statistics_name = statistics_name;
     this.count = count;

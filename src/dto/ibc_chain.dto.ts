@@ -1,11 +1,14 @@
 import { IbcChainConfigType } from '../types/schemaTypes/ibc_chain_config.interface';
 import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
-export class IbcChainResDto {
+import { BaseResDto } from './base.dto'
+
+export class IbcChainResDto extends BaseResDto {
   chain_id: string;
   chain_name: string;
   icon: string;
 
   constructor(value) {
+    super()
     const { chain_id, chain_name, icon } = value;
     this.chain_id = chain_id;
     this.chain_name = chain_name;

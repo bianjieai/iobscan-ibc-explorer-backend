@@ -1,5 +1,6 @@
 import { PagingReqDto } from './base.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { BaseResDto } from './base.dto'
 
 export class IbcTxListReqDto extends PagingReqDto {
   @ApiPropertyOptional()
@@ -8,7 +9,7 @@ export class IbcTxListReqDto extends PagingReqDto {
   page_size?: number;
 }
 
-export class IbcTxResDto {
+export class IbcTxResDto extends BaseResDto {
   record_id: string;
   sc_addr: string;
   dc_addr: string;
@@ -30,6 +31,7 @@ export class IbcTxResDto {
   create_at: string;
 
   constructor(value: any) {
+    super()
     const {
       record_id,
       sc_addr,

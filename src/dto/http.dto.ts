@@ -1,5 +1,6 @@
 import { LcdChannelType } from '../types/lcd.interface';
-export class LcdChannelDto {
+import { BaseResDto } from './base.dto'
+export class LcdChannelDto extends BaseResDto {
   state: string;
   counterparty: {
     port_id: string;
@@ -10,6 +11,7 @@ export class LcdChannelDto {
   sc_chain_id: string;
 
   constructor(value: any) {
+    super()
     const { state, counterparty, port_id, channel_id } = value;
     this.state = state || '';
     this.counterparty = counterparty || {
