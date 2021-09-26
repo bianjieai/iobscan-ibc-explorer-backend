@@ -33,8 +33,7 @@ export const IbcTxSchema = new mongoose.Schema({
 IbcTxSchema.index({ record_id: -1 }, { unique: true });
 
 IbcTxSchema.statics = {
-  // todo 方法命名规范  明确query入参类型
-  // 查
+
   async findCount(query): Promise<number> {
     return this.count(query);
   },
@@ -60,14 +59,12 @@ IbcTxSchema.statics = {
     });
   },
 
-  // 改
   async updateIbcTx(ibcTx): Promise<void> {
     const { record_id } = ibcTx;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ record_id }, ibcTx, options);
   },
 
-  // 增
   async insertManyIbcTx(ibcTx, cb): Promise<void> {
     return this.insertMany(ibcTx, cb);
   },

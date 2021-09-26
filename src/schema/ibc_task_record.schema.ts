@@ -24,7 +24,6 @@ export const IbcTaskRecordSchema = new mongoose.Schema({
 IbcTaskRecordSchema.index({ task_name: 1 }, { unique: true });
 
 IbcTaskRecordSchema.statics = {
-  // 查
   async findAll(): Promise<IbcTaskRecordType[]> {
     return this.find();
   },
@@ -35,14 +34,12 @@ IbcTaskRecordSchema.statics = {
     );
   },
 
-  // 改
   async updateTaskRecord(taskRecord: IbcTaskRecordType): Promise<void> {
     const { task_name } = taskRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ task_name }, taskRecord, options);
   },
 
-  // 增
   async insertManyTaskRecord(taskRecords: IbcTaskRecordType[]): Promise<void> {
     return this.insertMany(taskRecords, { ordered: false });
   },

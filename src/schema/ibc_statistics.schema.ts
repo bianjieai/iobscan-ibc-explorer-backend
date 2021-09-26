@@ -23,7 +23,6 @@ export const IbcStatisticsSchema = new mongoose.Schema(
 IbcStatisticsSchema.index({ statistics_name: 1 }, { unique: true });
 
 IbcStatisticsSchema.statics = {
-  // find
   async findStatisticsRecord(
     statistics_name: string,
   ): Promise<IbcStatisticsType> {
@@ -34,8 +33,6 @@ IbcStatisticsSchema.statics = {
     return this.find();
   },
 
-  // cb、async/await
-  // update
   async updateStatisticsRecord(
     statisticsRecord: IbcStatisticsType,
     cb,
@@ -50,7 +47,6 @@ IbcStatisticsSchema.statics = {
     );
   },
 
-  // insert
   async insertManyStatisticsRecord(
     statisticsRecord: IbcStatisticsType,
   ): Promise<void> {

@@ -25,7 +25,6 @@ IbcDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
 IbcDenomSchema.index({ update_at: -1 }, { background: true });
 
 IbcDenomSchema.statics = {
-  // find
   async findCount(): Promise<number> {
     return this.count();
   },
@@ -34,14 +33,12 @@ IbcDenomSchema.statics = {
     return this.findOne({ chain_id, denom }, { _id: 0 });
   },
 
-  // update
   async updateDenomRecord(denomRecord): Promise<void> {
     const { chain_id, denom } = denomRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ chain_id, denom }, denomRecord, options);
   },
 
-  // 增
   async insertManyDenom(ibcDenom): Promise<void> {
     return this.insertMany(ibcDenom, { ordered: false });
   },

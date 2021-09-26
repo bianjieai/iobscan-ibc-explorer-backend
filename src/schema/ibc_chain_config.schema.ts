@@ -11,7 +11,6 @@ export const IbcChainConfigSchema = new mongoose.Schema({
 
 IbcChainConfigSchema.index({ chain_id: 1 }, { unique: true });
 IbcChainConfigSchema.statics = {
-  // 查
   async findCount(query): Promise<Number> {
     return this.count(query);
   },
@@ -44,7 +43,6 @@ IbcChainConfigSchema.statics = {
     );
   },
 
-  // 改
   async updateChain(chain: IbcChainConfigType) {
     const { chain_id } = chain;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };

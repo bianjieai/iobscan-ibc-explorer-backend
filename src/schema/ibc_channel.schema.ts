@@ -22,7 +22,6 @@ IbcChannelSchema.index({ record_id: 1 }, { unique: true });
 IbcChannelSchema.index({ update_at: -1 }, { background: true });
 
 IbcChannelSchema.statics = {
-  // 查
   async findCount(query): Promise<number> {
     return this.count(query);
   },
@@ -31,14 +30,12 @@ IbcChannelSchema.statics = {
     return this.findOne({ record_id }, { _id: 0 });
   },
 
-  // 改
   async updateChannelRecord(channelRecord): Promise<void> {
     const { record_id } = channelRecord;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ record_id }, channelRecord, options);
   },
 
-  // 增
   async insertManyChannel(ibcChannel): Promise<void> {
     return this.insertMany(ibcChannel, { ordered: false });
   },

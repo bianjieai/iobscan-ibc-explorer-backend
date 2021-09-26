@@ -18,7 +18,6 @@ export const IbcChainSchema = new mongoose.Schema({
 IbcChainSchema.index({ chain_id: 1 }, { unique: true });
 
 IbcChainSchema.statics = {
-  // 查
   async findAll(): Promise<IbcChainType[]> {
     return this.find();
   },
@@ -39,14 +38,12 @@ IbcChainSchema.statics = {
     return this.findOne({ chain_id });
   },
 
-  // 改
   async updateChainRecord(chain): Promise<void> {
     const { chain_id } = chain;
     const options = { upsert: true, new: false, setDefaultsOnInsert: true };
     return this.findOneAndUpdate({ chain_id }, chain, options);
   },
 
-  // 增
   async insertManyChain(chain): Promise<void> {
     return this.insertMany(chain, { ordered: false });
   },
