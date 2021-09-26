@@ -9,7 +9,6 @@ import { IbcDenomSchema } from '../schema/ibc_denom.schema';
 import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
 import { IbcBaseDenomSchema } from '../schema/ibc_base_denom.schema';
 import { TaskEnum, IbcTxStatus, StatisticsNames } from '../constant';
-import { flatten } from 'lodash';
 
 @Injectable()
 export class IbcStatisticsTaskService {
@@ -134,7 +133,16 @@ export class IbcStatisticsTaskService {
     }).length;
 
     // tx_all
-    const tx_all = await this.ibcTxModel.findCount();
+    const tx_all = await this.ibcTxModel.findCount({
+      status: {
+        $in: [
+          IbcTxStatus.SUCCESS,
+          IbcTxStatus.FAILED,
+          IbcTxStatus.PROCESSING,
+          IbcTxStatus.REFUNDED,
+        ],
+      },
+    });
 
     // tx_success
     const tx_success = await this.ibcTxModel.findCount({
