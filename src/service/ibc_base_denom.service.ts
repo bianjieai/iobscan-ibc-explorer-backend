@@ -11,7 +11,6 @@ export class IbcBaseDenomService {
     this.getModels();
   }
 
-  // 获取所有静态模型
   async getModels(): Promise<void> {
     // ibcStatisticsModel
     this.ibcBaseDenomModel = await this.connection.model(
@@ -21,7 +20,7 @@ export class IbcBaseDenomService {
     );
   }
 
-  // 获取所有记录
+  // findAllRecord
   async findAllRecord(): Promise<IbcBaseDenomResDto[]> {
     const result: IbcBaseDenomResDto[] = IbcBaseDenomResDto.bundleData(await this.ibcBaseDenomModel.findAllRecord())
     return result;

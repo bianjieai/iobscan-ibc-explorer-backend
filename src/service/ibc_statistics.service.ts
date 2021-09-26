@@ -11,7 +11,6 @@ export class IbcStatisticsService {
     this.getModels();
   }
 
-  // 获取所有静态模型
   async getModels(): Promise<void> {
     // ibcStatisticsModel
     this.ibcStatisticsModel = await this.connection.model(
@@ -21,7 +20,7 @@ export class IbcStatisticsService {
     );
   }
 
-  // 获取所有记录
+  // getAllRecord
   async findAllRecord(): Promise<IbcStatisticsResDto[]> {
     const result: IbcStatisticsResDto[] = IbcStatisticsResDto.bundleData(
       await this.ibcStatisticsModel.findAllRecord(),

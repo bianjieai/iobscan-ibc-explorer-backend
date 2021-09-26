@@ -22,7 +22,7 @@ export class TasksService {
     // this[`${TaskEnum.denom}_timer`] = null;
   }
 
-  // chainConfig定时任务
+  // chainConfig
   @Cron(cfg.taskCfg.executeTime.chain, {
     name: TaskEnum.chain,
   })
@@ -30,7 +30,7 @@ export class TasksService {
     this.handleDoTask(TaskEnum.chain, this.ibcChainConfigTaskService.doTask);
   }
 
-  // ex_ibc_tx定时任务
+  // ex_ibc_tx
   @Cron(cfg.taskCfg.executeTime.tx, {
     name: TaskEnum.tx,
   })
@@ -38,7 +38,7 @@ export class TasksService {
     this.handleDoTask(TaskEnum.tx, this.ibcTxTaskService.doTask);
   }
 
-  // ex_ibc_statistics定时任务
+  // ex_ibc_statistics
   @Cron(cfg.taskCfg.executeTime.statistics, {
     name: TaskEnum.statistics,
   })
