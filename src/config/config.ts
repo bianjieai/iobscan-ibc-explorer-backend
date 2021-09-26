@@ -1,0 +1,59 @@
+import dotenv from 'dotenv';
+dotenv.config();
+const {
+    LCD_ADDR,
+    RPC_ADDR,
+    DB_USER,
+    DB_PASSWD,
+    DB_ADDR,
+    ICONURI,
+    DB_DATABASE,
+    NODE_ENV,
+    FAULT_TOLERANCE_EXECUTE_TIME,
+    SYNC_TX_SERVICE_NAME_SIZE,
+    HEARTBEAT_RATE,
+    DisableLog,
+    INCREASE_HEIGHT,
+    MAX_OPERATE_TX_COUNT,
+    CRON_JOBS,
+    PROPOSALS_LIMIT,
+    IBCTX_EXECUTE_TIME,
+    IBCCHAIN_EXECUTE_TIME,
+    IBCSTATISTICS_EXECUTE_TIME,
+} = process.env;
+export const cfg = {
+    env: NODE_ENV,
+    disableLog:Boolean(DisableLog=='true'),
+    dbCfg: {
+        user: DB_USER,
+        psd: DB_PASSWD,
+        dbAddr: DB_ADDR,
+        dbName: DB_DATABASE,
+    },
+    serverCfg:{
+        lcdAddr:LCD_ADDR,
+        rpcAddr:RPC_ADDR,
+        iconUri: ICONURI || 'https://keybase.io/_/api/1.0/user/lookup.json'
+    },
+    taskCfg:{
+        interval:{
+            heartbeatRate:Number(HEARTBEAT_RATE || 10000),
+        },
+        executeTime:{
+            // tx: '*/19 * * * * *',
+            // chain: '*/19 * * * * *',
+            // statistics: '*/19 * * * * *',
+            tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
+            chain: IBCCHAIN_EXECUTE_TIME || '30 * * * * *',
+            statistics: IBCSTATISTICS_EXECUTE_TIME || '45 * * * * *',
+
+            faultTolerance:FAULT_TOLERANCE_EXECUTE_TIME || '41 * * * * *',
+        },
+        syncTxServiceNameSize: Number(SYNC_TX_SERVICE_NAME_SIZE) || 200,
+        increaseHeight: INCREASE_HEIGHT || 1000,
+        maxOperateTxCount: MAX_OPERATE_TX_COUNT || 100,
+        CRON_JOBS: CRON_JOBS ? JSON.parse(CRON_JOBS) : [],
+        proposalsLimit: PROPOSALS_LIMIT || 1000,
+    },
+};
+

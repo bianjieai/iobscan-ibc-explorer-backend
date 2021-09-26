@@ -1,0 +1,7 @@
+environment configure:
+
+1. env:            $NODE_ENV=development
+2. db_addr:        $DB_ADDR=192.168.150.40:27017
+3. db_user:        $DB_USER=ibc
+4. db_psd:         $DB_PASSWD=ibcpassword
+5. db_name:        $DB_DATABASE=iobscan-ibc
