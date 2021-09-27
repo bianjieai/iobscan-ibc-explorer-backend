@@ -64,7 +64,7 @@ export class IbcStatisticsTaskService {
     this.ibcTxModel = await this.connection.model(
       'ibcTxModel',
       IbcTxSchema,
-      'ibc_txs_test',
+      'ex_ibc_tx',
     );
 
     // ibcDenomModel
@@ -86,7 +86,7 @@ export class IbcStatisticsTaskService {
   async parseIbcStatistics(dateNow): Promise<void> {
     // tx_24hr_all
     const tx_24hr_all = await this.ibcTxModel.findCount({
-      update_at: { $gte: dateNow - 24 * 60 * 60 },
+      update_at: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
     });
 
     // chains_24hr_all
@@ -94,8 +94,9 @@ export class IbcStatisticsTaskService {
 
     // channels_24hr
     const channels_24hr = await this.ibcChannelModel.findCount({
-      update_at: { $gte: dateNow - 24 * 60 * 60 },
+      update_at: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
     });
+
     // chain_all
     const chain_all = await this.chainConfigModel.findCount();
 
