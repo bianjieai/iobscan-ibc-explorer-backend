@@ -40,12 +40,12 @@ export const cfg = {
             heartbeatRate:Number(HEARTBEAT_RATE || 10000),
         },
         executeTime:{
-            // tx: '*/19 * * * * *',
-            // chain: '*/19 * * * * *',
-            // statistics: '*/19 * * * * *',
+            // tx: '*/10 * * * * *',
+            // chain: '*/10 * * * * *',
+            // statistics: '*/10 * * * * *',
             tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
-            chain: IBCCHAIN_EXECUTE_TIME || '30 * * * * *',
-            statistics: IBCSTATISTICS_EXECUTE_TIME || '45 * * * * *',
+            chain: IBCCHAIN_EXECUTE_TIME || '* * */1 * * *',
+            statistics: IBCSTATISTICS_EXECUTE_TIME || '* */10 * * * *',
 
             faultTolerance:FAULT_TOLERANCE_EXECUTE_TIME || '41 * * * * *',
         },
