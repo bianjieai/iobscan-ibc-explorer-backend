@@ -31,11 +31,13 @@ export class IbcChainService {
   async queryList(): Promise<IbcChainResultResDto> {
     const ibcChainAllDatas: IbcChainConfigType[] = await this.ibcChainConfigModel.findList();
     const ibcChainActiveDatas: IbcChainType[] = await this.ibcChainModel.findActive();
-    const ibcChainInActiveDatas: IbcChainConfigType[] = ibcChainAllDatas.filter((item: IbcChainConfigType) => {
-      return ibcChainActiveDatas.find((subItem: IbcChainType) => {
-        return subItem.chain_id !== item.chain_id;
-      });
-    });
+    const ibcChainInActiveDatas: IbcChainConfigType[] = ibcChainAllDatas.filter(
+      (item: IbcChainConfigType) => {
+        return !ibcChainActiveDatas.some((subItem: IbcChainType) => {
+          return subItem.chain_id === item.chain_id;
+        });
+      },
+    );
 
     return new IbcChainResultResDto({
       all: IbcChainResDto.bundleData(ibcChainAllDatas),
