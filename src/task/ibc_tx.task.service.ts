@@ -177,7 +177,7 @@ export class IbcTxTaskService {
                 break;
             }
 
-            const sc_chain_id = JSONparse(JSONstringify(tx)).chain_id;
+            const sc_chain_id = chain_id;
             const sc_port = msg.msg.source_port;
             const sc_channel = msg.msg.source_channel;
             const sc_addr = msg.msg.sender;
