@@ -143,7 +143,6 @@ export class IbcTxTaskService {
         const hash = tx.tx_hash;
         const status = tx.status;
         const fee = tx.fee;
-        let update_at = '';
         tx.msgs.forEach(async (msg, msgIndex) => {
           if (msg.type === TxType.transfer) {
             const ibcTx: IbcTxType = {
@@ -166,6 +165,7 @@ export class IbcTxTaskService {
               base_denom: '',
               create_at: '',
               update_at: '',
+              tx_time: '',
             };
             switch (tx.status) {
               case TxStatus.SUCCESS:
@@ -233,7 +233,8 @@ export class IbcTxTaskService {
             ibcTx.denoms.push(sc_denom);
             ibcTx.base_denom = base_denom;
             ibcTx.create_at = dateNow;
-            ibcTx.update_at = tx.time;
+            ibcTx.update_at = dateNow;
+            ibcTx.tx_time = tx.time;
             ibcTx.sc_tx_info = {
               hash,
               status,
@@ -329,7 +330,8 @@ export class IbcTxTaskService {
                 msg_amount: msg.msg.token,
                 msg,
               };
-              ibcTx.update_at = counter_party_tx.time;
+              ibcTx.update_at = dateNow;
+              ibcTx.tx_time = counter_party_tx.time;
               ibcTx.denoms.push(dc_denom);
               const denom_path = dc_denom_origin.replace(
                 `/${ibcTx.base_denom}`,
@@ -400,7 +402,8 @@ export class IbcTxTaskService {
                   msg_amount: msg.msg.token,
                   msg,
                 };
-                ibcTx.update_at = refunded_tx.time;
+                ibcTx.update_at = dateNow;
+                ibcTx.tx_time = refunded_tx.time;
                 this.ibcTxModel.updateIbcTx(ibcTx);
               }
             });
