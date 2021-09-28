@@ -18,4 +18,5 @@ export interface IbcTxType {
   base_denom: string;
   create_at: string;
   update_at: string;
+  tx_time: string;
 }

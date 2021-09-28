@@ -29,6 +29,7 @@ export class IbcTxResDto extends BaseResDto {
   log: object;
   denoms: string[];
   create_at: string;
+  tx_time: string;
 
   constructor(value: any) {
     super()
@@ -52,6 +53,7 @@ export class IbcTxResDto extends BaseResDto {
       log,
       denoms,
       create_at,
+      tx_time,
     } = value;
     this.record_id = record_id;
     this.sc_addr = sc_addr || '';
@@ -72,6 +74,7 @@ export class IbcTxResDto extends BaseResDto {
     this.log = log || {};
     this.denoms = denoms || [];
     this.create_at = create_at || '';
+    this.tx_time = tx_time || '';
   }
 
   static bundleData(value: any): IbcTxResDto[] {

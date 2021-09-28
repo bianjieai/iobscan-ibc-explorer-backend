@@ -29,6 +29,12 @@ IbcDenomSchema.statics = {
     return this.count();
   },
 
+  async findBaseDenomCount(): Promise<number> {
+    return this.count({
+      is_source_chain: true
+    });
+  },
+
   async findDenomRecord(chain_id, denom): Promise<IbcDenomType> {
     return this.findOne({ chain_id, denom }, { _id: 0 });
   },

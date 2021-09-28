@@ -165,6 +165,7 @@ export class IbcTxTaskService {
               base_denom: '',
               create_at: '',
               update_at: '',
+              tx_time: '',
             };
             switch (tx.status) {
               case TxStatus.SUCCESS:
@@ -233,6 +234,7 @@ export class IbcTxTaskService {
             ibcTx.base_denom = base_denom;
             ibcTx.create_at = dateNow;
             ibcTx.update_at = dateNow;
+            ibcTx.tx_time = tx.time;
             ibcTx.sc_tx_info = {
               hash,
               status,
@@ -243,7 +245,7 @@ export class IbcTxTaskService {
               msg,
             };
             ibcTx.log['sc_log'] = log;
-            if (!dc_chain_id) {
+            if (!dc_chain_id && ibcTx.status !== IbcTxStatus.FAILED) {
               ibcTx.status = IbcTxStatus.SETTING;
             }
             await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
@@ -329,6 +331,7 @@ export class IbcTxTaskService {
                 msg,
               };
               ibcTx.update_at = dateNow;
+              ibcTx.tx_time = counter_party_tx.time;
               ibcTx.denoms.push(dc_denom);
               const denom_path = dc_denom_origin.replace(
                 `/${ibcTx.base_denom}`,
@@ -400,6 +403,7 @@ export class IbcTxTaskService {
                   msg,
                 };
                 ibcTx.update_at = dateNow;
+                ibcTx.tx_time = refunded_tx.time;
                 this.ibcTxModel.updateIbcTx(ibcTx);
               }
             });
