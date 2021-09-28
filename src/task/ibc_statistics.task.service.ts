@@ -159,7 +159,8 @@ export class IbcStatisticsTaskService {
     const denom_all = await this.ibcDenomModel.findCount();
 
     // base_denom_all
-    const base_denom_all = await this.ibcBaseDenomModel.findCount();
+    // const base_denom_all = await this.ibcBaseDenomModel.findCount();
+    const base_denom_all = await this.ibcDenomModel.findBaseDenomCount();
 
     const parseCount = {
       tx_24hr_all,

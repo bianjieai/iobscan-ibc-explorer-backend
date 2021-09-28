@@ -34,6 +34,7 @@ export const IbcTxSchema = new mongoose.Schema({
 });
 
 IbcTxSchema.index({ record_id: -1 }, { unique: true });
+IbcTxSchema.index({ update_at: -1 }, { background: true });
 
 IbcTxSchema.statics = {
   // todo query
@@ -44,13 +45,14 @@ IbcTxSchema.statics = {
   async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType[]> {
     return this.find({ status: { $in: [1, 2, 3, 4] } }, { _id: 0 })
       .skip((Number(pageNum) - 1) * Number(pageSize))
-      .limit(Number(pageSize));
+      .limit(Number(pageSize))
+      .sort({ update_at: -1 });
   },
 
   async queryTxList(query): Promise<IbcTxType[]> {
     const { status, limit } = query;
     return this.find({ status }, { _id: 0 })
-      .sort({ update_at: 1 })
+      .sort({ update_at: -1 })
       .limit(Number(limit));
   },
 
