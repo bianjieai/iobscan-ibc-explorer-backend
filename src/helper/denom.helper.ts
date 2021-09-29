@@ -17,7 +17,7 @@ export function getDcDenom(msg) {
 
     if (dc_denom.startsWith(prefix_sc)) {
       let dc_denom_clear_prefix = dc_denom.replace(prefix_sc, '');
-      if (dc_denom.indexOf('/') === -1) {
+      if (dc_denom_clear_prefix.indexOf('/') === -1) {
         result = dc_denom_clear_prefix;
         dc_denom_origin = dc_denom_clear_prefix;
       } else {
