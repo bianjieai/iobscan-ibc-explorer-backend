@@ -333,7 +333,7 @@ export class IbcTxTaskService {
               ibcTx.update_at = dateNow;
               ibcTx.tx_time = counter_party_tx.time;
               ibcTx.denoms.push(dc_denom);
-              const denom_path = dc_denom_origin.replace(
+              const denom_path = dc_denom_origin === ibcTx.base_denom ? '' : dc_denom_origin.replace(
                 `/${ibcTx.base_denom}`,
                 '',
               );
