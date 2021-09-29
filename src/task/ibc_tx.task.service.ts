@@ -320,7 +320,19 @@ export class IbcTxTaskService {
                 dc_denom,
                 dc_denom_origin,
               } = getDcDenom(msg);
-              ibcTx.status = IbcTxStatus.SUCCESS;
+
+              // add fungible_token_packet solution， value type is string;
+              let result = ''
+              counter_party_tx.events.forEach(event => {
+                if (event.type === 'fungible_token_packet') {
+                  event.attributes.forEach(attribute => {
+                    if (attribute.key === 'success') {
+                      result = attribute.value
+                    }
+                  })
+                }
+              })
+              ibcTx.status = (result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS);
               ibcTx.dc_tx_info = {
                 hash: counter_party_tx.tx_hash,
                 status: counter_party_tx.status,
