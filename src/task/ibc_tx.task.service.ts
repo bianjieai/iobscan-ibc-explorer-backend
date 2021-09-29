@@ -392,12 +392,13 @@ export class IbcTxTaskService {
             TxSchema,
             `sync_${ibcTx.sc_chain_id}_tx`,
           );
-          const refunded_tx = await txModel.queryTxListByPacketId({
+          const refunded_tx_arr = await txModel.queryTxListByPacketId({
             type: TxType.timeout_packet,
             limit: RecordLimit,
             status: TxStatus.SUCCESS,
             packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
-          })[0];
+          });
+          const refunded_tx = refunded_tx_arr[0]
           refunded_tx &&
             refunded_tx.msgs.forEach(msg => {
               if (
