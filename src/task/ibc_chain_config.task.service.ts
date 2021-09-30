@@ -34,7 +34,7 @@ export class IbcChainConfigTaskService {
     Promise.all(
       allChains.map(async chain => {
         let channels = await ChainHttp.getIbcChannels(chain.lcd);
-        channels.map(channel => {
+        channels && channels.map(channel => {
           channel.sc_chain_id = chain.chain_id;
         });
         return Promise.resolve({
@@ -42,19 +42,19 @@ export class IbcChainConfigTaskService {
           chain_name: chain.chain_name,
           lcd: chain.lcd,
           icon: chain.icon,
-          ibc_info: channels,
+          ibc_info: channels ? channels : [],
         });
       }),
     ).then(allChains => {
       const channelsObj = {};
-      const allChainsId = allChains.map(chain => {
+      const allChainsId = allChains && allChains.map(chain => {
         return chain['chain_id'];
       });
 
       // set channelsObj datas
-      allChains.forEach(chain => {
+      allChains && allChains.forEach(chain => {
         channelsObj[chain['chain_id']] = {};
-        chain['ibc_info'].forEach(channel => {
+        chain['ibc_info'] && chain['ibc_info'].forEach(channel => {
           channelsObj[chain['chain_id']][
             `${channel.channel_id}/${channel.port_id}/${channel.counterparty.channel_id}/${channel.counterparty.port_id}`
           ] = `${channel.sc_chain_id}${Delimiter}${channel.state}`;
@@ -62,9 +62,9 @@ export class IbcChainConfigTaskService {
       });
 
       // get datas from channelsObj
-      allChains.forEach(async chain => {
-        chain['ibc_info'].forEach(channel => {
-          allChainsId.forEach(chainId => {
+      allChains && allChains.forEach(async chain => {
+        chain['ibc_info'] && chain['ibc_info'].forEach(channel => {
+          allChainsId && allChainsId.forEach(chainId => {
             if (chainId !== chain['chain_id']) {
               const result =
                 channelsObj[chainId][
@@ -79,14 +79,14 @@ export class IbcChainConfigTaskService {
         });
 
         // filter unconfig channels
-        chain['ibc_info'] = chain['ibc_info'].filter(channel => {
+        chain['ibc_info'] = chain['ibc_info'] && chain['ibc_info'].filter(channel => {
           return channel.hasOwnProperty('chain_id');
         });
 
         // groupby datas
         const ibcInfoGroupBy = groupBy(chain['ibc_info'], 'chain_id');
         const ibcInfo = [];
-        Object.keys(ibcInfoGroupBy).forEach(chain_id => {
+        Object.keys(ibcInfoGroupBy) && Object.keys(ibcInfoGroupBy).forEach(chain_id => {
           ibcInfo.push({ chain_id, paths: ibcInfoGroupBy[`${chain_id}`] });
         });
         chain['ibc_info'] = ibcInfo;

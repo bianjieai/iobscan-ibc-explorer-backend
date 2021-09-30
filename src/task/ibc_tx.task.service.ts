@@ -326,7 +326,7 @@ export class IbcTxTaskService {
               const counter_party_tx_events = counter_party_tx.events_new.find(event_new => {
                 return event_new.msg_index === msgIndex
               })
-              counter_party_tx_events && counter_party_tx_events.forEach(event => {
+              counter_party_tx_events && counter_party_tx_events.events.forEach(event => {
                 if (event.type === 'write_acknowledgement') {
                   event.attributes.forEach(attribute => {
                     if (attribute.key === 'packet_ack') {
