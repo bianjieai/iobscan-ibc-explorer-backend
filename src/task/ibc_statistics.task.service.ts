@@ -87,6 +87,12 @@ export class IbcStatisticsTaskService {
     // tx_24hr_all
     const tx_24hr_all = await this.ibcTxModel.findCount({
       update_at: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
+      status: { $in: [
+        IbcTxStatus.SUCCESS,
+        IbcTxStatus.FAILED,
+        IbcTxStatus.PROCESSING,
+        IbcTxStatus.REFUNDED,
+      ] },
     });
 
     // chains_24hr_all
@@ -110,7 +116,7 @@ export class IbcStatisticsTaskService {
     const chain_all_record = await this.chainConfigModel.findAll();
     let channels_all_record = [];
     chain_all_record.forEach(chain => {
-      chain.ibc_info.forEach(ibc_info_item => {
+      chain.ibc_info && chain.ibc_info.forEach(ibc_info_item => {
         ibc_info_item.paths.forEach(channel => {
           channels_all_record.push({
             channel_id: channel.channel_id,
