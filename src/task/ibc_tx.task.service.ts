@@ -10,7 +10,7 @@ import { IbcBlockSchema } from '../schema/ibc_block.schema';
 import { IbcTaskRecordSchema } from '../schema/ibc_task_record.schema';
 import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
-import { JSONparse, JSONstringify } from '../util/util';
+import { JSONparse } from '../util/util';
 import { getDcDenom } from '../helper/denom.helper';
 
 import {
@@ -311,7 +311,7 @@ export class IbcTxTaskService {
       if (txs.length) {
         const counter_party_tx = txs[0];
         counter_party_tx &&
-          counter_party_tx.msgs.forEach(msg => {
+          counter_party_tx.msgs.forEach((msg, msgIndex) => {
             if (
               msg.type === TxType.recv_packet &&
               ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
@@ -321,13 +321,17 @@ export class IbcTxTaskService {
                 dc_denom_origin,
               } = getDcDenom(msg);
 
-              // add fungible_token_packet solution， value type is string;
+              // add write_acknowledgement solution， value type is string;
               let result = ''
-              counter_party_tx.events.forEach(event => {
-                if (event.type === 'fungible_token_packet') {
+              const counter_party_tx_events = counter_party_tx.events_new.find(event_new => {
+                return event_new.msg_index === msgIndex
+              })
+              counter_party_tx_events && counter_party_tx_events.forEach(event => {
+                if (event.type === 'write_acknowledgement') {
                   event.attributes.forEach(attribute => {
-                    if (attribute.key === 'success') {
-                      result = attribute.value
+                    if (attribute.key === 'packet_ack') {
+                      const resultObj = JSONparse(attribute.value)
+                      result = (resultObj.hasOwnProperty('error') ? 'false' : 'true')
                     }
                   })
                 }
