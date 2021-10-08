@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcDenomType } from '../types/schemaTypes/ibc_denom.interface';
 import { dateNow } from '../helper/date.helper';
@@ -29,6 +30,10 @@ IbcDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
 IbcDenomSchema.index({ update_at: -1 }, { background: true });
 
 IbcDenomSchema.statics = {
+  async findAllRecord(): Promise<IbcDenomType[]> {
+    return this.find();
+  },
+
   async findCount(): Promise<number> {
     return this.count();
   },
