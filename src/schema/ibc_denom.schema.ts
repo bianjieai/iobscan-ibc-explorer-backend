@@ -9,6 +9,10 @@ export const IbcDenomSchema = new mongoose.Schema(
     base_denom: String,
     denom_path: String,
     is_source_chain: Boolean,
+    auth: {
+      type: Boolean,
+      default: false,
+    },
     create_at: {
       type: String,
       default: dateNow,

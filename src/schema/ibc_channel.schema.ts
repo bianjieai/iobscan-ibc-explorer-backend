@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcChannelType } from '../types/schemaTypes/ibc_channel.interface';
 import { dateNow } from '../helper/date.helper';
@@ -14,6 +15,10 @@ export const IbcChannelSchema = new mongoose.Schema(
       type: String,
       default: dateNow,
     },
+    tx_time: {
+      type: String,
+      default: dateNow,
+    },
   },
   { versionKey: false },
 );
@@ -22,8 +27,11 @@ IbcChannelSchema.index({ record_id: 1 }, { unique: true });
 IbcChannelSchema.index({ update_at: -1 }, { background: true });
 
 IbcChannelSchema.statics = {
-  async findCount(query): Promise<number> {
-    return this.count(query);
+
+  async countActive(): Promise<number> {
+    return this.count({
+      tx_time: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
+    });
   },
 
   async findChannelRecord(record_id): Promise<IbcChannelType> {

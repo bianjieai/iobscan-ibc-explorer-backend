@@ -29,3 +29,14 @@ export class LcdChannelDto extends BaseResDto {
     return datas;
   }
 }
+
+export class LcdDenomDto extends BaseResDto {
+  denom_path: string;
+  base_denom: string;
+  constructor(value) {
+    super()
+    const { path, base_denom } = value
+    this.denom_path = path
+    this.base_denom = base_denom
+  }
+}

@@ -30,15 +30,13 @@ IbcChainConfigSchema.statics = {
   async findDcChain(
     query,
   ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
-    // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
-    const { sc_chain_id, sc_port, sc_channel, dc_port, dc_channel } = query;
+    // search dc_chain_config by sc_chain_id、sc_port、sc_channel
+    const { sc_chain_id, sc_port, sc_channel } = query;
     return this.findOne(
       {
         chain_id: sc_chain_id,
         'ibc_info.paths.channel_id': sc_channel,
         'ibc_info.paths.port_id': sc_port,
-        'ibc_info.paths.counterparty.channel_id': dc_channel,
-        'ibc_info.paths.counterparty.port_id': dc_port,
       }
     );
   },

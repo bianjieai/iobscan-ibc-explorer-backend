@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
@@ -14,7 +15,7 @@ import { IbcChainModule } from './module/ibc_chain.module';
 import { IbcStatisticsTaskModule } from './module/ibc_statistics.task.module';
 import { IbcStatisticsModule } from './module/ibc_statistics.module';
 import { IbcBaseDenomModule } from './module/ibc_base_denom.module';
-const url: string = `mongodb://${cfg.dbCfg.user}:${cfg.dbCfg.psd}@${cfg.dbCfg.dbAddr}/${cfg.dbCfg.dbName}`;
+const url = `mongodb://${cfg.dbCfg.user}:${cfg.dbCfg.psd}@${cfg.dbCfg.dbAddr}/${cfg.dbCfg.dbName}`;
 // const url: string = `mongodb://localhost:27017/ibc-db`;
 export const params = {
   imports: [
