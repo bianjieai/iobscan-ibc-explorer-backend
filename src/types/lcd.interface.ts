@@ -10,3 +10,8 @@ export interface LcdChannelType {
   channel_id: string;
   version: string;
 }
+
+export interface DenomType {
+  path: string;
+  base_denom: string;
+}

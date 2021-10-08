@@ -41,8 +41,8 @@ export const cfg = {
         },
         executeTime:{
             // tx: '*/10 * * * * *',
-            // chain: '*/10 * 1 * * *',
-            // statistics: '*/10 * 1 * * *',
+            // chain: '*/10 * * * * *',
+            // statistics: '*/10 * * * * *',
             tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
             chain: IBCCHAIN_EXECUTE_TIME || '* * */1 * * *',
             statistics: IBCSTATISTICS_EXECUTE_TIME || '* */10 * * * *',

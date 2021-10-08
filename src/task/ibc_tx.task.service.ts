@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { Injectable } from '@nestjs/common';
 import { Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -9,6 +10,7 @@ import { TxSchema } from '../schema/tx.schema';
 import { IbcBlockSchema } from '../schema/ibc_block.schema';
 import { IbcTaskRecordSchema } from '../schema/ibc_task_record.schema';
 import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
+import { ChainHttp } from '../http/lcd/chain.http';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
 import { JSONparse } from '../util/util';
 import { getDcDenom } from '../helper/denom.helper';
@@ -31,9 +33,7 @@ export class IbcTxTaskService {
   private ibcDenomModel;
   private ibcChannelModel;
 
-  constructor(
-    @InjectConnection() private readonly connection: Connection,
-  ) {
+  constructor(@InjectConnection() private readonly connection: Connection) {
     this.getModels();
     this.doTask = this.doTask.bind(this);
   }
@@ -161,7 +161,10 @@ export class IbcTxTaskService {
               dc_tx_info: {},
               refunded_tx_info: {},
               log: {},
-              denoms: [],
+              denoms: {
+                sc_denom: '',
+                dc_denom: '',
+              },
               base_denom: '',
               create_at: '',
               update_at: '',
@@ -181,43 +184,68 @@ export class IbcTxTaskService {
             const sc_chain_id = chain_id;
             const sc_port = msg.msg.source_port;
             const sc_channel = msg.msg.source_channel;
+            let dc_chain_id = '';
+            let dc_channel = '';
+            let dc_port = '';
             const sc_addr = msg.msg.sender;
             const dc_addr = msg.msg.receiver;
             const sc_denom = msg.msg.token.denom;
             const msg_amount = msg.msg.token;
-            const {
-              dc_port,
-              dc_channel,
-              sequence,
-              base_denom,
-              denom_path,
-            } = this.getIbcInfoFromEventsMsg(tx, msgIndex);
+            let base_denom = '';
+            let denom_path = '';
+            let sequence = '';
+            let lcd = '';
 
-            // search dc_chain_id by sc_chain_id、sc_port、sc_channel、dc_port、dc_channel
-            let dc_chain_id = '';
-            const result = await this.chainConfigModel.findDcChain({
+            const dcChainConfig = await this.chainConfigModel.findDcChain({
               sc_chain_id,
               sc_port,
               sc_channel,
-              dc_port,
-              dc_channel,
             });
 
-            if (result && result.ibc_info && result.ibc_info.length) {
-              result.ibc_info.forEach(info_item => {
+            if (
+              dcChainConfig &&
+              dcChainConfig.ibc_info &&
+              dcChainConfig.ibc_info.length
+            ) {
+              lcd = dcChainConfig.lcd;
+              dcChainConfig.ibc_info.forEach(info_item => {
+                dc_chain_id = info_item.chain_id;
                 info_item.paths.forEach(path_item => {
                   if (
                     path_item.channel_id === sc_channel &&
-                    path_item.port_id === sc_port &&
-                    path_item.counterparty.channel_id === dc_channel &&
-                    path_item.counterparty.port_id === dc_port
+                    path_item.port_id === sc_port
                   ) {
-                    dc_chain_id = info_item.chain_id;
+                    dc_channel = path_item.counterparty.channel_id;
+                    dc_port = path_item.counterparty.port_id;
                   }
                 });
               });
+            }
+
+            if (ibcTx.status === IbcTxStatus.FAILED) {
+              // get base_denom、denom_path from lcd API
+              if (sc_denom.indexOf('ibc') !== -1) {
+                const result = await ChainHttp.getDenomByLcdAndHash(
+                  lcd,
+                  sc_denom,
+                );
+                base_denom = result.base_denom;
+                denom_path = result.denom_path;
+              } else {
+                base_denom = sc_denom;
+              }
             } else {
-              dc_chain_id = '';
+              // get base_denom、denom_path、sequence from events
+              const event_msg = this.getIbcInfoFromEventsMsg(tx, msgIndex);
+              dc_port = event_msg.dc_port;
+              dc_channel = event_msg.dc_channel;
+              base_denom = event_msg.base_denom;
+              denom_path = event_msg.denom_path;
+              sequence = event_msg.sequence;
+            }
+
+            if (!dc_chain_id && ibcTx.status !== IbcTxStatus.FAILED) {
+              ibcTx.status = IbcTxStatus.SETTING;
             }
 
             ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}`;
@@ -230,7 +258,7 @@ export class IbcTxTaskService {
             ibcTx.dc_channel = dc_channel;
             ibcTx.dc_chain_id = dc_chain_id;
             ibcTx.sequence = sequence;
-            ibcTx.denoms.push(sc_denom);
+            ibcTx.denoms['sc_denom'] = sc_denom;
             ibcTx.base_denom = base_denom;
             ibcTx.create_at = dateNow;
             ibcTx.update_at = dateNow;
@@ -245,9 +273,7 @@ export class IbcTxTaskService {
               msg,
             };
             ibcTx.log['sc_log'] = log;
-            if (!dc_chain_id && ibcTx.status !== IbcTxStatus.FAILED) {
-              ibcTx.status = IbcTxStatus.SETTING;
-            }
+
             await this.ibcTxModel.insertManyIbcTx(ibcTx, async err => {
               taskRecord.height = height;
 
@@ -263,19 +289,20 @@ export class IbcTxTaskService {
                   !Boolean(denom_path),
                   dateNow,
                   dateNow,
-                  dateNow,
+                  tx.time,
                 );
 
                 // parse channel
                 this.parseChannel(
                   sc_chain_id,
-                  dc_chain_id,
                   sc_channel,
                   dateNow,
+                  dateNow,
+                  tx.time,
                 );
 
                 // parse chain
-                this.parseChain(sc_chain_id, dateNow);
+                this.parseChain(sc_chain_id, dateNow, dateNow, tx.time);
               }
             });
           }
@@ -316,27 +343,30 @@ export class IbcTxTaskService {
               msg.type === TxType.recv_packet &&
               ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
             ) {
-              const {
-                dc_denom,
-                dc_denom_origin,
-              } = getDcDenom(msg);
+              const { dc_denom, dc_denom_origin } = getDcDenom(msg);
 
               // add write_acknowledgement solution， value type is string;
-              let result = ''
-              const counter_party_tx_events = counter_party_tx.events_new.find(event_new => {
-                return event_new.msg_index === msgIndex
-              })
-              counter_party_tx_events && counter_party_tx_events.events.forEach(event => {
-                if (event.type === 'write_acknowledgement') {
-                  event.attributes.forEach(attribute => {
-                    if (attribute.key === 'packet_ack') {
-                      const resultObj = JSONparse(attribute.value)
-                      result = (resultObj.hasOwnProperty('error') ? 'false' : 'true')
-                    }
-                  })
-                }
-              })
-              ibcTx.status = (result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS);
+              let result = '';
+              const counter_party_tx_events = counter_party_tx.events_new.find(
+                event_new => {
+                  return event_new.msg_index === msgIndex;
+                },
+              );
+              counter_party_tx_events &&
+                counter_party_tx_events.events.forEach(event => {
+                  if (event.type === 'write_acknowledgement') {
+                    event.attributes.forEach(attribute => {
+                      if (attribute.key === 'packet_ack') {
+                        const resultObj = JSONparse(attribute.value);
+                        result = resultObj.hasOwnProperty('error')
+                          ? 'false'
+                          : 'true';
+                      }
+                    });
+                  }
+                });
+              ibcTx.status =
+                result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
               ibcTx.dc_tx_info = {
                 hash: counter_party_tx.tx_hash,
                 status: counter_party_tx.status,
@@ -348,11 +378,11 @@ export class IbcTxTaskService {
               };
               ibcTx.update_at = dateNow;
               ibcTx.tx_time = counter_party_tx.time;
-              ibcTx.denoms.push(dc_denom);
-              const denom_path = dc_denom_origin === ibcTx.base_denom ? '' : dc_denom_origin.replace(
-                `/${ibcTx.base_denom}`,
-                '',
-              );
+              ibcTx.denoms['dc_denom'] = dc_denom;
+              const denom_path =
+                dc_denom_origin === ibcTx.base_denom
+                  ? ''
+                  : dc_denom_origin.replace(`/${ibcTx.base_denom}`, '');
               this.ibcTxModel.updateIbcTx(ibcTx);
 
               // parse denom
@@ -364,19 +394,25 @@ export class IbcTxTaskService {
                 !Boolean(denom_path),
                 dateNow,
                 dateNow,
-                dateNow,
+                counter_party_tx.time,
               );
 
               // parse Channel
               this.parseChannel(
                 ibcTx.sc_chain_id,
-                ibcTx.dc_chain_id,
                 ibcTx.dc_channel,
                 dateNow,
+                dateNow,
+                counter_party_tx.time,
               );
 
               // parse Chain
-              this.parseChain(ibcTx.dc_channel, dateNow);
+              this.parseChain(
+                ibcTx.dc_channel,
+                dateNow,
+                dateNow,
+                counter_party_tx.time,
+              );
             }
           });
       } else {
@@ -402,7 +438,7 @@ export class IbcTxTaskService {
             status: TxStatus.SUCCESS,
             packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
           });
-          const refunded_tx = refunded_tx_arr[0]
+          const refunded_tx = refunded_tx_arr[0];
           refunded_tx &&
             refunded_tx.msgs.forEach(msg => {
               if (
@@ -488,7 +524,7 @@ export class IbcTxTaskService {
     is_source_chain,
     create_at,
     update_at,
-    dateNow,
+    tx_time,
   ): Promise<void> {
     const ibcDenomRecord = await this.ibcDenomModel.findDenomRecord(
       chain_id,
@@ -504,10 +540,12 @@ export class IbcTxTaskService {
         is_source_chain,
         create_at,
         update_at,
+        tx_time,
       };
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
-      ibcDenomRecord.update_at = dateNow;
+      ibcDenomRecord.update_at = update_at;
+      ibcDenomRecord.tx_time = tx_time;
       await this.ibcDenomModel.updateDenomRecord(ibcDenomRecord);
     }
   }
@@ -515,36 +553,38 @@ export class IbcTxTaskService {
   // parse Channel
   async parseChannel(
     sc_chain_id,
-    dc_chain_id,
     channel_id,
-    dateNow,
+    create_at,
+    update_at,
+    tx_time,
   ): Promise<void> {
     const channels_all_record = await this.getChannelsConfig();
     const isFindRecord = channels_all_record.find(channel => {
-      return channel.record_id === `${sc_chain_id}${dc_chain_id}${channel_id}`;
+      return channel.record_id === `${sc_chain_id}${channel_id}`;
     });
 
     if (!isFindRecord) return;
 
     const ibcChannelRecord = await this.ibcChannelModel.findChannelRecord(
-      `${sc_chain_id}${dc_chain_id}${channel_id}`,
+      `${sc_chain_id}${channel_id}`,
     );
 
     if (!ibcChannelRecord) {
       const ibcChannel = {
         ...isFindRecord,
-        update_at: dateNow,
-        create_at: dateNow,
+        update_at,
+        create_at,
+        tx_time,
       };
       await this.ibcChannelModel.insertManyChannel(ibcChannel);
     } else {
-      ibcChannelRecord.update_at = dateNow;
+      ibcChannelRecord.update_at = update_at;
+      ibcChannelRecord.tx_time = tx_time;
       await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
     }
   }
-
   // parse Chain
-  async parseChain(chain_id, dateNow) {
+  async parseChain(chain_id, create_at, update_at, tx_time): Promise<void> {
     const ibcChainRecord = await this.ibcChainModel.findById(chain_id);
 
     if (!ibcChainRecord) {
@@ -557,13 +597,15 @@ export class IbcTxTaskService {
         chain_id,
         chain_name: findChainConfig ? findChainConfig.chain_name : '',
         icon: findChainConfig ? findChainConfig.icon : '',
-        create_at: dateNow,
-        update_at: dateNow,
+        create_at,
+        update_at,
+        tx_time,
       };
 
       this.ibcChainModel.insertManyChain(ibcChain);
     } else {
-      ibcChainRecord.update_at = dateNow;
+      ibcChainRecord.update_at = update_at;
+      ibcChainRecord.tx_time = tx_time;
       this.ibcChainModel.updateChainRecord(ibcChainRecord);
     }
   }
@@ -578,7 +620,7 @@ export class IbcTxTaskService {
         ibc_info_item.paths.forEach(path_item => {
           channels_all_record.push({
             channel_id: path_item.channel_id,
-            record_id: `${chain.chain_id}${ibc_info_item.chain_id}${path_item.channel_id}`,
+            record_id: `${chain.chain_id}${path_item.channel_id}`,
             state: path_item.state,
           });
         });

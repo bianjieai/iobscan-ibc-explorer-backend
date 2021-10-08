@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
 import { dateNow } from '../helper/date.helper';
+import { IbcTxStatus } from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
   record_id: String,
@@ -21,7 +23,10 @@ export const IbcTxSchema = new mongoose.Schema({
     sc_log: String,
     dc_log: String,
   },
-  denoms: Array,
+  denoms: {
+    sc_denom: String,
+    dc_denom: String,
+  },
   base_denom: String,
   create_at: {
     type: String,
@@ -42,9 +47,42 @@ IbcTxSchema.index({ update_at: -1 }, { background: true });
 IbcTxSchema.index({ tx_time: -1 }, { background: true });
 
 IbcTxSchema.statics = {
-  // todo query
-  async findCount(query): Promise<number> {
-    return this.count(query);
+
+  async countActive(): Promise<number> {
+    return this.count({
+      tx_time: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
+      status: { $in: [
+        IbcTxStatus.SUCCESS,
+        IbcTxStatus.FAILED,
+        IbcTxStatus.PROCESSING,
+        IbcTxStatus.REFUNDED,
+      ]},
+    });
+  },
+
+  async countAll(): Promise<number> {
+    return this.count({
+      status: {
+        $in: [
+          IbcTxStatus.SUCCESS,
+          IbcTxStatus.FAILED,
+          IbcTxStatus.PROCESSING,
+          IbcTxStatus.REFUNDED,
+        ],
+      },
+    });
+  },
+
+  async countSuccess(): Promise<number> {
+    return this.count({
+      status: IbcTxStatus.SUCCESS,
+    });
+  },
+
+  async countFaild(): Promise<number> {
+    return this.count({
+      status: { $in: [IbcTxStatus.FAILED, IbcTxStatus.REFUNDED] },
+    });
   },
 
   async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType[]> {

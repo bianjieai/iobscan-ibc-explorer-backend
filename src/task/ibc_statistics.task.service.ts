@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { Injectable } from '@nestjs/common';
 import { Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -85,36 +86,19 @@ export class IbcStatisticsTaskService {
   // sync count
   async parseIbcStatistics(dateNow): Promise<void> {
     // tx_24hr_all
-    const tx_24hr_all = await this.ibcTxModel.findCount({
-      update_at: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
-      status: { $in: [
-        IbcTxStatus.SUCCESS,
-        IbcTxStatus.FAILED,
-        IbcTxStatus.PROCESSING,
-        IbcTxStatus.REFUNDED,
-      ] },
-    });
+    const tx_24hr_all = await this.ibcTxModel.countActive();
 
     // chains_24hr_all
     const chains_24hr = await this.ibcChainModel.countActive();
 
     // channels_24hr
-    const channels_24hr = await this.ibcChannelModel.findCount({
-      update_at: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
-    });
+    const channels_24hr = await this.ibcChannelModel.countActive();
 
     // chain_all
     const chain_all = await this.chainConfigModel.findCount();
 
-    // channel_all
-    // const channels_arr = await this.chainConfigModel.aggregateFindChannels();
-    // let channel_all = 0;
-    // channels_arr.forEach(channels => {
-    //   channel_all += flatten(channels['_id']).length;
-    // });
-
     const chain_all_record = await this.chainConfigModel.findAll();
-    let channels_all_record = [];
+    const channels_all_record = [];
     chain_all_record.forEach(chain => {
       chain.ibc_info && chain.ibc_info.forEach(ibc_info_item => {
         ibc_info_item.paths.forEach(channel => {
@@ -140,26 +124,13 @@ export class IbcStatisticsTaskService {
     }).length;
 
     // tx_all
-    const tx_all = await this.ibcTxModel.findCount({
-      status: {
-        $in: [
-          IbcTxStatus.SUCCESS,
-          IbcTxStatus.FAILED,
-          IbcTxStatus.PROCESSING,
-          IbcTxStatus.REFUNDED,
-        ],
-      },
-    });
+    const tx_all = await this.ibcTxModel.countAll();
 
     // tx_success
-    const tx_success = await this.ibcTxModel.findCount({
-      status: IbcTxStatus.SUCCESS,
-    });
+    const tx_success = await this.ibcTxModel.countSuccess();
 
     // tx_failed
-    const tx_failed = await this.ibcTxModel.findCount({
-      status: { $in: [IbcTxStatus.FAILED, IbcTxStatus.REFUNDED] },
-    });
+    const tx_failed = await this.ibcTxModel.countFaild();
 
     // denom_all
     const denom_all = await this.ibcDenomModel.findCount();

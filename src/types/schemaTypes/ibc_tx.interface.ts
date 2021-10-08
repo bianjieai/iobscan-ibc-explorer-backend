@@ -14,7 +14,7 @@ export interface IbcTxType {
   dc_tx_info: object;
   refunded_tx_info?: object;
   log: object;
-  denoms: string[];
+  denoms: object;
   base_denom: string;
   create_at: string;
   update_at: string;
