@@ -12,7 +12,6 @@ export class IbcBaseDenomService {
   }
 
   async getModels(): Promise<void> {
-    // ibcStatisticsModel
     this.ibcBaseDenomModel = await this.connection.model(
       'ibcBaseDenomModel',
       IbcBaseDenomSchema,
