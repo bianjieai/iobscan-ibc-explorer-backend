@@ -209,12 +209,12 @@ export class IbcTxTaskService {
             ) {
               lcd = dcChainConfig.lcd;
               dcChainConfig.ibc_info.forEach(info_item => {
-                dc_chain_id = info_item.chain_id;
                 info_item.paths.forEach(path_item => {
                   if (
                     path_item.channel_id === sc_channel &&
                     path_item.port_id === sc_port
                   ) {
+                    dc_chain_id = info_item.chain_id;
                     dc_channel = path_item.counterparty.channel_id;
                     dc_port = path_item.counterparty.port_id;
                   }
