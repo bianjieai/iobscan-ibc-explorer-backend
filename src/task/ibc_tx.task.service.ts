@@ -399,7 +399,7 @@ export class IbcTxTaskService {
 
               // parse Channel
               this.parseChannel(
-                ibcTx.sc_chain_id,
+                ibcTx.dc_chain_id,
                 ibcTx.dc_channel,
                 dateNow,
                 dateNow,
@@ -408,7 +408,7 @@ export class IbcTxTaskService {
 
               // parse Chain
               this.parseChain(
-                ibcTx.dc_channel,
+                ibcTx.dc_chain_id,
                 dateNow,
                 dateNow,
                 counter_party_tx.time,
@@ -552,7 +552,7 @@ export class IbcTxTaskService {
 
   // parse Channel
   async parseChannel(
-    sc_chain_id,
+    chain_id,
     channel_id,
     create_at,
     update_at,
@@ -560,13 +560,13 @@ export class IbcTxTaskService {
   ): Promise<void> {
     const channels_all_record = await this.getChannelsConfig();
     const isFindRecord = channels_all_record.find(channel => {
-      return channel.record_id === `${sc_chain_id}${channel_id}`;
+      return channel.record_id === `${chain_id}${channel_id}`;
     });
 
     if (!isFindRecord) return;
 
     const ibcChannelRecord = await this.ibcChannelModel.findChannelRecord(
-      `${sc_chain_id}${channel_id}`,
+      `${chain_id}${channel_id}`,
     );
 
     if (!ibcChannelRecord) {
