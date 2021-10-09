@@ -229,8 +229,8 @@ export class IbcTxTaskService {
                   lcd,
                   sc_denom,
                 );
-                base_denom = result.base_denom;
-                denom_path = result.denom_path;
+                base_denom = result?.base_denom;
+                denom_path = result?.denom_path;
               } else {
                 base_denom = sc_denom;
               }
