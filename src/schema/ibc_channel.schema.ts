@@ -8,15 +8,15 @@ export const IbcChannelSchema = new mongoose.Schema(
     channel_id: String,
     record_id: String,
     create_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
     update_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
     tx_time: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
   },
@@ -30,7 +30,7 @@ IbcChannelSchema.statics = {
 
   async countActive(): Promise<number> {
     return this.count({
-      tx_time: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
+      tx_time: { $gte: dateNow - 24 * 60 * 60 },
     });
   },
 

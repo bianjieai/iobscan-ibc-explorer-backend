@@ -12,11 +12,11 @@ export const IbcTaskRecordSchema = new mongoose.Schema({
   },
   height: Number,
   create_at: {
-    type: String,
+    type: Number,
     default: dateNow,
   },
   update_at: {
-    type: String,
+    type: Number,
     default: dateNow,
   },
 });

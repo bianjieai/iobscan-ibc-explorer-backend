@@ -27,7 +27,7 @@ export class IbcStatisticsTaskService {
   }
 
   async doTask(taskName?: TaskEnum): Promise<void> {
-    const dateNow = String(Math.floor(new Date().getTime() / 1000));
+    const dateNow = new Date().getTime() / 1000;
     this.parseIbcStatistics(dateNow);
   }
 
