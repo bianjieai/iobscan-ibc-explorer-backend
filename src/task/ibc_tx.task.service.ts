@@ -39,7 +39,7 @@ export class IbcTxTaskService {
   }
 
   async doTask(taskName?: TaskEnum): Promise<void> {
-    const dateNow = String(Math.floor(new Date().getTime() / 1000));
+    const dateNow = new Date().getTime() / 1000;
     this.parseIbcTx(dateNow);
     this.changeIbcTxState(dateNow);
   }
@@ -101,8 +101,8 @@ export class IbcTxTaskService {
           task_name: `sync_${chain_id}_transfer`,
           status: IbcTaskRecordStatus.OPEN,
           height: 0,
-          create_at: `${dateNow}`,
-          update_at: `${dateNow}`,
+          create_at: dateNow,
+          update_at: dateNow,
         });
         taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
       } else {
@@ -227,7 +227,7 @@ export class IbcTxTaskService {
               if (sc_denom.indexOf('ibc') !== -1) {
                 const result = await ChainHttp.getDenomByLcdAndHash(
                   lcd,
-                  sc_denom,
+                  sc_denom.replace('ibc/', ''),
                 );
                 base_denom = result?.base_denom;
                 denom_path = result?.denom_path;

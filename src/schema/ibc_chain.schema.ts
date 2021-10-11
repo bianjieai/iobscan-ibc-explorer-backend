@@ -6,15 +6,15 @@ export const IbcChainSchema = new mongoose.Schema({
   chain_name: String,
   icon: String,
   create_at: {
-    type: String,
+    type: Number,
     default: dateNow,
   },
   update_at: {
-    type: String,
+    type: Number,
     default: dateNow,
   },
   tx_time: {
-    type: String,
+    type: Number,
     default: dateNow,
   },
 });
@@ -28,13 +28,13 @@ IbcChainSchema.statics = {
 
   async findActive(): Promise<IbcChainType[]> {
     return this.find({
-      tx_time: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
+      tx_time: { $gte: dateNow - 24 * 60 * 60 },
     }).collation( { locale: 'en_US' } ).sort({'chain_id': 1});
   },
 
   async countActive(): Promise<number> {
     return this.count({
-      tx_time: { $gte: String(Number(dateNow) - 24 * 60 * 60) },
+      tx_time: { $gte: dateNow - 24 * 60 * 60 },
     });
   },
 

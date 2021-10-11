@@ -7,11 +7,11 @@ export const IbcStatisticsSchema = new mongoose.Schema(
     statistics_name: String,
     count: Number,
     create_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
     update_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
   },

@@ -11,11 +11,11 @@ export const IbcBaseDenomSchema = new mongoose.Schema(
     icon: String,
     is_main_token: Boolean,
     create_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
     update_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
   },

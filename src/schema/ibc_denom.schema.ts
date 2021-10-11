@@ -10,16 +10,24 @@ export const IbcDenomSchema = new mongoose.Schema(
     base_denom: String,
     denom_path: String,
     is_source_chain: Boolean,
+    is_base_denom: {
+      type: Boolean,
+      default: false,
+    },
     auth: {
       type: Boolean,
       default: false,
     },
     create_at: {
-      type: String,
+      type: Number,
       default: dateNow,
     },
     update_at: {
-      type: String,
+      type: Number,
+      default: dateNow,
+    },
+    tx_time: {
+      type: Number,
       default: dateNow,
     },
   },
@@ -28,6 +36,7 @@ export const IbcDenomSchema = new mongoose.Schema(
 
 IbcDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
 IbcDenomSchema.index({ update_at: -1 }, { background: true });
+IbcDenomSchema.index({ tx_time: -1 }, { background: true });
 
 IbcDenomSchema.statics = {
   async findAllRecord(): Promise<IbcDenomType[]> {
