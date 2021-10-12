@@ -39,7 +39,7 @@ export class IbcTxTaskService {
   }
 
   async doTask(taskName?: TaskEnum): Promise<void> {
-    const dateNow = new Date().getTime() / 1000;
+    const dateNow = Math.floor(new Date().getTime() / 1000);
     this.parseIbcTx(dateNow);
     this.changeIbcTxState(dateNow);
   }
@@ -280,6 +280,16 @@ export class IbcTxTaskService {
               await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
 
               if (ibcTx.status !== IbcTxStatus.FAILED) {
+                let is_base_denom = true;
+                if (Boolean(denom_path)) {
+                  const denomRecord = this.ibcDenomModel.findDenomRecord(
+                    ibcTx.sc_chain_id,
+                    sc_denom,
+                  );
+                  if (denomRecord) {
+                    is_base_denom = denomRecord.is_base_denom;
+                  }
+                }
                 // parse denom
                 this.parseDenom(
                   ibcTx.sc_chain_id,
@@ -290,6 +300,7 @@ export class IbcTxTaskService {
                   dateNow,
                   dateNow,
                   tx.time,
+                  is_base_denom,
                 );
 
                 // parse channel
@@ -395,6 +406,7 @@ export class IbcTxTaskService {
                 dateNow,
                 dateNow,
                 counter_party_tx.time,
+                false,
               );
 
               // parse Channel
@@ -525,6 +537,7 @@ export class IbcTxTaskService {
     create_at,
     update_at,
     tx_time,
+    is_base_denom,
   ): Promise<void> {
     const ibcDenomRecord = await this.ibcDenomModel.findDenomRecord(
       chain_id,
@@ -541,6 +554,7 @@ export class IbcTxTaskService {
         create_at,
         update_at,
         tx_time,
+        is_base_denom,
       };
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
