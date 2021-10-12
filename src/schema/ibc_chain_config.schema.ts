@@ -29,7 +29,11 @@ IbcChainConfigSchema.statics = {
   },
 
   async findDcChain(
-    query,
+    query: {
+      sc_chain_id: string,
+      sc_port: string,
+      sc_channel: string,
+    },
   ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
     // search dc_chain_config by sc_chain_id、sc_port、sc_channel
     const { sc_chain_id, sc_port, sc_channel } = query;
@@ -43,7 +47,11 @@ IbcChainConfigSchema.statics = {
   },
 
   async findScChain(
-    query,
+    query: {
+      dc_chain_id: string,
+      dc_port: string,
+      dc_channel: string,
+    },
   ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
     // search dc_chain_config by sc_chain_id、sc_port、sc_channel
     const { dc_chain_id, dc_port, dc_channel } = query;

@@ -16,10 +16,6 @@ async function bootstrap() {
     app.useGlobalInterceptors(new LoggerInterceptor());
     setUpSwagger(app);
     await app.listen(3000);
-
-    process.on('unhandledRejection', error => {
-        console.log('unhandledRejection');
-    });
 }
 
 function setUpSwagger(app: any){
