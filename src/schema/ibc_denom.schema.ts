@@ -12,7 +12,7 @@ export const IbcDenomSchema = new mongoose.Schema(
     is_source_chain: Boolean,
     is_base_denom: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     auth: {
       type: Boolean,
@@ -49,7 +49,7 @@ IbcDenomSchema.statics = {
 
   async findBaseDenomCount(): Promise<number> {
     return this.count({
-      is_source_chain: true
+      is_base_denom: true,
     });
   },
 
