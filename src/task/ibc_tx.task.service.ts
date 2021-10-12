@@ -285,7 +285,7 @@ export class IbcTxTaskService {
                   const dc_port = denom_path.split('/')[0]
                   const dc_channel = denom_path.split('/')[1]
                   const chainConfigRecord = await this.chainConfigModel.findScChain({
-                    sc_chain_id,
+                    dc_chain_id: sc_chain_id,
                     dc_port,
                     dc_channel
                   })
