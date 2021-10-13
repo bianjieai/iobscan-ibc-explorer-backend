@@ -281,13 +281,16 @@ export class IbcTxTaskService {
 
               if (ibcTx.status !== IbcTxStatus.FAILED) {
                 let is_base_denom = true;
-                if (Boolean(denom_path)) {
-                  const denomRecord = this.ibcDenomModel.findDenomRecord(
-                    ibcTx.sc_chain_id,
-                    sc_denom,
-                  );
-                  if (denomRecord) {
-                    is_base_denom = denomRecord.is_base_denom;
+                if (Boolean(denom_path) && denom_path.split('/').length > 1) {
+                  const dc_port = denom_path.split('/')[0]
+                  const dc_channel = denom_path.split('/')[1]
+                  const chainConfigRecord = await this.chainConfigModel.findScChain({
+                    dc_chain_id: sc_chain_id,
+                    dc_port,
+                    dc_channel
+                  })
+                  if (chainConfigRecord && chainConfigRecord.chain_id) {
+                    is_base_denom = false
                   }
                 }
                 // parse denom

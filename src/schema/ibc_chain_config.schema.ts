@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcChainConfigType } from '../types/schemaTypes/ibc_chain_config.interface';
 
@@ -28,7 +29,11 @@ IbcChainConfigSchema.statics = {
   },
 
   async findDcChain(
-    query,
+    query: {
+      sc_chain_id: string,
+      sc_port: string,
+      sc_channel: string,
+    },
   ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
     // search dc_chain_config by sc_chain_id、sc_port、sc_channel
     const { sc_chain_id, sc_port, sc_channel } = query;
@@ -37,6 +42,24 @@ IbcChainConfigSchema.statics = {
         chain_id: sc_chain_id,
         'ibc_info.paths.channel_id': sc_channel,
         'ibc_info.paths.port_id': sc_port,
+      }
+    );
+  },
+
+  async findScChain(
+    query: {
+      dc_chain_id: string,
+      dc_port: string,
+      dc_channel: string,
+    },
+  ): Promise<{ _id: string; ibc_info: { chain_id: string }[] } | null> {
+    // search dc_chain_config by sc_chain_id、sc_port、sc_channel
+    const { dc_chain_id, dc_port, dc_channel } = query;
+    return this.findOne(
+      {
+        'ibc_info.chain_id': dc_chain_id,
+        'ibc_info.paths.counterparty.channel_id': dc_channel,
+        'ibc_info.paths.counterparty.port_id': dc_port,
       }
     );
   },
