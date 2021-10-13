@@ -391,7 +391,7 @@ export class IbcTxTaskService {
                 msg,
               };
               ibcTx.update_at = dateNow;
-              ibcTx.tx_time = counter_party_tx.time;
+              // ibcTx.tx_time = counter_party_tx.time;
               ibcTx.denoms['dc_denom'] = dc_denom;
               const denom_path =
                 dc_denom_origin === ibcTx.base_denom
@@ -471,7 +471,7 @@ export class IbcTxTaskService {
                   msg,
                 };
                 ibcTx.update_at = dateNow;
-                ibcTx.tx_time = refunded_tx.time;
+                // ibcTx.tx_time = refunded_tx.time;
                 this.ibcTxModel.updateIbcTx(ibcTx);
               }
             });
