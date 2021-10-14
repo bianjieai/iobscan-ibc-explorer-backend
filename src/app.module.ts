@@ -16,6 +16,7 @@ import { IbcStatisticsTaskModule } from './module/ibc_statistics.task.module';
 import { IbcStatisticsModule } from './module/ibc_statistics.module';
 import { IbcBaseDenomModule } from './module/ibc_base_denom.module';
 import { IbcDenomModule } from './module/ibc_denom.module';
+import { ConfigModule } from './module/config.module';
 const url = `mongodb://${cfg.dbCfg.user}:${cfg.dbCfg.psd}@${cfg.dbCfg.dbAddr}/${cfg.dbCfg.dbName}`;
 // const url: string = `mongodb://localhost:27017/ibc-db`;
 export const params = {
@@ -31,6 +32,7 @@ export const params = {
     IbcStatisticsModule,
     IbcBaseDenomModule,
     IbcDenomModule,
+    ConfigModule,
   ],
   providers: <any>[
     {
