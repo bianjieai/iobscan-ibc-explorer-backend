@@ -11,7 +11,7 @@ export const ConfigSchema = new mongoose.Schema(
 ConfigSchema.index({ name: 1 }, { unique: true });
 
 ConfigSchema.statics = {
-  async findRecord(): Promise<ConfigType[]> {
+  async findRecord(): Promise<ConfigType> {
     return this.findOne();
   },
 };
