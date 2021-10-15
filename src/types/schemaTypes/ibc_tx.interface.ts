@@ -20,3 +20,14 @@ export interface IbcTxType {
   update_at: string;
   tx_time: string;
 }
+
+export interface IbcTxQueryType {
+  useCount?: boolean;
+  beginTime?: number;
+  endTime?: number
+  chain_id?: string;
+  status?: number;
+  token?: string;
+  page_num?: number;
+  page_size?: number;
+}

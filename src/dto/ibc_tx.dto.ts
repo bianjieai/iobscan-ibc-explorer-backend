@@ -1,12 +1,27 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { PagingReqDto } from './base.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { BaseResDto } from './base.dto'
+import { BaseResDto } from './base.dto';
 
 export class IbcTxListReqDto extends PagingReqDto {
+  @ApiPropertyOptional()
+  beginTime?: number;
+  @ApiPropertyOptional()
+  endTime?: number;
+  @ApiPropertyOptional()
+  status?: number;
+  @ApiPropertyOptional()
+  chain_id?: string;
+  @ApiPropertyOptional()
+  token?: string;
   @ApiPropertyOptional()
   page_num?: number;
   @ApiPropertyOptional()
   page_size?: number;
+
+  static convert(value: any): any {
+    return super.convert(value);
+  }
 }
 
 export class IbcTxResDto extends BaseResDto {
@@ -32,7 +47,7 @@ export class IbcTxResDto extends BaseResDto {
   tx_time: string;
 
   constructor(value: any) {
-    super()
+    super();
     const {
       record_id,
       sc_addr,

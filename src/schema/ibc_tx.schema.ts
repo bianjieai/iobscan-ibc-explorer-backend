@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
-import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
+import {
+  IbcTxType,
+  IbcTxQueryType,
+} from '../types/schemaTypes/ibc_tx.interface';
 import { dateNow } from '../helper/date.helper';
+import { parseQuery } from '../helper/ibcTx.helper';
 import { IbcTxStatus } from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
@@ -47,16 +51,17 @@ IbcTxSchema.index({ update_at: -1 }, { background: true });
 IbcTxSchema.index({ tx_time: -1 }, { background: true });
 
 IbcTxSchema.statics = {
-
   async countActive(): Promise<number> {
     return this.count({
       tx_time: { $gte: dateNow - 24 * 60 * 60 },
-      status: { $in: [
-        IbcTxStatus.SUCCESS,
-        IbcTxStatus.FAILED,
-        IbcTxStatus.PROCESSING,
-        IbcTxStatus.REFUNDED,
-      ]},
+      status: {
+        $in: [
+          IbcTxStatus.SUCCESS,
+          IbcTxStatus.FAILED,
+          IbcTxStatus.PROCESSING,
+          IbcTxStatus.REFUNDED,
+        ],
+      },
     });
   },
 
@@ -85,10 +90,17 @@ IbcTxSchema.statics = {
     });
   },
 
-  async findTxList(pageNum: number, pageSize: number): Promise<IbcTxType[]> {
-    return this.find({ status: { $in: [1, 2, 3, 4] } }, { _id: 0 })
-      .skip((Number(pageNum) - 1) * Number(pageSize))
-      .limit(Number(pageSize))
+  async countTxList(query: IbcTxQueryType): Promise<number> {
+    const queryParams = parseQuery(query);
+    return this.count(queryParams);
+  },
+
+  async findTxList(query: IbcTxQueryType): Promise<IbcTxType[]> {
+    const queryParams = parseQuery(query);
+    const { page_num, page_size } = query;
+    return this.find(queryParams, { _id: 0 })
+      .skip((Number(page_num) - 1) * Number(page_size))
+      .limit(Number(page_size))
       .sort({ tx_time: -1 });
   },
 
