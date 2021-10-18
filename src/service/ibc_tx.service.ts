@@ -11,11 +11,17 @@ export class IbcTxService {
 
   async queryIbcTxList(
     query: IbcTxListReqDto,
-  ): Promise<ListStruct<IbcTxResDto[]>> {
-    const { page_num, page_size } = query;
-    const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
-      await this.ibcTxModel.findTxList(page_num, page_size),
-    );
-    return new ListStruct(ibcTxDatas, page_num, page_size);
+  ): Promise<ListStruct<IbcTxResDto[]> | number> {
+    const { use_count, page_num, page_size } = query;
+
+    if (use_count) {
+      return this.ibcTxModel.countTxList(query)
+    } else {
+      const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
+        await this.ibcTxModel.findTxList(query),
+      );
+      return new ListStruct(ibcTxDatas, page_num, page_size);
+    }
+
   }
 }

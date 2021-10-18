@@ -282,41 +282,49 @@ export class IbcTxTaskService {
               if (ibcTx.status !== IbcTxStatus.FAILED) {
                 let is_base_denom = true;
                 if (Boolean(denom_path) && denom_path.split('/').length > 1) {
-                  const dc_port = denom_path.split('/')[0]
-                  const dc_channel = denom_path.split('/')[1]
-                  const chainConfigRecord = await this.chainConfigModel.findScChain({
-                    dc_chain_id: sc_chain_id,
-                    dc_port,
-                    dc_channel
-                  })
+                  const dc_port = denom_path.split('/')[0];
+                  const dc_channel = denom_path.split('/')[1];
+                  const chainConfigRecord = await this.chainConfigModel.findScChain(
+                    {
+                      dc_chain_id: sc_chain_id,
+                      dc_port,
+                      dc_channel,
+                    },
+                  );
                   if (chainConfigRecord && chainConfigRecord.chain_id) {
-                    is_base_denom = false
+                    is_base_denom = false;
                   }
                 }
                 // parse denom
-                this.parseDenom(
-                  ibcTx.sc_chain_id,
-                  sc_denom,
-                  ibcTx.base_denom,
-                  denom_path,
-                  !Boolean(denom_path),
-                  dateNow,
-                  dateNow,
-                  tx.time,
-                  is_base_denom,
-                );
+                ibcTx.dc_chain_id &&
+                  ibcTx.status !== IbcTxStatus.FAILED &&
+                  this.parseDenom(
+                    ibcTx.sc_chain_id,
+                    sc_denom,
+                    ibcTx.base_denom,
+                    denom_path,
+                    !Boolean(denom_path),
+                    dateNow,
+                    dateNow,
+                    tx.time,
+                    is_base_denom,
+                  );
 
                 // parse channel
-                this.parseChannel(
-                  sc_chain_id,
-                  sc_channel,
-                  dateNow,
-                  dateNow,
-                  tx.time,
-                );
+                ibcTx.dc_chain_id &&
+                  ibcTx.status !== IbcTxStatus.FAILED &&
+                  this.parseChannel(
+                    sc_chain_id,
+                    sc_channel,
+                    dateNow,
+                    dateNow,
+                    tx.time,
+                  );
 
                 // parse chain
-                this.parseChain(sc_chain_id, dateNow, dateNow, tx.time);
+                ibcTx.dc_chain_id &&
+                  ibcTx.status !== IbcTxStatus.FAILED &&
+                  this.parseChain(sc_chain_id, dateNow, dateNow, tx.time);
               }
             });
           }
@@ -408,7 +416,7 @@ export class IbcTxTaskService {
                 !Boolean(denom_path),
                 dateNow,
                 dateNow,
-                counter_party_tx.time,
+                ibcTx.tx_time,
                 false,
               );
 
@@ -418,7 +426,7 @@ export class IbcTxTaskService {
                 ibcTx.dc_channel,
                 dateNow,
                 dateNow,
-                counter_party_tx.time,
+                ibcTx.tx_time,
               );
 
               // parse Chain
@@ -426,7 +434,7 @@ export class IbcTxTaskService {
                 ibcTx.dc_chain_id,
                 dateNow,
                 dateNow,
-                counter_party_tx.time,
+                ibcTx.tx_time,
               );
             }
           });
