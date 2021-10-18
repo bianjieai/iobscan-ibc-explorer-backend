@@ -298,7 +298,7 @@ export class IbcTxTaskService {
                 // parse denom
                 ibcTx.dc_chain_id &&
                   ibcTx.status !== IbcTxStatus.FAILED &&
-                  this.parseDenom(
+                  (await this.parseDenom(
                     ibcTx.sc_chain_id,
                     sc_denom,
                     ibcTx.base_denom,
@@ -308,23 +308,28 @@ export class IbcTxTaskService {
                     dateNow,
                     tx.time,
                     is_base_denom,
-                  );
+                  ));
 
                 // parse channel
                 ibcTx.dc_chain_id &&
                   ibcTx.status !== IbcTxStatus.FAILED &&
-                  this.parseChannel(
+                  (await this.parseChannel(
                     sc_chain_id,
                     sc_channel,
                     dateNow,
                     dateNow,
                     tx.time,
-                  );
+                  ));
 
                 // parse chain
                 ibcTx.dc_chain_id &&
                   ibcTx.status !== IbcTxStatus.FAILED &&
-                  this.parseChain(sc_chain_id, dateNow, dateNow, tx.time);
+                  (await this.parseChain(
+                    sc_chain_id,
+                    dateNow,
+                    dateNow,
+                    tx.time,
+                  ));
               }
             });
           }
@@ -360,7 +365,7 @@ export class IbcTxTaskService {
       if (txs.length) {
         const counter_party_tx = txs[0];
         counter_party_tx &&
-          counter_party_tx.msgs.forEach((msg, msgIndex) => {
+          counter_party_tx.msgs.forEach(async (msg, msgIndex) => {
             if (
               msg.type === TxType.recv_packet &&
               ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
@@ -405,10 +410,10 @@ export class IbcTxTaskService {
                 dc_denom_origin === ibcTx.base_denom
                   ? ''
                   : dc_denom_origin.replace(`/${ibcTx.base_denom}`, '');
-              this.ibcTxModel.updateIbcTx(ibcTx);
+              await this.ibcTxModel.updateIbcTx(ibcTx);
 
               // parse denom
-              this.parseDenom(
+              await this.parseDenom(
                 ibcTx.dc_chain_id,
                 dc_denom,
                 ibcTx.base_denom,
@@ -421,7 +426,7 @@ export class IbcTxTaskService {
               );
 
               // parse Channel
-              this.parseChannel(
+              await this.parseChannel(
                 ibcTx.dc_chain_id,
                 ibcTx.dc_channel,
                 dateNow,
@@ -430,7 +435,7 @@ export class IbcTxTaskService {
               );
 
               // parse Chain
-              this.parseChain(
+              await this.parseChain(
                 ibcTx.dc_chain_id,
                 dateNow,
                 dateNow,
@@ -570,7 +575,10 @@ export class IbcTxTaskService {
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
       ibcDenomRecord.update_at = update_at;
-      ibcDenomRecord.tx_time = tx_time;
+      const currentTime = ibcDenomRecord.tx_time
+      if (tx_time > currentTime) {
+        ibcDenomRecord.tx_time = tx_time
+      }
       await this.ibcDenomModel.updateDenomRecord(ibcDenomRecord);
     }
   }
@@ -604,12 +612,21 @@ export class IbcTxTaskService {
       await this.ibcChannelModel.insertManyChannel(ibcChannel);
     } else {
       ibcChannelRecord.update_at = update_at;
-      ibcChannelRecord.tx_time = tx_time;
+      const currentTime = ibcChannelRecord.tx_time
+      if (tx_time > currentTime) {
+        ibcChannelRecord.tx_time = tx_time
+      }
       await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
     }
   }
   // parse Chain
-  async parseChain(chain_id, create_at, update_at, tx_time): Promise<void> {
+  async parseChain(
+    chain_id,
+    create_at,
+    update_at,
+    tx_time,
+    num?,
+  ): Promise<void> {
     const ibcChainRecord = await this.ibcChainModel.findById(chain_id);
 
     if (!ibcChainRecord) {
@@ -627,11 +644,15 @@ export class IbcTxTaskService {
         tx_time,
       };
 
-      this.ibcChainModel.insertManyChain(ibcChain);
+      await this.ibcChainModel.insertManyChain(ibcChain);
     } else {
       ibcChainRecord.update_at = update_at;
-      ibcChainRecord.tx_time = tx_time;
-      this.ibcChainModel.updateChainRecord(ibcChainRecord);
+      const currentTime = ibcChainRecord.tx_time
+      if (tx_time > currentTime) {
+        ibcChainRecord.tx_time = tx_time
+      }
+
+      await this.ibcChainModel.updateChainRecord(ibcChainRecord);
     }
   }
 

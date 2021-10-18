@@ -43,9 +43,9 @@ IbcChainSchema.statics = {
   },
 
   async updateChainRecord(chain): Promise<void> {
-    const { chain_id } = chain;
-    const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    return this.findOneAndUpdate({ chain_id }, chain, options);
+    const { chain_id, update_at, tx_time } = chain;
+    const options = { upsert: true, new: true, setDefaultsOnInsert: true };
+    return this.findOneAndUpdate({ chain_id }, { $set: { update_at, tx_time }}, options);
   },
 
   async insertManyChain(chain): Promise<void> {

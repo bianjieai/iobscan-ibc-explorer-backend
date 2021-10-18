@@ -39,9 +39,9 @@ IbcChannelSchema.statics = {
   },
 
   async updateChannelRecord(channelRecord): Promise<void> {
-    const { record_id } = channelRecord;
-    const options = { upsert: true, new: false, setDefaultsOnInsert: true };
-    return this.findOneAndUpdate({ record_id }, channelRecord, options);
+    const { record_id, update_at, tx_time } = channelRecord;
+    const options = { upsert: true, new: true, setDefaultsOnInsert: true };
+    return this.findOneAndUpdate({ record_id }, { $set: { update_at, tx_time } }, options);
   },
 
   async insertManyChannel(ibcChannel): Promise<void> {
