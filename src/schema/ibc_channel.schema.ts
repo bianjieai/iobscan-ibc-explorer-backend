@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcChannelType } from '../types/schemaTypes/ibc_channel.interface';
-import { dateNow } from '../helper/date.helper';
 
 export const IbcChannelSchema = new mongoose.Schema(
   {
@@ -9,15 +8,15 @@ export const IbcChannelSchema = new mongoose.Schema(
     record_id: String,
     create_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
     update_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
     tx_time: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
   },
   { versionKey: false },
@@ -30,7 +29,7 @@ IbcChannelSchema.statics = {
 
   async countActive(): Promise<number> {
     return this.count({
-      tx_time: { $gte: dateNow - 24 * 60 * 60 },
+      tx_time: { $gte: Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60 },
     });
   },
 

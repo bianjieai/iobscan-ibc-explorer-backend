@@ -1,6 +1,5 @@
 import * as mongoose from 'mongoose';
 import { IbcBaseDenomType } from '../types/schemaTypes/ibc_base_denom.interface';
-import { dateNow } from '../helper/date.helper';
 
 export const IbcBaseDenomSchema = new mongoose.Schema(
   {
@@ -12,11 +11,11 @@ export const IbcBaseDenomSchema = new mongoose.Schema(
     is_main_token: Boolean,
     create_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
     update_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
   },
   { versionKey: false },

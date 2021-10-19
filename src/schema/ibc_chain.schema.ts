@@ -1,5 +1,4 @@
 import * as mongoose from 'mongoose';
-import { dateNow } from 'src/helper/date.helper';
 import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
 export const IbcChainSchema = new mongoose.Schema({
   chain_id: String,
@@ -7,15 +6,15 @@ export const IbcChainSchema = new mongoose.Schema({
   icon: String,
   create_at: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
   update_at: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
   tx_time: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
 });
 
@@ -28,13 +27,13 @@ IbcChainSchema.statics = {
 
   async findActive(): Promise<IbcChainType[]> {
     return this.find({
-      tx_time: { $gte: dateNow - 24 * 60 * 60 },
+      tx_time: { $gte: Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60 },
     }).collation( { locale: 'en_US' } ).sort({'chain_id': 1});
   },
 
   async countActive(): Promise<number> {
     return this.count({
-      tx_time: { $gte: dateNow - 24 * 60 * 60 },
+      tx_time: { $gte: Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60 },
     });
   },
 
