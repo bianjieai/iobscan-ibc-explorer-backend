@@ -4,7 +4,6 @@ import {
   IbcTxType,
   IbcTxQueryType,
 } from '../types/schemaTypes/ibc_tx.interface';
-import { dateNow } from '../helper/date.helper';
 import { parseQuery } from '../helper/ibcTx.helper';
 import { IbcTxStatus } from '../constant';
 
@@ -34,15 +33,15 @@ export const IbcTxSchema = new mongoose.Schema({
   base_denom: String,
   create_at: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
   update_at: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
   tx_time: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
 });
 
@@ -53,7 +52,7 @@ IbcTxSchema.index({ tx_time: -1 }, { background: true });
 IbcTxSchema.statics = {
   async countActive(): Promise<number> {
     return this.count({
-      tx_time: { $gte: dateNow - 24 * 60 * 60 },
+      tx_time: { $gte: Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60 },
       status: {
         $in: [
           IbcTxStatus.SUCCESS,

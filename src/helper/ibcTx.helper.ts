@@ -9,16 +9,16 @@ interface IbcTxQueryParamsType {
 }
 
 const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
-  const { beginTime, endTime, chain_id, status, token } = query;
+  const { chain_id, status, token, date_range } = query;
   const queryParams: IbcTxQueryParamsType = {};
-  if ((beginTime && beginTime > 0) || (endTime && endTime > 0)) {
+  if ((date_range && date_range[0] > 0) || (date_range && date_range[1] > 0)) {
     queryParams.tx_time = {};
   }
-  if (beginTime && beginTime > 0) {
-    queryParams.tx_time.$gte = beginTime;
+  if (date_range && date_range[0] > 0) {
+    queryParams.tx_time.$gte = date_range[0];
   }
-  if (endTime && endTime > 0) {
-    queryParams.tx_time.$lte = endTime;
+  if (date_range && date_range[1] > 0) {
+    queryParams.tx_time.$lte = date_range[1];
   }
   if (chain_id || token) {
     queryParams.$and = [];
@@ -31,12 +31,14 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
   }
   if (token) {
     const $or = [];
-    $or.push({ 'denoms.sc_denom': token });
-    $or.push({ 'denoms.dc_denom': token });
+    $or.push({ 'denoms.sc_denom': { $in: token }});
+    $or.push({ 'denoms.dc_denom': { $in: token } });
     queryParams.$and.push({ $or });
   }
   if (status) {
-    queryParams.status = status;
+    queryParams.status = {
+      $in: status,
+    };
   } else {
     queryParams.status = {
       $in: [

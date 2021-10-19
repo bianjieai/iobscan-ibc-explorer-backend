@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcDenomType } from '../types/schemaTypes/ibc_denom.interface';
-import { dateNow } from '../helper/date.helper';
 
 export const IbcDenomSchema = new mongoose.Schema(
   {
@@ -20,15 +19,15 @@ export const IbcDenomSchema = new mongoose.Schema(
     },
     create_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
     update_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
     tx_time: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
   },
   { versionKey: false },

@@ -5,15 +5,13 @@ import { BaseResDto } from './base.dto';
 
 export class IbcTxListReqDto extends PagingReqDto {
   @ApiPropertyOptional()
-  beginTime?: number;
+  date_range?: number[];
   @ApiPropertyOptional()
-  endTime?: number;
-  @ApiPropertyOptional()
-  status?: number;
+  status?: number[];
   @ApiPropertyOptional()
   chain_id?: string;
   @ApiPropertyOptional()
-  token?: string;
+  token?: string[];
   @ApiPropertyOptional()
   page_num?: number;
   @ApiPropertyOptional()

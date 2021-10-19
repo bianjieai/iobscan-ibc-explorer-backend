@@ -1,6 +1,5 @@
 import * as mongoose from 'mongoose';
 import { IbcStatisticsType } from '../types/schemaTypes/ibc_statistics.interface';
-import { dateNow } from '../helper/date.helper';
 
 export const IbcStatisticsSchema = new mongoose.Schema(
   {
@@ -8,11 +7,11 @@ export const IbcStatisticsSchema = new mongoose.Schema(
     count: Number,
     create_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
     update_at: {
       type: Number,
-      default: dateNow,
+      default: Math.floor(new Date().getTime() / 1000),
     },
   },
   { versionKey: false },

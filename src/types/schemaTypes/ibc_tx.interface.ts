@@ -23,11 +23,10 @@ export interface IbcTxType {
 
 export interface IbcTxQueryType {
   useCount?: boolean;
-  beginTime?: number;
-  endTime?: number
+  date_range?: number[];
   chain_id?: string;
-  status?: number;
-  token?: string;
+  status?: number[];
+  token?: string[];
   page_num?: number;
   page_size?: number;
 }

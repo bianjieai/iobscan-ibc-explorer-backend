@@ -1,6 +1,5 @@
 import * as mongoose from 'mongoose';
 import { IbcTaskRecordType } from '../types/schemaTypes/ibc_task_record.interface';
-import { dateNow } from '../helper/date.helper';
 import { IbcTaskRecordStatus } from '../constant';
 
 export const IbcTaskRecordSchema = new mongoose.Schema({
@@ -13,11 +12,11 @@ export const IbcTaskRecordSchema = new mongoose.Schema({
   height: Number,
   create_at: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
   update_at: {
     type: Number,
-    default: dateNow,
+    default: Math.floor(new Date().getTime() / 1000),
   },
 });
 
