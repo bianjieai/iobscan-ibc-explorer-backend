@@ -29,7 +29,7 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
     $or.push({ dc_chain_id: chain_id });
     queryParams.$and.push({ $or });
   }
-  if (token) {
+  if (token && token.length) {
     const $or = [];
     $or.push({ 'denoms.sc_denom': { $in: token }});
     $or.push({ 'denoms.dc_denom': { $in: token } });

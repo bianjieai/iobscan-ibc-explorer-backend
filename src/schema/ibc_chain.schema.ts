@@ -19,6 +19,7 @@ export const IbcChainSchema = new mongoose.Schema({
 });
 
 IbcChainSchema.index({ chain_id: 1 }, { unique: true });
+IbcChainSchema.index({ tx_time: -1 }, { unique: true });
 
 IbcChainSchema.statics = {
   async findAll(): Promise<IbcChainType[]> {
