@@ -23,7 +23,7 @@ export const IbcChannelSchema = new mongoose.Schema(
 );
 
 IbcChannelSchema.index({ record_id: 1 }, { unique: true });
-IbcChannelSchema.index({ update_at: -1 }, { background: true });
+IbcChannelSchema.index({ tx_time: -1 }, { background: true });
 
 IbcChannelSchema.statics = {
 
