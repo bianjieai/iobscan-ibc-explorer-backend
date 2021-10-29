@@ -10,7 +10,7 @@ export class IbcDenomResDto extends BaseResDto {
     is_source_chain: boolean;
     create_at: string;
     update_at: string;
-    auth: boolean;
+    symbol: string;
 
   constructor(value) {
     super()
@@ -22,14 +22,14 @@ export class IbcDenomResDto extends BaseResDto {
       is_source_chain,
       create_at,
       update_at,
-      auth,
+      symbol,
     } = value;
     this.chain_id = chain_id;
     this.denom = denom;
     this.base_denom = base_denom;
     this.denom_path = denom_path;
     this.is_source_chain = is_source_chain;
-    this.auth = auth;
+    this.symbol = symbol;
     this.create_at = create_at;
     this.update_at = update_at;
   }
@@ -42,7 +42,7 @@ export class IbcDenomResDto extends BaseResDto {
         base_denom: item.base_denom,
         denom_path: item.denom_path,
         is_source_chain: item.is_source_chain,
-        auth: item.auth,
+        symbol: item.symbol,
         create_at: item.create_at,
         update_at: item.update_at,
       }

@@ -2,6 +2,8 @@ export const RecordLimit = 100;
 
 export const Delimiter = '|';
 
+export const unAuth = 'Others';
+
 export const StatisticsNames = [
   'tx_24hr_all',
   'chains_24hr',

@@ -13,9 +13,9 @@ export const IbcDenomSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    auth: {
-      type: Boolean,
-      default: false,
+    symbol: {
+      type: String,
+      default: '',
     },
     create_at: {
       type: Number,
@@ -40,6 +40,10 @@ IbcDenomSchema.index({ tx_time: -1 }, { background: true });
 IbcDenomSchema.statics = {
   async findAllRecord(): Promise<IbcDenomType[]> {
     return this.find();
+  },
+
+  async findRecordBySymbol(symbol: string): Promise<IbcDenomType[]> {
+    return this.find({ symbol });
   },
 
   async findCount(): Promise<number> {

@@ -12,7 +12,7 @@ export const IbcChainConfigSchema = new mongoose.Schema({
 
 IbcChainConfigSchema.index({ chain_id: 1 }, { unique: true });
 IbcChainConfigSchema.statics = {
-  async findCount(query): Promise<Number> {
+  async findCount(query): Promise<number> {
     return this.count(query);
   },
 
@@ -25,7 +25,7 @@ IbcChainConfigSchema.statics = {
   },
 
   async findList(): Promise<IbcChainConfigType[]> {
-    return this.find().collation( { locale: 'en_US' } ).sort({'chain_id': 1});
+    return this.find().collation( { locale: 'en_US' } ).sort({'chain_name': 1});
   },
 
   async findDcChain(
