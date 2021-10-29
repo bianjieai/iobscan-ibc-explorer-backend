@@ -11,7 +11,9 @@ export class IbcTxListReqDto extends PagingReqDto {
   @ApiPropertyOptional()
   chain_id?: string;
   @ApiPropertyOptional()
-  token?: string[];
+  symbol?: string;
+  @ApiPropertyOptional()
+  denom?: string;
   @ApiPropertyOptional()
   page_num?: number;
   @ApiPropertyOptional()
