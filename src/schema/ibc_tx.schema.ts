@@ -108,6 +108,10 @@ IbcTxSchema.statics = {
       .sort({ tx_time: -1 });
   },
 
+  async findFirstTx(): Promise<IbcTxType> {
+    return this.findOne().sort({ tx_time: 1 })
+  },
+
   async queryTxList(query): Promise<IbcTxType[]> {
     const { status, limit } = query;
     return this.find({ status }, { _id: 0 })

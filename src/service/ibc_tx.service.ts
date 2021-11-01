@@ -31,26 +31,34 @@ export class IbcTxService {
   async queryIbcTxList(
     query: IbcTxListReqDto,
   ): Promise<ListStruct<IbcTxResDto[]> | number> {
-    const { use_count, page_num, page_size, symbol, denom } = query;
+    const { use_count, page_num, page_size, symbol, denom, start_time } = query;
     let token = undefined;
     if (symbol === unAuth) {
       const resultUnAuth = await this.ibcDenomModel.findRecordBySymbol('');
       token = resultUnAuth.map(item => {
-        return item.denom;
+        return {
+          denom: item.denom,
+          chain_id: item.chain_id
+        };
       });
     } else if (symbol) {
       const result = await this.ibcDenomModel.findRecordBySymbol(symbol);
       token = result.map(item => {
-        return item.denom;
+        return {
+          denom: item.denom,
+          chain_id: item.chain_id
+        };
       });
     }
     if (denom) {
       token = [denom];
-      console.log(token)
     }
-
+    if (start_time) {
+      const startTx = await this.ibcTxModel.findFirstTx()
+      return startTx?.tx_time;
+    }
     if (use_count) {
-      return this.ibcTxModel.countTxList({ ...query, token });
+      return await this.ibcTxModel.countTxList({ ...query, token });
     } else {
       const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
         await this.ibcTxModel.findTxList({ ...query, token }),

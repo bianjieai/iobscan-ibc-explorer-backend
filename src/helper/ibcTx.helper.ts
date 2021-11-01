@@ -31,8 +31,28 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
   }
   if (token && token.length) {
     const $or = [];
-    $or.push({ 'denoms.sc_denom': { $in: token }});
-    $or.push({ 'denoms.dc_denom': { $in: token } });
+    if (token[0] && typeof token[0] === 'string') {
+      $or.push({ 'denoms.sc_denom': { $in: token } });
+      $or.push({ 'denoms.dc_denom': { $in: token } });
+    } else {
+      const sc_or = {
+        $or: token.map(item => {
+          return {
+            'denoms.sc_denom': item.denom,
+            sc_chain_id: item.chain_id,
+          };
+        }),
+      };
+      const dc_or = {
+        $or: token.map(item => {
+          return {
+            'denoms.dc_denom': item.denom,
+            dc_chain_id: item.chain_id,
+          };
+        }),
+      };
+      $or.push(sc_or, dc_or);
+    }
     queryParams.$and.push({ $or });
   }
   if (status) {
