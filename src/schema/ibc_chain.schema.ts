@@ -29,7 +29,7 @@ IbcChainSchema.statics = {
   async findActive(): Promise<IbcChainType[]> {
     return this.find({
       tx_time: { $gte: Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60 },
-    }).collation( { locale: 'en_US' } ).sort({'chain_id': 1});
+    }).collation( { locale: 'en_US' } ).sort({'chain_name': 1});
   },
 
   async countActive(): Promise<number> {

@@ -279,36 +279,36 @@ export class IbcTxTaskService {
 
               await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
 
-              if (ibcTx.status !== IbcTxStatus.FAILED) {
-                let is_base_denom = true;
-                if (Boolean(denom_path) && denom_path.split('/').length > 1) {
-                  const dc_port = denom_path.split('/')[0];
-                  const dc_channel = denom_path.split('/')[1];
-                  const chainConfigRecord = await this.chainConfigModel.findScChain(
-                    {
-                      dc_chain_id: sc_chain_id,
-                      dc_port,
-                      dc_channel,
-                    },
-                  );
-                  if (chainConfigRecord && chainConfigRecord.chain_id) {
-                    is_base_denom = false;
-                  }
+              let is_base_denom = true;
+              if (Boolean(denom_path) && denom_path.split('/').length > 1) {
+                const dc_port = denom_path.split('/')[0];
+                const dc_channel = denom_path.split('/')[1];
+                const chainConfigRecord = await this.chainConfigModel.findScChain(
+                  {
+                    dc_chain_id: sc_chain_id,
+                    dc_port,
+                    dc_channel,
+                  },
+                );
+                if (chainConfigRecord && chainConfigRecord.chain_id) {
+                  is_base_denom = false;
                 }
-                // parse denom
-                ibcTx.dc_chain_id &&
-                  ibcTx.status !== IbcTxStatus.FAILED &&
-                  (await this.parseDenom(
-                    ibcTx.sc_chain_id,
-                    sc_denom,
-                    ibcTx.base_denom,
-                    denom_path,
-                    !Boolean(denom_path),
-                    dateNow,
-                    dateNow,
-                    tx.time,
-                    is_base_denom,
-                  ));
+              }
+              // parse denom
+              const real_denom = (ibcTx.status !== IbcTxStatus.FAILED);
+              await this.parseDenom(
+                ibcTx.sc_chain_id,
+                sc_denom,
+                ibcTx.base_denom,
+                denom_path,
+                !Boolean(denom_path),
+                dateNow,
+                dateNow,
+                tx.time,
+                is_base_denom,
+                real_denom,
+              );
+              if (ibcTx.status !== IbcTxStatus.FAILED) {
 
                 // parse channel
                 ibcTx.dc_chain_id &&
@@ -413,6 +413,7 @@ export class IbcTxTaskService {
               await this.ibcTxModel.updateIbcTx(ibcTx);
 
               // parse denom
+              const real_denom = ibcTx.status === IbcTxStatus.SUCCESS;
               await this.parseDenom(
                 ibcTx.dc_chain_id,
                 dc_denom,
@@ -423,6 +424,7 @@ export class IbcTxTaskService {
                 dateNow,
                 counter_party_tx.time,
                 false,
+                real_denom
               );
 
               // parse Channel
@@ -554,6 +556,7 @@ export class IbcTxTaskService {
     update_at,
     tx_time,
     is_base_denom,
+    real_denom,
   ): Promise<void> {
     const ibcDenomRecord = await this.ibcDenomModel.findDenomRecord(
       chain_id,
@@ -571,13 +574,15 @@ export class IbcTxTaskService {
         update_at,
         tx_time,
         is_base_denom,
+        real_denom,
       };
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
       ibcDenomRecord.update_at = update_at;
-      const currentTime = ibcDenomRecord.tx_time
+      ibcDenomRecord.real_denom = real_denom;
+      const currentTime = ibcDenomRecord.tx_time;
       if (tx_time > currentTime) {
-        ibcDenomRecord.tx_time = tx_time
+        ibcDenomRecord.tx_time = tx_time;
       }
       await this.ibcDenomModel.updateDenomRecord(ibcDenomRecord);
     }
@@ -612,9 +617,9 @@ export class IbcTxTaskService {
       await this.ibcChannelModel.insertManyChannel(ibcChannel);
     } else {
       ibcChannelRecord.update_at = update_at;
-      const currentTime = ibcChannelRecord.tx_time
+      const currentTime = ibcChannelRecord.tx_time;
       if (tx_time > currentTime) {
-        ibcChannelRecord.tx_time = tx_time
+        ibcChannelRecord.tx_time = tx_time;
       }
       await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
     }
@@ -647,9 +652,9 @@ export class IbcTxTaskService {
       await this.ibcChainModel.insertManyChain(ibcChain);
     } else {
       ibcChainRecord.update_at = update_at;
-      const currentTime = ibcChainRecord.tx_time
+      const currentTime = ibcChainRecord.tx_time;
       if (tx_time > currentTime) {
-        ibcChainRecord.tx_time = tx_time
+        ibcChainRecord.tx_time = tx_time;
       }
 
       await this.ibcChainModel.updateChainRecord(ibcChainRecord);
