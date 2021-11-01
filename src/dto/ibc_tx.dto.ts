@@ -18,6 +18,8 @@ export class IbcTxListReqDto extends PagingReqDto {
   page_num?: number;
   @ApiPropertyOptional()
   page_size?: number;
+  @ApiPropertyOptional()
+  start_time?: number
 
   static convert(value: any): any {
     return super.convert(value);

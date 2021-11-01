@@ -26,7 +26,7 @@ export interface IbcTxQueryType {
   date_range?: number[];
   chain_id?: string;
   status?: number[];
-  token?: string[];
+  token?: { denom: string; chain_id: string }[];
   page_num?: number;
   page_size?: number;
 }
