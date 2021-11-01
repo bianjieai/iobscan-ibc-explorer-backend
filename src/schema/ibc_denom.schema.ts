@@ -29,6 +29,10 @@ export const IbcDenomSchema = new mongoose.Schema(
       type: Number,
       default: Math.floor(new Date().getTime() / 1000),
     },
+    real_denom: {
+      type: Boolean,
+      default: false,
+    },
   },
   { versionKey: false },
 );
@@ -39,7 +43,7 @@ IbcDenomSchema.index({ tx_time: -1 }, { background: true });
 
 IbcDenomSchema.statics = {
   async findAllRecord(): Promise<IbcDenomType[]> {
-    return this.find();
+    return this.find({ real_denom: true });
   },
 
   async findRecordBySymbol(symbol: string): Promise<IbcDenomType[]> {
@@ -47,12 +51,13 @@ IbcDenomSchema.statics = {
   },
 
   async findCount(): Promise<number> {
-    return this.count();
+    return this.count({ real_denom: true });
   },
 
   async findBaseDenomCount(): Promise<number> {
     return this.count({
       is_base_denom: true,
+      real_denom: true,
     });
   },
 
