@@ -421,7 +421,7 @@ export class IbcTxTaskService {
                 !Boolean(denom_path),
                 dateNow,
                 dateNow,
-                ibcTx.tx_time,
+                counter_party_tx.time,
                 false,
               );
 
@@ -431,7 +431,7 @@ export class IbcTxTaskService {
                 ibcTx.dc_channel,
                 dateNow,
                 dateNow,
-                ibcTx.tx_time,
+                counter_party_tx.time,
               );
 
               // parse Chain
@@ -439,7 +439,7 @@ export class IbcTxTaskService {
                 ibcTx.dc_chain_id,
                 dateNow,
                 dateNow,
-                ibcTx.tx_time,
+                counter_party_tx.time,
               );
             }
           });

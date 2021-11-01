@@ -69,8 +69,6 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
       ],
     };
   }
-  console.log('queryParams');
-  console.log(JSON.stringify(queryParams));
   return queryParams;
 };
 
