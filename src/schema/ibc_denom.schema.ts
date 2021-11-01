@@ -31,7 +31,7 @@ export const IbcDenomSchema = new mongoose.Schema(
     },
     real_denom: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   },
   { versionKey: false },

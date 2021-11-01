@@ -295,7 +295,7 @@ export class IbcTxTaskService {
                 }
               }
               // parse denom
-              const real_denom = (ibcTx.status !== IbcTxStatus.FAILED);
+              const real_denom = ibcTx.status !== IbcTxStatus.FAILED;
               await this.parseDenom(
                 ibcTx.sc_chain_id,
                 sc_denom,
@@ -309,7 +309,6 @@ export class IbcTxTaskService {
                 real_denom,
               );
               if (ibcTx.status !== IbcTxStatus.FAILED) {
-
                 // parse channel
                 ibcTx.dc_chain_id &&
                   ibcTx.status !== IbcTxStatus.FAILED &&
@@ -424,7 +423,7 @@ export class IbcTxTaskService {
                 dateNow,
                 counter_party_tx.time,
                 false,
-                real_denom
+                real_denom,
               );
 
               // parse Channel
@@ -579,7 +578,7 @@ export class IbcTxTaskService {
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
       ibcDenomRecord.update_at = update_at;
-      ibcDenomRecord.real_denom = real_denom;
+      ibcDenomRecord.real_denom = ibcDenomRecord.real_denom || real_denom
       const currentTime = ibcDenomRecord.tx_time;
       if (tx_time > currentTime) {
         ibcDenomRecord.tx_time = tx_time;
