@@ -1,6 +1,6 @@
 import { IbcChainConfigType } from '../types/schemaTypes/ibc_chain_config.interface';
 import { IbcChainType } from '../types/schemaTypes/ibc_chain.interface';
-import { BaseResDto } from './base.dto'
+import { BaseResDto } from './base.dto';
 
 export class IbcChainResDto extends BaseResDto {
   chain_id: string;
@@ -8,7 +8,7 @@ export class IbcChainResDto extends BaseResDto {
   icon: string;
 
   constructor(value) {
-    super()
+    super();
     const { chain_id, chain_name, icon } = value;
     this.chain_id = chain_id;
     this.chain_name = chain_name;
@@ -16,9 +16,23 @@ export class IbcChainResDto extends BaseResDto {
   }
 
   static bundleData(value: any): IbcChainResDto[] {
-    const datas: IbcChainResDto[] = value.map((item: IbcChainConfigType | IbcChainType) => {
-      return new IbcChainResDto(item);
-    });
+    const datasSortChars = value.filter(
+      (item: IbcChainConfigType | IbcChainType) => {
+        const sASC = item.chain_name.charCodeAt(0);
+        return (sASC >= 65 && sASC <= 90) || (sASC >= 97 && sASC <= 122);
+      },
+    );
+    const datasSortOthers = value.filter(
+      (item: IbcChainConfigType | IbcChainType) => {
+        const sASC = item.chain_name.charCodeAt(0);
+        return sASC < 65 || (90 < sASC && sASC < 97) || sASC > 122;
+      },
+    );
+    const datas: IbcChainResDto[] = [...datasSortChars, ...datasSortOthers].map(
+      (item: IbcChainConfigType | IbcChainType) => {
+        return new IbcChainResDto(item);
+      },
+    );
     return datas;
   }
 }
