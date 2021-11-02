@@ -248,7 +248,7 @@ export class IbcTxTaskService {
               ibcTx.status = IbcTxStatus.SETTING;
             }
 
-            ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}${new Date().getTime()}`;
+            ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}${hash}`;
             ibcTx.sc_addr = sc_addr;
             ibcTx.dc_addr = dc_addr;
             ibcTx.sc_port = sc_port;
