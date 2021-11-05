@@ -23,13 +23,10 @@ export const TxSchema = new mongoose.Schema(
   },
   { versionKey: false },
 );
-TxSchema.index({ time: -1, 'msgs.type': -1, status: -1 }, { background: true });
-TxSchema.index({ height: 1 }, { background: true });
-TxSchema.index({ addrs: -1, time: -1, status: -1 }, { background: true });
-TxSchema.index(
-  { 'msgs.type': -1, height: -1, 'msgs.msg.ex.service_name': -1 },
-  { background: true },
-);
+TxSchema.index({ tx_hash: -1 }, { unique: true });
+TxSchema.index({ update_at: 1 }, { background: true });
+TxSchema.index({ 'msgs.type': -1, height: -1 }, { background: true });
+TxSchema.index({ status: -1, 'msgs.type': -1 }, { background: true });
 
 // 	txs
 TxSchema.statics = {
@@ -48,14 +45,12 @@ TxSchema.statics = {
   },
 
   async queryTxListByPacketId(query): Promise<any> {
-    const { type, limit, status, packet_id } = query;
-    return this.find({
+    const { type, status, packet_id } = query;
+    return this.findOne({
       'msgs.type': type,
       status,
       'msgs.msg.packet_id': packet_id,
     })
-      .sort({ update_at: 1 })
-      .limit(Number(limit));
   },
 
   async queryTxListByHeight(type, height): Promise<any> {

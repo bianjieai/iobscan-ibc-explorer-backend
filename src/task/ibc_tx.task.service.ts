@@ -224,7 +224,7 @@ export class IbcTxTaskService {
 
             if (ibcTx.status === IbcTxStatus.FAILED) {
               // get base_denom、denom_path from lcd API
-              if (sc_denom.indexOf('ibc') !== -1) {
+              if (sc_denom.indexOf('ibc') !== -1 && lcd) {
                 const result = await ChainHttp.getDenomByLcdAndHash(
                   lcd,
                   sc_denom.replace('ibc/', ''),
@@ -343,8 +343,7 @@ export class IbcTxTaskService {
       status: IbcTxStatus.PROCESSING,
       limit: RecordLimit,
     });
-
-    ibcTxs.forEach(async ibcTx => {
+    ibcTxs.map(async ibcTx => {
       if (!ibcTx.dc_chain_id) return;
 
       const txModel = await this.connection.model(
@@ -353,97 +352,94 @@ export class IbcTxTaskService {
         `sync_${ibcTx.dc_chain_id}_tx`,
       );
 
-      const txs = await txModel.queryTxListByPacketId({
+      const counter_party_tx = await txModel.queryTxListByPacketId({
         type: TxType.recv_packet,
-        limit: RecordLimit,
         status: TxStatus.SUCCESS,
         packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
       });
 
       // txs have status is success's tx?
-      if (txs.length) {
-        const counter_party_tx = txs[0];
-        counter_party_tx &&
-          counter_party_tx.msgs.forEach(async (msg, msgIndex) => {
-            if (
-              msg.type === TxType.recv_packet &&
-              ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
-            ) {
-              const { dc_denom, dc_denom_origin } = getDcDenom(msg);
+      if (counter_party_tx) {
+        counter_party_tx.msgs.forEach(async (msg, msgIndex) => {
+          if (
+            msg.type === TxType.recv_packet &&
+            ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
+          ) {
+            const { dc_denom, dc_denom_origin } = getDcDenom(msg);
 
-              // add write_acknowledgement solution， value type is string;
-              let result = '';
-              const counter_party_tx_events = counter_party_tx.events_new.find(
-                event_new => {
-                  return event_new.msg_index === msgIndex;
-                },
-              );
-              counter_party_tx_events &&
-                counter_party_tx_events.events.forEach(event => {
-                  if (event.type === 'write_acknowledgement') {
-                    event.attributes.forEach(attribute => {
-                      if (attribute.key === 'packet_ack') {
-                        const resultObj = JSONparse(attribute.value);
-                        result = resultObj.hasOwnProperty('error')
-                          ? 'false'
-                          : 'true';
-                      }
-                    });
-                  }
-                });
-              ibcTx.status =
-                result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
-              ibcTx.dc_tx_info = {
-                hash: counter_party_tx.tx_hash,
-                status: counter_party_tx.status,
-                time: counter_party_tx.time,
-                height: counter_party_tx.height,
-                fee: counter_party_tx.fee,
-                msg_amount: msg.msg.token,
-                msg,
-              };
-              ibcTx.update_at = dateNow;
-              // ibcTx.tx_time = counter_party_tx.time;
-              ibcTx.denoms['dc_denom'] = dc_denom;
-              const denom_path =
-                dc_denom_origin === ibcTx.base_denom
-                  ? ''
-                  : dc_denom_origin.replace(`/${ibcTx.base_denom}`, '');
-              await this.ibcTxModel.updateIbcTx(ibcTx);
+            // add write_acknowledgement solution， value type is string;
+            let result = '';
+            const counter_party_tx_events = counter_party_tx.events_new.find(
+              event_new => {
+                return event_new.msg_index === msgIndex;
+              },
+            );
+            counter_party_tx_events &&
+              counter_party_tx_events.events.forEach(event => {
+                if (event.type === 'write_acknowledgement') {
+                  event.attributes.forEach(attribute => {
+                    if (attribute.key === 'packet_ack') {
+                      const resultObj = JSONparse(attribute.value);
+                      result = resultObj.hasOwnProperty('error')
+                        ? 'false'
+                        : 'true';
+                    }
+                  });
+                }
+              });
+            ibcTx.status =
+              result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
+            ibcTx.dc_tx_info = {
+              hash: counter_party_tx.tx_hash,
+              status: counter_party_tx.status,
+              time: counter_party_tx.time,
+              height: counter_party_tx.height,
+              fee: counter_party_tx.fee,
+              msg_amount: msg.msg.token,
+              msg,
+            };
+            ibcTx.update_at = dateNow;
+            // ibcTx.tx_time = counter_party_tx.time;
+            ibcTx.denoms['dc_denom'] = dc_denom;
+            const denom_path =
+              dc_denom_origin === ibcTx.base_denom
+                ? ''
+                : dc_denom_origin.replace(`/${ibcTx.base_denom}`, '');
+            await this.ibcTxModel.updateIbcTx(ibcTx);
 
-              // parse denom
-              const real_denom = ibcTx.status === IbcTxStatus.SUCCESS;
-              await this.parseDenom(
-                ibcTx.dc_chain_id,
-                dc_denom,
-                ibcTx.base_denom,
-                denom_path,
-                !Boolean(denom_path),
-                dateNow,
-                dateNow,
-                counter_party_tx.time,
-                false,
-                real_denom,
-              );
+            // parse denom
+            const real_denom = ibcTx.status === IbcTxStatus.SUCCESS;
+            await this.parseDenom(
+              ibcTx.dc_chain_id,
+              dc_denom,
+              ibcTx.base_denom,
+              denom_path,
+              !Boolean(denom_path),
+              dateNow,
+              dateNow,
+              counter_party_tx.time,
+              false,
+              real_denom,
+            );
 
-              // parse Channel
-              await this.parseChannel(
-                ibcTx.dc_chain_id,
-                ibcTx.dc_channel,
-                dateNow,
-                dateNow,
-                counter_party_tx.time,
-              );
+            // parse Channel
+            await this.parseChannel(
+              ibcTx.dc_chain_id,
+              ibcTx.dc_channel,
+              dateNow,
+              dateNow,
+              counter_party_tx.time,
+            );
 
-              // parse Chain
-              await this.parseChain(
-                ibcTx.dc_chain_id,
-                dateNow,
-                dateNow,
-                counter_party_tx.time,
-              );
-            }
-          });
+            // parse Chain
+            await this.parseChain(
+              ibcTx.dc_chain_id,
+              dateNow,
+              dateNow,
+              counter_party_tx.time,
+            );
+          }
+        });
       } else {
         const blockModel = await this.connection.model(
           'blockModel',
@@ -451,7 +447,9 @@ export class IbcTxTaskService {
           `sync_${ibcTx.dc_chain_id}_block`,
         );
 
-        const { height, time } = await blockModel.findLatestBlock();
+        const lastBlock = await blockModel.findLatestBlock();
+        if (!lastBlock) return;
+        const { height, time } = lastBlock;
         const ibcHeight =
           ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
         const ibcTime = ibcTx.sc_tx_info.msg.msg.timeout_timestamp;
@@ -578,7 +576,7 @@ export class IbcTxTaskService {
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
       ibcDenomRecord.update_at = update_at;
-      ibcDenomRecord.real_denom = ibcDenomRecord.real_denom || real_denom
+      ibcDenomRecord.real_denom = ibcDenomRecord.real_denom || real_denom;
       const currentTime = ibcDenomRecord.tx_time;
       if (tx_time > currentTime) {
         ibcDenomRecord.tx_time = tx_time;
