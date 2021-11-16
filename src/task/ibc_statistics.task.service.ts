@@ -171,7 +171,7 @@ export class IbcStatisticsTaskService {
         };
 
         for (const statistics_name of StatisticsNames) {
-            const statisticsRecord = await this.ibcStatisticsModel.findStatisticsRecord(
+            const statisticsRecord = await this.findStatisticsRecord(
                 statistics_name,
             );
             if (!statisticsRecord) {
@@ -184,7 +184,7 @@ export class IbcStatisticsTaskService {
             } else {
                 statisticsRecord.count = parseCount[statistics_name];
                 statisticsRecord.update_at = dateNow;
-                await this.ibcStatisticsModel.updateStatisticsRecord(statisticsRecord);
+                await this.updateStatisticsRecord(statisticsRecord);
             }
         }
     }
