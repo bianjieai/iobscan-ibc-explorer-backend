@@ -85,7 +85,7 @@ IbcTxSchema.statics = {
 
 
 
-  async aggregateFindSrcChannels(dateNow:any,chains :Array<string>): Promise<any> {
+  async aggregateFindSrcChannels(dateNow:any,chains :Array<string>): Promise<Array<AggregateResult24hr>> {
 
     return this.aggregate([
     {$match: {
@@ -105,7 +105,7 @@ IbcTxSchema.statics = {
     } }]);
   },
 
-  async aggregateFindDesChannels(dateNow:any,chains :Array<string>): Promise<any> {
+  async aggregateFindDesChannels(dateNow:any,chains :Array<string>): Promise<Array<AggregateResult24hr>> {
 
     return this.aggregate([
     {$match: {
