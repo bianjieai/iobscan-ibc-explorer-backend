@@ -9,7 +9,7 @@ import { IbcTxSchema } from '../schema/ibc_tx.schema';
 import { TxSchema } from '../schema/tx.schema';
 import { IbcBlockSchema } from '../schema/ibc_block.schema';
 import { IbcTaskRecordSchema } from '../schema/ibc_task_record.schema';
-import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
+import { IbcChannelSchema } from '../schema/ibc_channel.schema';
 import { ChainHttp } from '../http/lcd/chain.http';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
 import { JSONparse } from '../util/util';
@@ -231,7 +231,7 @@ export class IbcTxTaskService {
 
             if (ibcTx.status === IbcTxStatus.FAILED) {
               // get base_denom、denom_path from lcd API
-              if (sc_denom.indexOf('ibc') !== -1) {
+              if (sc_denom.indexOf('ibc') !== -1 && lcd) {
                 const result = await ChainHttp.getDenomByLcdAndHash(
                     lcd,
                     sc_denom.replace('ibc/', ''),
@@ -352,32 +352,31 @@ export class IbcTxTaskService {
   }
 
   // ibcTx second（recv_packet || timoout_packet）
-  async changeIbcTxState(dateNow): Promise<void> {
+  async changeIbcTxState(dateNow): Promise<any> {
     const ibcTxs = await this.ibcTxModel.queryTxList({
       status: IbcTxStatus.PROCESSING,
       limit: RecordLimit,
     });
+    //获取最新块高（chain_config中的所有链）
+    return Promise.all(
+      ibcTxs.map(async ibcTx => {
+        if (!ibcTx.dc_chain_id) return;
 
-    ibcTxs.forEach(async ibcTx => {
-      if (!ibcTx.dc_chain_id) return;
+        const txModel = await this.connection.model(
+          'txModel',
+          TxSchema,
+          `sync_${ibcTx.dc_chain_id}_tx`,
+        );
 
-      const txModel = await this.connection.model(
-        'txModel',
-        TxSchema,
-        `sync_${ibcTx.dc_chain_id}_tx`,
-      );
+        //批量查询，组装map结构
+        const counter_party_tx = await txModel.queryTxListByPacketId({
+          type: TxType.recv_packet,
+          status: TxStatus.SUCCESS,
+          packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
+        });
 
-      const txs = await txModel.queryTxListByPacketId({
-        type: TxType.recv_packet,
-        limit: RecordLimit,
-        status: TxStatus.SUCCESS,
-        packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
-      });
-
-      // txs have status is success's tx?
-      if (txs.length) {
-        const counter_party_tx = txs[0];
-        counter_party_tx &&
+        // txs have status is success's tx?
+        if (counter_party_tx) {
           counter_party_tx.msgs.forEach(async (msg, msgIndex) => {
             if (
               msg.type === TxType.recv_packet &&
@@ -440,7 +439,7 @@ export class IbcTxTaskService {
                 real_denom,
               );
 
-              // parse Channel
+              // parse Channel 【移除】
               await this.parseChannel(
                 ibcTx.dc_chain_id,
                 ibcTx.dc_channel,
@@ -449,7 +448,7 @@ export class IbcTxTaskService {
                 counter_party_tx.time,
               );
 
-              // parse Chain
+              // parse Chain 【移除】
               await this.parseChain(
                 ibcTx.dc_chain_id,
                 dateNow,
@@ -458,54 +457,59 @@ export class IbcTxTaskService {
               );
             }
           });
-      } else {
-        const blockModel = await this.connection.model(
-          'blockModel',
-          IbcBlockSchema,
-          `sync_${ibcTx.dc_chain_id}_block`,
-        );
-
-        const { height, time } = await blockModel.findLatestBlock();
-        const ibcHeight =
-          ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
-        const ibcTime = ibcTx.sc_tx_info.msg.msg.timeout_timestamp;
-        if (ibcHeight < height || ibcTime < time) {
-          const txModel = await this.connection.model(
-            'txModel',
-            TxSchema,
-            `sync_${ibcTx.sc_chain_id}_tx`,
+        } else {
+          const blockModel = await this.connection.model(
+            'blockModel',
+            IbcBlockSchema,
+            `sync_${ibcTx.dc_chain_id}_block`,
           );
-          const refunded_tx_arr = await txModel.queryTxListByPacketId({
-            type: TxType.timeout_packet,
-            limit: RecordLimit,
-            status: TxStatus.SUCCESS,
-            packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
-          });
-          const refunded_tx = refunded_tx_arr[0];
-          refunded_tx &&
-            refunded_tx.msgs.forEach(msg => {
-              if (
-                msg.type === TxType.timeout_packet &&
-                ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
-              ) {
-                ibcTx.status = IbcTxStatus.REFUNDED;
-                ibcTx.refunded_tx_info = {
-                  hash: refunded_tx.tx_hash,
-                  status: refunded_tx.status,
-                  time: refunded_tx.time,
-                  height: refunded_tx.height,
-                  fee: refunded_tx.fee,
-                  msg_amount: msg.msg.token,
-                  msg,
-                };
-                ibcTx.update_at = dateNow;
-                // ibcTx.tx_time = refunded_tx.time;
-                this.ibcTxModel.updateIbcTx(ibcTx);
-              }
+
+          //放在开始位置查询，根据map的key找到对应chain的块高
+          const lastBlock = await blockModel.findLatestBlock();
+          if (!lastBlock) return;
+          const { height, time } = lastBlock;
+          const ibcHeight =
+            ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
+          const ibcTime = ibcTx.sc_tx_info.msg.msg.timeout_timestamp;
+          if (ibcHeight < height || ibcTime < time) {
+            const txModel = await this.connection.model(
+              'txModel',
+              TxSchema,
+              `sync_${ibcTx.sc_chain_id}_tx`,
+            );
+            // 取最新一条成功的timeout_packet，order by heiht -1,
+            const refunded_tx_arr = await txModel.queryTxListByPacketId({
+              type: TxType.timeout_packet,
+              limit: RecordLimit,
+              status: TxStatus.SUCCESS,
+              packet_id: ibcTx.sc_tx_info.msg.msg.packet_id,
             });
+            const refunded_tx = refunded_tx_arr[0];
+            refunded_tx &&
+              refunded_tx.msgs.forEach(msg => {
+                if (
+                  msg.type === TxType.timeout_packet &&
+                  ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
+                ) {
+                  ibcTx.status = IbcTxStatus.REFUNDED;
+                  ibcTx.refunded_tx_info = {
+                    hash: refunded_tx.tx_hash,
+                    status: refunded_tx.status,
+                    time: refunded_tx.time,
+                    height: refunded_tx.height,
+                    fee: refunded_tx.fee,
+                    msg_amount: msg.msg.token,
+                    msg,
+                  };
+                  ibcTx.update_at = dateNow;
+                  // ibcTx.tx_time = refunded_tx.time;
+                  this.ibcTxModel.updateIbcTx(ibcTx);
+                }
+              });
+          }
         }
-      }
-    });
+      }),
+    );
   }
 
   // get dc_port、dc_channel、sequence
@@ -592,7 +596,7 @@ export class IbcTxTaskService {
       await this.ibcDenomModel.insertManyDenom(ibcDenom);
     } else {
       ibcDenomRecord.update_at = update_at;
-      ibcDenomRecord.real_denom = ibcDenomRecord.real_denom || real_denom
+      ibcDenomRecord.real_denom = ibcDenomRecord.real_denom || real_denom;
       const currentTime = ibcDenomRecord.tx_time;
       if (tx_time > currentTime) {
         ibcDenomRecord.tx_time = tx_time;

@@ -30,3 +30,7 @@ export interface IbcTxQueryType {
   page_num?: number;
   page_size?: number;
 }
+
+export  interface AggregateResult24hr {
+  _id:{sc_chain_id?:string,dc_chain_id?:string,sc_channel?:string,dc_channel?:string};
+}

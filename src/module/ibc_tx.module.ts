@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { IbcTxController } from 'src/controller/ibc_tx.controller';
+import { IbcTxController } from '../controller/ibc_tx.controller';
 import { IbcTxService } from '../service/ibc_tx.service';
 @Module({
   providers: [IbcTxService],
