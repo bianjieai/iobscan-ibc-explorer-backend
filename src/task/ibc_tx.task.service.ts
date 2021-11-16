@@ -9,7 +9,7 @@ import { IbcTxSchema } from '../schema/ibc_tx.schema';
 import { TxSchema } from '../schema/tx.schema';
 import { IbcBlockSchema } from '../schema/ibc_block.schema';
 import { IbcTaskRecordSchema } from '../schema/ibc_task_record.schema';
-import { IbcChannelSchema } from 'src/schema/ibc_channel.schema';
+import { IbcChannelSchema } from '../schema/ibc_channel.schema';
 import { ChainHttp } from '../http/lcd/chain.http';
 import { IbcTxType } from '../types/schemaTypes/ibc_tx.interface';
 import { JSONparse } from '../util/util';
@@ -343,6 +343,7 @@ export class IbcTxTaskService {
       status: IbcTxStatus.PROCESSING,
       limit: RecordLimit,
     });
+    //获取最新块高（chain_config中的所有链）
     return Promise.all(
       ibcTxs.map(async ibcTx => {
         if (!ibcTx.dc_chain_id) return;
@@ -353,6 +354,7 @@ export class IbcTxTaskService {
           `sync_${ibcTx.dc_chain_id}_tx`,
         );
 
+        //批量查询，组装map结构
         const counter_party_tx = await txModel.queryTxListByPacketId({
           type: TxType.recv_packet,
           status: TxStatus.SUCCESS,
@@ -423,7 +425,7 @@ export class IbcTxTaskService {
                 real_denom,
               );
 
-              // parse Channel
+              // parse Channel 【移除】
               await this.parseChannel(
                 ibcTx.dc_chain_id,
                 ibcTx.dc_channel,
@@ -432,7 +434,7 @@ export class IbcTxTaskService {
                 counter_party_tx.time,
               );
 
-              // parse Chain
+              // parse Chain 【移除】
               await this.parseChain(
                 ibcTx.dc_chain_id,
                 dateNow,
@@ -448,6 +450,7 @@ export class IbcTxTaskService {
             `sync_${ibcTx.dc_chain_id}_block`,
           );
 
+          //放在开始位置查询，根据map的key找到对应chain的块高
           const lastBlock = await blockModel.findLatestBlock();
           if (!lastBlock) return;
           const { height, time } = lastBlock;
@@ -460,6 +463,7 @@ export class IbcTxTaskService {
               TxSchema,
               `sync_${ibcTx.sc_chain_id}_tx`,
             );
+            // 取最新一条成功的timeout_packet，order by heiht -1,
             const refunded_tx_arr = await txModel.queryTxListByPacketId({
               type: TxType.timeout_packet,
               limit: RecordLimit,

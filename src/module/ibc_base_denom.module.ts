@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { IbcBaseDenomController } from 'src/controller/ibc_base_denom.controller';
+import { IbcBaseDenomController } from '../controller/ibc_base_denom.controller';
 import { IbcBaseDenomService } from '../service/ibc_base_denom.service';
 @Module({
   providers: [IbcBaseDenomService],
