@@ -1,7 +1,7 @@
 import * as mongoose from 'mongoose';
 import { getIpAddress, getTimestamp } from '../util/util';
 import { ITaskDispatchStruct } from '../types/schemaTypes/task.dispatch.interface';
-import { TaskEnum } from 'src/constant';
+import { TaskEnum } from '../constant';
 import { Logger } from '../logger';
 import { IRandomKey } from '../types';
 import { taskLoggerHelper } from '../helper/task.log.helper';

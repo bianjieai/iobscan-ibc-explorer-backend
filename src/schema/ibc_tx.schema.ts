@@ -3,6 +3,7 @@ import * as mongoose from 'mongoose';
 import {
   IbcTxType,
   IbcTxQueryType,
+  AggregateResult24hr,
 } from '../types/schemaTypes/ibc_tx.interface';
 import { parseQuery } from '../helper/ibcTx.helper';
 import { IbcTxStatus } from '../constant';
@@ -67,7 +68,7 @@ IbcTxSchema.statics = {
         ],
       },
     });
-  },
+},
 
   async countAll(): Promise<number> {
     return this.count({
@@ -80,6 +81,48 @@ IbcTxSchema.statics = {
         ],
       },
     });
+  },
+
+
+
+  async aggregateFindSrcChannels(dateNow:any,chains :Array<string>): Promise<any> {
+
+    return this.aggregate([
+    {$match: {
+      sc_chain_id: {$in:chains},
+      tx_time:{$gte: dateNow - 24 * 60 * 60},
+      status: {
+        $in: [
+          IbcTxStatus.SUCCESS,
+          IbcTxStatus.FAILED,
+          IbcTxStatus.PROCESSING,
+          IbcTxStatus.REFUNDED,
+        ],
+      }
+    }},
+    { $group: { 
+      _id: {sc_channel:"$sc_channel",sc_chain_id: "$sc_chain_id"}
+    } }]);
+  },
+
+  async aggregateFindDesChannels(dateNow:any,chains :Array<string>): Promise<any> {
+
+    return this.aggregate([
+    {$match: {
+      dc_chain_id: {$in:chains},
+      tx_time:{$gte: dateNow - 24 * 60 * 60},
+      status: {
+        $in: [
+          IbcTxStatus.SUCCESS,
+          IbcTxStatus.FAILED,
+          IbcTxStatus.PROCESSING,
+          IbcTxStatus.REFUNDED,
+        ],
+      }
+    }},
+    { $group: { 
+      _id: {dc_channel:"$dc_channel",dc_chain_id: "$dc_chain_id"},
+    } }]);
   },
 
   async countSuccess(): Promise<number> {
