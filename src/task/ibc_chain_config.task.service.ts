@@ -34,7 +34,7 @@ export class IbcChainConfigTaskService {
 
   // get and sync chainConfig datas
   async parseChainConfig() {
-    const allChains = this.findAllConfig();
+    const allChains = await this.findAllConfig();
     // request configed allchannels
     Promise.all(
       allChains.map(async chain => {
