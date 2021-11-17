@@ -10,8 +10,6 @@ export const IbcBlockSchema = new mongoose.Schema(
   },
   { versionKey: false },
 );
-IbcBlockSchema.index({ hash: -1 }, { unique: true });
-IbcBlockSchema.index({ height: -1 }, { background: true });
 
 IbcBlockSchema.statics = {
   async findLatestBlock(): Promise<IbcBlockType> {

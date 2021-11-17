@@ -7,11 +7,8 @@ export const TxSchema = new mongoose.Schema(
     memo: String,
     status: Number,
     log: String,
-    complex_msg: Boolean,
     type: String,
-    from: String,
-    to: String,
-    coins: Array,
+    types: Array,
     signer: String,
     events: Array,
     events_new: Array,
@@ -23,16 +20,15 @@ export const TxSchema = new mongoose.Schema(
   },
   { versionKey: false },
 );
-TxSchema.index({ tx_hash: -1 }, { unique: true });
-TxSchema.index({ update_at: 1 }, { background: true });
-TxSchema.index({ 'msgs.type': -1, height: -1 }, { background: true });
-TxSchema.index({ status: -1, 'msgs.type': -1 }, { background: true });
+
+TxSchema.index({ 'types': -1, height: -1 }, { background: true });
+TxSchema.index({ 'types': -1,status: -1, 'msgs.msg.packet_id': -1 }, { background: true });
 
 // 	txs
 TxSchema.statics = {
   async queryTxListSortHeight(query): Promise<any> {
     const { type, height, limit } = query;
-    return this.find({ 'msgs.type': type, height: { $gte: height } })
+    return this.find({ 'types': type, height: { $gte: height } })
       .sort({ height: 1 })
       .limit(Number(limit));
   },
@@ -47,7 +43,7 @@ TxSchema.statics = {
   async queryTxListByPacketId(query): Promise<any> {
     const { type, status, packet_id } = query;
     return this.find({
-      'msgs.type': type,
+      'types': type,
       status,
       'msgs.msg.packet_id': {$in:packet_id},
     })
