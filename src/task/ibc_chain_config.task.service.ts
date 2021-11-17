@@ -29,7 +29,7 @@ export class IbcChainConfigTaskService {
   }
 
   async findAllConfig():Promise<IbcChainConfigType[]> {
-    return await this.chainConfigModel.findAllChainConfig();
+    return await this.chainConfigModel.findAll();
   }
 
   // get and sync chainConfig datas

@@ -19,7 +19,7 @@ IbcChainConfigSchema.statics = {
         return this.aggregate([{$group: {_id: '$ibc_info.paths.channel_id'}}]);
     },
 
-    async findAllChainConfig(): Promise<IbcChainConfigType[]> {
+    async findAll(): Promise<IbcChainConfigType[]> {
         return this.find({}).sort({'chain_name': 1});
     },
 
