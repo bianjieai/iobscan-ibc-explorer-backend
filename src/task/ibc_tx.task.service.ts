@@ -163,7 +163,7 @@ export class IbcTxTaskService {
                 });
                 taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
             } else {
-                if (taskRecord.status === IbcTaskRecordStatus.CLOSE) return;
+                if (taskRecord.status === IbcTaskRecordStatus.CLOSE) continue;
             }
             const taskModel = await this.connection.model(
                 'txModel',

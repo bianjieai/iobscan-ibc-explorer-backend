@@ -19,7 +19,7 @@ export class TasksService {
     private readonly ibcTxTaskService: IbcTxTaskService,
     private readonly ibcStatisticsTaskService: IbcStatisticsTaskService,
   ) {
-    this[`${TaskEnum.denom}_timer`] = null;
+    // this[`${TaskEnum.denom}_timer`] = null;
   }
 
   // chainConfig
@@ -31,7 +31,7 @@ export class TasksService {
   }
 
   // ex_ibc_tx
-  @Cron('*/5 * * * * *', {
+  @Cron(cfg.taskCfg.executeTime.tx, {
     name: TaskEnum.tx,
   })
   async syncTx() {
