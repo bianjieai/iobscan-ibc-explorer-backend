@@ -267,17 +267,19 @@ export class IbcTxTaskService {
                         let {height, time} = await blockModel.findLatestBlock();
                         chainHeightMap.set(chain, {height, time})
                     }
-                    const recvPacketIds = packetIdArr.map(item => {
-                        return item.packetId
-                    })
+
+                    let refundedTxPacketIdsMap = new Map
                     const refundedTxPacketIds = packetIdArr.map( item => {
                         if(item?.chainId && item?.height || item?.timeOutTime){
-                            const currentChainLatestHeight = chainHeightMap.get(item.chainId)
-                            const currentChainLatestBlockTime = chainHeightMap.get(item.chainId)
-                            if(item.height < currentChainLatestHeight || item.timeOutTime < currentChainLatestBlockTime){
+                            const currentChainLatestObj = chainHeightMap.get(item.chainId)
+                            if(item.height < currentChainLatestObj.height || item.timeOutTime < currentChainLatestObj.time){
+                                refundedTxPacketIdsMap.set( item.packetId,'')
                                 return item.packetId
                             }
                         }
+                    })
+                    const recvPacketIds = packetIdArr.filter(item => {
+                        return !refundedTxPacketIdsMap.has(item.packetId)
                     })
                     // txs  数组
                     if (recvPacketIds?.length) {
