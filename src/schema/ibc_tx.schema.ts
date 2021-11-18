@@ -180,13 +180,13 @@ IbcTxSchema.statics = {
       .limit(Number(limit));
   },
 
-  async distinctChainList(query): Promise<any> {
-    const { type, dateNow, status } = query;
-    return this.distinct(type, {
-      update_at: { $gte: dateNow - 24 * 60 * 60 },
-      status: { $in: status },
-    });
-  },
+  // async distinctChainList(query): Promise<any> {
+  //   const { type, dateNow, status } = query;
+  //   return this.distinct(type, {
+  //     update_at: { $gte: dateNow - 24 * 60 * 60 },
+  //     status: { $in: status },
+  //   });
+  // },
 
   async updateIbcTx(ibcTx): Promise<void> {
     const { record_id } = ibcTx;

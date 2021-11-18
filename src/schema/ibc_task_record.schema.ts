@@ -23,9 +23,9 @@ export const IbcTaskRecordSchema = new mongoose.Schema({
 IbcTaskRecordSchema.index({ task_name: 1 }, { unique: true });
 
 IbcTaskRecordSchema.statics = {
-  async findAllChainConfig(): Promise<IbcTaskRecordType[]> {
-    return this.find();
-  },
+  // async findAllChainConfig(): Promise<IbcTaskRecordType[]> {
+  //   return this.find();
+  // },
   async findTaskRecord(task_id): Promise<IbcTaskRecordType> {
     return await this.findOne(
       { task_name: `sync_${task_id}_transfer` },
