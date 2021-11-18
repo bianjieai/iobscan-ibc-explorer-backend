@@ -74,6 +74,6 @@ IbcDenomSchema.statics = {
     },
 
     async insertManyDenom(ibcDenom): Promise<void> {
-        // return this.insertMany(ibcDenom, { ordered: false });
+        return this.insertMany(ibcDenom, { ordered: false });
     },
 };
