@@ -103,7 +103,7 @@ export class IbcTxTaskService {
         }
     }
 
-    async getDenomRecord() {
+    /*async getDenomRecord() {
         const ibcDenomRecordMap = new Map
         const ibcDenomRecord = await this.ibcDenomModel.findAllDenomRecord();
         if (ibcDenomRecord?.length) {
@@ -114,7 +114,7 @@ export class IbcTxTaskService {
             })
         }
         return ibcDenomRecordMap
-    }
+    }*/
 
     async getRecordLimitTx(chainId, height, limit): Promise<Array<any>> {
         const txModel = await this.connection.model(
