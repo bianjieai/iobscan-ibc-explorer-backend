@@ -47,6 +47,7 @@ export const IbcTxSchema = new mongoose.Schema({
 });
 
 IbcTxSchema.index({ record_id: -1 }, { unique: true }, { background: true });
+IbcTxSchema.index({ update_at: -1 }, { background: true });
 IbcTxSchema.index({ tx_time: -1 }, { background: true });
 IbcTxSchema.index({ status: -1,tx_time: -1 }, { background: true });
 IbcTxSchema.index({ sc_chain_id: -1}, { background: true });

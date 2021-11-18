@@ -33,12 +33,12 @@ TxSchema.statics = {
       .limit(Number(limit));
   },
 
-  async queryTxListSortUpdateAt(query): Promise<any> {
-    const { type, limit, status } = query;
-    return this.find({ type, status })
-      .sort({ update_at: 1 })
-      .limit(Number(limit));
-  },
+  // async queryTxListSortUpdateAt(query): Promise<any> {
+  //   const { type, limit, status } = query;
+  //   return this.find({ type, status })
+  //     .sort({ update_at: 1 })
+  //     .limit(Number(limit));
+  // },
 
   async queryTxListByPacketId(query): Promise<any> {
     const { type, status, packet_id } = query;
