@@ -84,8 +84,26 @@ IbcTxSchema.statics = {
   },
 
 
+  async findActiveChains24hr(dateNow:any): Promise<Array<AggregateResult24hr>> {
 
-  async aggregateFindSrcChannels(dateNow:any,chains :Array<string>): Promise<Array<AggregateResult24hr>> {
+    return this.aggregate([
+      {$match: {
+          tx_time:{$gte: dateNow - 24 * 60 * 60},
+          status: {
+            $in: [
+              IbcTxStatus.SUCCESS,
+              IbcTxStatus.FAILED,
+              IbcTxStatus.PROCESSING,
+              IbcTxStatus.REFUNDED,
+            ],
+          }
+        }},
+      { $group: {
+          _id: {sc_chain_id:"$sc_chain_id",dc_chain_id: "$dc_chain_id"}
+        } }]);
+  },
+
+  async aggregateFindSrcChannels24hr(dateNow:any, chains :Array<string>): Promise<Array<AggregateResult24hr>> {
 
     return this.aggregate([
     {$match: {
@@ -105,7 +123,7 @@ IbcTxSchema.statics = {
     } }]);
   },
 
-  async aggregateFindDesChannels(dateNow:any,chains :Array<string>): Promise<Array<AggregateResult24hr>> {
+  async aggregateFindDesChannels24hr(dateNow:any,chains :Array<string>): Promise<Array<AggregateResult24hr>> {
 
     return this.aggregate([
     {$match: {
