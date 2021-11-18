@@ -3,13 +3,11 @@ import {Injectable} from '@nestjs/common';
 import {Connection, StartSession} from 'mongoose';
 import {InjectConnection} from '@nestjs/mongoose';
 import {IbcChainConfigSchema} from '../schema/ibc_chain_config.schema';
-import {IbcChainSchema} from '../schema/ibc_chain.schema';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
 import {TxSchema} from '../schema/tx.schema';
 import {IbcBlockSchema} from '../schema/ibc_block.schema';
 import {IbcTaskRecordSchema} from '../schema/ibc_task_record.schema';
-import {IbcChannelSchema} from '../schema/ibc_channel.schema';
 import {ChainHttp} from '../http/lcd/chain.http';
 import {IbcTxType} from '../types/schemaTypes/ibc_tx.interface';
 import {JSONparse} from '../util/util';
@@ -28,10 +26,8 @@ import {
 export class IbcTxTaskService {
     private ibcTaskRecordModel;
     private chainConfigModel;
-    private ibcChainModel;
     private ibcTxModel;
     private ibcDenomModel;
-    private ibcChannelModel;
 
     constructor(@InjectConnection() private readonly connection: Connection) {
         this.getModels();
@@ -60,12 +56,6 @@ export class IbcTxTaskService {
             'chain_config',
         );
 
-        // ibcChainModel
-        this.ibcChainModel = await this.connection.model(
-            'ibcChainModel',
-            IbcChainSchema,
-            'ibc_chain',
-        );
 
         // ibcTxModel
         this.ibcTxModel = await this.connection.model(
@@ -81,12 +71,6 @@ export class IbcTxTaskService {
             'ibc_denom',
         );
 
-        // ibcChannelModel
-        this.ibcChannelModel = await this.connection.model(
-            'ibcChannelModel',
-            IbcChannelSchema,
-            'ibc_channel',
-        );
     }
 
     // ibcTx first（transfer）
@@ -464,80 +448,6 @@ export class IbcTxTaskService {
                 ibcDenomRecord.tx_time = tx_time;
             }
             await this.ibcDenomModel.updateDenomRecord(ibcDenomRecord);
-        }
-    }
-
-    // parse Channel
-    async parseChannel(
-        chain_id,
-        channel_id,
-        create_at,
-        update_at,
-        tx_time,
-    ): Promise<void> {
-        const channels_all_record = await this.getChannelsConfig();
-        const isFindRecord = channels_all_record.find(channel => {
-            return channel.record_id === `${chain_id}${channel_id}`;
-        });
-
-        if (!isFindRecord) return;
-
-        const ibcChannelRecord = await this.ibcChannelModel.findChannelRecord(
-            `${chain_id}${channel_id}`,
-        );
-
-        if (!ibcChannelRecord) {
-            const ibcChannel = {
-                ...isFindRecord,
-                update_at,
-                create_at,
-                tx_time,
-            };
-            await this.ibcChannelModel.insertManyChannel(ibcChannel);
-        } else {
-            ibcChannelRecord.update_at = update_at;
-            const currentTime = ibcChannelRecord.tx_time;
-            if (tx_time > currentTime) {
-                ibcChannelRecord.tx_time = tx_time;
-            }
-            await this.ibcChannelModel.updateChannelRecord(ibcChannelRecord);
-        }
-    }
-
-    // parse Chain
-    async parseChain(
-        chain_id,
-        create_at,
-        update_at,
-        tx_time,
-        num?,
-    ): Promise<void> {
-        const ibcChainRecord = await this.ibcChainModel.findById(chain_id);
-
-        if (!ibcChainRecord) {
-            const allChainsConfig = await this.chainConfigModel.findAll();
-            const findChainConfig = allChainsConfig.find(chainConfig => {
-                return chainConfig.chain_id === chain_id;
-            });
-            if (!findChainConfig) return;
-            const ibcChain = {
-                chain_id,
-                chain_name: findChainConfig ? findChainConfig.chain_name : '',
-                icon: findChainConfig ? findChainConfig.icon : '',
-                create_at,
-                update_at,
-                tx_time,
-            };
-
-            await this.ibcChainModel.insertManyChain(ibcChain);
-        } else {
-            ibcChainRecord.update_at = update_at;
-            const currentTime = ibcChainRecord.tx_time;
-            if (tx_time > currentTime) {
-                ibcChainRecord.tx_time = tx_time;
-            }
-
-            await this.ibcChainModel.updateChainRecord(ibcChainRecord);
         }
     }
 

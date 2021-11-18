@@ -10,8 +10,9 @@ export class IbcChainController {
   constructor(private readonly ibcChainService: IbcChainService) {}
 
   @Get('chains')
-  async queryList(): Promise<Result<IbcChainResultResDto>> {
-    const result: IbcChainResultResDto | null = await this.ibcChainService.queryList();
+  async queryChains(): Promise<Result<IbcChainResultResDto>> {
+    const dateNow = Math.floor(new Date().getTime() / 1000);
+    const result: IbcChainResultResDto | null = await this.ibcChainService.queryChainsByDatetime(dateNow);
     return new Result<IbcChainResultResDto | null>(result);
   }
 }
