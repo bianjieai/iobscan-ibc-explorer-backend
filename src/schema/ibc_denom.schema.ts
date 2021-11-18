@@ -63,14 +63,17 @@ IbcDenomSchema.statics = {
     async findDenomRecord(chain_id, denom): Promise<IbcDenomType> {
         return this.findOne({chain_id, denom}, {_id: 0});
     },
-    async findAllDenomRecord(): Promise<IbcDenomType> {
+     async findAllDenomRecord(): Promise<IbcDenomType> {
         return this.findOne({});
     },
-   /* async updateDenomRecord(denomRecord): Promise<void> {
-        const {chain_id, denom} = denomRecord;
-        const options = {upsert: true, new: false, setDefaultsOnInsert: true};
+    // async findAllDenomRecord(): Promise<IbcDenomType> {
+    //     return this.findOne({});
+    // },
+     // async updateDenomRecord(denomRecord): Promise<void> {
+        //const {chain_id, denom} = denomRecord;
+        //const options = {upsert: true, new: false, setDefaultsOnInsert: true};
         // return this.findOneAndUpdate({ chain_id, denom }, denomRecord, options);
-    },*/
+    // },
 
     async insertManyDenom(ibcDenom): Promise<void> {
         return this.insertMany(ibcDenom, { ordered: false });
