@@ -60,11 +60,11 @@ export class IbcStatisticsTaskService {
     }
 
     async aggregateFindSrcChannels(dateNow, chains: Array<string>): Promise<Array<AggregateResult24hr>> {
-        return await this.ibcTxModel.aggregateFindSrcChannels(dateNow, chains);
+        return await this.ibcTxModel.aggregateFindSrcChannels24hr(dateNow, chains);
     }
 
     async aggregateFindDesChannels(dateNow, chains: Array<string>): Promise<Array<AggregateResult24hr>> {
-        return await this.ibcTxModel.aggregateFindDesChannels(dateNow, chains);
+        return await this.ibcTxModel.aggregateFindDesChannels24hr(dateNow, chains);
     }
 
     async updateStatisticsRecord(statisticsRecord: IbcStatisticsType) {
