@@ -23,7 +23,7 @@ export const IbcTaskRecordSchema = new mongoose.Schema({
 IbcTaskRecordSchema.index({ task_name: 1 }, { unique: true });
 
 IbcTaskRecordSchema.statics = {
-  async findAll(): Promise<IbcTaskRecordType[]> {
+  async findAllChainConfig(): Promise<IbcTaskRecordType[]> {
     return this.find();
   },
   async findTaskRecord(task_id): Promise<IbcTaskRecordType> {

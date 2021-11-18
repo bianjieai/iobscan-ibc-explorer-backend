@@ -46,14 +46,14 @@ export const IbcTxSchema = new mongoose.Schema({
   },
 });
 
-IbcTxSchema.index({ record_id: -1 }, { unique: true });
+IbcTxSchema.index({ record_id: -1 }, { unique: true }, { background: true });
 IbcTxSchema.index({ update_at: -1 }, { background: true });
 IbcTxSchema.index({ tx_time: -1 }, { background: true });
-IbcTxSchema.index({ status: -1 }, { background: true });
-IbcTxSchema.index({ sc_chain_id: -1, status: -1,  }, { background: true });
-IbcTxSchema.index({ dc_chain_id: -1, status: -1,  }, { background: true });
-IbcTxSchema.index({ 'denoms.sc_denom': -1, status: -1,  }, { background: true });
-IbcTxSchema.index({ 'denoms.dc_denom': -1, status: -1,  }, { background: true });
+IbcTxSchema.index({ status: -1,tx_time: -1 }, { background: true });
+IbcTxSchema.index({ sc_chain_id: -1}, { background: true });
+IbcTxSchema.index({ dc_chain_id: -1}, { background: true });
+IbcTxSchema.index({ 'denoms.sc_denom': -1, sc_chain_id: -1}, { background: true });
+IbcTxSchema.index({ 'denoms.dc_denom': -1, dc_chain_id: -1}, { background: true });
 
 IbcTxSchema.statics = {
   async countActive(): Promise<number> {

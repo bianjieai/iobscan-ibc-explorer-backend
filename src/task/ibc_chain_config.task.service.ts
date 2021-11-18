@@ -5,18 +5,19 @@ import { IbcChainConfigSchema } from '../schema/ibc_chain_config.schema';
 import { TaskEnum, Delimiter } from '../constant';
 import { ChainHttp } from '../http/lcd/chain.http';
 import { groupBy } from 'lodash';
+import {IbcChainConfigType} from "../types/schemaTypes/ibc_chain_config.interface";
 
 @Injectable()
 export class IbcChainConfigTaskService {
   private chainConfigModel;
 
   constructor(@InjectConnection() private connection: Connection) {
+    this.getModels();
     this.doTask = this.doTask.bind(this);
   }
 
   async doTask(taskName?: TaskEnum): Promise<void> {
-    await this.getModels();
-    await this.parseChainConfig();
+    this.parseChainConfig();
   }
 
   async getModels(): Promise<void> {
@@ -27,9 +28,13 @@ export class IbcChainConfigTaskService {
     );
   }
 
+  async findAllConfig():Promise<IbcChainConfigType[]> {
+    return await this.chainConfigModel.findAll();
+  }
+
   // get and sync chainConfig datas
   async parseChainConfig() {
-    const allChains = await this.chainConfigModel.findAll();
+    const allChains = await this.findAllConfig();
     // request configed allchannels
     Promise.all(
       allChains.map(async chain => {

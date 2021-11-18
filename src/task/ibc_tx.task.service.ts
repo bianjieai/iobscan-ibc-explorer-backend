@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import {Injectable} from '@nestjs/common';
-import {Connection,StartSession} from 'mongoose';
+import {Connection, StartSession} from 'mongoose';
 import {InjectConnection} from '@nestjs/mongoose';
 import {IbcChainConfigSchema} from '../schema/ibc_chain_config.schema';
 import {IbcChainSchema} from '../schema/ibc_chain.schema';
@@ -90,7 +90,7 @@ export class IbcTxTaskService {
     }
 
     // ibcTx first（transfer）
-    async getAllChainsMap(){
+    async getAllChainsMap() {
         const allChains = await this.chainConfigModel.findAll();
         const allChainsMap = new Map
         if (allChains?.length) {
@@ -102,44 +102,51 @@ export class IbcTxTaskService {
         }
         return allChainsMap
     }
-    async getDenomRecord(){
+
+    async getDenomRecord() {
         const ibcDenomRecordMap = new Map
         const ibcDenomRecord = await this.ibcDenomModel.findAllDenomRecord();
-        if(ibcDenomRecord?.length){
-            ibcDenomRecord.forEach( ibcDenomRecordItem => {
-                if(ibcDenomRecordItem?.chain_id){
-                    ibcDenomRecordMap.set(ibcDenomRecordItem?.chain_id,ibcDenomRecordItem)
+        if (ibcDenomRecord?.length) {
+            ibcDenomRecord.forEach(ibcDenomRecordItem => {
+                if (ibcDenomRecordItem?.chain_id) {
+                    ibcDenomRecordMap.set(ibcDenomRecordItem?.chain_id, ibcDenomRecordItem)
                 }
             })
         }
         return ibcDenomRecordMap
     }
-    async getRecordLimitTx(txModel,height,RecordLimit){
+
+    async getRecordLimitTx(chainId, height, limit): Promise<Array<any>> {
+        const txModel = await this.connection.model(
+            'txModel',
+            TxSchema,
+            `sync_${chainId}_tx`,
+        );
         let txs = [];
-            //根据块高排序 查询最后限制条数的交易
-            const txsByLimit = await txModel.queryTxListSortHeight({
-                type: TxType.transfer,
-                height: height,
-                limit: RecordLimit,
-            });
-            // 根据块高查询限制条数的最后一条交易
-            const txsByHeight = txsByLimit.length
-                ? await txModel.queryTxListByHeight(
-                    TxType.transfer,
-                    txsByLimit[txsByLimit.length - 1].height,
-                )
-                : [];
-            //去重
-            const hash = {};
-            txs = [...txsByLimit, ...txsByHeight].reduce((txsResult, next) => {
-                hash[next.tx_hash]
-                    ? ''
-                    : (hash[next.tx_hash] = true) && txsResult.push(next);
-                return txsResult;
-            }, []);
-            return txs
+        //根据块高排序 查询最后限制条数的交易
+        const txsByLimit = await txModel.queryTxListSortHeight({
+            type: TxType.transfer,
+            height: height,
+            limit: limit,
+        });
+        // 根据块高查询限制条数的最后一条交易
+        const txsByHeight = txsByLimit.length
+            ? await txModel.queryTxListByHeight(
+                TxType.transfer,
+                txsByLimit[txsByLimit.length - 1].height,
+            )
+            : [];
+        //去重
+        const hash = {};
+        txs = [...txsByLimit, ...txsByHeight].reduce((txsResult, next) => {
+            hash[next.tx_hash]
+                ? ''
+                : (hash[next.tx_hash] = true) && txsResult.push(next);
+            return txsResult;
+        }, []);
+        return txs
     }
-    setTaskRecord
+
     async parseIbcTx(dateNow): Promise<void> {
         const allChains = await this.chainConfigModel.findAll();
         const allChainsMap = await this.getAllChainsMap()
@@ -161,57 +168,56 @@ export class IbcTxTaskService {
             }
 
 
-            const txModel = await this.connection.model(
-                'txModel',
-                TxSchema,
-                `sync_${chain_id}_tx`,
-            );
-            const txs = await this.getRecordLimitTx(txModel,taskRecord.height,RecordLimit)
+            const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
             let handledTx = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap)
-            if(handledTx?.length){
-                await this.ibcTxModel.insertManyIbcTx(handledTx,async err => {
+            if (handledTx?.length) {
+                await this.ibcTxModel.insertManyIbcTx(handledTx, async err => {
 
-                    taskRecord.height = handledTx[handledTx.length -1]?.sc_tx_info?.height;
+                    taskRecord.height = handledTx[handledTx.length - 1]?.sc_tx_info?.height;
                     await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
                 })
+                // todo Transaction
                 // await session.commitTransaction();
                 // session.endSession();
             }
         }
     }
-    async getProcessingTxs(){
+
+    async getProcessingTxs() {
         const ibcTxs = await this.ibcTxModel.queryTxList({
             status: IbcTxStatus.PROCESSING,
             limit: RecordLimit,
         });
         return ibcTxs
     }
-    async getPacketIds (txs){
+
+    async getPacketIds(txs) {
         const packetIds = []
-        if(txs?.length){
+        if (txs?.length) {
             for (const tx of txs) {
-                if(tx?.sc_tx_info?.msg?.msg?.packet_id){
+                if (tx?.sc_tx_info?.msg?.msg?.packet_id) {
                     packetIds.push(tx.sc_tx_info.msg.msg.packet_id)
                 }
             }
         }
         return packetIds
     }
+
     async changeIbcTxState(dateNow): Promise<void> {
         const ibcTxs = await this.getProcessingTxs()
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
-        let packetIdArrMap = new Map,cainHeightMap = new Map,needUpdateTxs = [] //packetIdArr= [],
+        let recvPacketTxMap = new Map, chainHeightMap = new Map, needUpdateTxs = [] //packetIdArr= [],
         // const allChains = await this.chainConfigModel.findAll();
-        const currentTxChains = ibcTxs.map( item => {
-            if(item.dc_chain_id){
+        const dcChains = ibcTxs.map(item => {
+            if (item.dc_chain_id) {
                 return item.dc_chain_id
             }
         })
-        const currentTxAllChains = Array.from(new Set(currentTxChains))
+        const currentDcChains = Array.from(new Set(dcChains))
         // 根据链的配置信息，查询出每条链的 recv_packet 成功的交易的那条记录
-        if(currentTxAllChains?.length){
-            for (const chain of currentTxAllChains) {
-                if(chain){
+        if (currentDcChains?.length) {
+            for (const chain of currentDcChains) {
+                if (chain) {
                     const txModel = await this.connection.model(
                         'txModel',
                         TxSchema,
@@ -223,25 +229,25 @@ export class IbcTxTaskService {
                         `sync_${chain}_block`,
                     );
                     //每条链最新的高度
-                    const chainHeightObj = await  blockModel.findLatestBlock();
-                    if(chainHeightObj && JSON.stringify(chainHeightObj) !== '{}'){
-                        let { height, time } = await blockModel.findLatestBlock();
-                        cainHeightMap.set(chain,{ height, time })
+                    const chainHeightObj = await blockModel.findLatestBlock();
+                    if (chainHeightObj && JSON.stringify(chainHeightObj) !== '{}') {
+                        let {height, time} = await blockModel.findLatestBlock();
+                        chainHeightMap.set(chain, {height, time})
                     }
                     // txs  数组
-                    if(packetIdArr?.length){
+                    if (packetIdArr?.length) {
                         const txs = await txModel.queryTxListByPacketId({
                             type: TxType.recv_packet,
                             limit: packetIdArr.length,
                             status: TxStatus.SUCCESS,
                             packet_id: packetIdArr,
                         });
-                        if(txs?.length){
+                        if (txs?.length) {
                             for (let tx of txs) {
-                                if(tx?.msgs?.length){
+                                if (tx?.msgs?.length) {
                                     for (let msg of tx.msgs) {
-                                        if(msg?.type === TxType.recv_packet && msg.msg.packet_id){
-                                            packetIdArrMap.set(`${chain}${msg.msg.packet_id}`,tx)
+                                        if (msg?.type === TxType.recv_packet && msg.msg.packet_id) {
+                                            recvPacketTxMap.set(`${chain}${msg.msg.packet_id}`, tx)
                                         }
                                     }
                                 }
@@ -251,24 +257,26 @@ export class IbcTxTaskService {
                 }
             }
         }
+
+
         for (let ibcTx of ibcTxs) {
-            if(!ibcTx.dc_chain_id) return
-            if(packetIdArrMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)){
-                const counter_party_tx = packetIdArrMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
+            if (!ibcTx.dc_chain_id) continue
+            if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
+                const recvPacketTx = recvPacketTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
                 // let counter_party_tx = null
-                counter_party_tx && counter_party_tx.msgs.length && counter_party_tx.msgs.forEach(async (msg,msgIndex) => {
+                recvPacketTx && recvPacketTx.msgs.length && recvPacketTx.msgs.forEach(async (msg, msgIndex) => {
                     if (msg.type === TxType.recv_packet && ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id) {
-                        const { dc_denom, dc_denom_origin } = getDcDenom(msg);
+                        const {dc_denom, dc_denom_path} = getDcDenom(msg);
 
                         // add write_acknowledgement solution， value type is string;
                         let result = '';
-                        const counter_party_tx_events = counter_party_tx.events_new.find(
+                        const tx_events = recvPacketTx.events_new.find(
                             event_new => {
                                 return event_new.msg_index === msgIndex;
                             },
                         );
-                        counter_party_tx_events &&
-                        counter_party_tx_events.events.forEach(event => {
+                        tx_events &&
+                        tx_events.events.forEach(event => {
                             if (event.type === 'write_acknowledgement') {
                                 event.attributes.forEach(attribute => {
                                     if (attribute.key === 'packet_ack') {
@@ -283,11 +291,11 @@ export class IbcTxTaskService {
                         ibcTx.status =
                             result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
                         ibcTx.dc_tx_info = {
-                            hash: counter_party_tx.tx_hash,
-                            status: counter_party_tx.status,
-                            time: counter_party_tx.time,
-                            height: counter_party_tx.height,
-                            fee: counter_party_tx.fee,
+                            hash: recvPacketTx.tx_hash,
+                            status: recvPacketTx.status,
+                            time: recvPacketTx.time,
+                            height: recvPacketTx.height,
+                            fee: recvPacketTx.fee,
                             msg_amount: msg.msg.token,
                             msg,
                         };
@@ -295,32 +303,32 @@ export class IbcTxTaskService {
                         // ibcTx.tx_time = counter_party_tx.time;
                         ibcTx.denoms['dc_denom'] = dc_denom;
                         const denom_path =
-                            dc_denom_origin === ibcTx.base_denom
+                            dc_denom_path === ibcTx.base_denom
                                 ? ''
-                                : dc_denom_origin.replace(`/${ibcTx.base_denom}`, '');
+                                : dc_denom_path.replace(`/${ibcTx.base_denom}`, '');
                         needUpdateTxs.push(ibcTx)
 
 
                     }
                 })
-              /*  if(counter_party_txArr?.length){
-                    for (const counterPartyTx of counter_party_txArr) {
-                        console.log(counterPartyTx,'啥东西--------------------------')
+                /*  if(counter_party_txArr?.length){
+                      for (const counterPartyTx of counter_party_txArr) {
+                          console.log(counterPartyTx,'啥东西--------------------------')
 
-                    }
+                      }
 
-                }*/
+                  }*/
 
-            }else {
+            } else {
                 /*
                 * 没有找到的结果
                 * */
-                if(cainHeightMap.has(ibcTx.dc_chain_id)){
+                if (chainHeightMap.has(ibcTx.dc_chain_id)) {
                     const ibcHeight =
                         ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
                     const ibcTime = ibcTx.sc_tx_info.msg.msg.timeout_timestamp;
-                    const currentChainLatestBlockHeight = cainHeightMap?.get(ibcTx.dc_chain_id)?.height
-                    const currentChainLatestBlockTime = cainHeightMap.get(ibcTx.dc_chain_id)?.time
+                    const currentChainLatestBlockHeight = chainHeightMap?.get(ibcTx.dc_chain_id)?.height
+                    const currentChainLatestBlockTime = chainHeightMap.get(ibcTx.dc_chain_id)?.time
                     if (ibcHeight < currentChainLatestBlockHeight || ibcTime < currentChainLatestBlockTime) {
                         const txModel = await this.connection.model(
                             'txModel',
@@ -352,7 +360,6 @@ export class IbcTxTaskService {
                                 };
                                 ibcTx.update_at = dateNow;
                                 // ibcTx.tx_time = refunded_tx.time;
-                                this.ibcTxModel.updateIbcTx(ibcTx);
                                 needUpdateTxs.push(ibcTx)
                             }
                         });
@@ -360,7 +367,7 @@ export class IbcTxTaskService {
                 }
             }
         }
-        if(needUpdateTxs?.length){
+        if (needUpdateTxs?.length) {
             for (let needUpdateTx of needUpdateTxs) {
                 await this.ibcTxModel.updateIbcTx(needUpdateTx);
             }
@@ -620,8 +627,9 @@ export class IbcTxTaskService {
                         /*
                         * 能否通过管道直接查询出目标链的数据
                         * 不要在循环里查询数据库 单独拎出来
+                        * todo 失败状态处理
                         * */
-                        let dcChainConfig:any = {}
+                        let dcChainConfig: any = {}
                         if (sc_chain_id && allChainsMap) {
                             if (allChainsMap.has(sc_chain_id)) {
                                 const currentChainInfo = allChainsMap.get(sc_chain_id)
@@ -629,8 +637,11 @@ export class IbcTxTaskService {
                                     currentChainInfo?.ibc_info.forEach(item => {
                                         if (item.paths?.length) {
                                             item.paths.forEach(pathItem => {
-                                                if(pathItem?.channel_id === sc_channel && pathItem?.port_id === sc_port){
+                                                if (pathItem?.channel_id === sc_channel && pathItem?.port_id === sc_port) {
                                                     dcChainConfig = currentChainInfo
+                                                    dc_chain_id = item.chain_id;
+                                                    dc_channel = pathItem.counterparty.channel_id;
+                                                    dc_port = pathItem.counterparty.port_id;
                                                 }
                                             })
                                         }
@@ -638,11 +649,11 @@ export class IbcTxTaskService {
                                 }
                             }
                         }
-                       /* const dcChainConfig = await this.chainConfigModel.findDcChain({
-                            sc_chain_id,
-                            sc_port,
-                            sc_channel,
-                        });*/
+                        /* const dcChainConfig = await this.chainConfigModel.findDcChain({
+                             sc_chain_id,
+                             sc_port,
+                             sc_channel,
+                         });*/
 
                         if (
                             dcChainConfig &&
@@ -650,18 +661,18 @@ export class IbcTxTaskService {
                             dcChainConfig.ibc_info.length
                         ) {
                             lcd = dcChainConfig.lcd;
-                            dcChainConfig.ibc_info.forEach(info_item => {
-                                info_item.paths.forEach(path_item => {
-                                    if (
-                                        path_item.channel_id === sc_channel &&
-                                        path_item.port_id === sc_port
-                                    ) {
-                                        dc_chain_id = info_item.chain_id;
-                                        dc_channel = path_item.counterparty.channel_id;
-                                        dc_port = path_item.counterparty.port_id;
-                                    }
-                                });
-                            });
+                            // dcChainConfig.ibc_info.forEach(info_item => {
+                            //     info_item.paths.forEach(path_item => {
+                            //         if (
+                            //             path_item.channel_id === sc_channel &&
+                            //             path_item.port_id === sc_port
+                            //         ) {
+                            //             dc_chain_id = info_item.chain_id;
+                            //             dc_channel = path_item.counterparty.channel_id;
+                            //             dc_port = path_item.counterparty.port_id;
+                            //         }
+                            //     });
+                            // });
                         }
                         /*
                         * 通过lcd 查询的话可以不可以在起个定时任务去查询
