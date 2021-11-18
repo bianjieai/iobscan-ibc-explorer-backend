@@ -23,6 +23,9 @@ import {
     RecordLimit,
     IbcTaskRecordStatus,
 } from '../constant';
+import {dateNow} from "../helper/date.helper";
+import {getTaskStatus} from "../helper/task.helper";
+import {SyncTaskSchema} from "../schema/sync.task.schema";
 
 @Injectable()
 export class IbcTxTaskService {
@@ -92,15 +95,28 @@ export class IbcTxTaskService {
     // ibcTx first（transfer）
     async getAllChainsMap() {
         const allChains = await this.chainConfigModel.findAll();
-        const allChainsMap = new Map
+        const allChainsMap = new Map, allChainsDenomPathsMap = new Map
         if (allChains?.length) {
             allChains.forEach(item => {
                 if (item?.chain_id) {
                     allChainsMap.set(item.chain_id, item)
+                    if (item?.ibc_info?.length) {
+                        item.ibc_info.forEach(info => {
+                            if (info?.paths?.length) {
+                                info.paths.forEach(path => {
+                                    if (path?.channel_id && path?.port_id)
+                                        allChainsDenomPathsMap.set(info.chain_id, `${path.channel_id}${path.port_id}`)
+                                })
+                            }
+                        })
+                    }
                 }
             })
         }
-        return allChainsMap
+        return {
+            allChainsMap,
+            allChainsDenomPathsMap
+        }
     }
 
     async getDenomRecord() {
@@ -149,8 +165,7 @@ export class IbcTxTaskService {
 
     async parseIbcTx(dateNow): Promise<void> {
         const allChains = await this.chainConfigModel.findAll();
-        const allChainsMap = await this.getAllChainsMap()
-
+        const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
         for (const {chain_id} of allChains) {
             // get taskRecord by chain_id
             let taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
@@ -166,10 +181,18 @@ export class IbcTxTaskService {
             } else {
                 if (taskRecord.status === IbcTaskRecordStatus.CLOSE) return;
             }
-
+            const taskModel = await this.connection.model(
+                'txModel',
+                SyncTaskSchema,
+                `sync_${chain_id}_task`,
+            );
+            const taskCount = await getTaskStatus(taskModel,TaskEnum.tx)
+            if(!taskCount) continue
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
-            let handledTx = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap)
+            let {handledTx, denoms} = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
+
+
             if (handledTx?.length) {
                 await this.ibcTxModel.insertManyIbcTx(handledTx, async err => {
 
@@ -179,6 +202,9 @@ export class IbcTxTaskService {
                 // todo Transaction
                 // await session.commitTransaction();
                 // session.endSession();
+            }
+            if (denoms?.length) {
+                await this.ibcDenomModel.insertManyDenom(denoms);
             }
         }
     }
@@ -202,11 +228,10 @@ export class IbcTxTaskService {
         }
         return packetIds
     }
-
     async changeIbcTxState(dateNow): Promise<void> {
         const ibcTxs = await this.getProcessingTxs()
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
-        let recvPacketTxMap = new Map, chainHeightMap = new Map, needUpdateTxs = [] //packetIdArr= [],
+        let recvPacketTxMap = new Map, chainHeightMap = new Map, needUpdateTxs = [],denoms = [] //packetIdArr= [],
         // const allChains = await this.chainConfigModel.findAll();
         const dcChains = ibcTxs.map(item => {
             if (item.dc_chain_id) {
@@ -228,6 +253,7 @@ export class IbcTxTaskService {
                         IbcBlockSchema,
                         `sync_${chain}_block`,
                     );
+
                     //每条链最新的高度
                     const chainHeightObj = await blockModel.findLatestBlock();
                     if (chainHeightObj && JSON.stringify(chainHeightObj) !== '{}') {
@@ -257,7 +283,6 @@ export class IbcTxTaskService {
                 }
             }
         }
-
 
         for (let ibcTx of ibcTxs) {
             if (!ibcTx.dc_chain_id) continue
@@ -307,7 +332,18 @@ export class IbcTxTaskService {
                                 ? ''
                                 : dc_denom_path.replace(`/${ibcTx.base_denom}`, '');
                         needUpdateTxs.push(ibcTx)
-
+                        if(ibcTx.status === IbcTxStatus.SUCCESS){
+                            const denomObj = {
+                                chain_id:ibcTx.dc_chain_id,
+                                denom: dc_denom,
+                                base_denom: ibcTx.base_denom,
+                                denom_path: denom_path,
+                                is_source_chain: !Boolean(denom_path),
+                                create_at: dateNow,
+                                update_at: ''
+                            }
+                            denoms.push(denomObj)
+                        }
 
                     }
                 })
@@ -372,6 +408,9 @@ export class IbcTxTaskService {
                 await this.ibcTxModel.updateIbcTx(needUpdateTx);
             }
         }
+        if(denoms?.length){
+            await this.ibcDenomModel.insertManyDenom(denoms);
+        }
     }
 
     // get dc_port、dc_channel、sequence
@@ -423,7 +462,6 @@ export class IbcTxTaskService {
         });
         return msg;
     }
-
     // parse Denom
     async parseDenom(
         chain_id,
@@ -561,8 +599,8 @@ export class IbcTxTaskService {
         return channels_all_record;
     }
 
-    async handlerSourcesTx(sourcesTx, chain_id, currentTime, allChainsMap) {
-        let handledTx = []
+    async handlerSourcesTx(sourcesTx, chain_id, currentTime, allChainsMap, allChainsDenomPathsMap) {
+        let handledTx = [], denoms = []
         if (sourcesTx && chain_id) {
             sourcesTx.forEach((tx, txIndex) => {
                 const height = tx.height;
@@ -728,12 +766,39 @@ export class IbcTxTaskService {
                             msg,
                         };
                         ibcTx.log['sc_log'] = log;
+                        let isBaseDenom = true
+                        if (Boolean(denom_path) && denom_path.split('/').length > 1) {
+                            const dc_port = denom_path.split('/')[0];
+                            const dc_channel = denom_path.split('/')[1];
+                            if (allChainsDenomPathsMap.has(sc_chain_id)) {
+                                const dcDenomPath = allChainsDenomPathsMap.get(sc_chain_id)
+                                const currentIbcTxDenomPath = `${dc_channel}${dc_port}`
+                                if (dcDenomPath === currentIbcTxDenomPath) {
+                                    isBaseDenom = false;
+                                }
+
+                            }
+                        }
+                        if (ibcTx.status === IbcTxStatus.PROCESSING) {
+                            denoms.push({
+                                chain_id: sc_chain_id,
+                                denom: sc_denom,
+                                base_denom: base_denom,
+                                denom_path: denom_path,
+                                is_source_chain: !Boolean(denom_path),
+                                create_at: dateNow,
+                                update_at: ''
+                            })
+                        }
                         // console.log(JSON.stringify(ibcTx),'这个东西是啥--------------------')
                         handledTx.push(ibcTx)
                     }
                 });
             });
-            return handledTx
+            return {
+                handledTx,
+                denoms
+            }
         }
     }
 }

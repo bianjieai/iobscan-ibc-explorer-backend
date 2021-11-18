@@ -50,6 +50,6 @@ TxSchema.statics = {
   },
 
   async queryTxListByHeight(type, height): Promise<any> {
-    return this.find({ type, height });
+    return this.find({'types': type, height });
   },
 };

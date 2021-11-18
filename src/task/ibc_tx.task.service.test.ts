@@ -34,10 +34,11 @@ describe('IbcTxTaskService', () => {
         it('handlerSourcesTx Test', async () => {
             let chain_id = "emoney_3"
             const txs  = await ibcTxTaskService.getRecordLimitTx(chain_id,13106,10)
-            const allChainsMap = await ibcTxTaskService.getAllChainsMap()
+            const {allChainsMap,allChainsDenomPathsMap} = await ibcTxTaskService.getAllChainsMap()
             const dateNow = Math.floor(1623955689);
-            const result  = await ibcTxTaskService.handlerSourcesTx(txs,chain_id,dateNow,allChainsMap)
-            console.log(result,'----')
+            const {handledTx,denoms}  = await ibcTxTaskService.handlerSourcesTx(txs,chain_id,dateNow,allChainsMap,allChainsDenomPathsMap)
+            console.log(handledTx,'--ibcTxs--')
+            console.log(denoms,'--denoms--')
         });
     });
 })
