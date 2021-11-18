@@ -43,7 +43,7 @@ IbcDenomSchema.index({symbol: -1}, {background: true});
 
 IbcDenomSchema.statics = {
     async findAllRecord(): Promise<IbcDenomType[]> {
-        return this.find({real_denom: true});
+        return this.find({});
     },
 
     async findRecordBySymbol(symbol: string): Promise<IbcDenomType[]> {
@@ -51,13 +51,12 @@ IbcDenomSchema.statics = {
     },
 
     async findCount(): Promise<number> {
-        return this.count({real_denom: true});
+        return this.count({});
     },
 
     async findBaseDenomCount(): Promise<number> {
         return this.count({
             is_base_denom: true,
-            real_denom: true,
         });
     },
 
@@ -67,11 +66,11 @@ IbcDenomSchema.statics = {
     async findAllDenomRecord(): Promise<IbcDenomType> {
         return this.findOne({});
     },
-    async updateDenomRecord(denomRecord): Promise<void> {
+   /* async updateDenomRecord(denomRecord): Promise<void> {
         const {chain_id, denom} = denomRecord;
         const options = {upsert: true, new: false, setDefaultsOnInsert: true};
         // return this.findOneAndUpdate({ chain_id, denom }, denomRecord, options);
-    },
+    },*/
 
     async insertManyDenom(ibcDenom): Promise<void> {
         return this.insertMany(ibcDenom, { ordered: false });
