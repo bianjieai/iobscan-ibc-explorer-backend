@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import {
-    IbcTxType,
-    IbcTxQueryType,
-    AggregateResult24hr,
+  IbcTxType,
+  IbcTxQueryType,
+  AggregateResult24hr,
 } from '../types/schemaTypes/ibc_tx.interface';
-import {parseQuery} from '../helper/ibcTx.helper';
-import {IbcTxStatus} from '../constant';
+import { parseQuery } from '../helper/ibcTx.helper';
+import { IbcTxStatus } from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
