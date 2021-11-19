@@ -194,7 +194,8 @@ IbcTxSchema.statics = {
     return this.findOneAndUpdate({ record_id }, ibcTx, options);
   },
 
-  async insertManyIbcTx(ibcTx, cb): Promise<void> {
-    return this.insertMany(ibcTx, cb);
+  async insertManyIbcTx(ibcTx, ): Promise<void> {
+    return this.insertMany(ibcTx,{ordered :false}, (error,docs) => {
+    });
   },
 };

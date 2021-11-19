@@ -491,69 +491,6 @@ export class IbcTxTaskService {
         });
         return msg;
     }
-    // parse Denom
-    async parseDenom(
-        chain_id,
-        denom,
-        base_denom,
-        denom_path,
-        is_source_chain,
-        create_at,
-        update_at,
-        tx_time,
-        is_base_denom,
-        real_denom,
-    ): Promise<void> {
-        const ibcDenomRecord = await this.ibcDenomModel.findDenomRecord(
-            chain_id,
-            denom,
-        );
-
-        if (!ibcDenomRecord) {
-            const ibcDenom = {
-                chain_id,
-                denom,
-                base_denom,
-                denom_path,
-                is_source_chain,
-                create_at,
-                update_at,
-                tx_time,
-                is_base_denom,
-                real_denom,
-            };
-            await this.ibcDenomModel.insertManyDenom(ibcDenom);
-        } else {
-            ibcDenomRecord.update_at = update_at;
-            ibcDenomRecord.real_denom = ibcDenomRecord.real_denom || real_denom
-            const currentTime = ibcDenomRecord.tx_time;
-            if (tx_time > currentTime) {
-                ibcDenomRecord.tx_time = tx_time;
-            }
-            await this.ibcDenomModel.updateDenomRecord(ibcDenomRecord);
-        }
-    }
-
-    // get configed channels
-    async getChannelsConfig() {
-        const channels_all_record = [];
-
-        const allChains = await this.chainConfigModel.findAll();
-        allChains.forEach(chain => {
-            chain.ibc_info.forEach(ibc_info_item => {
-                ibc_info_item.paths.forEach(path_item => {
-                    channels_all_record.push({
-                        channel_id: path_item.channel_id,
-                        record_id: `${chain.chain_id}${path_item.channel_id}`,
-                        state: path_item.state,
-                    });
-                });
-            });
-        });
-
-        return channels_all_record;
-    }
-
     async handlerSourcesTx(sourcesTx, chain_id, currentTime, allChainsMap, allChainsDenomPathsMap) {
         let handledTx = [], denoms = []
         if (sourcesTx && chain_id) {
@@ -674,12 +611,13 @@ export class IbcTxTaskService {
                         if (ibcTx.status === IbcTxStatus.FAILED) {
                             // get base_denom、denom_path from lcd API
                             if (sc_denom.indexOf('ibc') !== -1) {
-                                const result = await ChainHttp.getDenomByLcdAndHash(
-                                    lcd,
-                                    sc_denom.replace('ibc/', ''),
-                                );
+                                const scDenom = sc_denom.replace('ibc/', '')
+                                /*
+                                * TODO 阻塞流程先注释
+                                * */
+                                /*const result = await ChainHttp.getDenomByLcdAndHash(lcd, scDenom)
                                 base_denom = result?.base_denom;
-                                denom_path = result?.denom_path;
+                                denom_path = result?.denom_path;*/
                             } else {
                                 base_denom = sc_denom;
                             }
@@ -745,7 +683,6 @@ export class IbcTxTaskService {
                                 update_at: ''
                             })
                         }
-                        // console.log(JSON.stringify(ibcTx),'这个东西是啥--------------------')
                         handledTx.push(ibcTx)
                     }
                 });
