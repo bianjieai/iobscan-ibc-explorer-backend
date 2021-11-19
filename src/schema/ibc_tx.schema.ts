@@ -184,7 +184,7 @@ IbcTxSchema.statics = {
     async queryTxList(query): Promise<IbcTxType[]> {
         const {status, limit} = query;
         return this.find({status}, {_id: 0})
-            .sort({update_at: 1})
+            .sort({tx_time: 1})
             .limit(Number(limit));
     },
 
