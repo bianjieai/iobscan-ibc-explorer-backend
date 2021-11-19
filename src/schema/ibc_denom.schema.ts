@@ -39,7 +39,6 @@ export const IbcDenomSchema = new mongoose.Schema(
 );
 
 IbcDenomSchema.index({chain_id: 1, denom: 1}, {unique: true});
-IbcDenomSchema.index({tx_time: -1}, {background: true});
 IbcDenomSchema.index({symbol: -1}, {background: true});
 
 IbcDenomSchema.statics = {
