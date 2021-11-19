@@ -22,7 +22,6 @@ export const IbcBaseDenomSchema = new mongoose.Schema(
 );
 
 IbcBaseDenomSchema.index({ chain_id: 1, denom: 1 }, { unique: true });
-IbcBaseDenomSchema.index({ update_at: -1 }, { background: true });
 
 IbcBaseDenomSchema.statics = {
   async findCount(): Promise<number> {
