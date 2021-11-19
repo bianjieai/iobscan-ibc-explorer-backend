@@ -8,8 +8,6 @@ export const ConfigSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
-ConfigSchema.index({ name: 1 }, { unique: true });
-
 ConfigSchema.statics = {
   async findRecord(): Promise<ConfigType> {
     return this.findOne();

@@ -150,6 +150,7 @@ export class IbcTxTaskService {
     async parseIbcTx(dateNow): Promise<void> {
         const allChains = await this.chainConfigModel.findAll();
         const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
+        let ibcDenoms = []
         for (const {chain_id} of allChains) {
             // get taskRecord by chain_id
             let taskRecord = await this.ibcTaskRecordModel.findTaskRecord(chain_id);
@@ -175,21 +176,32 @@ export class IbcTxTaskService {
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
             let {handledTx, denoms} = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
-
+            ibcDenoms = [...denoms]
 
             if (handledTx?.length) {
-                await this.ibcTxModel.insertManyIbcTx(handledTx, async err => {
+                const session = await this.connection.startSession()
+                await session.startTransaction()
+                try {
 
+                    await this.ibcTxModel.insertManyIbcTx(handledTx)
                     taskRecord.height = handledTx[handledTx.length - 1]?.sc_tx_info?.height;
                     await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
-                })
+                    await session.commitTransaction();
+                    session.endSession();
+                }catch (e) {
+                    await session.abortTransaction()
+                    session.endSession();
+                }
+
+
                 // todo Transaction
                 // await session.commitTransaction();
                 // session.endSession();
             }
-            if (denoms?.length) {
-                await this.ibcDenomModel.insertManyDenom(denoms);
-            }
+
+        }
+        if (ibcDenoms?.length) {
+            await this.ibcDenomModel.insertManyDenom(ibcDenoms);
         }
     }
 
@@ -208,7 +220,6 @@ export class IbcTxTaskService {
                 if (tx?.sc_tx_info?.msg?.msg?.packet_id) {
                     // ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
                     if(tx?.dc_chain_id
-                        && tx?.height
                         && tx?.sc_tx_info?.msg?.msg?.packet_id
                         && tx?.sc_tx_info?.msg?.msg?.timeout_height?.revision_height
                         && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp
@@ -216,7 +227,7 @@ export class IbcTxTaskService {
                         packetIds.push(
                             {
                                 chainId: tx.dc_chain_id,
-                                height: tx.height,
+                                height: tx.sc_tx_info.msg.msg.timeout_height.revision_height,
                                 packetId: tx.sc_tx_info.msg.msg.packet_id,
                                 timeOutTime :tx.sc_tx_info.msg.msg.timeout_timestamp
                             }
@@ -267,19 +278,22 @@ export class IbcTxTaskService {
                         let {height, time} = await blockModel.findLatestBlock();
                         chainHeightMap.set(chain, {height, time})
                     }
-
                     let refundedTxPacketIdsMap = new Map
                     const refundedTxPacketIds = packetIdArr.map( item => {
                         if(item?.chainId && item?.height || item?.timeOutTime){
                             const currentChainLatestObj = chainHeightMap.get(item.chainId)
-                            if(item.height < currentChainLatestObj.height || item.timeOutTime < currentChainLatestObj.time){
-                                refundedTxPacketIdsMap.set( item.packetId,'')
-                                return item.packetId
+                            if(item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time){
+                                if(item?.packetId){
+                                    refundedTxPacketIdsMap.set( item.packetId,'')
+                                    return item.packetId
+                                }
                             }
                         }
                     })
-                    const recvPacketIds = packetIdArr.filter(item => {
-                        return !refundedTxPacketIdsMap.has(item.packetId)
+                    const recvPacketIds = packetIdArr.map(item => {
+                        if(item?.packetId){
+                            return item.packetId
+                        }
                     })
                     // txs  数组
                     if (recvPacketIds?.length) {
