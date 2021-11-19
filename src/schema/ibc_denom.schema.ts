@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import { IbcDenomType } from '../types/schemaTypes/ibc_denom.interface';
+import {Logger} from "../logger";
 
 export const IbcDenomSchema = new mongoose.Schema(
     {
@@ -76,6 +77,11 @@ IbcDenomSchema.statics = {
     // },
 
     async insertManyDenom(ibcDenom): Promise<void> {
-        return this.insertMany(ibcDenom, { ordered: false });
+        return this.insertMany(ibcDenom, { ordered: true },(error) => {
+            if(JSON.stringify(error).includes('E11000 duplicate key error collection')){
+            }else {
+                Logger.error(error)
+            }
+        });
     },
 };
