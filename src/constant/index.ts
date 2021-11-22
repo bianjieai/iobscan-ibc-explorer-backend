@@ -4,6 +4,10 @@ export const Delimiter = '|';
 
 export const unAuth = 'Others';
 
+export const SuccessRecvPacketNotFound = 'recv_packet success tx not found';
+export const RecvPacketAckFailed = 'recv_packet ack failed';
+export const SuccessTimeoutPacketNotFound = 'timeout_packet success tx not found';
+
 export const StatisticsNames = [
   'tx_24hr_all',
   'chains_24hr',

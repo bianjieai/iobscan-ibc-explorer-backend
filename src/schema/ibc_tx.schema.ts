@@ -6,7 +6,7 @@ import {
   AggregateResult24hr,
 } from '../types/schemaTypes/ibc_tx.interface';
 import { parseQuery } from '../helper/ibcTx.helper';
-import { IbcTxStatus } from '../constant';
+import {IbcTxStatus, RecvPacketAckFailed} from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
@@ -27,6 +27,7 @@ export const IbcTxSchema = new mongoose.Schema({
         sc_log: String,
         dc_log: String,
     },
+    process_log:String,
     denoms: {
         sc_denom: String,
         dc_denom: String,
@@ -117,7 +118,8 @@ IbcTxSchema.statics = {
                             IbcTxStatus.PROCESSING,
                             IbcTxStatus.REFUNDED,
                         ],
-                    }
+                    },
+                    "sc_tx_info.status":1
                 }
             },
             {
@@ -137,11 +139,10 @@ IbcTxSchema.statics = {
                     status: {
                         $in: [
                             IbcTxStatus.SUCCESS,
-                            IbcTxStatus.FAILED,
                             IbcTxStatus.PROCESSING,
-                            IbcTxStatus.REFUNDED,
                         ],
-                    }
+                    },
+                    process_log:{$regex:RecvPacketAckFailed}
                 }
             },
             {
