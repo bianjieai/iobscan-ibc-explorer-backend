@@ -12,6 +12,7 @@ import {ChainHttp} from '../http/lcd/chain.http';
 import {IbcTxType} from '../types/schemaTypes/ibc_tx.interface';
 import {JSONparse} from '../util/util';
 import {getDcDenom} from '../helper/denom.helper';
+import {SubState} from '../constant';
 
 import {
     TaskEnum,
@@ -171,8 +172,8 @@ export class IbcTxTaskService {
                 SyncTaskSchema,
                 `sync_${chain_id}_task`,
             );
-            const taskCount = await getTaskStatus(taskModel,TaskEnum.tx)
-            if(!taskCount) continue
+            const taskCount = await getTaskStatus(taskModel, TaskEnum.tx)
+            if (!taskCount) continue
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
             let {handledTx, denoms} = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
@@ -188,7 +189,7 @@ export class IbcTxTaskService {
                     await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
                     await session.commitTransaction();
                     session.endSession();
-                }catch (e) {
+                } catch (e) {
                     await session.abortTransaction()
                     session.endSession();
                 }
@@ -219,17 +220,17 @@ export class IbcTxTaskService {
             for (const tx of txs) {
                 if (tx?.sc_tx_info?.msg?.msg?.packet_id) {
                     // ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
-                    if(tx?.dc_chain_id
+                    if (tx?.dc_chain_id
                         && tx?.sc_tx_info?.msg?.msg?.packet_id
                         && tx?.sc_tx_info?.msg?.msg?.timeout_height?.revision_height
                         && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp
-                    ){
+                    ) {
                         packetIds.push(
                             {
                                 chainId: tx.dc_chain_id,
                                 height: tx.sc_tx_info.msg.msg.timeout_height.revision_height,
                                 packetId: tx.sc_tx_info.msg.msg.packet_id,
-                                timeOutTime :tx.sc_tx_info.msg.msg.timeout_timestamp
+                                timeOutTime: tx.sc_tx_info.msg.msg.timeout_timestamp
                             }
                         )
                     }
@@ -239,10 +240,12 @@ export class IbcTxTaskService {
         }
         return packetIds
     }
+
     async changeIbcTxState(dateNow): Promise<void> {
         const ibcTxs = await this.getProcessingTxs()
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
-        let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map,needUpdateTxs = [],denoms = [] //packetIdArr= [],
+        let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map, needUpdateTxs = [],
+            denoms = [] //packetIdArr= [],
         // const allChains = await this.chainConfigModel.findAll();
         const dcChains = ibcTxs.map(item => {
             if (item.dc_chain_id) {
@@ -270,8 +273,8 @@ export class IbcTxTaskService {
                         SyncTaskSchema,
                         `sync_${chain}_task`,
                     );
-                    const taskCount = await getTaskStatus(taskModel,TaskEnum.tx)
-                    if(!taskCount) continue
+                    const taskCount = await getTaskStatus(taskModel, TaskEnum.tx)
+                    if (!taskCount) continue
                     //每条链最新的高度
                     const chainHeightObj = await blockModel.findLatestBlock();
                     if (chainHeightObj && JSON.stringify(chainHeightObj) !== '{}') {
@@ -279,19 +282,19 @@ export class IbcTxTaskService {
                         chainHeightMap.set(chain, {height, time})
                     }
                     let refundedTxPacketIdsMap = new Map
-                    const refundedTxPacketIds = packetIdArr.map( item => {
-                        if(item?.chainId && item?.height || item?.timeOutTime){
+                    const refundedTxPacketIds = packetIdArr.map(item => {
+                        if (item?.chainId && item?.height || item?.timeOutTime) {
                             const currentChainLatestObj = chainHeightMap.get(item.chainId)
-                            if(item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time){
-                                if(item?.packetId){
-                                    refundedTxPacketIdsMap.set( item.packetId,'')
+                            if (item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time) {
+                                if (item?.packetId) {
+                                    refundedTxPacketIdsMap.set(item.packetId, '')
                                     return item.packetId
                                 }
                             }
                         }
                     })
                     const recvPacketIds = packetIdArr.map(item => {
-                        if(item?.packetId){
+                        if (item?.packetId) {
                             return item.packetId
                         }
                     })
@@ -315,7 +318,7 @@ export class IbcTxTaskService {
                             }
                         }
                     }
-                    if(refundedTxPacketIds?.length){
+                    if (refundedTxPacketIds?.length) {
                         const refundedTxs = await txModel.queryTxListByPacketId({
                             type: TxType.timeout_packet,
                             limit: packetIdArr.length,
@@ -340,7 +343,10 @@ export class IbcTxTaskService {
 
         for (let ibcTx of ibcTxs) {
             if (!ibcTx.dc_chain_id) continue
-            if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
+            if (!recvPacketTxMap.size) {
+                ibcTx.substate = SubState.SuccessRecvPacketNotFound;
+                needUpdateTxs.push(ibcTx)
+            } else if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
                 const recvPacketTx = recvPacketTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
                 // let counter_party_tx = null
                 recvPacketTx && recvPacketTx.msgs.length && recvPacketTx.msgs.forEach(async (msg, msgIndex) => {
@@ -367,8 +373,17 @@ export class IbcTxTaskService {
                                 });
                             }
                         });
-                        ibcTx.status =
-                            result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
+                        switch (result) {
+                            case "true":
+                                ibcTx.status = IbcTxStatus.SUCCESS
+                                ibcTx.substate = 0
+                                break;
+                            case "false":
+                                ibcTx.substate = SubState.RecvPacketAckFailed;
+                                break;
+                        }
+                        // ibcTx.status =
+                        //     result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
                         ibcTx.dc_tx_info = {
                             hash: recvPacketTx.tx_hash,
                             status: recvPacketTx.status,
@@ -386,9 +401,9 @@ export class IbcTxTaskService {
                                 ? ''
                                 : dc_denom_path.replace(`/${ibcTx.base_denom}`, '');
                         needUpdateTxs.push(ibcTx)
-                        if(ibcTx.status === IbcTxStatus.SUCCESS){
+                        if (ibcTx.status === IbcTxStatus.SUCCESS) {
                             const denomObj = {
-                                chain_id:ibcTx.dc_chain_id,
+                                chain_id: ibcTx.dc_chain_id,
                                 denom: dc_denom,
                                 base_denom: ibcTx.base_denom,
                                 denom_path: denom_path,
@@ -407,37 +422,41 @@ export class IbcTxTaskService {
                 * 没有找到的结果
                 * */
                 if (refundedTxTxMap.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
-                        const refunded_tx = refundedTxTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`);
-                        refunded_tx &&
-                        refunded_tx.msgs.forEach(msg => {
-                            if (
-                                msg.type === TxType.timeout_packet &&
-                                ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
-                            ) {
-                                ibcTx.status = IbcTxStatus.REFUNDED;
-                                ibcTx.refunded_tx_info = {
-                                    hash: refunded_tx.tx_hash,
-                                    status: refunded_tx.status,
-                                    time: refunded_tx.time,
-                                    height: refunded_tx.height,
-                                    fee: refunded_tx.fee,
-                                    msg_amount: msg.msg.token,
-                                    msg,
-                                };
-                                ibcTx.update_at = dateNow;
-                                // ibcTx.tx_time = refunded_tx.time;
-                                needUpdateTxs.push(ibcTx)
-                            }
-                        });
-                    }
+                    const refunded_tx = refundedTxTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`);
+                    refunded_tx &&
+                    refunded_tx.msgs.forEach(msg => {
+                        if (
+                            msg.type === TxType.timeout_packet &&
+                            ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
+                        ) {
+                            ibcTx.status = IbcTxStatus.REFUNDED;
+                            ibcTx.refunded_tx_info = {
+                                hash: refunded_tx.tx_hash,
+                                status: refunded_tx.status,
+                                time: refunded_tx.time,
+                                height: refunded_tx.height,
+                                fee: refunded_tx.fee,
+                                msg_amount: msg.msg.token,
+                                msg,
+                            };
+                            ibcTx.update_at = dateNow;
+                            // ibcTx.tx_time = refunded_tx.time;
+                            ibcTx.substate = 0
+                            needUpdateTxs.push(ibcTx)
+                        }
+                    });
+                } else {
+                    ibcTx.substate = SubState.SuccessTimeoutPacketNotFound;
+                    needUpdateTxs.push(ibcTx)
                 }
             }
+        }
         if (needUpdateTxs?.length) {
             for (let needUpdateTx of needUpdateTxs) {
                 await this.ibcTxModel.updateIbcTx(needUpdateTx);
             }
         }
-        if(denoms?.length){
+        if (denoms?.length) {
             await this.ibcDenomModel.insertManyDenom(denoms);
         }
     }
@@ -491,6 +510,7 @@ export class IbcTxTaskService {
         });
         return msg;
     }
+
     async handlerSourcesTx(sourcesTx, chain_id, currentTime, allChainsMap, allChainsDenomPathsMap) {
         let handledTx = [], denoms = []
         if (sourcesTx && chain_id) {
@@ -519,6 +539,7 @@ export class IbcTxTaskService {
                             dc_tx_info: {},
                             refunded_tx_info: {},
                             log: {},
+                            substate:0,
                             denoms: {
                                 sc_denom: '',
                                 dc_denom: '',

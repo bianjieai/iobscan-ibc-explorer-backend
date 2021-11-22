@@ -4,6 +4,15 @@ export const Delimiter = '|';
 
 export const unAuth = 'Others';
 
+export enum SubState {
+  // recv_packet success tx not found
+  SuccessRecvPacketNotFound = 1,
+  // recv_packet ack failed
+  RecvPacketAckFailed = 2,
+  // timeout_packet success tx not found
+  SuccessTimeoutPacketNotFound = 3,
+}
+
 export const StatisticsNames = [
   'tx_24hr_all',
   'chains_24hr',
