@@ -12,7 +12,7 @@ import {ChainHttp} from '../http/lcd/chain.http';
 import {IbcTxType} from '../types/schemaTypes/ibc_tx.interface';
 import {JSONparse} from '../util/util';
 import {getDcDenom} from '../helper/denom.helper';
-import {SuccessTimeoutPacketNotFound, SuccessRecvPacketNotFound, RecvPacketAckFailed} from '../constant';
+import {SubState} from '../constant';
 
 import {
     TaskEnum,
@@ -344,7 +344,7 @@ export class IbcTxTaskService {
         for (let ibcTx of ibcTxs) {
             if (!ibcTx.dc_chain_id) continue
             if (!recvPacketTxMap.size) {
-                ibcTx.process_log = "processing:" + SuccessRecvPacketNotFound;
+                ibcTx.substate = SubState.SuccessRecvPacketNotFound;
                 needUpdateTxs.push(ibcTx)
             } else if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
                 const recvPacketTx = recvPacketTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
@@ -376,10 +376,10 @@ export class IbcTxTaskService {
                         switch (result) {
                             case "true":
                                 ibcTx.status = IbcTxStatus.SUCCESS
-                                ibcTx.process_log = ""
+                                ibcTx.substate = 0
                                 break;
                             case "false":
-                                ibcTx.process_log = "processing:" + RecvPacketAckFailed;
+                                ibcTx.substate = SubState.RecvPacketAckFailed;
                                 break;
                         }
                         // ibcTx.status =
@@ -441,12 +441,12 @@ export class IbcTxTaskService {
                             };
                             ibcTx.update_at = dateNow;
                             // ibcTx.tx_time = refunded_tx.time;
-                            ibcTx.process_log = ""
+                            ibcTx.substate = 0
                             needUpdateTxs.push(ibcTx)
                         }
                     });
                 } else {
-                    ibcTx.process_log = "processing:" + SuccessTimeoutPacketNotFound;
+                    ibcTx.substate = SubState.SuccessTimeoutPacketNotFound;
                     needUpdateTxs.push(ibcTx)
                 }
             }
@@ -539,7 +539,7 @@ export class IbcTxTaskService {
                             dc_tx_info: {},
                             refunded_tx_info: {},
                             log: {},
-                            process_log:'',
+                            substate:0,
                             denoms: {
                                 sc_denom: '',
                                 dc_denom: '',

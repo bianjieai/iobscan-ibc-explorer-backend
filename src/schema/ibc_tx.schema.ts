@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
 import {
-  IbcTxType,
-  IbcTxQueryType,
-  AggregateResult24hr,
+    IbcTxType,
+    IbcTxQueryType,
+    AggregateResult24hr,
 } from '../types/schemaTypes/ibc_tx.interface';
-import { parseQuery } from '../helper/ibcTx.helper';
-import {IbcTxStatus, RecvPacketAckFailed} from '../constant';
+import {parseQuery} from '../helper/ibcTx.helper';
+import {IbcTxStatus, SubState} from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
@@ -27,7 +27,7 @@ export const IbcTxSchema = new mongoose.Schema({
         sc_log: String,
         dc_log: String,
     },
-    process_log:String,
+    substate: Number,
     denoms: {
         sc_denom: String,
         dc_denom: String,
@@ -119,7 +119,7 @@ IbcTxSchema.statics = {
                             IbcTxStatus.REFUNDED,
                         ],
                     },
-                    "sc_tx_info.status":1
+                    "sc_tx_info.status": 1
                 }
             },
             {
@@ -142,7 +142,7 @@ IbcTxSchema.statics = {
                             IbcTxStatus.PROCESSING,
                         ],
                     },
-                    process_log:{$regex:RecvPacketAckFailed}
+                    substate: SubState.RecvPacketAckFailed,
                 }
             },
             {

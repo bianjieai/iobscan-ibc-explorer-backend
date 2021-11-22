@@ -4,9 +4,14 @@ export const Delimiter = '|';
 
 export const unAuth = 'Others';
 
-export const SuccessRecvPacketNotFound = 'recv_packet success tx not found';
-export const RecvPacketAckFailed = 'recv_packet ack failed';
-export const SuccessTimeoutPacketNotFound = 'timeout_packet success tx not found';
+export enum SubState {
+  // recv_packet success tx not found
+  SuccessRecvPacketNotFound = 1,
+  // recv_packet ack failed
+  RecvPacketAckFailed = 2,
+  // timeout_packet success tx not found
+  SuccessTimeoutPacketNotFound = 3,
+}
 
 export const StatisticsNames = [
   'tx_24hr_all',
