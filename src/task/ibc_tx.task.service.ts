@@ -25,6 +25,7 @@ import {
 import {dateNow} from "../helper/date.helper";
 import {getTaskStatus} from "../helper/task.helper";
 import {SyncTaskSchema} from "../schema/sync.task.schema";
+import {Logger} from "../logger";
 
 @Injectable()
 export class IbcTxTaskService {
@@ -190,6 +191,7 @@ export class IbcTxTaskService {
                     await session.commitTransaction();
                     session.endSession();
                 } catch (e) {
+                    Logger.log(e,'transaction is error')
                     await session.abortTransaction()
                     session.endSession();
                 }
@@ -655,6 +657,7 @@ export class IbcTxTaskService {
                         if (!dc_chain_id && ibcTx.status !== IbcTxStatus.FAILED) {
                             ibcTx.status = IbcTxStatus.SETTING;
                         }
+
                         ibcTx.record_id = `${sc_port}${sc_channel}${dc_port}${dc_channel}${sequence}${sc_chain_id}${hash}${msgIndex}`;
                         ibcTx.sc_addr = sc_addr;
                         ibcTx.dc_addr = dc_addr;
