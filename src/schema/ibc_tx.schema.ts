@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as mongoose from 'mongoose';
-import {AggregateResult24hr, IbcTxQueryType, IbcTxType,} from '../types/schemaTypes/ibc_tx.interface';
-import {parseQuery} from '../helper/ibcTx.helper';
-import {IbcTxStatus, SubState} from '../constant';
+import {
+  IbcTxType,
+  IbcTxQueryType,
+  AggregateResult24hr,
+} from '../types/schemaTypes/ibc_tx.interface';
+import { parseQuery } from '../helper/ibcTx.helper';
+import { IbcTxStatus } from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
@@ -23,7 +27,6 @@ export const IbcTxSchema = new mongoose.Schema({
         sc_log: String,
         dc_log: String,
     },
-    substate: Number,
     denoms: {
         sc_denom: String,
         dc_denom: String,
@@ -114,8 +117,7 @@ IbcTxSchema.statics = {
                             IbcTxStatus.PROCESSING,
                             IbcTxStatus.REFUNDED,
                         ],
-                    },
-                    "sc_tx_info.status": 1
+                    }
                 }
             },
             {
@@ -132,10 +134,14 @@ IbcTxSchema.statics = {
                 $match: {
                     dc_chain_id: {$in: chains},
                     tx_time: {$gte: dateNow - 24 * 60 * 60},
-                    $or: [
-                        {status: IbcTxStatus.SUCCESS},
-                        {status: IbcTxStatus.PROCESSING, substate: SubState.RecvPacketAckFailed},
-                    ],
+                    status: {
+                        $in: [
+                            IbcTxStatus.SUCCESS,
+                            IbcTxStatus.FAILED,
+                            IbcTxStatus.PROCESSING,
+                            IbcTxStatus.REFUNDED,
+                        ],
+                    }
                 }
             },
             {
@@ -197,6 +203,12 @@ IbcTxSchema.statics = {
     },
 
     async insertManyIbcTx(ibcTx, cb): Promise<void> {
-        return this.insertMany(ibcTx, cb);
+        return this.insertMany(ibcTx, (error) => {
+            if(JSON.stringify(error).includes('E11000 ')){
+                // Primary key conflict handling
+            }else {
+                throw  error
+            }
+        });
     },
 };
