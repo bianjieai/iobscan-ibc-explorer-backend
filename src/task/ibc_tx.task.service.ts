@@ -367,10 +367,7 @@ export class IbcTxTaskService {
                             if (event.type === 'write_acknowledgement') {
                                 event.attributes.forEach(attribute => {
                                     if (attribute.key === 'packet_ack') {
-                                        const resultObj = JSONparse(attribute.value);
-                                        result = resultObj.hasOwnProperty('error')
-                                            ? 'false'
-                                            : 'true';
+                                        result = attribute.value === '' ? 'false' : attribute.value && attribute.value.includes('error') ? 'false' : 'true';
                                     }
                                 });
                             }
@@ -384,8 +381,8 @@ export class IbcTxTaskService {
                                 ibcTx.substate = SubState.RecvPacketAckFailed;
                                 break;
                         }
-                        // ibcTx.status =
-                        //     result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
+                        ibcTx.status =
+                            result === 'false' ? IbcTxStatus.FAILED : IbcTxStatus.SUCCESS;
                         ibcTx.dc_tx_info = {
                             hash: recvPacketTx.tx_hash,
                             status: recvPacketTx.status,
@@ -703,6 +700,7 @@ export class IbcTxTaskService {
                                 base_denom: base_denom,
                                 denom_path: denom_path,
                                 is_source_chain: !Boolean(denom_path),
+                                is_base_denom:isBaseDenom,
                                 create_at: dateNow,
                                 update_at: ''
                             })
