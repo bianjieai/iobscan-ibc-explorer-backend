@@ -29,6 +29,13 @@ describe('IbcTxTaskService', () => {
             console.log(result,'----')
         });
     });
+    describe('checkTaskFollowingStatus', () => {
+        it('checkTaskFollowingStatus Test', async () => {
+            let chain_id = "irishub-test"
+            const result  = await ibcTxTaskService.checkTaskFollowingStatus(chain_id)
+            console.log(result,'-checkTaskFollowingStatus---')
+        });
+    });
 
     describe('handlerSourcesTx', () => {
         it('handlerSourcesTx Test', async () => {
