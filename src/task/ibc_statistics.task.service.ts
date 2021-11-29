@@ -7,6 +7,7 @@ import {IbcChainConfigSchema} from '../schema/ibc_chain_config.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {TaskEnum, StatisticsNames} from '../constant';
+import {AggregateBaseDenomCnt} from "../types/schemaTypes/ibc_denom.interface";
 import {AggregateResult24hr} from "../types/schemaTypes/ibc_tx.interface";
 import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 
@@ -75,6 +76,10 @@ export class IbcStatisticsTaskService {
         return await this.ibcStatisticsModel.findStatisticsRecord(
             statistics_name,
         );
+    }
+
+    async aggregateBaseDenomCnt(): Promise<Array<AggregateBaseDenomCnt>> {
+        return await this.ibcDenomModel.findBaseDenomCount()
     }
 
     // sync count
@@ -153,7 +158,8 @@ export class IbcStatisticsTaskService {
 
         // base_denom_all
         // const base_denom_all = await this.ibcBaseDenomModel.findCount();
-        const base_denom_all = await this.ibcDenomModel.findBaseDenomCount();
+        const base_denoms = await this.aggregateBaseDenomCnt();
+        const base_denom_all = base_denoms.length;
 
         const parseCount = {
             tx_24hr_all,
