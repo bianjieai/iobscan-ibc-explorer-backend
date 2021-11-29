@@ -149,6 +149,15 @@ export class IbcTxTaskService {
         return txs
     }
 
+    async checkTaskFollowingStatus(chainId): Promise<boolean> {
+        const taskModel = await this.connection.model(
+            'txModel',
+            SyncTaskSchema,
+            `sync_${chainId}_task`,
+        );
+        return await getTaskStatus(chainId, taskModel, TaskEnum.tx)
+    }
+
     async parseIbcTx(dateNow): Promise<void> {
         const allChains = await this.chainConfigModel.findAll();
         const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
@@ -168,12 +177,13 @@ export class IbcTxTaskService {
             } else {
                 if (taskRecord.status === IbcTaskRecordStatus.CLOSE) continue;
             }
-            const taskModel = await this.connection.model(
-                'txModel',
-                SyncTaskSchema,
-                `sync_${chain_id}_task`,
-            );
-            const taskCount = await getTaskStatus(chain_id,taskModel, TaskEnum.tx)
+            // const taskModel = await this.connection.model(
+            //     'txModel',
+            //     SyncTaskSchema,
+            //     `sync_${chain_id}_task`,
+            // );
+            // const taskCount = await getTaskStatus(chain_id, taskModel, TaskEnum.tx)
+            const taskCount = await this.checkTaskFollowingStatus(chain_id)
             if (!taskCount) continue
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
@@ -191,7 +201,7 @@ export class IbcTxTaskService {
                     await session.commitTransaction();
                     session.endSession();
                 } catch (e) {
-                    Logger.log(e,'transaction is error')
+                    Logger.log(e, 'transaction is error')
                     await session.abortTransaction()
                     session.endSession();
                 }
@@ -270,12 +280,13 @@ export class IbcTxTaskService {
                         `sync_${chain}_block`,
                     );
 
-                    const taskModel = await this.connection.model(
-                        'txModel',
-                        SyncTaskSchema,
-                        `sync_${chain}_task`,
-                    );
-                    const taskCount = await getTaskStatus(chain,taskModel, TaskEnum.tx)
+                    // const taskModel = await this.connection.model(
+                    //     'txModel',
+                    //     SyncTaskSchema,
+                    //     `sync_${chain}_task`,
+                    // );
+                    // const taskCount = await getTaskStatus(chain, taskModel, TaskEnum.tx)
+                    const taskCount = await this.checkTaskFollowingStatus(chain)
                     if (!taskCount) continue
                     //每条链最新的高度
                     const chainHeightObj = await blockModel.findLatestBlock();
@@ -538,7 +549,7 @@ export class IbcTxTaskService {
                             dc_tx_info: {},
                             refunded_tx_info: {},
                             log: {},
-                            substate:0,
+                            substate: 0,
                             denoms: {
                                 sc_denom: '',
                                 dc_denom: '',
@@ -700,7 +711,7 @@ export class IbcTxTaskService {
                                 base_denom: base_denom,
                                 denom_path: denom_path,
                                 is_source_chain: !Boolean(denom_path),
-                                is_base_denom:isBaseDenom,
+                                is_base_denom: isBaseDenom,
                                 create_at: dateNow,
                                 update_at: ''
                             })
