@@ -15,7 +15,7 @@ describe('IbcStatisticsTaskService', () => {
     })
     describe('parseIbcStatistics', () => {
         it('parseIbcStatistics', async () => {
-            const dateNow = Math.floor(1623955689);
+            const dateNow = Math.floor(1637737022);
             await ibcStatisticsTaskService.parseIbcStatistics(dateNow)
             // console.log(ibcTxTaskService,'----')
         });

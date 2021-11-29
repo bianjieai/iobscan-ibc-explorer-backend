@@ -22,7 +22,7 @@ describe('IbcChainService', () => {
 
     describe('findActiveChains24hr', () => {
         it('findActiveChains24hr Test', async () => {
-            const result = await ibcChainService.findActiveChains24hr(Math.floor(1623955689))
+            const result = await ibcChainService.findActiveChains24hr()
             console.log(result, '----')
         });
     });
@@ -38,7 +38,7 @@ describe('IbcChainService', () => {
         it('handleActiveChains Test', async () => {
             const allChainConfigs = await ibcChainService.getAllChainConfigs()
 
-            const result = await ibcChainService.handleActiveChains(Math.floor(1623955689),allChainConfigs)
+            const result = await ibcChainService.handleActiveChains(allChainConfigs)
             console.log(result, '----')
         });
     });

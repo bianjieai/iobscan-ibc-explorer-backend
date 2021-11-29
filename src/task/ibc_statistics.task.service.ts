@@ -177,6 +177,11 @@ export class IbcStatisticsTaskService {
         };
 
         for (const statistics_name of StatisticsNames) {
+            let statistics_info = '';
+            if ((statistics_name === 'chains_24hr') && (chainMap.size > 0)){
+               const chains24hr = [...chainMap.keys()]
+                statistics_info = chains24hr.join(",")
+            }
             const statisticsRecord = await this.findStatisticsRecord(
                 statistics_name,
             );
@@ -184,12 +189,14 @@ export class IbcStatisticsTaskService {
                 await this.ibcStatisticsModel.insertManyStatisticsRecord({
                     statistics_name,
                     count: parseCount[statistics_name],
+                    statistics_info,
                     create_at: dateNow,
                     update_at: dateNow,
                 });
             } else {
                 statisticsRecord.count = parseCount[statistics_name];
                 statisticsRecord.update_at = dateNow;
+                statisticsRecord.statistics_info = statistics_info
                 await this.updateStatisticsRecord(statisticsRecord);
             }
         }
