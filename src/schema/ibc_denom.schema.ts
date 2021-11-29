@@ -2,6 +2,7 @@
 import * as mongoose from 'mongoose';
 import { IbcDenomType } from '../types/schemaTypes/ibc_denom.interface';
 import {Logger} from "../logger";
+import {AggregateBaseDenomCnt} from "../types/schemaTypes/ibc_denom.interface";
 
 export const IbcDenomSchema = new mongoose.Schema(
     {
@@ -54,10 +55,21 @@ IbcDenomSchema.statics = {
         return this.count({});
     },
 
-    async findBaseDenomCount(): Promise<number> {
-        return this.count({
-            is_base_denom: true,
-        });
+    async findBaseDenomCount(): Promise<Array<AggregateBaseDenomCnt>> {
+        // return this.count({
+        //     is_base_denom: true,
+        // });
+        return this.aggregate([
+            {
+                $match: {
+                    is_base_denom: true,
+                }
+            },
+            {
+                $group: {
+                    _id: {base_denom: "$base_denom", chain_id: "$chain_id"}
+                }
+            }]);
     },
 
     async findDenomRecord(chain_id, denom): Promise<IbcDenomType> {

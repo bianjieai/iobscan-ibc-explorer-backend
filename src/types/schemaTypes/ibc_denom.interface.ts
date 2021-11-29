@@ -7,3 +7,7 @@ export interface IbcDenomType {
   create_at: string;
   update_at: string;
 }
+
+export  interface AggregateBaseDenomCnt {
+  _id:{base_denom?:string,chain_id?:string};
+}

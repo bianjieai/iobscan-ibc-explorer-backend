@@ -47,4 +47,12 @@ describe('IbcStatisticsTaskService', () => {
             await ibcStatisticsTaskService.updateStatisticsRecord(record)
         });
     });
+
+    describe("aggregateBaseDenomCnt", () => {
+        it('aggregateBaseDenomCnt Test', async () => {
+            const record = await ibcStatisticsTaskService.aggregateBaseDenomCnt()
+            console.log(record)
+        });
+    });
+
 })
