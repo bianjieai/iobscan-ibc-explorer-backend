@@ -418,6 +418,7 @@ export class IbcTxTaskService {
                                 base_denom: ibcTx.base_denom,
                                 denom_path: denom_path,
                                 is_source_chain: !Boolean(denom_path),
+                                is_base_denom: Boolean(dc_denom === ibcTx.base_denom),
                                 create_at: dateNow,
                                 update_at: ''
                             }
@@ -691,19 +692,19 @@ export class IbcTxTaskService {
                             msg,
                         };
                         ibcTx.log['sc_log'] = log;
-                        let isBaseDenom = true
-                        if (Boolean(denom_path) && denom_path.split('/').length > 1) {
-                            const dc_port = denom_path.split('/')[0];
-                            const dc_channel = denom_path.split('/')[1];
-                            if (allChainsDenomPathsMap.has(sc_chain_id)) {
-                                const dcDenomPath = allChainsDenomPathsMap.get(sc_chain_id)
-                                const currentIbcTxDenomPath = `${dc_channel}${dc_port}`
-                                if (dcDenomPath === currentIbcTxDenomPath) {
-                                    isBaseDenom = false;
-                                }
-
-                            }
-                        }
+                        // let isBaseDenom = true
+                        // if (Boolean(denom_path) && denom_path.split('/').length > 1) {
+                        //     const dc_port = denom_path.split('/')[0];
+                        //     const dc_channel = denom_path.split('/')[1];
+                        //     if (allChainsDenomPathsMap.has(sc_chain_id)) {
+                        //         const dcDenomPath = allChainsDenomPathsMap.get(sc_chain_id)
+                        //         const currentIbcTxDenomPath = `${dc_channel}${dc_port}`
+                        //         if (dcDenomPath === currentIbcTxDenomPath) {
+                        //             isBaseDenom = false;
+                        //         }
+                        //
+                        //     }
+                        // }
                         if (ibcTx.status === IbcTxStatus.PROCESSING) {
                             denoms.push({
                                 chain_id: sc_chain_id,
@@ -711,7 +712,7 @@ export class IbcTxTaskService {
                                 base_denom: base_denom,
                                 denom_path: denom_path,
                                 is_source_chain: !Boolean(denom_path),
-                                is_base_denom: isBaseDenom,
+                                is_base_denom: Boolean(sc_denom === base_denom),
                                 create_at: dateNow,
                                 update_at: ''
                             })
