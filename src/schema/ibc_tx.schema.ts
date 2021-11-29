@@ -202,13 +202,13 @@ IbcTxSchema.statics = {
         return this.findOneAndUpdate({record_id}, ibcTx, options);
     },
 
-    async insertManyIbcTx(ibcTx, cb): Promise<void> {
-        return this.insertMany(ibcTx, (error) => {
-            if(JSON.stringify(error).includes('E11000 ')){
+    async insertManyIbcTx(ibcTx, session): Promise<void> {
+        return this.insertMany(ibcTx,{ ordered: false }, (error) => {
+            if(JSON.stringify(error).includes('E11000')){
                 // Primary key conflict handling
             }else {
-                throw  error
+                console.log(error,'insertMany IbcTx error')
             }
-        });
+        },session);
     },
 };

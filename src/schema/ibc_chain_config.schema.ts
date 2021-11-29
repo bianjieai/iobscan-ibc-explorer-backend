@@ -7,6 +7,7 @@ export const IbcChainConfigSchema = new mongoose.Schema({
     chain_name: String,
     lcd: String,
     ibc_info: Object,
+    is_manual: Boolean
 });
 
 IbcChainConfigSchema.index({chain_id: 1}, {unique: true});

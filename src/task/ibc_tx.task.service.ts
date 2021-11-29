@@ -173,7 +173,7 @@ export class IbcTxTaskService {
                 SyncTaskSchema,
                 `sync_${chain_id}_task`,
             );
-            const taskCount = await getTaskStatus(taskModel, TaskEnum.tx)
+            const taskCount = await getTaskStatus(chain_id,taskModel, TaskEnum.tx)
             if (!taskCount) continue
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
@@ -182,7 +182,7 @@ export class IbcTxTaskService {
 
             if (handledTx?.length) {
                 const session = await this.connection.startSession()
-                await session.startTransaction()
+                session.startTransaction()
                 try {
 
                     await this.ibcTxModel.insertManyIbcTx(handledTx)
@@ -275,7 +275,7 @@ export class IbcTxTaskService {
                         SyncTaskSchema,
                         `sync_${chain}_task`,
                     );
-                    const taskCount = await getTaskStatus(taskModel, TaskEnum.tx)
+                    const taskCount = await getTaskStatus(chain,taskModel, TaskEnum.tx)
                     if (!taskCount) continue
                     //每条链最新的高度
                     const chainHeightObj = await blockModel.findLatestBlock();

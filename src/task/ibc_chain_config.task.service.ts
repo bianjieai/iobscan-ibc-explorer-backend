@@ -48,6 +48,7 @@ export class IbcChainConfigTaskService {
           lcd: chain.lcd,
           icon: chain.icon,
           ibc_info: channels ? channels : [],
+          isManual: chain?.is_manual
         });
       }),
     ).then(allChains => {
@@ -97,7 +98,9 @@ export class IbcChainConfigTaskService {
         chain['ibc_info'] = ibcInfo;
 
         // update
-        this.chainConfigModel.updateChain(chain);
+        if(!chain.isManual){
+          this.chainConfigModel.updateChain(chain);
+        }
       });
     });
   }

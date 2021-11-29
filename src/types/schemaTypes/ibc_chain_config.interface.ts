@@ -4,4 +4,5 @@ export interface IbcChainConfigType {
   chain_name: string;
   lcd: string;
   ibc_info?: any;
+  is_manual:boolean
 }
