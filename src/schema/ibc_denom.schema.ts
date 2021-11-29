@@ -11,10 +11,7 @@ export const IbcDenomSchema = new mongoose.Schema(
         base_denom: String,
         denom_path: String,
         is_source_chain: Boolean,
-        is_base_denom: {
-            type: Boolean,
-            default: true,
-        },
+        is_base_denom: Boolean,
         symbol: {
             type: String,
             default: '',
