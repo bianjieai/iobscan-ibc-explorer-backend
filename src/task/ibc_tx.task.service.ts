@@ -91,7 +91,7 @@ export class IbcTxTaskService {
                             if (info?.paths?.length) {
                                 info.paths.forEach(path => {
                                     if (path?.channel_id && path?.port_id)
-                                        allChainsDenomPathsMap.set(info.chain_id, `${path.channel_id}${path.port_id}`)
+                                        allChainsDenomPathsMap.set(`${info.chain_id}${path.counterparty.channel_id}${path.counterparty.port_id}`, `${path.counterparty.channel_id}${path.counterparty.port_id}`)
                                 })
                             }
                         })
@@ -692,7 +692,20 @@ export class IbcTxTaskService {
                             msg,
                         };
                         ibcTx.log['sc_log'] = log;
-                        // let isBaseDenom = true
+                        let isBaseDenom = null
+                        if(sc_denom === base_denom){
+                            isBaseDenom = true
+                        }else {
+                            if(denom_path && denom_path.split('/').length > 1){
+                                const dc_port = denom_path.split('/')[0];
+                                const dc_channel = denom_path.split('/')[1];
+                                if(allChainsDenomPathsMap.has(`${dc_chain_id}${dc_channel}${dc_port}`)){
+                                    isBaseDenom = false
+                                }else {
+                                    isBaseDenom = true
+                                }
+                            }
+                        }
                         // if (Boolean(denom_path) && denom_path.split('/').length > 1) {
                         //     const dc_port = denom_path.split('/')[0];
                         //     const dc_channel = denom_path.split('/')[1];
@@ -712,7 +725,7 @@ export class IbcTxTaskService {
                                 base_denom: base_denom,
                                 denom_path: denom_path,
                                 is_source_chain: !Boolean(denom_path),
-                                is_base_denom: Boolean(sc_denom === base_denom),
+                                is_base_denom: isBaseDenom,
                                 create_at: dateNow,
                                 update_at: ''
                             })
