@@ -189,7 +189,9 @@ export class IbcTxTaskService {
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
             let {handledTx, denoms} = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
             ibcDenoms = [...denoms]
-
+            if (ibcDenoms?.length) {
+                await this.ibcDenomModel.insertManyDenom(ibcDenoms);
+            }
             if (handledTx?.length) {
                 const session = await this.connection.startSession()
                 session.startTransaction()
@@ -212,9 +214,6 @@ export class IbcTxTaskService {
                 // session.endSession();
             }
 
-        }
-        if (ibcDenoms?.length) {
-            await this.ibcDenomModel.insertManyDenom(ibcDenoms);
         }
     }
 
@@ -717,7 +716,7 @@ export class IbcTxTaskService {
                         //         }
                         //
                         //     }
-                        // }
+
                         if (ibcTx.status === IbcTxStatus.PROCESSING) {
                             denoms.push({
                                 chain_id: sc_chain_id,
