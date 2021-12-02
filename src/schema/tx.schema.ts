@@ -22,7 +22,7 @@ export const TxSchema = new mongoose.Schema(
 );
 
 TxSchema.index({ 'types': -1, height: -1 }, { background: true });
-TxSchema.index({ 'types': -1,status: -1, 'msgs.msg.packet_id': -1 }, { background: true });
+TxSchema.index({ 'msgs.type': -1,status: -1, 'msgs.msg.packet_id': -1 }, { background: true });
 
 // 	txs
 TxSchema.statics = {
@@ -43,7 +43,7 @@ TxSchema.statics = {
   async queryTxListByPacketId(query): Promise<any> {
     const { type, status, packet_id } = query;
     return this.find({
-      'types': type,
+      'msgs.type': type,
       status,
       'msgs.msg.packet_id': {$in:packet_id},
     })
