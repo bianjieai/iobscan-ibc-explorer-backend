@@ -85,7 +85,7 @@ IbcDenomSchema.statics = {
     // },
 
     async insertManyDenom(ibcDenom): Promise<void> {
-        return this.insertMany(ibcDenom, { ordered: true },(error) => {
+        return this.insertMany(ibcDenom, { ordered: false },(error) => {
             if(JSON.stringify(error).includes('E11000 duplicate key error collection')){
             }else {
                 Logger.error(error)
