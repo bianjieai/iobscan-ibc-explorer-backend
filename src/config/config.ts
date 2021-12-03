@@ -20,8 +20,14 @@ const {
     IBCTX_EXECUTE_TIME,
     IBCCHAIN_EXECUTE_TIME,
     IBCSTATISTICS_EXECUTE_TIME,
+    CHANNELS_LIMITS,
+    CHANNELS_OFFSET,
 } = process.env;
 export const cfg = {
+    channels:{
+        limit: CHANNELS_LIMITS || 1000,
+        offset: CHANNELS_OFFSET || 0,
+    },
     env: NODE_ENV,
     disableLog:Boolean(DisableLog=='true'),
     dbCfg: {
