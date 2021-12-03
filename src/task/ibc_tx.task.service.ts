@@ -159,6 +159,7 @@ export class IbcTxTaskService {
     }
 
     async parseIbcTx(dateNow): Promise<void> {
+        Logger.debug(`start parseIbcTx time ${dateNow}`)
         const allChains = await this.chainConfigModel.findAll();
         const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
         let ibcDenoms = []
@@ -215,6 +216,7 @@ export class IbcTxTaskService {
             }
 
         }
+        Logger.debug(`end parseIbcTx time ${dateNow}`)
     }
 
     async getProcessingTxs() {
@@ -234,7 +236,7 @@ export class IbcTxTaskService {
                     if (tx?.dc_chain_id
                         && tx?.sc_tx_info?.msg?.msg?.packet_id
                         && tx?.sc_tx_info?.msg?.msg?.timeout_height?.revision_height
-                        && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp
+                        && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp >= 0
                     ) {
                         packetIds.push(
                             {
@@ -253,6 +255,7 @@ export class IbcTxTaskService {
     }
 
     async changeIbcTxState(dateNow): Promise<void> {
+        Logger.debug(`start changeIbcTxState time is ${dateNow}`)
         const ibcTxs = await this.getProcessingTxs()
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
         let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map, needUpdateTxs = [],
@@ -478,6 +481,7 @@ export class IbcTxTaskService {
         if (denoms?.length) {
             await this.ibcDenomModel.insertManyDenom(denoms);
         }
+        Logger.debug(`end changeIbcTxState time is ${dateNow}`)
     }
 
     // get dc_port、dc_channel、sequence
