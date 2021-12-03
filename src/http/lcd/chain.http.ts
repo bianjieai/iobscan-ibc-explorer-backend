@@ -3,11 +3,11 @@ import { HttpService, Injectable } from '@nestjs/common';
 import { Logger } from '../../logger';
 import { LcdChannelDto, LcdDenomDto } from '../../dto/http.dto'
 import { LcdChannelType, DenomType } from '../../types/lcd.interface'
-// todo 需要对lcd 增加dto
+import {cfg} from "../../config/config";
 @Injectable()
 export class ChainHttp {
   static async getIbcChannels(lcdAddr) {
-    const ibcChannelsUrl = `${lcdAddr}/ibc/core/channel/v1beta1/channels`;
+    const ibcChannelsUrl = `${lcdAddr}/ibc/core/channel/v1beta1/channels?pagination.offset=${cfg.channels.offset}&pagination.limit=${cfg.channels.limit}&pagination.count_total=true`;
     try {
       const ibcChannels: LcdChannelType[] = await new HttpService()
         .get(ibcChannelsUrl)
