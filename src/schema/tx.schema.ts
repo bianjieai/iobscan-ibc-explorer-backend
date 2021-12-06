@@ -22,7 +22,8 @@ export const TxSchema = new mongoose.Schema(
 );
 
 TxSchema.index({ 'types': -1, height: -1 }, { background: true });
-TxSchema.index({ 'msgs.type': -1,status: -1, 'msgs.msg.packet_id': -1 }, { background: true });
+TxSchema.index({ 'msgs.type': -1,status: -1 }, { background: true });
+TxSchema.index({ 'msgs.msg.packet_id': -1 }, { background: true });
 
 // 	txs
 TxSchema.statics = {
