@@ -45,14 +45,14 @@ export class TasksService {
     this.handleDoTask(TaskEnum.transferTx, this.ibcSyncTransferTxTaskService.doTask);
   }
   @Cron(cfg.taskCfg.executeTime.updateProcessingTx, {
-     name: TaskEnum.transferTx,
+     name: TaskEnum.updateProcessingTx,
    })
   // @Cron('*/15 * * * * *')
   async upDateProcessingTx() {
     this.handleDoTask(TaskEnum.updateProcessingTx, this.ibcUpdateProcessingTxService.doTask);
   }
   @Cron(cfg.taskCfg.executeTime.updateSubStateTx, {
-       name: TaskEnum.transferTx,
+       name: TaskEnum.updateSubStateTx,
      })
   // @Cron('*/15 * * * * *')
   async upSubstateTx() {

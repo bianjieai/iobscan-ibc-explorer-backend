@@ -8,7 +8,6 @@ export class IbcUpdateProcessingTxTaskService {
         this.doTask = this.doTask.bind(this);
     }
     async doTask(taskName?: TaskEnum): Promise<void> {
-        console.log('怎么感觉有点冷了呢')
         const defaultSubstate = 0
         await this.taskCommonService.changeIbcTxState(dateNow,[defaultSubstate])
     }

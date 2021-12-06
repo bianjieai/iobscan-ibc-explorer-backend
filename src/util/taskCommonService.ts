@@ -151,7 +151,6 @@ export class TaskCommonService {
     }
 
     async parseIbcTx(dateNow): Promise<void> {
-        console.log('~~~~~~~~~~~~~~~~~这里执行了吗~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         Logger.debug(`start parseIbcTx time ${dateNow}`)
         const allChains = await this.chainConfigModel.findAll();
         const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
@@ -259,7 +258,6 @@ export class TaskCommonService {
     }
 
     async changeIbcTxState(dateNow,substate:number[]): Promise<void> {
-        console.log(substate,'查询的条件~~~~~~~~~~~~~~~~~~~~~')
         Logger.debug(`start changeIbcTxState time is ${dateNow}`)
         const ibcTxs = await this.getProcessingTxs(substate)
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
@@ -486,7 +484,6 @@ export class TaskCommonService {
                 }
             }
         }
-        console.log(needUpdateTxs.length,'需要更新的数据长度')
         if (needUpdateTxs?.length) {
             for (let needUpdateTx of needUpdateTxs) {
                 await this.ibcTxModel.updateIbcTx(needUpdateTx);
