@@ -11,6 +11,9 @@ import { taskLoggerHelper } from '../helper/task.log.helper';
 import { IbcTxTaskService } from './ibc_tx.task.service';
 import { IbcChainConfigTaskService } from './ibc_chain_config.task.service';
 import { IbcStatisticsTaskService } from './ibc_statistics.task.service';
+import {IbcSyncTransferTxTaskService} from "./ibc_sync_transfer_tx_task.service";
+import {IbcUpdateProcessingTxTaskService} from "./ibc_update_processing_tx_task.service";
+import {IbcUpdateSubStateTxTaskService} from "./ibc_update_substate_tx_task.service";
 @Injectable()
 export class TasksService {
   constructor(
@@ -18,6 +21,9 @@ export class TasksService {
     private readonly ibcChainConfigTaskService: IbcChainConfigTaskService,
     private readonly ibcTxTaskService: IbcTxTaskService,
     private readonly ibcStatisticsTaskService: IbcStatisticsTaskService,
+    private readonly ibcSyncTransferTxTaskService : IbcSyncTransferTxTaskService,
+    private readonly ibcUpdateProcessingTxService : IbcUpdateProcessingTxTaskService,
+    private readonly ibcUpdateSubstateTxService: IbcUpdateSubStateTxTaskService
   ) {
     // this[`${TaskEnum.denom}_timer`] = null;
   }
@@ -30,14 +36,28 @@ export class TasksService {
     this.handleDoTask(TaskEnum.chain, this.ibcChainConfigTaskService.doTask);
   }
 
-  // ex_ibc_tx
-  @Cron(cfg.taskCfg.executeTime.tx, {
-    name: TaskEnum.tx,
+  //新增交易
+  @Cron(cfg.taskCfg.executeTime.transferTx, {
+    name: TaskEnum.transferTx,
   })
-  async syncTx() {
-    this.handleDoTask(TaskEnum.tx, this.ibcTxTaskService.doTask);
+  // @Cron('*/1 * * * * *')
+  async syncTransferTx() {
+    this.handleDoTask(TaskEnum.transferTx, this.ibcSyncTransferTxTaskService.doTask);
   }
-
+  @Cron(cfg.taskCfg.executeTime.updateProcessingTx, {
+     name: TaskEnum.transferTx,
+   })
+  // @Cron('*/15 * * * * *')
+  async upDateProcessingTx() {
+    this.handleDoTask(TaskEnum.updateProcessingTx, this.ibcUpdateProcessingTxService.doTask);
+  }
+  @Cron(cfg.taskCfg.executeTime.updateSubStateTx, {
+       name: TaskEnum.transferTx,
+     })
+  // @Cron('*/15 * * * * *')
+  async upSubstateTx() {
+    this.handleDoTask(TaskEnum.updateSubStateTx, this.ibcUpdateSubstateTxService.doTask);
+  }
   // ex_ibc_statistics
   @Cron(cfg.taskCfg.executeTime.statistics, {
     name: TaskEnum.statistics,

@@ -30,6 +30,9 @@ export const StatisticsNames = [
 
 export enum TaskEnum {
   tx = 'ex_sync_tx',
+  transferTx ='ex_sync_transfer_tx',
+  updateProcessingTx = 'upDate_processing_tx',
+  updateSubStateTx = 'update_substate_tx',
   chain = 'ex_sync_chain',
   statistics = 'ex_sync_statistics',
   denom = 'ex_sync_denom',

@@ -22,6 +22,10 @@ const {
     IBCSTATISTICS_EXECUTE_TIME,
     CHANNELS_LIMITS,
     CHANNELS_OFFSET,
+    SYNC_TRANSFER_TX_TIME,
+    UPDATE_PROCESSING_TX_TIME,
+    UPDATE_SUB_STATE_TX_TIME
+
 } = process.env;
 export const cfg = {
     channels:{
@@ -54,6 +58,9 @@ export const cfg = {
             statistics: IBCSTATISTICS_EXECUTE_TIME || '* */10 * * * *',
 
             faultTolerance:FAULT_TOLERANCE_EXECUTE_TIME || '41 * * * * *',
+            transferTx: SYNC_TRANSFER_TX_TIME || '15 * * * * *',
+            updateProcessingTx: UPDATE_PROCESSING_TX_TIME || '15 * * * * *',
+            updateSubStateTx: UPDATE_SUB_STATE_TX_TIME || '15 * * * * *',
         },
         syncTxServiceNameSize: Number(SYNC_TX_SERVICE_NAME_SIZE) || 200,
         increaseHeight: INCREASE_HEIGHT || 1000,

@@ -41,10 +41,18 @@ export const IbcTxSchema = new mongoose.Schema({
         type: Number,
         default: Math.floor(new Date().getTime() / 1000),
     },
+    refundedCount:{
+        type: Number,
+        default: 0,
+    },
+    refundedTime:{
+        type:Number,
+        default:0
+    }
 });
 
 IbcTxSchema.index({record_id: -1}, {unique: true});
-IbcTxSchema.index({status: -1}, {background: true});
+IbcTxSchema.index({status: -1, substate:-1,refund_time:-1}, {background: true});
 IbcTxSchema.index({status: -1, tx_time: -1, sc_chain_id: -1, 'denoms.sc_denom': -1}, {background: true});
 IbcTxSchema.index({status: -1, tx_time: -1, dc_chain_id: -1, 'denoms.dc_denom': -1}, {background: true});
 
@@ -176,12 +184,17 @@ IbcTxSchema.statics = {
     },
 
     async queryTxList(query): Promise<IbcTxType[]> {
-        const {status, limit} = query;
-        return this.find({status}, {_id: 0})
+        const {status,substate,limit} = query;
+        return this.find({status,substate:{$in:substate}}, {_id: 0})
             .sort({tx_time: 1})
             .limit(Number(limit));
     },
-
+    async queryTxListBySubstate(query):Promise<IbcTxType[]> {
+        const {status,substate,limit} = query;
+        return this.find({status,substate:{$in:substate}}, {_id: 0})
+            .sort({refund_time: 1})
+            .limit(Number(limit));
+    },
     // async distinctChainList(query): Promise<any> {
     //   const { type, dateNow, status } = query;
     //   return this.distinct(type, {
