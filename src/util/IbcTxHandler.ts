@@ -12,7 +12,7 @@ import {ChainHttp} from '../http/lcd/chain.http';
 import {IbcTxType} from '../types/schemaTypes/ibc_tx.interface';
 import {JSONparse} from '../util/util';
 import {getDcDenom} from '../helper/denom.helper';
-import {SubState} from '../constant';
+import {SubState, TaskTime} from '../constant';
 
 import {
     TaskEnum,
@@ -28,7 +28,7 @@ import {SyncTaskSchema} from "../schema/sync.task.schema";
 import {Logger} from "../logger";
 
 @Injectable()
-export class TaskCommonService {
+export class IbcTxHandler {
     private ibcTaskRecordModel;
     private chainConfigModel;
     private ibcTxModel;
@@ -151,7 +151,6 @@ export class TaskCommonService {
     }
 
     async parseIbcTx(dateNow): Promise<void> {
-        Logger.debug(`start parseIbcTx time ${dateNow}`)
         const allChains = await this.chainConfigModel.findAll();
         const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
         let ibcDenoms = []
@@ -223,7 +222,7 @@ export class TaskCommonService {
             const substateTxs = await this.ibcTxModel.queryTxListBySubstate({
                 status: IbcTxStatus.PROCESSING,
                 substate:substate,
-                limit: 1,
+                limit: RecordLimit,
             });
             return substateTxs
         }
@@ -258,7 +257,6 @@ export class TaskCommonService {
     }
 
     async changeIbcTxState(dateNow,substate:number[]): Promise<void> {
-        Logger.debug(`start changeIbcTxState time is ${dateNow}`)
         const ibcTxs = await this.getProcessingTxs(substate)
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
         let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map, needUpdateTxs = [],
@@ -368,14 +366,14 @@ export class TaskCommonService {
             }
         }
 
-        for (let ibcTx of ibcTxs) {
+        for (let [index,ibcTx] of ibcTxs.entries()) {
             if (!ibcTx.dc_chain_id) continue
             if (!recvPacketTxMap.size) {
                 ibcTx.substate = SubState.SuccessRecvPacketNotFound;
-                ibcTx.refundedCount = ibcTx.refundedCount ? Number(ibcTx.refundedCount) + 1 : 1
-                const taskTime = 15
-                const taskDiffTime = Math.floor(Number(ibcTx.refundedCount) * taskTime)
-                ibcTx.refundedTime = Math.floor(Number(taskDiffTime) + Number(dateNow))
+                ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
+                const taskTime = TaskTime
+                const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
+                ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
                 needUpdateTxs.push(ibcTx)
             } else if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
                 const recvPacketTx = recvPacketTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
@@ -405,9 +403,15 @@ export class TaskCommonService {
                             case "true":
                                 ibcTx.status = IbcTxStatus.SUCCESS
                                 ibcTx.substate = 0
+                                ibcTx.retry_times = 0
+                                ibcTx.next_try_time = 0
                                 break;
                             case "false":
                                 ibcTx.substate = SubState.RecvPacketAckFailed;
+                                ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
+                                const taskTime = 15
+                                const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
+                                ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow))
                                 break;
                         }
                         ibcTx.status =
@@ -459,6 +463,8 @@ export class TaskCommonService {
                             ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
                         ) {
                             ibcTx.status = IbcTxStatus.REFUNDED;
+                            ibcTx.retry_times = 0;
+                            ibcTx.next_try_time = 0
                             ibcTx.refunded_tx_info = {
                                 hash: refunded_tx.tx_hash,
                                 status: refunded_tx.status,
@@ -468,6 +474,7 @@ export class TaskCommonService {
                                 msg_amount: msg.msg.token,
                                 msg,
                             };
+
                             ibcTx.update_at = dateNow;
                             // ibcTx.tx_time = refunded_tx.time;
                             ibcTx.substate = 0
@@ -476,10 +483,10 @@ export class TaskCommonService {
                     });
                 } else {
                     ibcTx.substate = SubState.SuccessTimeoutPacketNotFound;
-                    ibcTx.refundedCount = ibcTx.refundedCount ? Number(ibcTx.refundedCount) + 1 : 1
+                    ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
                     const taskTime = 15
-                    const taskDiffTime = Math.floor(Number(ibcTx.refundedCount) * taskTime)
-                    ibcTx.refundedTime = Math.floor(Number(taskDiffTime) + Number(dateNow))
+                    const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
+                    ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow))
                     needUpdateTxs.push(ibcTx)
                 }
             }
@@ -492,7 +499,6 @@ export class TaskCommonService {
         if (denoms?.length) {
             await this.ibcDenomModel.insertManyDenom(denoms);
         }
-        Logger.debug(`end changeIbcTxState time is ${dateNow}`)
     }
 
     // get dc_port、dc_channel、sequence

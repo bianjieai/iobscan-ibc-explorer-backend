@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import {IbcSyncTransferTxTaskService} from "../task/ibc_sync_transfer_tx_task.service";
-import {TaskCommonService} from "../util/taskCommonService";
+import {IbcTxHandler} from "../util/IbcTxHandler";
 @Module({
-    providers: [IbcSyncTransferTxTaskService,TaskCommonService],
+    providers: [IbcSyncTransferTxTaskService,IbcTxHandler],
     exports: [IbcSyncTransferTxTaskService],
 })
 export class IbcSyncTransferTxTaskModule {}

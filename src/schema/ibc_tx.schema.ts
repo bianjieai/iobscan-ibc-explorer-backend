@@ -41,11 +41,11 @@ export const IbcTxSchema = new mongoose.Schema({
         type: Number,
         default: Math.floor(new Date().getTime() / 1000),
     },
-    refundedCount:{
+    retry_times:{
         type: Number,
         default: 0,
     },
-    refundedTime:{
+    next_try_time:{
         type:Number,
         default:0
     }

@@ -20,8 +20,8 @@ export interface IbcTxType {
   create_at: string;
   update_at: string;
   tx_time: string;
-  refundedCount?: number;
-  refundedTime?: number;
+  retry_times?: number;
+  next_try_time?: number;
 }
 
 export interface IbcTxQueryType {

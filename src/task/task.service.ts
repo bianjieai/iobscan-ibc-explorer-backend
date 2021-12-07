@@ -48,7 +48,7 @@ export class TasksService {
      name: TaskEnum.updateProcessingTx,
    })
   // @Cron('*/15 * * * * *')
-  async upDateProcessingTx() {
+  async updateProcessingTx() {
     this.handleDoTask(TaskEnum.updateProcessingTx, this.ibcUpdateProcessingTxService.doTask);
   }
   @Cron(cfg.taskCfg.executeTime.updateSubStateTx, {
