@@ -411,7 +411,7 @@ export class IbcTxHandler {
                                 ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
                                 const taskTime = 15
                                 const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
-                                ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow))
+                                ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
                                 break;
                         }
                         ibcTx.status =
@@ -486,7 +486,7 @@ export class IbcTxHandler {
                     ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
                     const taskTime = 15
                     const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
-                    ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow))
+                    ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
                     needUpdateTxs.push(ibcTx)
                 }
             }
