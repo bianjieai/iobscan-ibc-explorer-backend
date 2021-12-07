@@ -52,7 +52,7 @@ export const IbcTxSchema = new mongoose.Schema({
 });
 
 IbcTxSchema.index({record_id: -1}, {unique: true});
-IbcTxSchema.index({status: -1, substate:-1,refund_time:-1}, {background: true});
+IbcTxSchema.index({status: -1, substate:-1, next_retry_time:-1}, {background: true});
 IbcTxSchema.index({status: -1, tx_time: -1, sc_chain_id: -1, 'denoms.sc_denom': -1}, {background: true});
 IbcTxSchema.index({status: -1, tx_time: -1, dc_chain_id: -1, 'denoms.dc_denom': -1}, {background: true});
 
@@ -192,7 +192,7 @@ IbcTxSchema.statics = {
     async queryTxListBySubstate(query):Promise<IbcTxType[]> {
         const {status,substate,limit} = query;
         return this.find({status,substate:{$in:substate}}, {_id: 0})
-            .sort({refund_time: 1})
+            .sort({next_retry_time: 1})
             .limit(Number(limit));
     },
     // async distinctChainList(query): Promise<any> {

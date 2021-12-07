@@ -370,10 +370,7 @@ export class IbcTxHandler {
             if (!ibcTx.dc_chain_id) continue
             if (!recvPacketTxMap.size) {
                 ibcTx.substate = SubState.SuccessRecvPacketNotFound;
-                ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
-                const taskTime = TaskTime
-                const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
-                ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
+                ibcTx = this.setNextTryTime(ibcTx,index)
                 needUpdateTxs.push(ibcTx)
             } else if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
                 const recvPacketTx = recvPacketTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
@@ -408,10 +405,7 @@ export class IbcTxHandler {
                                 break;
                             case "false":
                                 ibcTx.substate = SubState.RecvPacketAckFailed;
-                                ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
-                                const taskTime = 15
-                                const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
-                                ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
+                                ibcTx = this.setNextTryTime(ibcTx,index)
                                 break;
                         }
                         ibcTx.status =
@@ -483,10 +477,7 @@ export class IbcTxHandler {
                     });
                 } else {
                     ibcTx.substate = SubState.SuccessTimeoutPacketNotFound;
-                    ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
-                    const taskTime = 15
-                    const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * taskTime)
-                    ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
+                    ibcTx = this.setNextTryTime(ibcTx,index)
                     needUpdateTxs.push(ibcTx)
                 }
             }
@@ -500,7 +491,12 @@ export class IbcTxHandler {
             await this.ibcDenomModel.insertManyDenom(denoms);
         }
     }
-
+    setNextTryTime(ibcTx,index){
+        ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
+        const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * TaskTime)
+        ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
+        return ibcTx
+    }
     // get dc_port、dc_channel、sequence
     getIbcInfoFromEventsMsg(
         tx,
