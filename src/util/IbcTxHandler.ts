@@ -10,7 +10,7 @@ import {IbcBlockSchema} from '../schema/ibc_block.schema';
 import {IbcTaskRecordSchema} from '../schema/ibc_task_record.schema';
 import {ChainHttp} from '../http/lcd/chain.http';
 import {IbcTxType} from '../types/schemaTypes/ibc_tx.interface';
-import {JSONparse} from '../util/util';
+import {JSONparse, JSONstringify} from '../util/util';
 import {getDcDenom} from '../helper/denom.helper';
 import {SubState, TaskTime} from '../constant';
 
@@ -258,6 +258,7 @@ export class IbcTxHandler {
 
     async changeIbcTxState(dateNow,substate:number[]): Promise<void> {
         const ibcTxs = await this.getProcessingTxs(substate)
+
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
         let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map, needUpdateTxs = [],
             denoms = [] //packetIdArr= [],
@@ -269,7 +270,6 @@ export class IbcTxHandler {
         })
         const currentDcChains = Array.from(new Set(chains))
         // 根据链的配置信息，查询出每条链的 recv_packet 成功的交易的那条记录
-
         if (currentDcChains?.length) {
 
             for (const chain of currentDcChains) {
@@ -286,7 +286,6 @@ export class IbcTxHandler {
                     }
                 }
             }
-
             for (const chain of currentDcChains) {
                 if (chain) {
                     const txModel = await this.connection.model(
@@ -305,15 +304,15 @@ export class IbcTxHandler {
                     const taskCount = await this.checkTaskFollowingStatus(chain)
                     if (!taskCount) continue
                     //每条链最新的高度
-
                     let refundedTxPacketIdsMap = new Map
-                    const refundedTxPacketIds = packetIdArr.map(item => {
+                    const refundedTxPacketIds =[]
+                        packetIdArr.forEach(item => {
                         if (item?.chainId && item?.height || item?.timeOutTime) {
                             const currentChainLatestObj = chainHeightMap.get(item.chainId)
                             if (item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time) {
                                 if (item?.packetId) {
                                     refundedTxPacketIdsMap.set(item.packetId, '')
-                                    return item.packetId
+                                    refundedTxPacketIds.push(item.packetId)
                                 }
                             }
                         }
@@ -323,6 +322,8 @@ export class IbcTxHandler {
                             return item.packetId
                         }
                     })
+
+
                     // txs  数组
                     if (recvPacketIds?.length) {
                         const txs = await txModel.queryTxListByPacketId({
@@ -331,6 +332,7 @@ export class IbcTxHandler {
                             status: TxStatus.SUCCESS,
                             packet_id: recvPacketIds,
                         });
+
                         if (txs?.length) {
                             for (let tx of txs) {
                                 if (tx?.msgs?.length) {
@@ -344,6 +346,7 @@ export class IbcTxHandler {
                         }
                     }
                     if (refundedTxPacketIds?.length) {
+                        // const notIncludeNullPacketIds = refundedTxPacketIds.filter( item =>  item)
                         const refundedTxs = await txModel.queryTxListByPacketId({
                             type: TxType.timeout_packet,
                             limit: refundedTxPacketIds.length,
@@ -365,7 +368,6 @@ export class IbcTxHandler {
                 }
             }
         }
-
         for (let [index,ibcTx] of ibcTxs.entries()) {
             if (!ibcTx.dc_chain_id) continue
             if (!recvPacketTxMap.size) {
