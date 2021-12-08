@@ -7,7 +7,7 @@
       "watch": true,
       "merge_logs": true,
       "log_date_format": "YYYY-MM-DD HH:mm Z",
-      "max_memory_restart": "1024M",
+      "max_memory_restart": "4096M",
       "min_uptime": "60s",
       "max_restarts": 0,
       "exec_interpreter": "node",
