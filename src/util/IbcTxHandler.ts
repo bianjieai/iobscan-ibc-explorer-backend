@@ -37,6 +37,7 @@ export class IbcTxHandler {
     constructor(@InjectConnection() private readonly connection: Connection) {
         this.getModels();
     }
+
     // getModels
     async getModels(): Promise<void> {
         // ibcTaskRecordModel
@@ -179,7 +180,10 @@ export class IbcTxHandler {
             if (!taskCount) continue
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
-            let {handledTx, denoms} = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
+            let {
+                handledTx,
+                denoms
+            } = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
             ibcDenoms = [...denoms]
             if (ibcDenoms?.length) {
                 await this.ibcDenomModel.insertManyDenom(ibcDenoms);
@@ -211,17 +215,17 @@ export class IbcTxHandler {
     }
 
     async getProcessingTxs(substate) {
-        if(substate?.length == 1 && substate[0] === 0){
+        if (substate?.length == 1 && substate[0] === 0) {
             const ibcTxs = await this.ibcTxModel.queryTxList({
                 status: IbcTxStatus.PROCESSING,
-                substate:substate,
+                substate: substate,
                 limit: RecordLimit,
             });
             return ibcTxs
-        }else {
+        } else {
             const substateTxs = await this.ibcTxModel.queryTxListBySubstate({
                 status: IbcTxStatus.PROCESSING,
-                substate:substate,
+                substate: substate,
                 limit: RecordLimit,
             });
             return substateTxs
@@ -256,7 +260,7 @@ export class IbcTxHandler {
         return packetIds
     }
 
-    async changeIbcTxState(dateNow,substate:number[]): Promise<void> {
+    async changeIbcTxState(dateNow, substate: number[]): Promise<void> {
         const ibcTxs = await this.getProcessingTxs(substate)
 
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
@@ -273,7 +277,7 @@ export class IbcTxHandler {
         if (currentDcChains?.length) {
 
             for (const chain of currentDcChains) {
-                if(chain){
+                if (chain) {
                     const blockModel = await this.connection.model(
                         'blockModel',
                         IbcBlockSchema,
@@ -305,8 +309,8 @@ export class IbcTxHandler {
                     if (!taskCount) continue
                     //每条链最新的高度
                     let refundedTxPacketIdsMap = new Map
-                    const refundedTxPacketIds =[]
-                        packetIdArr.forEach(item => {
+                    const refundedTxPacketIds = [];
+                    packetIdArr.forEach(item => {
                         if (item?.chainId && item?.height || item?.timeOutTime) {
                             const currentChainLatestObj = chainHeightMap.get(item.chainId)
                             if (item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time) {
@@ -368,11 +372,11 @@ export class IbcTxHandler {
                 }
             }
         }
-        for (let [index,ibcTx] of ibcTxs.entries()) {
+        for (let [index, ibcTx] of ibcTxs.entries()) {
             if (!ibcTx.dc_chain_id) continue
             if (!recvPacketTxMap.size) {
                 ibcTx.substate = SubState.SuccessRecvPacketNotFound;
-                ibcTx = this.setNextTryTime(ibcTx,index)
+                ibcTx = this.setNextTryTime(ibcTx, index)
                 needUpdateTxs.push(ibcTx)
             } else if (recvPacketTxMap?.has(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)) {
                 const recvPacketTx = recvPacketTxMap?.get(`${ibcTx.dc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)
@@ -407,7 +411,7 @@ export class IbcTxHandler {
                                 break;
                             case "false":
                                 ibcTx.substate = SubState.RecvPacketAckFailed;
-                                ibcTx = this.setNextTryTime(ibcTx,index)
+                                ibcTx = this.setNextTryTime(ibcTx, index)
                                 break;
                         }
                         ibcTx.status =
@@ -479,7 +483,7 @@ export class IbcTxHandler {
                     });
                 } else {
                     ibcTx.substate = SubState.SuccessTimeoutPacketNotFound;
-                    ibcTx = this.setNextTryTime(ibcTx,index)
+                    ibcTx = this.setNextTryTime(ibcTx, index)
                     needUpdateTxs.push(ibcTx)
                 }
             }
@@ -493,12 +497,14 @@ export class IbcTxHandler {
             await this.ibcDenomModel.insertManyDenom(denoms);
         }
     }
-    setNextTryTime(ibcTx,index){
+
+    setNextTryTime(ibcTx, index) {
         ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
         const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * TaskTime)
         ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
         return ibcTx
     }
+
     // get dc_port、dc_channel、sequence
     getIbcInfoFromEventsMsg(
         tx,
@@ -720,15 +726,15 @@ export class IbcTxHandler {
                         };
                         ibcTx.log['sc_log'] = log;
                         let isBaseDenom = null
-                        if(sc_denom === base_denom){
+                        if (sc_denom === base_denom) {
                             isBaseDenom = true
-                        }else {
-                            if(denom_path && denom_path.split('/').length > 1){
+                        } else {
+                            if (denom_path && denom_path.split('/').length > 1) {
                                 const dc_port = denom_path.split('/')[0];
                                 const dc_channel = denom_path.split('/')[1];
-                                if(allChainsDenomPathsMap.has(`${dc_chain_id}${dc_channel}${dc_port}`)){
+                                if (allChainsDenomPathsMap.has(`${dc_chain_id}${dc_channel}${dc_port}`)) {
                                     isBaseDenom = false
-                                }else {
+                                } else {
                                     isBaseDenom = true
                                 }
                             }
