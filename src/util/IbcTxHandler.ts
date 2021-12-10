@@ -241,7 +241,7 @@ export class IbcTxHandler {
                     // ibcTx.sc_tx_info.msg.msg.timeout_height.revision_height;
                     if (tx?.dc_chain_id
                         && tx?.sc_tx_info?.msg?.msg?.packet_id
-                        && tx?.sc_tx_info?.msg?.msg?.timeout_height?.revision_height
+                        && tx?.sc_tx_info?.msg?.msg?.timeout_height?.revision_height >= 0
                         && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp >= 0
                     ) {
                         packetIds.push(
