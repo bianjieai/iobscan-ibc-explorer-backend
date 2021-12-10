@@ -267,12 +267,18 @@ export class IbcTxHandler {
         let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map, needUpdateTxs = [],
             denoms = [] //packetIdArr= [],
         // const allChains = await this.chainConfigModel.findAll();
-        const chains = ibcTxs.map(item => {
-            if (item.dc_chain_id || item.sc_chain_id) {
-                return item.dc_chain_id || item.sc_chain_id
+        let dcChains = [],scChains = [];
+        ibcTxs.forEach(item => {
+            if (item?.dc_chain_id ) {
+                dcChains.push(item.dc_chain_id)
+            }
+            if(item?.sc_chain_id){
+                scChains.push(item.sc_chain_id)
             }
         })
-        const currentDcChains = Array.from(new Set(chains))
+
+        const allChains = [...dcChains,...scChains]
+        const currentDcChains = Array.from(new Set(allChains))
         // 根据链的配置信息，查询出每条链的 recv_packet 成功的交易的那条记录
         if (currentDcChains?.length) {
 
