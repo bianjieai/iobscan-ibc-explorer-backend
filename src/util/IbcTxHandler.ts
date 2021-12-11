@@ -380,7 +380,7 @@ export class IbcTxHandler {
         }
         for (let [index, ibcTx] of ibcTxs.entries()) {
             if (!ibcTx.dc_chain_id) continue
-            if (!recvPacketTxMap.size) {
+            if (!recvPacketTxMap.size && !refundedTxTxMap.size) {
                 ibcTx.substate = SubState.SuccessRecvPacketNotFound;
                 ibcTx = this.setNextTryTime(ibcTx, index)
                 needUpdateTxs.push(ibcTx)
