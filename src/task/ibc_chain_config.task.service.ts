@@ -38,7 +38,7 @@ export class IbcChainConfigTaskService {
     // request configed allchannels
     Promise.all(
       allChains.map(async chain => {
-        let channels = await ChainHttp.getIbcChannels(chain.lcd);
+        let channels = await ChainHttp.getIbcChannels(chain.lcd,chain.lcd_api_path.channels_path);
         channels && channels.map(channel => {
           channel.sc_chain_id = chain.chain_id;
         });
@@ -46,6 +46,7 @@ export class IbcChainConfigTaskService {
           chain_id: chain.chain_id,
           chain_name: chain.chain_name,
           lcd: chain.lcd,
+          lcd_api_path: chain.lcd_api_path,
           icon: chain.icon,
           ibc_info: channels ? channels : [],
           isManual: chain?.is_manual
