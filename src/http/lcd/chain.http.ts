@@ -6,8 +6,12 @@ import { LcdChannelType, DenomType } from '../../types/lcd.interface'
 import {cfg} from "../../config/config";
 @Injectable()
 export class ChainHttp {
-  static async getIbcChannels(lcdAddr,channelsPath) {
-    const ibcChannelsUrl = `${lcdAddr}${channelsPath}?pagination.offset=${cfg.channels.offset}&pagination.limit=${cfg.channels.limit}&pagination.count_total=true`;
+  static async getIbcChannels(lcdAddr,channelsPath:string) {
+    let rgexOffset = "\\OFFSET",regexLimit = "\\LIMIT"
+    channelsPath = channelsPath.replace(new RegExp(rgexOffset,"g"),<string>cfg.channels.offset);
+    channelsPath = channelsPath.replace(new RegExp(regexLimit,"g"),<string>cfg.channels.limit);
+
+    const ibcChannelsUrl = `${lcdAddr}${channelsPath}`;
     try {
       const ibcChannels: LcdChannelType[] = await new HttpService()
         .get(ibcChannelsUrl)

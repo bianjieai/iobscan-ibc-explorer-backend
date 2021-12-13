@@ -3,7 +3,7 @@ export interface IbcChainConfigType {
     icon: string;
     chain_name: string;
     lcd: string;
-    lcd_api_path?: any;
+    lcd_api_path: { channels_path: string;};
     ibc_info?: any;
     is_manual?: boolean
 }
