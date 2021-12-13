@@ -4,7 +4,8 @@ describe('ChainHttp', () => {
     describe('getIbcChannels', () => {
         it('getIbcChannels Test', async () => {
             const lcdAddr = "https://cosmoshub.stakesystems.io"
-            const result = await ChainHttp.getIbcChannels(lcdAddr)
+            const lcdApiPath = {channels_path:"/ibc/core/channel/v1beta1/channels"}
+            const result = await ChainHttp.getIbcChannels(lcdAddr,lcdApiPath.channels_path)
             console.log(result,'----')
         });
     });
