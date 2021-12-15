@@ -42,12 +42,12 @@ TxSchema.statics = {
   // },
 
   async queryTxListByPacketId(query): Promise<any> {
-    const { type, status, packet_id } = query;
+    const { type,limit, status, packet_id } = query;
     return this.find({
       'msgs.type': type,
       status,
       'msgs.msg.packet_id': {$in:packet_id},
-    })
+    }).limit(Number(limit));
   },
 
   async queryTxListByHeight(type, height): Promise<any> {
