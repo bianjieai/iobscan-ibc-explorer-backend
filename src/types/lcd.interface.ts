@@ -15,3 +15,12 @@ export interface DenomType {
   path: string;
   base_denom: string;
 }
+
+export interface LcdChannelClientState{
+  identified_client_state: {
+    client_id: string;
+    client_state: {
+      chain_id: string;
+    }
+  }
+}

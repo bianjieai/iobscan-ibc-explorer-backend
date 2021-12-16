@@ -17,4 +17,14 @@ describe('ChainHttp', () => {
             console.log(result,'----')
         });
     });
+
+    describe('getDcChainIdByScChannel', () => {
+        it('getDcChainIdByScChannel Test', async () => {
+            const lcdAddr = "https://osmosis.stakesystems.io",
+                lcdApiPath = {client_state_path:"/ibc/core/channel/v1/channels/CHANNEL/ports/PORT/client_state"}
+            let result = await ChainHttp.getDcChainIdByScChannel(lcdAddr,lcdApiPath.client_state_path,"transfer","channel-6")
+            result = result.replace(new RegExp("\-", "g"),"_")
+            console.log(result,'----')
+        });
+    });
 })
