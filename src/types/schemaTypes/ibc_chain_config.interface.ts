@@ -5,5 +5,6 @@ export interface IbcChainConfigType {
     lcd: string;
     lcd_api_path: { channels_path: string;client_state_path: string;};
     ibc_info?: any;
+    ibc_info_hash?: string;
     is_manual?: boolean
 }

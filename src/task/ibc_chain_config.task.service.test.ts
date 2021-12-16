@@ -23,8 +23,16 @@ describe('IbcChainConfigTaskService', () => {
 
     describe('findAllConfig', () => {
         it('findAllConfig Test', async () => {
-            const result = await ibcChainConfigTaskService.findAllConfig()
-            console.log(result,'----')
+            const allChains = await ibcChainConfigTaskService.findAllConfig()
+            console.log(allChains,'--allChains--')
+        });
+    });
+
+
+    describe('handleChain', () => {
+        it('handleChain Test', async () => {
+            const allChains = await ibcChainConfigTaskService.handleChain()
+            console.log(allChains,'--allChains--')
         });
     });
 })

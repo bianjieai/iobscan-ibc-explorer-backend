@@ -8,6 +8,7 @@ export const IbcChainConfigSchema = new mongoose.Schema({
     lcd: String,
     lcd_api_path: Object,
     ibc_info: Object,
+    ibc_info_hash: String,
     is_manual: Boolean
 });
 
