@@ -170,12 +170,6 @@ export class IbcTxHandler {
             } else {
                 if (taskRecord.status === IbcTaskRecordStatus.CLOSE) continue;
             }
-            // const taskModel = await this.connection.model(
-            //     'txModel',
-            //     SyncTaskSchema,
-            //     `sync_${chain_id}_task`,
-            // );
-            // const taskCount = await getTaskStatus(chain_id, taskModel, TaskEnum.tx)
             const taskCount = await this.checkTaskFollowingStatus(chain_id)
             if (!taskCount) continue
 
@@ -264,7 +258,8 @@ export class IbcTxHandler {
         const ibcTxs = await this.getProcessingTxs(substate)
 
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
-        let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map, needUpdateTxs = [],
+        let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map,
+            acknowledgeTxsMap = new Map, needUpdateTxs = [],
             denoms = [] //packetIdArr= [],
         // const allChains = await this.chainConfigModel.findAll();
         let dcChains = [],scChains = [];
@@ -305,17 +300,11 @@ export class IbcTxHandler {
                     );
 
 
-                    // const taskModel = await this.connection.model(
-                    //     'txModel',
-                    //     SyncTaskSchema,
-                    //     `sync_${chain}_task`,
-                    // );
-                    // const taskCount = await getTaskStatus(chain, taskModel, TaskEnum.tx)
                     const taskCount = await this.checkTaskFollowingStatus(chain)
                     if (!taskCount) continue
                     //每条链最新的高度
                     let refundedTxPacketIdsMap = new Map
-                    const refundedTxPacketIds = [];
+                    const refundedTxPacketIds = [],acknowledgeTxPacketIds = [];
                     packetIdArr.forEach(item => {
                         if (item?.chainId && item?.height || item?.timeOutTime) {
                             const currentChainLatestObj = chainHeightMap.get(item.chainId)
@@ -336,10 +325,10 @@ export class IbcTxHandler {
 
                     // txs  数组
                     if (recvPacketIds?.length) {
-                        const txs = await txModel.queryTxListByPacketId({
+                        const txs = await txModel.queryTxsByPacketId({
                             type: TxType.recv_packet,
                             limit: packetIdArr.length,
-                            status: TxStatus.SUCCESS,
+                            // status: TxStatus.SUCCESS,
                             packet_id: recvPacketIds,
                         });
 
@@ -348,7 +337,13 @@ export class IbcTxHandler {
                                 if (tx?.msgs?.length) {
                                     for (let msg of tx.msgs) {
                                         if (msg?.type === TxType.recv_packet && msg.msg.packet_id) {
-                                            recvPacketTxMap.set(`${chain}${msg.msg.packet_id}`, tx)
+                                            if (tx?.status) {
+                                                // recv_packet tx is success
+                                                recvPacketTxMap.set(`${chain}${msg.msg.packet_id}`, tx)
+                                            }else{
+                                                // recv_packet tx is fail
+                                                acknowledgeTxPacketIds.push(msg.msg.packet_id)
+                                            }
                                         }
                                     }
                                 }
@@ -375,12 +370,33 @@ export class IbcTxHandler {
                             }
                         }
                     }
+
+                    if (acknowledgeTxPacketIds?.length) {
+                        const acknowledgeTxs = await txModel.queryTxListByPacketId({
+                            type: TxType.acknowledge_packet,
+                            limit: acknowledgeTxPacketIds.length,
+                            status: TxStatus.SUCCESS,
+                            packet_id: acknowledgeTxPacketIds,
+                        });
+
+                        if (acknowledgeTxs?.length) {
+                            for (let acknowledgeTx of acknowledgeTxs) {
+                                if (acknowledgeTx?.msgs?.length) {
+                                    for (let msg of acknowledgeTx.msgs) {
+                                        if (msg?.type === TxType.acknowledge_packet && msg.msg.packet_id) {
+                                            acknowledgeTxsMap.set(`${chain}${msg.msg.packet_id}`,acknowledgeTx)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
         for (let [index, ibcTx] of ibcTxs.entries()) {
             if (!ibcTx.dc_chain_id) continue
-            if (!recvPacketTxMap.size && !refundedTxTxMap.size) {
+            if (!recvPacketTxMap.size && !refundedTxTxMap.size && !acknowledgeTxsMap.size) {
                 ibcTx.substate = SubState.SuccessRecvPacketNotFound;
                 ibcTx = this.setNextTryTime(ibcTx, index)
                 needUpdateTxs.push(ibcTx)
@@ -456,7 +472,32 @@ export class IbcTxHandler {
                     }
                 })
 
-            } else {
+            } else if (acknowledgeTxsMap?.has(`${ibcTx.sc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`)){
+                const acknowledgeTx = acknowledgeTxsMap?.get(`${ibcTx.sc_chain_id}${ibcTx.sc_tx_info.msg.msg.packet_id}`);
+                acknowledgeTx && acknowledgeTx.msgs.forEach(msg => {
+                    if (
+                        msg.type === TxType.acknowledge_packet &&
+                        ibcTx.sc_tx_info.msg.msg.packet_id === msg.msg.packet_id
+                    ){
+                        ibcTx.status = IbcTxStatus.REFUNDED;
+                        ibcTx.retry_times = 0;
+                        ibcTx.next_try_time = 0
+                        ibcTx.refunded_tx_info = {
+                            hash: acknowledgeTx.tx_hash,
+                            status: acknowledgeTx.status,
+                            time: acknowledgeTx.time,
+                            height: acknowledgeTx.height,
+                            fee: acknowledgeTx.fee,
+                            msg_amount: msg.msg.token,
+                            msg,
+                        };
+
+                        ibcTx.update_at = dateNow;
+                        ibcTx.substate = 0
+                        needUpdateTxs.push(ibcTx)
+                    }
+                        })
+            }else {
                 /*
                 * 没有找到的结果
                 * */

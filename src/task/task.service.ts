@@ -32,6 +32,7 @@ export class TasksService {
   @Cron(cfg.taskCfg.executeTime.chain, {
     name: TaskEnum.chain,
   })
+  // @Cron('*/10 * * * * *')
   async syncChain() {
     this.handleDoTask(TaskEnum.chain, this.ibcChainConfigTaskService.doTask);
   }

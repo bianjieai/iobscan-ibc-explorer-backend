@@ -18,41 +18,53 @@ db.ibc_task_record.createIndex({ "task_name": 1 }, { "unique": true });
 
 
 db.sync_irishub_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_irishub_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_irishub_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_irishub_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_cosmoshub_4_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_cosmoshub_4_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_cosmoshub_4_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_cosmoshub_4_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_crypto_org_chain_mainnet_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_crypto_org_chain_mainnet_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_crypto_org_chain_mainnet_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_crypto_org_chain_mainnet_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_core_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_core_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_core_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_core_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 
 db.sync_akashnet_2_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_akashnet_2_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_akashnet_2_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_akashnet_2_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_emoney_3_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_emoney_3_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_emoney_3_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_emoney_3_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_iov_mainnet_ibc_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_iov_mainnet_ibc_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_iov_mainnet_ibc_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_iov_mainnet_ibc_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_microtick_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_microtick_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_microtick_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_microtick_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_osmosis_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_osmosis_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_osmosis_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_osmosis_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_regen_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_regen_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_regen_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_regen_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_sentinelhub_2_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_sentinelhub_2_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_sentinelhub_2_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_sentinelhub_2_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 db.sync_sifchain_1_tx.createIndex({"types": -1,"height": -1},{"background":true});
-db.sync_sifchain_1_tx.createIndex({"msgs.type": -1,"status": -1,"msgs.msg.packet_id":-1},{"background":true});
+db.sync_sifchain_1_tx.createIndex({"msgs.msg.packet_id":-1},{"background":true});
+db.sync_sifchain_1_tx.createIndex({"msgs.type": -1,"status": -1},{"background":true});
 
 -- init data
 

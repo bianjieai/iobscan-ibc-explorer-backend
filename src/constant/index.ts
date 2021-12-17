@@ -137,6 +137,7 @@ export enum TxType {
   create_client = 'create_client',
   update_client = 'update_client',
   timeout_packet = 'timeout_packet',
+  acknowledge_packet = 'acknowledge_packet',
   // Identity
   create_identity = 'create_identity',
   update_identity = 'update_identity',
