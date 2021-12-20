@@ -18,7 +18,7 @@ export class IbcBaseDenomController {
   @Post("baseDenoms")
   async insertIbcDenom(@Body() dto:IbcBaseDenomDto, @Headers() Headers):Promise<any> {
     const {executekey} = Headers
-    if (executekey !== cfg.serverCfg.executeKey) {
+    if (executekey !== cfg.serverCfg.executeKey || !executekey) {
       return {"message":"deny this operation for executekey is not right."}
     }
     return await this.ibcBaseDenomService.insertBaseDenom(dto)
