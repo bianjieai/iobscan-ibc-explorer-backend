@@ -8,11 +8,14 @@ import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
 import {unAuth} from '../constant';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
+import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
+import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
 
 @Injectable()
 export class IbcTxService {
     private ibcDenomModel;
     private ibcTxModel;
+    private ibcStatisticsModel;
 
     constructor(@InjectConnection() private connection: Connection) {
         this.getModels();
@@ -29,6 +32,12 @@ export class IbcTxService {
             IbcDenomSchema,
             'ibc_denom',
         );
+        // ibcStatisticsModel
+        this.ibcStatisticsModel = await this.connection.model(
+            'ibcStatisticsModel',
+            IbcStatisticsSchema,
+            'ibc_statistics',
+        );
     }
 
     async getStartTxTime(): Promise<number> {
@@ -42,6 +51,12 @@ export class IbcTxService {
 
     async getIbcTxs(query: IbcTxQueryType, token): Promise<IbcTxType[]> {
         return await this.ibcTxModel.findTxList({...query, token})
+    }
+
+    async findStatisticTxsCount():Promise<IbcStatisticsType> {
+        return await this.ibcStatisticsModel.findStatisticsRecord(
+            'tx_all',
+        );
     }
 
     async getTokenBySymbol(symbol): Promise<any> {
@@ -85,10 +100,17 @@ export class IbcTxService {
         if (start_time) {
             // const startTx = await this.ibcTxModel.findFirstTx()
             // return startTx?.tx_time;
+            //todo this value get by setting data
             return await this.getStartTxTime();
         }
         if (use_count) {
-            return await this.getTxCount(query,token)
+
+            if (query.symbol || query.chain_id ||query.denom || (query.date_range?.length === 2)) {
+                return await this.getTxCount(query,token)
+            }
+            // get statistic data
+            const statisticData = await this.findStatisticTxsCount()
+            return statisticData.count
             // return await this.ibcTxModel.countTxList({...query, token});
         } else {
             const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(

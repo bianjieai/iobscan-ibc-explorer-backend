@@ -56,4 +56,11 @@ describe('IbcTxService', () => {
         });
     });
 
+    describe('findStatisticTxsCount', () => {
+        it('findStatisticTxsCount Test', async () => {
+            const result = await ibcTxService.findStatisticTxsCount()
+            console.log(result, '----')
+        });
+    });
+
 })
