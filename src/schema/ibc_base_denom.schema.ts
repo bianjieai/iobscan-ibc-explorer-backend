@@ -31,4 +31,8 @@ IbcBaseDenomSchema.statics = {
   async findAllRecord(): Promise<IbcBaseDenomType[]> {
     return this.find();
   },
+
+  async insertBaseDenom(ibcBaseDenom): Promise<void>{
+        return this.create(ibcBaseDenom);
+    },
 };

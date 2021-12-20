@@ -19,4 +19,21 @@ describe('IbcDenomService', () => {
             console.log(result, '----')
         });
     });
+
+    describe('insertBaseDenom', () => {
+        it('insertBaseDenom Test', async () => {
+            let data = {
+                chain_id:"irishub_2",
+                denom:"CAT",
+                symbol:"TomCat",
+                scale:8,
+                icon:"",
+                is_main_token:false,
+            }
+            await ibcBaseDenomService.insertBaseDenom(data)
+
+        });
+    });
+
+
 })

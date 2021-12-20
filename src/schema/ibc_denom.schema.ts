@@ -92,4 +92,7 @@ IbcDenomSchema.statics = {
             }
         });
     },
+    async createDenom(ibcDenom): Promise<void> {
+        return this.create(ibcDenom);
+    },
 };
