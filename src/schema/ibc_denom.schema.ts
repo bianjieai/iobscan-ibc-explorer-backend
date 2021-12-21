@@ -72,8 +72,8 @@ IbcDenomSchema.statics = {
     async findDenomRecord(chain_id, denom): Promise<IbcDenomType> {
         return this.findOne({chain_id, denom}, {_id: 0});
     },
-     async findAllDenomRecord(): Promise<IbcDenomType> {
-        return this.findOne({});
+     async findAllDenomRecord(chain_id): Promise<IbcDenomType> {
+        return this.find({chain_id}, {_id: 0});
     },
     // async findAllDenomRecord(): Promise<IbcDenomType> {
     //     return this.findOne({});
