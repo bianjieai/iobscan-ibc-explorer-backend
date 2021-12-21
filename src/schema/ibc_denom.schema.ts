@@ -24,14 +24,7 @@ export const IbcDenomSchema = new mongoose.Schema(
             type: Number,
             default: Math.floor(new Date().getTime() / 1000),
         },
-        tx_time: {
-            type: Number,
-            default: Math.floor(new Date().getTime() / 1000),
-        },
-        real_denom: {
-            type: Boolean,
-            default: false,
-        },
+
     },
     {versionKey: false},
 );
