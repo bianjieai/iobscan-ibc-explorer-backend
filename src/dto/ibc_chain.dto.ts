@@ -29,6 +29,7 @@ export class IbcChainResDto extends BaseResDto {
         );
         const datas: IbcChainResDto[] = [...datasSortChars, ...datasSortOthers].map(
             (item: IbcChainConfigType) => {
+                item.chain_id = item.chain_id.replace(new RegExp("\_", "g"),"-")
                 return new IbcChainResDto(item);
             },
         );

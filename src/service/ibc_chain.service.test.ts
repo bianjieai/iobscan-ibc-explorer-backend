@@ -29,7 +29,7 @@ describe('IbcChainService', () => {
 
     describe('queryChains', () => {
         it('queryChains Test', async () => {
-            const result = await ibcChainService.queryChainsByDatetime(Math.floor(1623955689))
+            const result = await ibcChainService.queryChainsByDatetime()
             console.log(result, '----')
         });
     });
