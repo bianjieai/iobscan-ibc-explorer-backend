@@ -16,7 +16,7 @@ describe('IbcTxService', () => {
 
     describe('queryIbcTxList', () => {
         it('queryIbcTxList Test', async () => {
-            const query: IbcTxListReqDto = { page_num: 1, page_size: 10, symbol:"osmo"};
+            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:true,status:[1,2,3,4],date_range:[0,1640074000]};
             const result = await ibcTxService.queryIbcTxList(query)
             console.log(result, '----')
         });

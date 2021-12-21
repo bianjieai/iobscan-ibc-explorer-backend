@@ -105,7 +105,7 @@ export class IbcTxService {
         }
         if (use_count) {
 
-            if (query.symbol || query.chain_id ||query.denom || (query.date_range?.length === 2)) {
+            if (query.symbol || query.chain_id ||query.denom || (!query.date_range.includes(0)) || (query.status?.length !== 4)) {
                 return await this.getTxCount(query,token)
             }
             // get statistic data
