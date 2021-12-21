@@ -6,7 +6,7 @@ import {ListStruct} from '../api/ApiResult';
 import {IbcTxListReqDto, IbcTxResDto} from '../dto/ibc_tx.dto';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
-import {unAuth} from '../constant';
+import {unAuth,TaskEnum} from '../constant';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
 import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
@@ -55,7 +55,7 @@ export class IbcTxService {
 
     async findStatisticTxsCount():Promise<IbcStatisticsType> {
         return await this.ibcStatisticsModel.findStatisticsRecord(
-            'tx_all',
+            TaskEnum.staticsTxAll,
         );
     }
 
