@@ -15,9 +15,5 @@ export  interface AggregateBaseDenomCnt {
 export class IbcDenomDto {
   readonly chain_id: string;
   readonly denom: string;
-  readonly base_denom: string;
-  readonly denom_path: string;
-  readonly is_source_chain: boolean;
-  readonly create_at: string;
-  readonly update_at: string;
+  readonly symbol: string;
 }

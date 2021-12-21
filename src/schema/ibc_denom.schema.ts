@@ -78,11 +78,11 @@ IbcDenomSchema.statics = {
     // async findAllDenomRecord(): Promise<IbcDenomType> {
     //     return this.findOne({});
     // },
-     // async updateDenomRecord(denomRecord): Promise<void> {
-        //const {chain_id, denom} = denomRecord;
-        //const options = {upsert: true, new: false, setDefaultsOnInsert: true};
-        // return this.findOneAndUpdate({ chain_id, denom }, denomRecord, options);
-    // },
+     async updateDenomRecord(denomRecord): Promise<void> {
+        const {chain_id, denom} = denomRecord;
+        const options = {upsert: true, new: false, setDefaultsOnInsert: true};
+        return this.findOneAndUpdate({ chain_id, denom }, denomRecord, options);
+    },
 
     async insertManyDenom(ibcDenom): Promise<void> {
         return this.insertMany(ibcDenom, { ordered: false },(error) => {
@@ -91,8 +91,5 @@ IbcDenomSchema.statics = {
                 Logger.error(error)
             }
         });
-    },
-    async createDenom(ibcDenom): Promise<void> {
-        return this.create(ibcDenom);
     },
 };

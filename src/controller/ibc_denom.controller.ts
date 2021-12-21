@@ -1,4 +1,4 @@
-import {Body, Controller,Headers, Get, Post} from '@nestjs/common';
+import {Body, Controller, Headers, Get, Post, Put} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Result } from '../api/ApiResult';
 import { IbcDenomService } from '../service/ibc_denom.service';
@@ -16,12 +16,12 @@ export class IbcDenomController {
     return new Result<IbcDenomResDto[]>(result);
   }
 
-  @Post("denoms")
-  async insertIbcDenom(@Body() dto:IbcDenomDto, @Headers() Headers):Promise<any> {
+  @Put("denoms")
+  async updateIbcDenom(@Body() dto:IbcDenomDto, @Headers() Headers):Promise<any> {
     const {executekey} = Headers
     if (executekey !== cfg.serverCfg.executeKey || !executekey) {
       return {"message":"deny this operation for executekey is not right."}
     }
-    return await this.ibcDenomService.createIbcDenom(dto)
+    return await this.ibcDenomService.updateIbcDenom(dto)
   }
 }

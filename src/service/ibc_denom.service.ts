@@ -25,7 +25,7 @@ export class IbcDenomService {
     return result;
   }
 
-  async createIbcDenom(denom) :Promise<void>{
-    return await this.ibcDenomModel.createDenom(denom)
+  async updateIbcDenom(ibcDenom) :Promise<void>{
+    return await this.ibcDenomModel.updateDenomRecord(ibcDenom)
   }
 }
