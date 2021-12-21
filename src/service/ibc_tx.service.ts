@@ -74,6 +74,22 @@ export class IbcTxService {
         query: IbcTxListReqDto,
     ): Promise<ListStruct<IbcTxResDto[]> | number> {
         const {use_count, page_num, page_size, symbol, denom, start_time} = query;
+        const date_range = query?.date_range?.split(",")||[0,new Date().getTime()/1000],status = query?.status?.split(",")||[1,2,3,4]
+        let queryData :IbcTxQueryType = {
+            useCount: query.use_count,
+            date_range: [],
+            chain_id: query.chain_id,
+            status: [],
+            // token?: { denom: string; chain_id: string }[];
+            page_num: page_num,
+            page_size: page_size,
+        }
+        for (const one of date_range) {
+            queryData?.date_range.push(Number(one))
+        }
+        for (const one of status) {
+            queryData?.status.push(Number(one))
+        }
         let token = undefined;
         if (symbol === unAuth) {
             // const resultUnAuth = await this.ibcDenomModel.findRecordBySymbol('');
@@ -104,9 +120,8 @@ export class IbcTxService {
             return await this.getStartTxTime();
         }
         if (use_count) {
-
-            if (query.symbol || query.chain_id ||query.denom || (!query.date_range.includes(0)) || (query.status?.length !== 4)) {
-                return await this.getTxCount(query,token)
+            if (query.symbol || query.chain_id ||query.denom || (!queryData.date_range.includes(0)) || (queryData.status?.length !== 4)) {
+                return await this.getTxCount(queryData,token)
             }
             // get statistic data
             const statisticData = await this.findStatisticTxsCount()
@@ -115,7 +130,7 @@ export class IbcTxService {
         } else {
             const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
                 // await this.ibcTxModel.findTxList({...query, token}),
-                await this.getIbcTxs(query,token),
+                await this.getIbcTxs(queryData,token),
             );
             return new ListStruct(ibcTxDatas, page_num, page_size);
         }

@@ -2,6 +2,7 @@ import {IbcTxService} from "./ibc_tx.service";
 import {Test} from "@nestjs/testing";
 import {AppModule} from "../app.module";
 import {IbcTxListReqDto} from "../dto/ibc_tx.dto";
+import {IbcTxQueryType} from "../types/schemaTypes/ibc_tx.interface";
 
 describe('IbcTxService', () => {
     let ibcTxService: IbcTxService;
@@ -16,7 +17,10 @@ describe('IbcTxService', () => {
 
     describe('queryIbcTxList', () => {
         it('queryIbcTxList Test', async () => {
-            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:true,status:[1,2,3,4],date_range:[0,1640074000]};
+            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:false,
+                // status:"1,2,3,4",
+                // date_range:"0,1640074000"
+            };
             const result = await ibcTxService.queryIbcTxList(query)
             console.log(result, '----')
         });
@@ -40,18 +44,50 @@ describe('IbcTxService', () => {
 
     describe('getTxCount', () => {
         it('getTxCount Test', async () => {
-            const query: IbcTxListReqDto = {status: [1], chain_id: "osmosis_1"};
+            const query: IbcTxListReqDto = {status: "1", chain_id: "osmosis_1"};
             const token = await ibcTxService.getTokenBySymbol("osmo")
-            const result = await ibcTxService.getTxCount(query, token)
+            const date_range = query.date_range?.split(","),status = query.status?.split(",")
+            let queryData :IbcTxQueryType = {
+                useCount: query.use_count,
+                // date_range?: number[];
+                chain_id: query.chain_id,
+                // status?: number[];
+                // token?: { denom: string; chain_id: string }[];
+                page_num:1,
+                page_size: 10,
+            }
+            for (const one of date_range) {
+                queryData?.date_range.push(Number(one))
+            }
+            for (const one of status) {
+                queryData?.status.push(Number(one))
+            }
+            const result = await ibcTxService.getTxCount(queryData, token)
             console.log(result, '----')
         });
     });
 
     describe('getIbcTxs', () => {
         it('getIbcTxs Test', async () => {
-            const query: IbcTxListReqDto = {status: [1], page_num: 1, page_size: 10, chain_id: "osmosis_1"};
+            const query: IbcTxListReqDto = {status: "1", page_num: 1, page_size: 10, chain_id: "osmosis_1"};
             const token = await ibcTxService.getTokenBySymbol("osmo")
-            const result = await ibcTxService.getIbcTxs(query, token)
+            const date_range = query.date_range?.split(","),status = query.status?.split(",")
+            let queryData :IbcTxQueryType = {
+                useCount: query.use_count,
+                // date_range?: number[];
+                chain_id: query.chain_id,
+                // status?: number[];
+                // token?: { denom: string; chain_id: string }[];
+                page_num:1,
+                page_size: 10,
+            }
+            for (const one of date_range) {
+                queryData?.date_range.push(Number(one))
+            }
+            for (const one of status) {
+                queryData?.status.push(Number(one))
+            }
+            const result = await ibcTxService.getIbcTxs(queryData, token)
             console.log(result, '----')
         });
     });
