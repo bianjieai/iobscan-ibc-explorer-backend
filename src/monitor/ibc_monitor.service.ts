@@ -54,11 +54,11 @@ export class IbcMonitorService {
                 .toPromise()
                 .then(result => result.data);
             if (nodeInfo) {
-                //todo  monitor code
+                //  monitor code
                 await this.lcdConnectionMetric.collect(chain,1)
                 return nodeInfo
             } else {
-                //todo monitor code
+                // monitor code
                 await this.lcdConnectionMetric.collect(chain,0)
                 Logger.warn(
                     'api-error:',
@@ -66,7 +66,7 @@ export class IbcMonitorService {
                 );
             }
         } catch (e) {
-            //todo monitor code
+            // monitor code
             await this.lcdConnectionMetric.collect(chain,0)
             Logger.warn(`api-error from ${nodeInfoUrl} error`);
         }
