@@ -36,7 +36,6 @@ export class IbcDenomResDto extends BaseResDto {
 
   static bundleData(value: IbcDenomType[] = []) {
     const datas: IbcDenomResDto[] = value.map((item: any) => {
-      item.chain_id = item.chain_id.replace(new RegExp("\_", "g"),"-")
       return {
         chain_id: item.chain_id,
         denom: item.denom,
