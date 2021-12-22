@@ -96,8 +96,6 @@ export class IbcTxResDto extends BaseResDto {
 
   static bundleData(value: any): IbcTxResDto[] {
     const datas: IbcTxResDto[] = value.map((item: any) => {
-      item.sc_chain_id = item.sc_chain_id.replace(new RegExp("\_", "g"),"-")
-      item.dc_chain_id = item.dc_chain_id.replace(new RegExp("\_", "g"),"-")
       return new IbcTxResDto(item);
     });
     return datas;
