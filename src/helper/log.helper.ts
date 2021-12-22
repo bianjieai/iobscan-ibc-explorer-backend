@@ -12,7 +12,7 @@ export function getHttpRequestLog(req, res):string{
 }
 
 export function getHttpRespondLog(req, resData):string{
-    let resBodyStr: string = JSON.stringify(resData.data) || '';
+    let resBodyStr: string = JSON.stringify(resData?.data) || '';
     let logFormat: string = ` Request original url: ${req.originalUrl}
                             Method: ${req.method}
                             IP: ${req.ip}

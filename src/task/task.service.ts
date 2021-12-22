@@ -14,6 +14,7 @@ import { IbcStatisticsTaskService } from './ibc_statistics.task.service';
 import {IbcSyncTransferTxTaskService} from "./ibc_sync_transfer_tx_task.service";
 import {IbcUpdateProcessingTxTaskService} from "./ibc_update_processing_tx_task.service";
 import {IbcUpdateSubStateTxTaskService} from "./ibc_update_substate_tx_task.service";
+import {IbcMonitorService} from "../monitor/ibc_monitor.service";
 @Injectable()
 export class TasksService {
   constructor(
@@ -23,7 +24,8 @@ export class TasksService {
     private readonly ibcStatisticsTaskService: IbcStatisticsTaskService,
     private readonly ibcSyncTransferTxTaskService : IbcSyncTransferTxTaskService,
     private readonly ibcUpdateProcessingTxService : IbcUpdateProcessingTxTaskService,
-    private readonly ibcUpdateSubstateTxService: IbcUpdateSubStateTxTaskService
+    private readonly ibcUpdateSubstateTxService: IbcUpdateSubStateTxTaskService,
+    private readonly ibMonitorService: IbcMonitorService
   ) {
     // this[`${TaskEnum.denom}_timer`] = null;
   }
@@ -35,6 +37,11 @@ export class TasksService {
   // @Cron('*/10 * * * * *')
   async syncChain() {
     this.handleDoTask(TaskEnum.chain, this.ibcChainConfigTaskService.doTask);
+  }
+
+  @Cron('*/10 * * * * *')
+  async syncMonitor() {
+    this.handleDoTask(TaskEnum.monitor, this.ibMonitorService.doTask);
   }
 
   //新增交易

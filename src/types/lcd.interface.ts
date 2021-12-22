@@ -24,3 +24,11 @@ export interface LcdChannelClientState{
     }
   }
 }
+
+export interface NodeInfoType {
+  node_info: {
+    network:string;
+    version:string;
+    listen_addr: string;
+  }
+}
