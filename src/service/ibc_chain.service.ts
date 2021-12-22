@@ -67,7 +67,7 @@ export class IbcChainService {
         return await this.ibcChainConfigModel.findList();
     }
 
-    async queryChainsByDatetime(dateNow): Promise<IbcChainResultResDto> {
+    async queryChainsByDatetime(): Promise<IbcChainResultResDto> {
         const ibcChainAllDatas: IbcChainConfigType[] = await this.getAllChainConfigs()
         const ibcChainActiveDatas: IbcChainConfigType[] = await this.handleActiveChains(ibcChainAllDatas)
         const ibcChainInActiveDatas: IbcChainConfigType[] = ibcChainAllDatas.filter(

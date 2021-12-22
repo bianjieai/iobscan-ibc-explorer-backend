@@ -24,4 +24,8 @@ export class IbcBaseDenomService {
     const result: IbcBaseDenomResDto[] = IbcBaseDenomResDto.bundleData(await this.ibcBaseDenomModel.findAllRecord())
     return result;
   }
+
+  async insertBaseDenom(dto):Promise<void>{
+      return await this.ibcBaseDenomModel.insertBaseDenom(dto)
+  }
 }

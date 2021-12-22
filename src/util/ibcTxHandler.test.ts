@@ -39,11 +39,12 @@ describe('IbcTxHandler', () => {
 
     describe('handlerSourcesTx', () => {
         it('handlerSourcesTx Test', async () => {
-            let chain_id = "bigbang"
+            let chain_id = "osmosis_1"
             const txs  = await ibcTxHandler.getRecordLimitTx(chain_id,1858626,10)
             const {allChainsMap,allChainsDenomPathsMap} = await ibcTxHandler.getAllChainsMap()
             const dateNow = Math.floor(new Date().getTime() / 1000);
-            const {handledTx,denoms}  = await ibcTxHandler.handlerSourcesTx(txs,chain_id,dateNow,allChainsMap,allChainsDenomPathsMap)
+            let denomMap = await ibcTxHandler.getDenomRecordByChainId(chain_id)
+            const {handledTx,denoms}  = await ibcTxHandler.handlerSourcesTx(txs,chain_id,dateNow,allChainsMap,allChainsDenomPathsMap,denomMap)
             console.log(handledTx,'--ibcTxs--')
             console.log(denoms,'--denoms--')
         });
@@ -54,6 +55,13 @@ describe('IbcTxHandler', () => {
             const dateNow = Math.floor(new Date().getTime() / 1000);
 
             await ibcTxHandler.changeIbcTxState(dateNow,[3])
+            return null
+        });
+    });
+    describe('getDenomRecordByChainId', () => {
+        it('getDenomRecordByChainId Test', async () => {
+            let data = await ibcTxHandler.getDenomRecordByChainId("osmosis_1")
+            console.log(data,":<==============")
             return null
         });
     });

@@ -24,4 +24,8 @@ export class IbcDenomService {
     const result: IbcDenomResDto[] = IbcDenomResDto.bundleData(await this.ibcDenomModel.findAllRecord())
     return result;
   }
+
+  async updateIbcDenom(ibcDenom) :Promise<void>{
+    return await this.ibcDenomModel.updateDenomRecord(ibcDenom)
+  }
 }

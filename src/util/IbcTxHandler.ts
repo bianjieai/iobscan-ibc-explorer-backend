@@ -98,18 +98,18 @@ export class IbcTxHandler {
         }
     }
 
-    /*async getDenomRecord() {
+    async getDenomRecordByChainId(chainId) {
         const ibcDenomRecordMap = new Map
-        const ibcDenomRecord = await this.ibcDenomModel.findAllDenomRecord();
+        const ibcDenomRecord = await this.ibcDenomModel.findAllDenomRecord(chainId);
         if (ibcDenomRecord?.length) {
             ibcDenomRecord.forEach(ibcDenomRecordItem => {
-                if (ibcDenomRecordItem?.chain_id) {
-                    ibcDenomRecordMap.set(ibcDenomRecordItem?.chain_id, ibcDenomRecordItem)
+                if (ibcDenomRecordItem?.denom) {
+                    ibcDenomRecordMap.set(ibcDenomRecordItem?.denom, ibcDenomRecordItem)
                 }
             })
         }
         return ibcDenomRecordMap
-    }*/
+    }
 
     async getRecordLimitTx(chainId, height, limit): Promise<Array<any>> {
         const txModel = await this.connection.model(
@@ -173,11 +173,13 @@ export class IbcTxHandler {
             const taskCount = await this.checkTaskFollowingStatus(chain_id)
             if (!taskCount) continue
 
+            const denomMap = this.getDenomRecordByChainId(chain_id)
+
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
             let {
                 handledTx,
                 denoms
-            } = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap)
+            } = await this.handlerSourcesTx(txs, chain_id, dateNow, allChainsMap, allChainsDenomPathsMap,denomMap)
             ibcDenoms = [...denoms]
             if (ibcDenoms?.length) {
                 await this.ibcDenomModel.insertManyDenom(ibcDenoms);
@@ -602,7 +604,7 @@ export class IbcTxHandler {
         return msg;
     }
 
-    async handlerSourcesTx(sourcesTx, chain_id, currentTime, allChainsMap, allChainsDenomPathsMap) {
+    async handlerSourcesTx(sourcesTx, chain_id, currentTime, allChainsMap, allChainsDenomPathsMap,denomMap) {
         let handledTx = [], denoms = []
         if (sourcesTx && chain_id) {
             sourcesTx.forEach((tx, txIndex) => {
@@ -723,7 +725,14 @@ export class IbcTxHandler {
                         if (ibcTx.status === IbcTxStatus.FAILED) {
                             // get base_denom、denom_path from lcd API
                             if (sc_denom.indexOf('ibc') !== -1) {
-                                const scDenom = sc_denom.replace('ibc/', '')
+                                if (denomMap.has(sc_denom)) {
+                                    const ibcDenom = denomMap.get(sc_denom)
+                                    if (ibcDenom?.base_denom) {
+                                        base_denom = ibcDenom.base_denom
+                                        denom_path = ibcDenom?.denom_path
+                                    }
+                                }
+                                // const scDenom = sc_denom.replace('ibc/', '')
                                 /*
                                 * TODO 阻塞流程先注释
                                 * */

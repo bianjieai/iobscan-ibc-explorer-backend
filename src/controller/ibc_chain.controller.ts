@@ -11,8 +11,7 @@ export class IbcChainController {
 
   @Get('chains')
   async queryChains(): Promise<Result<IbcChainResultResDto>> {
-    const dateNow = Math.floor(new Date().getTime() / 1000);
-    const result: IbcChainResultResDto | null = await this.ibcChainService.queryChainsByDatetime(dateNow);
+    const result: IbcChainResultResDto | null = await this.ibcChainService.queryChainsByDatetime();
     return new Result<IbcChainResultResDto | null>(result);
   }
 }

@@ -9,6 +9,7 @@ const {
     ICONURI,
     DB_DATABASE,
     NODE_ENV,
+    EXECUTE_KEY,
     FAULT_TOLERANCE_EXECUTE_TIME,
     SYNC_TX_SERVICE_NAME_SIZE,
     HEARTBEAT_RATE,
@@ -43,7 +44,8 @@ export const cfg = {
     serverCfg:{
         lcdAddr:LCD_ADDR,
         rpcAddr:RPC_ADDR,
-        iconUri: ICONURI || 'https://keybase.io/_/api/1.0/user/lookup.json'
+        iconUri: ICONURI || 'https://keybase.io/_/api/1.0/user/lookup.json',
+        executeKey: EXECUTE_KEY,
     },
     taskCfg:{
         interval:{

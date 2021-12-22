@@ -38,6 +38,7 @@ export enum TaskEnum {
   statistics = 'ex_sync_statistics',
   denom = 'ex_sync_denom',
   nft = 'ex_sync_nft',
+  staticsTxAll = 'tx_all',
   txServiceName = 'sync_tx_service_name',
   validators = 'sync_validators',
   identity = 'sync_identity',

@@ -11,3 +11,9 @@ export interface IbcDenomType {
 export  interface AggregateBaseDenomCnt {
   _id:{base_denom?:string,chain_id?:string};
 }
+
+export class IbcDenomDto {
+  readonly chain_id: string;
+  readonly denom: string;
+  readonly symbol: string;
+}
