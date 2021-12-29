@@ -183,6 +183,12 @@ IbcTxSchema.statics = {
         return this.findOne().sort({tx_time: 1})
     },
 
+    async queryTxByRecordId(record_id): Promise<IbcTxType[]> {
+        return this.find({record_id}, {_id: 0})
+            .sort({tx_time: 1})
+            .limit(Number(1));
+    },
+
     async queryTxList(query): Promise<IbcTxType[]> {
         const {status,substate,limit} = query;
         return this.find({status,substate:{$in:substate}}, {_id: 0})

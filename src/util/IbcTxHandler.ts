@@ -238,7 +238,7 @@ export class IbcTxHandler {
                     if (tx?.dc_chain_id
                         && tx?.sc_tx_info?.msg?.msg?.packet_id
                         && tx?.sc_tx_info?.msg?.msg?.timeout_height?.revision_height >= 0
-                        && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp >= 0
+                        // && tx?.sc_tx_info?.msg?.msg?.timeout_timestamp >= 0
                     ) {
                         packetIds.push(
                             {
@@ -258,6 +258,8 @@ export class IbcTxHandler {
 
     async changeIbcTxState(dateNow, substate: number[]): Promise<void> {
         const ibcTxs = await this.getProcessingTxs(substate)
+        // const ibcTxs = await this.ibcTxModel.queryTxByRecordId("transferchannel-185transferchannel-111404cosmoshub_4214637C56B2550827988E2F49FB6D5E55D5DC6271A34C68D5499852D939C1BA20")
+
 
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
         let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map,
@@ -310,7 +312,11 @@ export class IbcTxHandler {
                     packetIdArr.forEach(item => {
                         if (item?.chainId && item?.height || item?.timeOutTime) {
                             const currentChainLatestObj = chainHeightMap.get(item.chainId)
-                            if (item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time) {
+                            const dateLen = String(item?.timeOutTime).length
+                            if (dateLen > 10) {
+                                refundedTxPacketIdsMap.set(item.packetId,'')
+                                refundedTxPacketIds.push(item.packetId)
+                            }else if (item.height < currentChainLatestObj?.height || item.timeOutTime < currentChainLatestObj?.time) {
                                 if (item?.packetId) {
                                     refundedTxPacketIdsMap.set(item.packetId, '')
                                     refundedTxPacketIds.push(item.packetId)
