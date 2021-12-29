@@ -2,7 +2,7 @@
 import * as mongoose from 'mongoose';
 import {AggregateResult24hr, IbcTxQueryType, IbcTxType,} from '../types/schemaTypes/ibc_tx.interface';
 import {parseQuery} from '../helper/ibcTx.helper';
-import {IbcTxStatus, SubState} from '../constant';
+import {IbcTxStatus, SubState, TxStatus} from '../constant';
 
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
@@ -143,6 +143,7 @@ IbcTxSchema.statics = {
                     $or: [
                         {status: IbcTxStatus.SUCCESS},
                         {status: IbcTxStatus.PROCESSING, substate: SubState.RecvPacketAckFailed},
+                        {status: IbcTxStatus.FAILED, "dc_tx_info.status":TxStatus.SUCCESS},
                     ],
                 }
             },
@@ -187,6 +188,12 @@ IbcTxSchema.statics = {
 
     async findFirstTx(): Promise<IbcTxType> {
         return this.findOne().sort({tx_time: 1})
+    },
+
+    async queryTxByRecordId(record_id): Promise<IbcTxType[]> {
+        return this.find({record_id}, {_id: 0})
+            .sort({tx_time: 1})
+            .limit(Number(1));
     },
 
     async queryTxList(query): Promise<IbcTxType[]> {
