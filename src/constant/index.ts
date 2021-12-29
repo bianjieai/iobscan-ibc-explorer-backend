@@ -35,6 +35,7 @@ export enum TaskEnum {
   updateProcessingTx = 'update_processing_tx',
   updateSubStateTx = 'update_substate_tx',
   chain = 'ex_sync_chain',
+  monitor = "promethous_monitor",
   statistics = 'ex_sync_statistics',
   denom = 'ex_sync_denom',
   nft = 'ex_sync_nft',

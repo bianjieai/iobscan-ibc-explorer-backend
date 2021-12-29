@@ -17,6 +17,7 @@ import {IbcStatisticsModule} from './module/ibc_statistics.module';
 import {IbcBaseDenomModule} from './module/ibc_base_denom.module';
 import {IbcDenomModule} from './module/ibc_denom.module';
 import {ConfigModule} from './module/config.module';
+import {MonitorModule} from './module/monitor.task.module';
 import {IbcSyncTransferTxTaskModule} from "./module/ibc_sync_transfer_tx_task.module";
 import {IbcUpdateProcessingTxModule} from "./module/ibc_update_processing_tx_task.module";
 import {IbcUpdateSubstateTxTaskModule} from "./module/ibc_update_substate_tx_task.module";
@@ -40,6 +41,7 @@ export const params = {
         IbcUpdateProcessingTxModule,
         IbcUpdateSubstateTxTaskModule,
         ConfigModule,
+        MonitorModule,
     ],
     providers: <any>[
         {

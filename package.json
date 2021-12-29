@@ -23,13 +23,13 @@
     "pm2": "cp .env dist/ && npx pm2 start pmconfig.json"
   },
   "dependencies": {
-    "@irisnet/irishub-sdk": "git+https://github.com/hangts/irishub-sdk-js.git#91a833a6f620018369cfae038888a29d874562f9",
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "~7.5.0",
     "@nestjs/mongoose": "~7.0.1",
     "@nestjs/platform-express": "^7.0.0",
     "@nestjs/schedule": "^0.4.0",
     "@nestjs/swagger": "^4.5.7",
+    "@willsoto/nestjs-prometheus": "^4.4.0",
     "bech32": "^1.1.4",
     "bignumber.js": "^9.0.1",
     "blueimp-md5": "^2.16.0",
@@ -40,6 +40,7 @@
     "log4js": "^6.1.2",
     "moment": "^2.27.0",
     "mongoose": "~5.9.15",
+    "prom-client": "^14.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^6.5.4",
     "sha256": "^0.2.0",

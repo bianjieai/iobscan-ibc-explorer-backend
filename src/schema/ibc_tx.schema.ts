@@ -159,6 +159,12 @@ IbcTxSchema.statics = {
         });
     },
 
+    async countProcessing(): Promise<number> {
+        return this.count({
+            status: IbcTxStatus.PROCESSING,
+        });
+    },
+
     async countFaild(): Promise<number> {
         return this.count({
             status: {$in: [IbcTxStatus.FAILED, IbcTxStatus.REFUNDED]},
