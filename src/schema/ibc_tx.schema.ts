@@ -3,7 +3,7 @@ import * as mongoose from 'mongoose';
 import {AggregateResult24hr, IbcTxQueryType, IbcTxType,} from '../types/schemaTypes/ibc_tx.interface';
 import {parseQuery} from '../helper/ibcTx.helper';
 import {IbcTxStatus, SubState, TxStatus} from '../constant';
-
+import {dbRes} from "../constant/dbRes";
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
     sc_addr: String,
@@ -180,7 +180,7 @@ IbcTxSchema.statics = {
     async findTxList(query: IbcTxQueryType): Promise<IbcTxType[]> {
         const queryParams = parseQuery(query);
         const {page_num, page_size} = query;
-        return this.find(queryParams, {_id: 0})
+        return this.find(queryParams, {_id: 0,...dbRes.txList})
             .skip((Number(page_num) - 1) * Number(page_size))
             .limit(Number(page_size))
             .sort({tx_time: -1});
