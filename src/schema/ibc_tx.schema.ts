@@ -180,7 +180,7 @@ IbcTxSchema.statics = {
     async findTxList(query: IbcTxQueryType): Promise<IbcTxType[]> {
         const queryParams = parseQuery(query);
         const {page_num, page_size} = query;
-        return this.find(queryParams, {_id: 0,...dbRes.txList})
+        return this.find(queryParams, dbRes.txList)
             .skip((Number(page_num) - 1) * Number(page_size))
             .limit(Number(page_size))
             .sort({tx_time: -1});
