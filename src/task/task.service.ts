@@ -8,7 +8,6 @@ import { TaskCallback } from '../types/task.interface';
 import { Logger } from '../logger';
 import { IRandomKey } from '../types';
 import { taskLoggerHelper } from '../helper/task.log.helper';
-import { IbcTxTaskService } from './ibc_tx.task.service';
 import { IbcChainConfigTaskService } from './ibc_chain_config.task.service';
 import { IbcStatisticsTaskService } from './ibc_statistics.task.service';
 import {IbcSyncTransferTxTaskService} from "./ibc_sync_transfer_tx_task.service";
@@ -20,7 +19,6 @@ export class TasksService {
   constructor(
     private readonly taskDispatchService: TaskDispatchService,
     private readonly ibcChainConfigTaskService: IbcChainConfigTaskService,
-    private readonly ibcTxTaskService: IbcTxTaskService,
     private readonly ibcStatisticsTaskService: IbcStatisticsTaskService,
     private readonly ibcSyncTransferTxTaskService : IbcSyncTransferTxTaskService,
     private readonly ibcUpdateProcessingTxService : IbcUpdateProcessingTxTaskService,

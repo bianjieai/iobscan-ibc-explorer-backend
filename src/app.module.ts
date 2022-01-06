@@ -8,7 +8,6 @@ import {ScheduleModule} from '@nestjs/schedule';
 import {TasksService} from './task/task.service';
 import {cfg} from './config/config';
 import {TaskDispatchModule} from './module/task.dispatch.module';
-import {IbcTxTaskModule} from './module/ibc_tx.task.module';
 import {IbcTxModule} from './module/ibc_tx.module';
 import {IbcChainConfigTaskModule} from './module/ibc_chain_config.task.module';
 import {IbcChainModule} from './module/ibc_chain.module';
@@ -29,7 +28,6 @@ export const params = {
         MongooseModule.forRoot(url),
         ScheduleModule.forRoot(),
         TaskDispatchModule,
-        IbcTxTaskModule,
         IbcTxModule,
         IbcChainConfigTaskModule,
         IbcChainModule,
