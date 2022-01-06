@@ -27,6 +27,7 @@ export class IbcTxListReqDto extends PagingReqDto {
 }
 
 export class IbcTxResDto extends BaseResDto {
+  record_id:string;
   sc_addr: string;
   dc_addr: string;
   status: number;
@@ -42,6 +43,7 @@ export class IbcTxResDto extends BaseResDto {
   constructor(value: any) {
     super();
     const {
+      record_id,
       sc_addr,
       dc_addr,
       dc_chain_id,
@@ -54,6 +56,7 @@ export class IbcTxResDto extends BaseResDto {
       create_at,
       tx_time,
     } = value;
+    this.record_id = record_id || '';
     this.sc_addr = sc_addr || '';
     this.dc_addr = dc_addr || '';
     this.status = status;
