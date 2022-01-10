@@ -20,6 +20,8 @@ import {MonitorModule} from './module/monitor.task.module';
 import {IbcSyncTransferTxTaskModule} from "./module/ibc_sync_transfer_tx_task.module";
 import {IbcUpdateProcessingTxModule} from "./module/ibc_update_processing_tx_task.module";
 import {IbcUpdateSubstateTxTaskModule} from "./module/ibc_update_substate_tx_task.module";
+import {IbcTxDataUpdateModule} from "./module/ibc_tx_data_update_task.module";
+import {IbcTxLatestMigrateTaskModule} from "./module/ibc_tx_latest_migrate_task.module";
 
 const url = `mongodb://${cfg.dbCfg.user}:${cfg.dbCfg.psd}@${cfg.dbCfg.dbAddr}/${cfg.dbCfg.dbName}`;
 // const url: string = `mongodb://localhost:27017/ibc-db`;
@@ -38,6 +40,8 @@ export const params = {
         IbcSyncTransferTxTaskModule,
         IbcUpdateProcessingTxModule,
         IbcUpdateSubstateTxTaskModule,
+        IbcTxDataUpdateModule,
+        IbcTxLatestMigrateTaskModule,
         ConfigModule,
         MonitorModule,
     ],

@@ -1,5 +1,7 @@
 export const RecordLimit = 100;
 
+export const MaxMigrateBatchLimit = 1000;
+
 export const Delimiter = '|';
 
 export const unAuth = 'Others';
@@ -34,6 +36,8 @@ export enum TaskEnum {
   transferTx ='ex_sync_transfer_tx',
   updateProcessingTx = 'update_processing_tx',
   updateSubStateTx = 'update_substate_tx',
+  ibcTxCronJob = 'ibc_tx_data_cronjob',
+  ibcTxMigrateCronJob = 'ibc_tx_migrate_cronjob',
   chain = 'ex_sync_chain',
   monitor = "promethous_monitor",
   statistics = 'ex_sync_statistics',
@@ -147,6 +151,11 @@ export enum TxType {
   create_record = 'create_record',
   // Random
   request_rand = 'request_rand',
+}
+
+export enum IbcTxTable {
+  IbcTxTableName = 'ex_ibc_tx',
+  IbcTxLatestTableName = 'ex_ibc_tx_latest'
 }
 
 export enum TxStatus {

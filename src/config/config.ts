@@ -10,6 +10,7 @@ const {
     DB_DATABASE,
     NODE_ENV,
     EXECUTE_KEY,
+    DISPLAY_IBC_RECORD_MAX,
     FAULT_TOLERANCE_EXECUTE_TIME,
     SYNC_TX_SERVICE_NAME_SIZE,
     HEARTBEAT_RATE,
@@ -25,7 +26,9 @@ const {
     CHANNELS_OFFSET,
     SYNC_TRANSFER_TX_TIME,
     UPDATE_PROCESSING_TX_TIME,
-    UPDATE_SUB_STATE_TX_TIME
+    UPDATE_SUB_STATE_TX_TIME,
+    IBC_TX_LATEST_MIGRATE,
+    IBC_TX_UPDATE_CRONJOB
 
 } = process.env;
 export const cfg = {
@@ -46,6 +49,7 @@ export const cfg = {
         rpcAddr:RPC_ADDR,
         iconUri: ICONURI || 'https://keybase.io/_/api/1.0/user/lookup.json',
         executeKey: EXECUTE_KEY,
+        displayIbcRecordMax:Number(DISPLAY_IBC_RECORD_MAX || 500000),
     },
     taskCfg:{
         interval:{
@@ -63,6 +67,8 @@ export const cfg = {
             transferTx: SYNC_TRANSFER_TX_TIME || '*/15 * * * * *',
             updateProcessingTx: UPDATE_PROCESSING_TX_TIME || '*/15 * * * * *',
             updateSubStateTx: UPDATE_SUB_STATE_TX_TIME || '*/15 * * * * *',
+            ibcTxLatestMigrate: IBC_TX_LATEST_MIGRATE || '* */30 * * * *',
+            ibcTxUpdateCronjob: IBC_TX_UPDATE_CRONJOB || '* * */2 * * *',
         },
         syncTxServiceNameSize: Number(SYNC_TX_SERVICE_NAME_SIZE) || 200,
         increaseHeight: INCREASE_HEIGHT || 1000,

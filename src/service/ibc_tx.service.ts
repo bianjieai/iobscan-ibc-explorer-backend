@@ -6,7 +6,8 @@ import {ListStruct} from '../api/ApiResult';
 import {IbcTxListReqDto, IbcTxResDto} from '../dto/ibc_tx.dto';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
-import {unAuth,TaskEnum} from '../constant';
+import {unAuth,TaskEnum,IbcTxTable} from '../constant';
+import {cfg} from '../config/config';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
 import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
@@ -14,7 +15,7 @@ import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
 @Injectable()
 export class IbcTxService {
     private ibcDenomModel;
-    private ibcTxModel;
+    private ibcTxLatestModel;
     private ibcStatisticsModel;
 
     constructor(@InjectConnection() private connection: Connection) {
@@ -22,10 +23,10 @@ export class IbcTxService {
     }
 
     async getModels(): Promise<void> {
-        this.ibcTxModel = await this.connection.model(
-            'ibcTxModel',
+        this.ibcTxLatestModel = await this.connection.model(
+            'ibcTxLatestModel',
             IbcTxSchema,
-            'ex_ibc_tx',
+            IbcTxTable.IbcTxLatestTableName,
         );
         this.ibcDenomModel = await this.connection.model(
             'ibcDenomModel',
@@ -41,16 +42,20 @@ export class IbcTxService {
     }
 
     async getStartTxTime(): Promise<number> {
-        const startTx = await this.ibcTxModel.findFirstTx()
+        const startTx = await this.ibcTxLatestModel.findFirstTx()
         return startTx?.tx_time;
     }
 
     async getTxCount(query: IbcTxQueryType, token): Promise<number> {
-        return await this.ibcTxModel.countTxList({...query, token});
+        const count = await this.ibcTxLatestModel.countTxList({...query, token});
+        if (count >= cfg.serverCfg.displayIbcRecordMax) {
+            return cfg.serverCfg.displayIbcRecordMax
+        }
+        return count
     }
 
     async getIbcTxs(query: IbcTxQueryType, token): Promise<IbcTxType[]> {
-        return await this.ibcTxModel.findTxList({...query, token})
+        return await this.ibcTxLatestModel.findTxList({...query, token})
     }
 
     async findStatisticTxsCount():Promise<IbcStatisticsType> {
