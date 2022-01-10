@@ -231,4 +231,8 @@ IbcTxSchema.statics = {
             }
         },session);
     },
+    async queryTxDetailByHash(txHash){
+        const {hash} = txHash
+        return this.findOne({$or:[{'sc_tx_info.hash':hash},{'dc_tx_info.hash':hash}]},{__v:0,_id:0})
+    }
 };

@@ -2,8 +2,8 @@
 import {Injectable} from '@nestjs/common';
 import {Connection} from 'mongoose';
 import {InjectConnection} from '@nestjs/mongoose';
-import {ListStruct} from '../api/ApiResult';
-import {IbcTxListReqDto, IbcTxResDto} from '../dto/ibc_tx.dto';
+import {ListStruct, Result} from '../api/ApiResult';
+import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from '../dto/ibc_tx.dto';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
 import {unAuth,TaskEnum} from '../constant';
@@ -134,5 +134,9 @@ export class IbcTxService {
             );
             return new ListStruct(ibcTxDatas, page_num, page_size);
         }
+    };
+    async queryIbcTxDetailsByHash(query:TxWithHashReqDto):Promise<IbcTxDetailsResDto>{
+        const txDetailsData = await this.ibcTxModel.queryTxDetailByHash(query)
+        return new IbcTxDetailsResDto(txDetailsData)
     }
 }
