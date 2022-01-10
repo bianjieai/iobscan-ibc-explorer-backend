@@ -8,6 +8,7 @@ import {NodeInfoType} from "../types/lcd.interface";
 import {Logger} from "../logger";
 import {LcdConnectionMetric} from "../monitor/metrics/ibc_chain_lcd_connection.metric";
 import {IbcTxProcessingMetric} from "../monitor/metrics/ibc_tx_processing_cnt.metric";
+import {IbcTxTable} from "../constant/index";
 
 @Injectable()
 export class IbcMonitorService {
@@ -42,7 +43,7 @@ export class IbcMonitorService {
         this.ibcTxModel = await this.connection.model(
             'ibcTxModel',
             IbcTxSchema,
-            'ex_ibc_tx',
+            IbcTxTable.IbcTxLatestTableName,
         );
     }
 
