@@ -165,8 +165,10 @@ export class IbcTxService {
                                     switch (attribute.key) {
                                         case 'packet_connection':
                                             connect = attribute.value
+                                            break
                                         case 'packet_timeout_timestamp':
                                             timeout_timestamp = attribute.value
+                                            break
                                     }
                                 })
                             }
