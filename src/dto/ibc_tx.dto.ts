@@ -33,6 +33,8 @@ export class TxWithHashReqDto extends BaseReqDto {
 
 export class IbcTxDetailsResDto extends BaseResDto {
     base_denom: string;
+    sc_signers:string[];
+    dc_signers:string[];
     dc_addr: string;
     dc_chain_id: string;
     dc_channel: string;
@@ -47,6 +49,8 @@ export class IbcTxDetailsResDto extends BaseResDto {
     status: string;
     tx_time: string;
     dc_tx_info:object;
+    dc_connect:string;
+    sc_connect:string;
     constructor(value: any) {
         super();
         const {
@@ -65,6 +69,10 @@ export class IbcTxDetailsResDto extends BaseResDto {
             status,
             tx_time,
             dc_tx_info,
+            sc_signers,
+            dc_signers,
+            dc_connect,
+            sc_connect,
         } = value;
         this.base_denom = base_denom || '';
         this.dc_addr = dc_addr || '';
@@ -81,6 +89,10 @@ export class IbcTxDetailsResDto extends BaseResDto {
         this.status = status || '';
         this.tx_time = tx_time || '';
         this.dc_tx_info = dc_tx_info || {};
+        this.sc_signers = sc_signers || [];
+        this.dc_signers = dc_signers || [];
+        this.dc_connect = dc_connect || '';
+        this.sc_connect = sc_connect || '';
     }
 }
 

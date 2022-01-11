@@ -10,6 +10,7 @@ import {unAuth,TaskEnum} from '../constant';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
 import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
+import {TxSchema} from "../schema/tx.schema";
 
 @Injectable()
 export class IbcTxService {
@@ -135,8 +136,131 @@ export class IbcTxService {
             return new ListStruct(ibcTxDatas, page_num, page_size);
         }
     };
+    async getConnectByTransferEventNews(eventNews) {
+        let connect = ''
+        if(eventNews?.events_new?.length){
+            eventNews.events_new.forEach( item => {
+                if(item?.events?.length){
+                    item.events.forEach( event => {
+                        if(event?.type === 'send_packet'){
+                            if(event?.attributes?.length){
+                                event.attributes.forEach(attribute => {
+                                    if(attribute.key === 'packet_connection'){
+                                        connect = attribute.value
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+        }
+        return connect
+    }
+    async getConnectByRecvPacketEventsNews (eventNews) {
+        let connect = ''
+        if(eventNews?.events_new?.length){
+            eventNews.events_new.forEach( item => {
+                if(item?.events?.length){
+                    item.events.forEach( event => {
+                        if(event?.type === 'send_packet'){
+                            if(event?.attributes?.length){
+                                event.attributes.forEach(attribute => {
+                                    if(attribute.key === 'packet_connection'){
+                                        connect = attribute.value
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+        }
+        return connect
+    }
+    async getScConnectAndScSigners(scChainID,scTxHash) {
+        let scSigners = null,scConnect = null;
+        if(scChainID && scTxHash){
+            const txModel = await this.connection.model(
+                'txModel',
+                TxSchema,
+                `sync_${scChainID}_tx`,
+            );
+            let scTxData = await txModel.queryTxByHash(scTxHash)
+
+            if(scTxData?.length){
+                scSigners =  scTxData[scTxData?.length-1]?.signers
+                scConnect =  scTxData[scTxData?.length-1]?.events_new ? await this.getConnectByTransferEventNews(scTxData[scTxData?.length-1]) : ''
+            }
+        }
+        return {
+            scSigners,
+            scConnect
+        }
+
+    }
     async queryIbcTxDetailsByHash(query:TxWithHashReqDto):Promise<IbcTxDetailsResDto>{
-        const txDetailsData = await this.ibcTxModel.queryTxDetailByHash(query)
+        let txDetailsData = await this.ibcTxModel.queryTxDetailByHash(query)
+        if(txDetailsData?.length <= 1){
+            let dcChainId,scChainId,scTxHash,dcTxHash;
+            if(txDetailsData?.sc_chain_id){
+                scChainId = txDetailsData.sc_chain_id
+            }
+            if(txDetailsData?.dc_chain_id){
+                dcChainId = txDetailsData.dc_chain_id
+            }
+            if(txDetailsData?.sc_tx_info){
+                scTxHash = txDetailsData?.sc_tx_info?.hash
+            }
+            if(txDetailsData?.dc_tx_info){
+                dcTxHash = txDetailsData?.dc_tx_info?.hash
+            }
+
+            if(scChainId && scTxHash){
+                const {scSigners,scConnect} = await this.getScConnectAndScSigners(scChainId,scTxHash)
+                if(scSigners){
+                    txDetailsData.sc_signers = scSigners
+                }
+                if(scConnect){
+                    txDetailsData.sc_connect = scConnect
+                }
+                /*  if(scTxData?.length){
+                      txDetailsData.sc_signers = scTxData[scTxData?.length-1]?.signers
+                      const scConnect =  scTxData[scTxData?.length-1]?.events_new ? await this.getConnectByTransferEventNews(scTxData[scTxData?.length-1]) : ''
+                      if(scConnect){
+                          txDetailsData.sc_connect = scConnect
+                      }
+                  }*/
+
+            }
+            if(dcChainId && dcTxHash){
+                const txModel = await this.connection.model(
+                    'txModel',
+                    TxSchema,
+                    `sync_${dcChainId}_tx`,
+                );
+                let dcTxData = await txModel.queryTxByHash(scTxHash)
+                console.log(dcTxData)
+                if(dcTxData?.length){
+                    txDetailsData.dc_signers = dcTxData[dcTxData?.length-1]?.signers
+                    let msgIndexes = []
+                    if(dcTxData?.msgs?.length){
+                        dcTxData.msgs.forEach( (msg,index) => {
+                            if(msg?.type == 'recv_packet'){
+                                msgIndexes.push(index)
+                            }
+                        })
+                    }
+                    if(msgIndexes?.length){}
+                }
+
+            }
+        }else {
+            /*
+            * TODO
+            * */
+
+        }
         return new IbcTxDetailsResDto(txDetailsData)
     }
 }
