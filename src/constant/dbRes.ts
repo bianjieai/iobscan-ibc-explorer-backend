@@ -1,5 +1,6 @@
 export const dbRes = {
     txList:{
+        record_id:1,
         base_denom:1,
         dc_addr:1,
         'dc_tx_info.hash':1,

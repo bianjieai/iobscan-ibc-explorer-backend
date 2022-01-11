@@ -17,7 +17,7 @@ describe('IbcTxService', () => {
 
     describe('queryIbcTxList', () => {
         it('queryIbcTxList Test', async () => {
-            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:false,
+            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:true,
                 // status:"1,2,3,4",
                 // date_range:"0,1640074000"
             };
@@ -95,6 +95,18 @@ describe('IbcTxService', () => {
     describe('findStatisticTxsCount', () => {
         it('findStatisticTxsCount Test', async () => {
             const result = await ibcTxService.findStatisticTxsCount()
+            console.log(result, '----')
+        });
+    });
+
+    describe('queryIbcTxDetailsByHash', () => {
+        it('queryIbcTxDetailsByHash Test', async () => {
+            const result = await ibcTxService.queryIbcTxDetailsByHash({hash:'A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98'})
+            console.log(result, '----')
+        });
+
+        it('getIbcTxDetail Test', async () => {
+            const result = await ibcTxService.getIbcTxDetail({hash:'A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98'})
             console.log(result, '----')
         });
     });

@@ -259,4 +259,13 @@ IbcTxSchema.statics = {
         const options = {session, isDeleted: true };
         return this.deleteOne({record_id}, options);
     },
+    async queryTxDetailByHash(query) : Promise<IbcTxType[]>{
+        const {hash} = query
+        return this.find({
+            $or: [
+                {"sc_tx_info.hash": hash},
+                {"dc_tx_info.hash": hash}
+            ]
+        }, {__v: 0,_id: 0});
+    }
 };
