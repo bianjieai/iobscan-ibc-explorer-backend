@@ -5,6 +5,7 @@ export const IbcStatisticsSchema = new mongoose.Schema(
   {
     statistics_name: String,
     count: Number,
+    count_latest: Number,
     statistics_info : String,
     create_at: {
       type: Number,

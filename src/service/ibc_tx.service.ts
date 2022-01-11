@@ -58,10 +58,14 @@ export class IbcTxService {
         return await this.ibcTxLatestModel.findTxList({...query, token})
     }
 
-    async findStatisticTxsCount():Promise<IbcStatisticsType> {
-        return await this.ibcStatisticsModel.findStatisticsRecord(
+    async findStatisticTxsCount():Promise<number> {
+        const statisticData = await this.ibcStatisticsModel.findStatisticsRecord(
             TaskEnum.staticsTxAll,
         );
+        if (statisticData.count_latest >= cfg.serverCfg.displayIbcRecordMax) {
+            return cfg.serverCfg.displayIbcRecordMax
+        }
+        return statisticData.count_latest
     }
 
     async getTokenBySymbol(symbol): Promise<any> {
@@ -129,8 +133,7 @@ export class IbcTxService {
                 return await this.getTxCount(queryData,token)
             }
             // get statistic data
-            const statisticData = await this.findStatisticTxsCount()
-            return statisticData.count
+            return await this.findStatisticTxsCount()
             // return await this.ibcTxModel.countTxList({...query, token});
         } else {
             const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(

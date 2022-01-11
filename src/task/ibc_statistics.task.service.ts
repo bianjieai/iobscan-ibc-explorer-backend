@@ -10,12 +10,14 @@ import {TaskEnum, StatisticsNames} from '../constant';
 import {AggregateBaseDenomCnt} from "../types/schemaTypes/ibc_denom.interface";
 import {AggregateResult24hr} from "../types/schemaTypes/ibc_tx.interface";
 import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
+import {IbcTxTable} from "../constant/index";
 
 @Injectable()
 export class IbcStatisticsTaskService {
     private ibcStatisticsModel;
     private chainConfigModel;
     private ibcTxModel;
+    private ibcTxLatestModel;
     private ibcDenomModel;
 
     constructor(@InjectConnection() private connection: Connection) {
@@ -48,7 +50,14 @@ export class IbcStatisticsTaskService {
         this.ibcTxModel = await this.connection.model(
             'ibcTxModel',
             IbcTxSchema,
-            'ex_ibc_tx',
+            IbcTxTable.IbcTxTableName,
+        );
+
+        // ibcTxModel
+        this.ibcTxLatestModel = await this.connection.model(
+            'ibcTxLatestModel',
+            IbcTxSchema,
+            IbcTxTable.IbcTxLatestTableName,
         );
 
         // ibcDenomModel
@@ -61,11 +70,11 @@ export class IbcStatisticsTaskService {
     }
 
     async aggregateFindSrcChannels(dateNow, chains: Array<string>): Promise<Array<AggregateResult24hr>> {
-        return await this.ibcTxModel.aggregateFindSrcChannels24hr(dateNow, chains);
+        return await this.ibcTxLatestModel.aggregateFindSrcChannels24hr(dateNow, chains);
     }
 
     async aggregateFindDesChannels(dateNow, chains: Array<string>): Promise<Array<AggregateResult24hr>> {
-        return await this.ibcTxModel.aggregateFindDesChannels24hr(dateNow, chains);
+        return await this.ibcTxLatestModel.aggregateFindDesChannels24hr(dateNow, chains);
     }
 
     async updateStatisticsRecord(statisticsRecord: IbcStatisticsType) {
@@ -82,10 +91,28 @@ export class IbcStatisticsTaskService {
         return await this.ibcDenomModel.findBaseDenomCount()
     }
 
+
+    async getCountinfo() :Promise<any>{
+        // tx_all
+        const tx_all_new = await this.ibcTxLatestModel.countAll();
+        let tx_all = await this.ibcTxModel.countAll();
+        tx_all = tx_all + tx_all_new
+
+        // tx_success
+        const tx_success_new = await this.ibcTxLatestModel.countSuccess();
+        let tx_success = await this.ibcTxModel.countSuccess();
+        tx_success = tx_success_new + tx_success
+
+        // tx_failed
+        const tx_failed_new = await this.ibcTxLatestModel.countFaild();
+        let tx_failed = await this.ibcTxModel.countFaild();
+        tx_failed = tx_failed_new + tx_failed
+
+        return {tx_all_new,tx_all,tx_success,tx_failed}
+    }
+
     // sync count
     async parseIbcStatistics(dateNow): Promise<void> {
-        // tx_24hr_all
-        const tx_24hr_all = await this.ibcTxModel.countActive();
 
         // chain_all
         const chain_all = await this.chainConfigModel.findCount();
@@ -103,6 +130,9 @@ export class IbcStatisticsTaskService {
                 });
             });
         });
+
+        // tx_24hr_all
+        const tx_24hr_all = await this.ibcTxLatestModel.countActive();
 
         //sc_chain_id,sc_channel
         const srcinfo_24hr = await this.aggregateFindSrcChannels(dateNow, chains);
@@ -144,14 +174,16 @@ export class IbcStatisticsTaskService {
             return channel.state === 'STATE_CLOSED';
         }).length;
 
-        // tx_all
-        const tx_all = await this.ibcTxModel.countAll();
+        const {tx_all_new,tx_all,tx_success,tx_failed} = await this.getCountinfo()
 
-        // tx_success
-        const tx_success = await this.ibcTxModel.countSuccess();
-
-        // tx_failed
-        const tx_failed = await this.ibcTxModel.countFaild();
+        // // tx_all
+        // const tx_all = await ibcTxModel.countAll();
+        //
+        // // tx_success
+        // const tx_success = await ibcTxModel.countSuccess();
+        //
+        // // tx_failed
+        // const tx_failed = await ibcTxModel.countFaild();
 
         // denom_all
         const denom_all = await this.ibcDenomModel.findCount();
@@ -177,10 +209,13 @@ export class IbcStatisticsTaskService {
         };
 
         for (const statistics_name of StatisticsNames) {
-            let statistics_info = '';
+            let statistics_info = '',count_latest=0;
             if ((statistics_name === 'chains_24hr') && (chainMap.size > 0)){
                const chains24hr = [...chainMap.keys()]
                 statistics_info = chains24hr.join(",")
+            }
+            if (statistics_name === 'tx_all'){
+                count_latest = Number(tx_all_new)
             }
             const statisticsRecord = await this.findStatisticsRecord(
                 statistics_name,
@@ -189,6 +224,7 @@ export class IbcStatisticsTaskService {
                 await this.ibcStatisticsModel.insertManyStatisticsRecord({
                     statistics_name,
                     count: parseCount[statistics_name],
+                    count_latest,
                     statistics_info,
                     create_at: dateNow,
                     update_at: dateNow,
@@ -197,6 +233,7 @@ export class IbcStatisticsTaskService {
                 statisticsRecord.count = parseCount[statistics_name];
                 statisticsRecord.update_at = dateNow;
                 statisticsRecord.statistics_info = statistics_info
+                statisticsRecord.count_latest = count_latest
                 await this.updateStatisticsRecord(statisticsRecord);
             }
         }
