@@ -255,7 +255,24 @@ export class IbcTxService {
     }
 
     async getIbcTxDetail(query) {
-        return await this.ibcTxModel.queryTxDetailByHash(query)
+        const ibcTxLatest = await this.ibcTxLatestModel.queryTxDetailByHash(query)
+        const ibcTx =  await this.ibcTxModel.queryTxDetailByHash(query)
+        let ibcTxDetail = [],setMap = new Map
+        for (const one of ibcTxLatest) {
+            if (setMap.has(one.record_id)) {
+                continue
+            }
+            ibcTxDetail.push(one)
+            setMap.set(one.record_id,'')
+        }
+        for (const one of ibcTx) {
+            if (setMap.has(one.record_id)) {
+                continue
+            }
+            ibcTxDetail.push(one)
+            setMap.set(one.record_id,'')
+        }
+        return ibcTxDetail
     }
 
     async getTxInfo(tx) {
