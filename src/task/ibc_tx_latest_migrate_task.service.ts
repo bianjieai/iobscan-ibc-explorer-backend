@@ -15,6 +15,7 @@ export class IbcTxLatestMigrateTaskService {
         this.getModels();
         this.doTask = this.doTask.bind(this);
     }
+
     // getModels
     async getModels(): Promise<void> {
         // ibcTxModel
@@ -38,14 +39,14 @@ export class IbcTxLatestMigrateTaskService {
         if (txCount <= cfg.serverCfg.displayIbcRecordMax) {
             return
         }
-        const migrateCnt = txCount-cfg.serverCfg.displayIbcRecordMax
+        const migrateCnt = txCount - cfg.serverCfg.displayIbcRecordMax
         await this.startMigrate(migrateCnt)
-        Logger.log("ibc migrate have finished,migrate count:",migrateCnt)
+        Logger.log("ibc migrate have finished,migrate count:", migrateCnt)
     }
 
-    async startMigrate(migrateCount):  Promise<void> {
+    async startMigrate(migrateCount): Promise<void> {
         //todo migrate start condition value with timestamp random
-        const value =  (Math.floor(new Date().getTime() / 1000)%10)*10000
+        const value = (Math.floor(new Date().getTime() / 1000) % 10) * 10000
         if (migrateCount > value) {
             // migrate max bitch count limit
             if (migrateCount > MaxMigrateBatchLimit) {
@@ -58,17 +59,20 @@ export class IbcTxLatestMigrateTaskService {
     async migrateData(limit): Promise<void> {
         const settingTxs = await this.ibcTxLatestModel.queryTxsByStatusLimit({
             status: IbcTxStatus.SETTING,
-            limit: MaxMigrateBatchLimit})
-        const Txs = await this.ibcTxLatestModel.queryTxsLimit(limit,1)
-        const batchTxs = [...Txs,...settingTxs]
+            limit: MaxMigrateBatchLimit
+        })
+        const Txs = await this.ibcTxLatestModel.queryTxsLimit(limit, 1)
+        const batchTxs = [...Txs, ...settingTxs]
 
         const session = await this.connection.startSession()
         session.startTransaction()
         try {
-            for (const ibcTx of batchTxs) {
-                await this.ibcTxModel.insertManyIbcTx([ibcTx],session)
-                await this.ibcTxLatestModel.deleteIbcTx(ibcTx,session)
+            let recordIds = []
+            for (const one of batchTxs) {
+                recordIds.push(one.record_id)
             }
+            await this.ibcTxModel.insertManyIbcTx(batchTxs, session)
+            await this.ibcTxLatestModel.deleteManyIbcTx(recordIds, session)
             await session.commitTransaction();
             session.endSession();
         } catch (e) {
@@ -77,25 +81,6 @@ export class IbcTxLatestMigrateTaskService {
             session.endSession();
         }
     }
-
-    // async loadData(limit): Promise<void> {
-    //
-    //     const Txs = await this.ibcTxModel.queryTxsLimit(limit,-1)
-    //     const session = await this.connection.startSession()
-    //     session.startTransaction()
-    //     try {
-    //         for (const one of Txs) {
-    //             await this.ibcTxLatestModel.insertManyIbcTx([one],session)
-    //             await this.ibcTxModel.deleteIbcTx(one,session)
-    //         }
-    //         await session.commitTransaction();
-    //         session.endSession();
-    //     } catch (e) {
-    //         Logger.log(e, 'transaction is error')
-    //         await session.abortTransaction()
-    //         session.endSession();
-    //     }
-    // }
 
 
 }

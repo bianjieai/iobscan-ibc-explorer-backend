@@ -254,10 +254,14 @@ IbcTxSchema.statics = {
             }
         },session);
     },
-    async deleteIbcTx(ibcTx, session): Promise<void> {
-        const {record_id} = ibcTx;
+    async deleteManyIbcTx(recordIds, session): Promise<void> {
         const options = {session, isDeleted: true };
-        return this.deleteOne({record_id}, options);
+        const filter = {
+            record_id:{
+                $in:recordIds
+            },
+        }
+        return this.deleteMany(filter, options);
     },
     async queryTxDetailByHash(query) : Promise<IbcTxType[]>{
         const {hash} = query

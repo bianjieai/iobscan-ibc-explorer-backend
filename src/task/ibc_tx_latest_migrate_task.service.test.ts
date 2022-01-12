@@ -20,11 +20,6 @@ describe('IbcTxLatestMigrateTaskService', () => {
             console.log("=====")
         });
 
-        // it('loadData Test', async () => {
-        //     jest.setTimeout(1000000)
-        //     await ibcTxLatestMigrateTaskService.loadData(60)
-        //     console.log("=====")
-        // });
     });
 
 })
