@@ -111,12 +111,12 @@ describe('IbcTxService', () => {
         });
 
         it('getScTxInfo Test', async () => {
-            const result = await ibcTxService.getScTxInfo("qa_iris_snapshot","A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98")
+            const result = await ibcTxService.getScTxInfo("qa_iris_snapshot","A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98","transferchannel-1transferchannel-541")
             console.log(result, '----')
         });
 
         it('getDcTxInfo Test', async () => {
-            const result = await ibcTxService.getDcTxInfo("bigbang","AF5CB680C80BC8B48158CD44537A08C4193AB4FDAE406A623F142443456EE6C1")
+            const result = await ibcTxService.getDcTxInfo("bigbang","AF5CB680C80BC8B48158CD44537A08C4193AB4FDAE406A623F142443456EE6C1","transferchannel-1transferchannel-541")
             console.log(result, '----')
         });
     });

@@ -206,15 +206,15 @@ export class IbcTxService {
         return {connect, ackData}
     }
 
-    async getMsgIndex(tx,txType) :Promise<number>{
+    async getMsgIndex(tx,txType,packetId) :Promise<number>{
         for (const index in tx?.msgs) {
-            if (tx?.msgs[index].type === txType){
+            if (tx?.msgs[index]?.type === txType && tx?.msgs[index]?.msg?.packet_id === packetId){
                 return Number(index)
             }
         }
         return -1
     }
-    async getScTxInfo(scChainID, scTxHash) {
+    async getScTxInfo(scChainID, scTxHash,packetId) {
         let scSigners = null, scConnect = null, timeOutTimestamp = null;
         if (scChainID && scTxHash) {
             const txModel = await this.connection.model(
@@ -228,7 +228,7 @@ export class IbcTxService {
                 const scTx = scTxData[scTxData?.length - 1]
                 scSigners = scTx?.signers
                 if (scTx?.events_new) {
-                    const txMsgIndex = await this.getMsgIndex(scTx,TxType.transfer)
+                    const txMsgIndex = await this.getMsgIndex(scTx,TxType.transfer, packetId)
                     const {connect, timeout_timestamp} = await this.getConnectByTransferEventNews(scTx,txMsgIndex)
                     scConnect = connect
                     timeOutTimestamp = timeout_timestamp
@@ -243,7 +243,7 @@ export class IbcTxService {
         }
     }
 
-    async getDcTxInfo(dcChainID, dcTxHash) {
+    async getDcTxInfo(dcChainID, dcTxHash, packetId) {
         let ack = null, dcConnect = null;
         if (dcChainID && dcTxHash) {
             const txModel = await this.connection.model(
@@ -256,7 +256,7 @@ export class IbcTxService {
             if (dcTxData?.length) {
                 const dcTx = dcTxData[dcTxData?.length - 1]
                 if (dcTx?.events_new){
-                    const txMsgIndex = await this.getMsgIndex(dcTx,TxType.recv_packet)
+                    const txMsgIndex = await this.getMsgIndex(dcTx,TxType.recv_packet, packetId)
                     const {connect, ackData} = await this.getConnectByRecvPacketEventsNews(dcTx,txMsgIndex);
                     dcConnect = connect
                     ack = ackData
@@ -291,8 +291,9 @@ export class IbcTxService {
     }
 
     async getTxInfo(tx) {
+        const packetId = `${tx.sc_port}${tx.sc_channel}${tx.dc_port}${tx.dc_channel}${tx.sequence}`
         if (tx.sc_chain_id && tx?.sc_tx_info?.hash) {
-            const {scSigners, scConnect} = await this.getScTxInfo(tx.sc_chain_id, tx?.sc_tx_info?.hash)
+            const {scSigners, scConnect} = await this.getScTxInfo(tx.sc_chain_id, tx?.sc_tx_info?.hash, packetId)
             if (scSigners) {
                 tx.sc_signers = scSigners
             }
@@ -302,7 +303,7 @@ export class IbcTxService {
         }
 
         if (tx.dc_chain_id && tx?.dc_tx_info?.hash) {
-            const {ack, dcConnect} = await this.getDcTxInfo(tx.dc_chain_id, tx?.dc_tx_info?.hash)
+            const {ack, dcConnect} = await this.getDcTxInfo(tx.dc_chain_id, tx?.dc_tx_info?.hash, packetId)
             if (ack) {
                 tx.dc_tx_info.ack = ack
             }
