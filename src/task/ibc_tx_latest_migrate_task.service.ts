@@ -45,12 +45,16 @@ export class IbcTxLatestMigrateTaskService {
     }
 
     async startMigrate(migrateCount): Promise<void> {
-        //todo migrate start condition value with timestamp random
+        // migrate start condition value with timestamp random
         const value = (Math.floor(new Date().getTime() / 1000) % 10) * 10000
         if (migrateCount > value) {
             // migrate max bitch count limit
             if (migrateCount > MaxMigrateBatchLimit) {
-                return await this.migrateData(MaxMigrateBatchLimit)
+                let batchNum = migrateCount / MaxMigrateBatchLimit
+                for (; batchNum > 0; batchNum--) {
+                    await this.migrateData(MaxMigrateBatchLimit)
+                }
+                return await this.migrateData(migrateCount-batchNum*MaxMigrateBatchLimit)
             }
             return await this.migrateData(migrateCount)
         }

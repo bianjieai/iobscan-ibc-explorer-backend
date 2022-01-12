@@ -62,7 +62,7 @@ export class IbcTxService {
     }
 
     async getIbcTxs(query: IbcTxQueryType, token): Promise<IbcTxType[]> {
-        return await this.ibcTxModel.findTxList({...query, token})
+        return await this.ibcTxLatestModel.findTxList({...query, token})
     }
 
     async findStatisticTxsCount(): Promise<number> {
