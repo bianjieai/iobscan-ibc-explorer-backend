@@ -15,6 +15,8 @@ import {IbcUpdateProcessingTxTaskService} from "./ibc_update_processing_tx_task.
 import {IbcUpdateSubStateTxTaskService} from "./ibc_update_substate_tx_task.service";
 import {IbcTxDataUpdateTaskService} from "./ibc_tx_data_update_task.service";
 import {IbcTxLatestMigrateTaskService} from "./ibc_tx_latest_migrate_task.service";
+import {IbcDenomCaculateTaskService} from "./ibc_denom_caculate.task.service";
+import {IbcDenomUpdateTaskService} from "./ibc_denom_update.task.service";
 import {IbcMonitorService} from "../monitor/ibc_monitor.service";
 @Injectable()
 export class TasksService {
@@ -27,6 +29,8 @@ export class TasksService {
     private readonly ibcUpdateSubstateTxService: IbcUpdateSubStateTxTaskService,
     private readonly ibcTxDataUpdateTaskService: IbcTxDataUpdateTaskService,
     private readonly ibcTxLatestMigrateTaskService: IbcTxLatestMigrateTaskService,
+    private readonly ibcDenomCaculateTaskService: IbcDenomCaculateTaskService,
+    private readonly ibcDenomUpdateTaskService: IbcDenomUpdateTaskService,
     private readonly ibMonitorService: IbcMonitorService
   ) {
     // this[`${TaskEnum.denom}_timer`] = null;
@@ -106,6 +110,18 @@ export class TasksService {
   // @Cron('*/30 * * * * *')
   async ibcTxMigrateCronjob() {
     this.handleDoTask(TaskEnum.ibcTxMigrateCronJob, this.ibcTxLatestMigrateTaskService.doTask);
+  }
+
+  @Cron(cfg.taskCfg.executeTime.ibcDenomCaculateCronjob)
+  // @Cron('*/30 * * * * *')
+  async ibcDenomCaculateCronjob() {
+    this.handleDoTask(TaskEnum.ibcDenomCaculateCronJob, this.ibcDenomCaculateTaskService.doTask);
+  }
+
+  @Cron(cfg.taskCfg.executeTime.ibcDenomUpdateCronjob)
+  // @Cron('*/30 * * * * *')
+  async ibcDenomUpdateCronjob() {
+    this.handleDoTask(TaskEnum.ibcDenomUpdateCronjob, this.ibcDenomUpdateTaskService.doTask);
   }
 
   async handleDoTask(taskName: TaskEnum, doTask: TaskCallback) {

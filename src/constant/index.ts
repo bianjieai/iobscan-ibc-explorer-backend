@@ -38,6 +38,8 @@ export enum TaskEnum {
   updateSubStateTx = 'update_substate_tx',
   ibcTxCronJob = 'ibc_tx_data_cronjob',
   ibcTxMigrateCronJob = 'ibc_tx_migrate_cronjob',
+  ibcDenomCaculateCronJob = 'ibc_denom_caculate_cronjob',
+  ibcDenomUpdateCronjob = 'ibc_denom_update_cronjob',
   chain = 'ex_sync_chain',
   monitor = "promethous_monitor",
   statistics = 'ex_sync_statistics',

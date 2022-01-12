@@ -38,7 +38,15 @@ IbcDenomSchema.statics = {
     },
 
     async findRecordBySymbol(symbol: string): Promise<IbcDenomType[]> {
+        //todo this should limit for large data
         return this.find({symbol});
+    },
+
+    async findUnAuthDenom(limit) : Promise<IbcDenomType[]> {
+        return this.find({
+            // chain_id:chain_id,
+            symbol:'',
+        }, {_id: 0}).limit(limit);
     },
 
     async findCount(): Promise<number> {

@@ -1,4 +1,4 @@
-import {getDcDenom} from "./denom.helper";
+import {getDcDenom, IbcDenom} from "./denom.helper";
 
 
 describe('getDcDenom', () => {
@@ -22,6 +22,13 @@ describe('getDcDenom', () => {
             }
             const data = await getDcDenom(msg)
             console.log(data, '--result--')
+        });
+
+        it('IbcDenom Test', async () => {
+            const data = await IbcDenom("transfer/channel-54","uiris")
+            console.log(data, '--result--')
+            const data1 = await IbcDenom("","uiris")
+            console.log(data1, '--result--')
         });
     });
 })

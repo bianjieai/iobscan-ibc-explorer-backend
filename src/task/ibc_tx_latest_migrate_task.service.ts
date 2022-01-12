@@ -65,9 +65,9 @@ export class IbcTxLatestMigrateTaskService {
         const session = await this.connection.startSession()
         session.startTransaction()
         try {
-            for (const one of batchTxs) {
-                await this.ibcTxModel.insertManyIbcTx([one],session)
-                await this.ibcTxLatestModel.deleteIbcTx(one,session)
+            for (const ibcTx of batchTxs) {
+                await this.ibcTxModel.insertManyIbcTx([ibcTx],session)
+                await this.ibcTxLatestModel.deleteIbcTx(ibcTx,session)
             }
             await session.commitTransaction();
             session.endSession();

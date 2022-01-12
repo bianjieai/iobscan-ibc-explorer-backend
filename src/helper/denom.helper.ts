@@ -30,4 +30,10 @@ export function getDcDenom(msg) {
     }
 
     return { dc_denom: result, dc_denom_path: dc_denom_path };
-  }
+}
+export function IbcDenom(denomPath :string, baseDenom :string) {
+    if (!denomPath) {
+        return baseDenom
+    }
+    return `ibc/${sha256(denomPath+'/'+baseDenom).toUpperCase()}`
+}
