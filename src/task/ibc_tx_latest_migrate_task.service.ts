@@ -54,13 +54,16 @@ export class IbcTxLatestMigrateTaskService {
                 for (; batchNum > 0; batchNum--) {
                     await this.migrateData(MaxMigrateBatchLimit)
                 }
-                return await this.migrateData(migrateCount-batchNum*MaxMigrateBatchLimit)
+                return await this.migrateData(migrateCount - batchNum * MaxMigrateBatchLimit)
             }
             return await this.migrateData(migrateCount)
         }
     }
 
     async migrateData(limit): Promise<void> {
+        if (limit <= 0) {
+            return
+        }
         const settingTxs = await this.ibcTxLatestModel.queryTxsByStatusLimit({
             status: IbcTxStatus.SETTING,
             limit: MaxMigrateBatchLimit
