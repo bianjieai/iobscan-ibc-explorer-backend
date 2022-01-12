@@ -6,13 +6,12 @@ import {ListStruct, Result} from '../api/ApiResult';
 import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from '../dto/ibc_tx.dto';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
-import {unAuth, TaskEnum, IbcTxTable} from '../constant';
+import {unAuth, TaskEnum, IbcTxTable, TxType,} from '../constant';
 import {cfg} from '../config/config';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
-import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
 import {TxSchema} from "../schema/tx.schema";
-import {ChainHttp} from "../http/lcd/chain.http";
+
 
 @Injectable()
 export class IbcTxService {
@@ -153,11 +152,11 @@ export class IbcTxService {
         }
     };
 
-    async getConnectByTransferEventNews(eventNews) {
+    async getConnectByTransferEventNews(eventNews,txMsgIndex) {
         let connect = '', timeout_timestamp = ''
         if (eventNews?.events_new?.length) {
             eventNews.events_new.forEach(item => {
-                if (item?.events?.length) {
+                if (item?.events?.length && item?.msg_index === txMsgIndex) {
                     item.events.forEach(event => {
                         if (event?.type === 'send_packet') {
                             if (event?.attributes?.length) {
@@ -180,11 +179,11 @@ export class IbcTxService {
         return {connect, timeout_timestamp}
     }
 
-    async getConnectByRecvPacketEventsNews(eventNews) {
+    async getConnectByRecvPacketEventsNews(eventNews,txMsgIndex) {
         let connect = '', ackData = ''
         if (eventNews?.events_new?.length) {
             eventNews.events_new.forEach(item => {
-                if (item?.events?.length) {
+                if (item?.events?.length && item?.msg_index === txMsgIndex) {
                     item.events.forEach(event => {
                         if (event?.type === 'write_acknowledgement') {
                             if (event?.attributes?.length) {
@@ -207,6 +206,14 @@ export class IbcTxService {
         return {connect, ackData}
     }
 
+    async getMsgIndex(tx,txType) :Promise<number>{
+        for (const index in tx?.msgs) {
+            if (tx?.msgs[index].type === txType){
+                return Number(index)
+            }
+        }
+        return -1
+    }
     async getScTxInfo(scChainID, scTxHash) {
         let scSigners = null, scConnect = null, timeOutTimestamp = null;
         if (scChainID && scTxHash) {
@@ -218,9 +225,11 @@ export class IbcTxService {
             let scTxData = await txModel.queryTxByHash(scTxHash)
 
             if (scTxData?.length) {
-                scSigners = scTxData[scTxData?.length - 1]?.signers
-                if (scTxData[scTxData?.length - 1]?.events_new) {
-                    const {connect, timeout_timestamp} = await this.getConnectByTransferEventNews(scTxData[scTxData?.length - 1])
+                const scTx = scTxData[scTxData?.length - 1]
+                scSigners = scTx?.signers
+                if (scTx?.events_new) {
+                    const txMsgIndex = await this.getMsgIndex(scTx,TxType.transfer)
+                    const {connect, timeout_timestamp} = await this.getConnectByTransferEventNews(scTx,txMsgIndex)
                     scConnect = connect
                     timeOutTimestamp = timeout_timestamp
                 }
@@ -244,10 +253,14 @@ export class IbcTxService {
             );
             let dcTxData = await txModel.queryTxByHash(dcTxHash)
 
-            if (dcTxData?.length && dcTxData[dcTxData?.length - 1]?.events_new) {
-                const {connect, ackData} = await this.getConnectByRecvPacketEventsNews(dcTxData[dcTxData?.length - 1]);
-                dcConnect = connect
-                ack = ackData
+            if (dcTxData?.length) {
+                const dcTx = dcTxData[dcTxData?.length - 1]
+                if (dcTx?.events_new){
+                    const txMsgIndex = await this.getMsgIndex(dcTx,TxType.recv_packet)
+                    const {connect, ackData} = await this.getConnectByRecvPacketEventsNews(dcTx,txMsgIndex);
+                    dcConnect = connect
+                    ack = ackData
+                }
             }
         }
         return {
