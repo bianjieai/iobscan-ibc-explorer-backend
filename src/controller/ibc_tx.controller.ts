@@ -1,7 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query,Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IbcTxService } from '../service/ibc_tx.service';
-import { IbcTxListReqDto, IbcTxResDto } from '../dto/ibc_tx.dto';
+import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from '../dto/ibc_tx.dto';
 import { ListStruct, Result } from '../api/ApiResult';
 
 @ApiTags('IbcTxs')
