@@ -6,6 +6,8 @@ export const dbRes = {
         'dc_tx_info.hash':1,
         dc_chain_id:1,
         sc_chain_id:1,
+        sc_channel:1,
+        dc_channel:1,
         denoms:1,
         sc_addr:1,
         'sc_tx_info.hash':1,
