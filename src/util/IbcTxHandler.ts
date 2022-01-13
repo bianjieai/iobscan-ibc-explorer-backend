@@ -205,6 +205,7 @@ export class IbcTxHandler {
 
                     await ibcTxModel.insertManyIbcTx(handledTx)
                     taskRecord.height = handledTx[handledTx.length - 1]?.sc_tx_info?.height;
+                    taskRecord.update_at = dateNow
                     await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
                     await session.commitTransaction();
                     session.endSession();
