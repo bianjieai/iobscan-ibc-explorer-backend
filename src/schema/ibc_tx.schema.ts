@@ -196,6 +196,27 @@ IbcTxSchema.statics = {
             .limit(Number(1));
     },
 
+    async queryTxsByStatusLimit(query): Promise<IbcTxType[]> {
+        const {status,limit} = query;
+        return this.find({status: status}, {_id: 0})
+            .sort({tx_time: 1})
+            .limit(Number(limit));
+    },
+
+    async queryTxsLimit(limit:number,sort:number): Promise<IbcTxType[]> {
+        return this.find({
+            status: {
+                $in: [
+                    IbcTxStatus.SUCCESS,
+                    IbcTxStatus.FAILED,
+                    IbcTxStatus.PROCESSING,
+                    IbcTxStatus.REFUNDED,
+                ],
+            }}, {_id: 0})
+            .sort({tx_time: sort})
+            .limit(Number(limit));
+    },
+
     async queryTxList(query): Promise<IbcTxType[]> {
         const {status,substate,limit} = query;
         return this.find({status,substate:{$in:substate}}, {_id: 0})
@@ -227,8 +248,28 @@ IbcTxSchema.statics = {
             if(JSON.stringify(error).includes('E11000')){
                 // Primary key conflict handling
             }else {
-                console.log(error,'insertMany IbcTx error')
+                if (error) {
+                    console.log(error,'insertMany IbcTx error')
+                }
             }
         },session);
     },
+    async deleteManyIbcTx(recordIds, session): Promise<void> {
+        const options = {session, isDeleted: true };
+        const filter = {
+            record_id:{
+                $in:recordIds
+            },
+        }
+        return this.deleteMany(filter, options);
+    },
+    async queryTxDetailByHash(query) : Promise<IbcTxType[]>{
+        const {hash} = query
+        return this.find({
+            $or: [
+                {"sc_tx_info.hash": hash},
+                {"dc_tx_info.hash": hash}
+            ]
+        }, {__v: 0,_id: 0});
+    }
 };

@@ -11,6 +11,7 @@ export class IbcSyncTransferTxTaskService {
     }
     async doTask(taskName?: TaskEnum): Promise<void> {
         this.transferTaskStatusMetric.collect(1)
-        await this.taskCommonService.parseIbcTx(dateNow)
+        const ibcTxLatestModel = this.taskCommonService.getIbcTxLatestModel()
+        await this.taskCommonService.parseIbcTx(ibcTxLatestModel,dateNow)
     }
 }

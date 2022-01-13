@@ -41,6 +41,7 @@ TaskDispatchSchema.statics = {
         null,
         (error, effect) => {
           if (error) {
+            Logger.log(`update lock error ${error}`)
             res(false);
             return;
           }
@@ -50,7 +51,8 @@ TaskDispatchSchema.statics = {
               `From task.dispatch.schema ${name} task begin time: ${new Date().getTime()}`,
             );
           } else {
-            res(false);
+            Logger.log(`update lock number ${effect.nModified}`)
+            res(true);
           }
         },
       ).exec();

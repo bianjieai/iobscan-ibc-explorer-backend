@@ -17,7 +17,8 @@ describe('IbcTxHandler', () => {
     describe('parseIbcTx', () => {
         it('parseIbcTxBychain Test', async () => {
             const dateNow =  new Date().getTime() / 1000;
-            await ibcTxHandler.parseIbcTx(dateNow)
+            const txmodel = await ibcTxHandler.getIbcTxModel()
+            await ibcTxHandler.parseIbcTx(txmodel,dateNow)
             console.log('----')
         });
     });
@@ -54,7 +55,8 @@ describe('IbcTxHandler', () => {
         it('changeIbcTxState Test', async () => {
             const dateNow = Math.floor(new Date().getTime() / 1000);
             jest.setTimeout(100000000)
-            await ibcTxHandler.changeIbcTxState(dateNow,[3])
+            const txmodel = await ibcTxHandler.getIbcTxModel()
+            await ibcTxHandler.changeIbcTxState(txmodel,dateNow,[3])
             return null
         });
     });
@@ -68,7 +70,9 @@ describe('IbcTxHandler', () => {
 
     describe('getProcessingTxs', () => {
         it('getProcessingTxs Test', async () => {
-            const ibcTxs = await ibcTxHandler.getProcessingTxs(3)
+            jest.setTimeout(100000000)
+            const txmodel = ibcTxHandler.getIbcTxModel()
+            const ibcTxs = await ibcTxHandler.getProcessingTxs(txmodel,0)
             console.log(ibcTxs,'--ibcTxs--')
             let packetIdArr = ibcTxs?.length ? await ibcTxHandler.getPacketIds(ibcTxs) : [];
             console.log(packetIdArr,'--packetIdArr--')

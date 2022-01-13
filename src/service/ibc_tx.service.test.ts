@@ -17,7 +17,7 @@ describe('IbcTxService', () => {
 
     describe('queryIbcTxList', () => {
         it('queryIbcTxList Test', async () => {
-            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:false,
+            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:true,
                 // status:"1,2,3,4",
                 // date_range:"0,1640074000"
             };
@@ -95,6 +95,28 @@ describe('IbcTxService', () => {
     describe('findStatisticTxsCount', () => {
         it('findStatisticTxsCount Test', async () => {
             const result = await ibcTxService.findStatisticTxsCount()
+            console.log(result, '----')
+        });
+    });
+
+    describe('queryIbcTxDetailsByHash', () => {
+        it('queryIbcTxDetailsByHash Test', async () => {
+            const result = await ibcTxService.queryIbcTxDetailsByHash({hash:'A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98'})
+            console.log(result, '----')
+        });
+
+        it('getIbcTxDetail Test', async () => {
+            const result = await ibcTxService.getIbcTxDetail({hash:'A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98'})
+            console.log(result, '----')
+        });
+
+        it('getScTxInfo Test', async () => {
+            const result = await ibcTxService.getScTxInfo("qa_iris_snapshot","A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98","transferchannel-1transferchannel-541")
+            console.log(result, '----')
+        });
+
+        it('getDcTxInfo Test', async () => {
+            const result = await ibcTxService.getDcTxInfo("bigbang","AF5CB680C80BC8B48158CD44537A08C4193AB4FDAE406A623F142443456EE6C1","transferchannel-1transferchannel-541")
             console.log(result, '----')
         });
     });
