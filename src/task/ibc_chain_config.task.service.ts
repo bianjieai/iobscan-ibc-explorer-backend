@@ -72,7 +72,8 @@ export class IbcChainConfigTaskService {
                   lcd_api_path: chain.lcd_api_path,
                   icon: chain.icon,
                   ibc_info: channels ? channels : [],
-                  ibc_info_hash:"",
+                  ibc_info_hash_lcd:"",
+                  ibc_info_hash_caculate:"",
                   isManual: chain?.is_manual
               });
           }),
@@ -98,8 +99,8 @@ export class IbcChainConfigTaskService {
               //获取最新的ibc_info的hashCode
               const hashCode = Md5.hashStr(JSON.stringify(chain.ibc_info))
               //判断是否需要更新ibc_info信息
-              if (hashCode !== chain.ibc_info_hash && chain.ibc_info.length > 0) {
-                  chain.ibc_info_hash = Md5.hashStr(JSON.stringify(chain.ibc_info))
+              if (hashCode !== chain.ibc_info_hash_lcd && chain.ibc_info.length > 0) {
+                  chain.ibc_info_hash_lcd = Md5.hashStr(JSON.stringify(chain.ibc_info))
               }else{
                   Logger.log("this chain ibc_info no need update for ibc_info hashcode is not change")
                   return

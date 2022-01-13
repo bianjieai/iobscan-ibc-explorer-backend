@@ -1,7 +1,7 @@
-import { Controller, Get, Query,Param } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IbcTxService } from '../service/ibc_tx.service';
-import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from '../dto/ibc_tx.dto';
+import { IbcTxListReqDto, IbcTxResDto } from '../dto/ibc_tx.dto';
 import { ListStruct, Result } from '../api/ApiResult';
 
 @ApiTags('IbcTxs')
@@ -17,8 +17,8 @@ export class IbcTxController {
     return new Result<ListStruct<IbcTxResDto[]> | number>(result);
   }
   @Get("txs/:hash")
-  async  getTxDetailsByHash(@Param() query: TxWithHashReqDto):Promise<Result<IbcTxDetailsResDto>>{
-      const data:IbcTxDetailsResDto =  await this.ibcTxService.queryIbcTxDetailsByHash(query)
-      return new Result<IbcTxDetailsResDto>(data)
+  async  getTxDetailsByHash(@Param() query: TxWithHashReqDto):Promise<Result<IbcTxDetailsResDto[]>>{
+      const data:IbcTxDetailsResDto[] =  await this.ibcTxService.queryIbcTxDetailsByHash(query)
+      return new Result(data)
   }
 }

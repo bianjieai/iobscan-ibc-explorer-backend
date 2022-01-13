@@ -8,7 +8,8 @@ export const IbcChainConfigSchema = new mongoose.Schema({
     lcd: String,
     lcd_api_path: Object,
     ibc_info: Object,
-    ibc_info_hash: String,
+    ibc_info_hash_lcd: String,
+    ibc_info_hash_caculate: String,
     is_manual: Boolean
 });
 
@@ -74,6 +75,11 @@ IbcChainConfigSchema.statics = {
     async updateChain(chain: IbcChainConfigType) {
         const {chain_id} = chain;
         const options = {upsert: true, new: false, setDefaultsOnInsert: true};
+        return this.findOneAndUpdate({chain_id}, chain, options);
+    },
+    async updateChainCfgWithSession(chain: IbcChainConfigType,session) {
+        const {chain_id} = chain;
+        const options = {session,upsert: true, new: false, setDefaultsOnInsert: true};
         return this.findOneAndUpdate({chain_id}, chain, options);
     },
 };

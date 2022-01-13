@@ -31,7 +31,7 @@ export class TxWithHashReqDto extends BaseReqDto {
     hash: string;
 }
 
-export class IbcTxDetailsResDto extends BaseResDto {
+export class IbcTxDetailsResDto extends BaseResDto{
     base_denom: string;
     sc_signers:string[];
     dc_signers:string[];
@@ -94,6 +94,12 @@ export class IbcTxDetailsResDto extends BaseResDto {
         this.dc_connect = dc_connect || '';
         this.sc_connect = sc_connect || '';
     }
+    static bundleData(value: any): IbcTxDetailsResDto[] {
+        const datas: IbcTxDetailsResDto[] = value.map((item: any) => {
+            return new IbcTxDetailsResDto(item);
+        });
+        return datas;
+    }
 }
 
 export class IbcTxResDto extends BaseResDto {
@@ -103,8 +109,6 @@ export class IbcTxResDto extends BaseResDto {
     status: number;
     sc_chain_id: string;
     dc_chain_id: string;
-    sc_channel: string;
-    dc_channel: string;
     sc_tx_info: object;
     dc_tx_info?: object;
     base_denom: string;
@@ -120,8 +124,6 @@ export class IbcTxResDto extends BaseResDto {
             dc_addr,
             dc_chain_id,
             sc_chain_id,
-            sc_channel,
-            dc_channel,
             status,
             sc_tx_info,
             dc_tx_info,
@@ -136,8 +138,6 @@ export class IbcTxResDto extends BaseResDto {
         this.status = status;
         this.sc_chain_id = sc_chain_id || '';
         this.dc_chain_id = dc_chain_id || '';
-        this.sc_channel = sc_channel || '';
-        this.dc_channel = dc_channel || '';
         this.sc_tx_info = sc_tx_info || {};
         this.dc_tx_info = dc_tx_info || {};
         this.base_denom = base_denom || '';

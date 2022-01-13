@@ -8,23 +8,29 @@ import { TaskCallback } from '../types/task.interface';
 import { Logger } from '../logger';
 import { IRandomKey } from '../types';
 import { taskLoggerHelper } from '../helper/task.log.helper';
-import { IbcTxTaskService } from './ibc_tx.task.service';
 import { IbcChainConfigTaskService } from './ibc_chain_config.task.service';
 import { IbcStatisticsTaskService } from './ibc_statistics.task.service';
 import {IbcSyncTransferTxTaskService} from "./ibc_sync_transfer_tx_task.service";
 import {IbcUpdateProcessingTxTaskService} from "./ibc_update_processing_tx_task.service";
 import {IbcUpdateSubStateTxTaskService} from "./ibc_update_substate_tx_task.service";
+import {IbcTxDataUpdateTaskService} from "./ibc_tx_data_update_task.service";
+import {IbcTxLatestMigrateTaskService} from "./ibc_tx_latest_migrate_task.service";
+import {IbcDenomCaculateTaskService} from "./ibc_denom_caculate.task.service";
+import {IbcDenomUpdateTaskService} from "./ibc_denom_update.task.service";
 import {IbcMonitorService} from "../monitor/ibc_monitor.service";
 @Injectable()
 export class TasksService {
   constructor(
     private readonly taskDispatchService: TaskDispatchService,
     private readonly ibcChainConfigTaskService: IbcChainConfigTaskService,
-    private readonly ibcTxTaskService: IbcTxTaskService,
     private readonly ibcStatisticsTaskService: IbcStatisticsTaskService,
     private readonly ibcSyncTransferTxTaskService : IbcSyncTransferTxTaskService,
     private readonly ibcUpdateProcessingTxService : IbcUpdateProcessingTxTaskService,
     private readonly ibcUpdateSubstateTxService: IbcUpdateSubStateTxTaskService,
+    private readonly ibcTxDataUpdateTaskService: IbcTxDataUpdateTaskService,
+    private readonly ibcTxLatestMigrateTaskService: IbcTxLatestMigrateTaskService,
+    private readonly ibcDenomCaculateTaskService: IbcDenomCaculateTaskService,
+    private readonly ibcDenomUpdateTaskService: IbcDenomUpdateTaskService,
     private readonly ibMonitorService: IbcMonitorService
   ) {
     // this[`${TaskEnum.denom}_timer`] = null;
@@ -52,6 +58,8 @@ export class TasksService {
   async syncTransferTx() {
     this.handleDoTask(TaskEnum.transferTx, this.ibcSyncTransferTxTaskService.doTask);
   }
+
+
   @Cron(cfg.taskCfg.executeTime.updateProcessingTx, {
      name: TaskEnum.updateProcessingTx,
    })
@@ -59,6 +67,8 @@ export class TasksService {
   async updateProcessingTx() {
     this.handleDoTask(TaskEnum.updateProcessingTx, this.ibcUpdateProcessingTxService.doTask);
   }
+
+
   @Cron(cfg.taskCfg.executeTime.updateSubStateTx, {
        name: TaskEnum.updateSubStateTx,
      })
@@ -66,6 +76,8 @@ export class TasksService {
   async upSubstateTx() {
     this.handleDoTask(TaskEnum.updateSubStateTx, this.ibcUpdateSubstateTxService.doTask);
   }
+
+
   // ex_ibc_statistics
   @Cron(cfg.taskCfg.executeTime.statistics, {
     name: TaskEnum.statistics,
@@ -86,6 +98,30 @@ export class TasksService {
         this[`${name}_timer`] = null;
       }
     });
+  }
+
+  @Cron(cfg.taskCfg.executeTime.ibcTxUpdateCronjob)
+  // @Cron('* */2 * * * *')
+  async ibcTxUpdateCronjob() {
+    this.handleDoTask(TaskEnum.ibcTxUpdateCronJob, this.ibcTxDataUpdateTaskService.doTask);
+  }
+
+  @Cron(cfg.taskCfg.executeTime.ibcTxLatestMigrate)
+  // @Cron('*/30 * * * * *')
+  async ibcTxMigrateCronjob() {
+    this.handleDoTask(TaskEnum.ibcTxMigrateCronJob, this.ibcTxLatestMigrateTaskService.doTask);
+  }
+
+  @Cron(cfg.taskCfg.executeTime.ibcDenomCaculateCronjob)
+  // @Cron('*/30 * * * * *')
+  async ibcDenomCaculateCronjob() {
+    this.handleDoTask(TaskEnum.ibcDenomCaculateCronJob, this.ibcDenomCaculateTaskService.doTask);
+  }
+
+  @Cron(cfg.taskCfg.executeTime.ibcDenomUpdateCronjob)
+  // @Cron('*/30 * * * * *')
+  async ibcDenomUpdateCronjob() {
+    this.handleDoTask(TaskEnum.ibcDenomUpdateCronjob, this.ibcDenomUpdateTaskService.doTask);
   }
 
   async handleDoTask(taskName: TaskEnum, doTask: TaskCallback) {

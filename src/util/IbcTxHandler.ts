@@ -8,11 +8,10 @@ import {IbcTxSchema} from '../schema/ibc_tx.schema';
 import {TxSchema} from '../schema/tx.schema';
 import {IbcBlockSchema} from '../schema/ibc_block.schema';
 import {IbcTaskRecordSchema} from '../schema/ibc_task_record.schema';
-import {ChainHttp} from '../http/lcd/chain.http';
 import {IbcTxType} from '../types/schemaTypes/ibc_tx.interface';
-import {JSONparse, JSONstringify} from '../util/util';
+import {JSONparse} from '../util/util';
 import {getDcDenom} from '../helper/denom.helper';
-import {SubState, TaskTime} from '../constant';
+import {SubState, TaskTime, IbcTxTable} from '../constant';
 
 import {
     TaskEnum,
@@ -31,6 +30,7 @@ import {Logger} from "../logger";
 export class IbcTxHandler {
     private ibcTaskRecordModel;
     private chainConfigModel;
+    private ibcTxLatestModel;
     private ibcTxModel;
     private ibcDenomModel;
 
@@ -59,7 +59,13 @@ export class IbcTxHandler {
         this.ibcTxModel = await this.connection.model(
             'ibcTxModel',
             IbcTxSchema,
-            'ex_ibc_tx',
+            IbcTxTable.IbcTxTableName,
+        );
+
+        this.ibcTxLatestModel = await this.connection.model(
+            'ibcTxLatestModel',
+            IbcTxSchema,
+            IbcTxTable.IbcTxLatestTableName,
         );
 
         // ibcDenomModel
@@ -69,6 +75,14 @@ export class IbcTxHandler {
             'ibc_denom',
         );
 
+    }
+
+    getIbcTxModel() {
+        return this.ibcTxModel
+    }
+
+    getIbcTxLatestModel() {
+        return this.ibcTxLatestModel
     }
 
     // ibcTx first（transfer）
@@ -151,7 +165,7 @@ export class IbcTxHandler {
         return await getTaskStatus(chainId, taskModel, TaskEnum.tx)
     }
 
-    async parseIbcTx(dateNow): Promise<void> {
+    async parseIbcTx(ibcTxModel,dateNow): Promise<void> {
         const allChains = await this.chainConfigModel.findAll();
         const {allChainsMap, allChainsDenomPathsMap} = await this.getAllChainsMap()
         let ibcDenoms = []
@@ -189,7 +203,7 @@ export class IbcTxHandler {
                 session.startTransaction()
                 try {
 
-                    await this.ibcTxModel.insertManyIbcTx(handledTx)
+                    await ibcTxModel.insertManyIbcTx(handledTx)
                     taskRecord.height = handledTx[handledTx.length - 1]?.sc_tx_info?.height;
                     await this.ibcTaskRecordModel.updateTaskRecord(taskRecord);
                     await session.commitTransaction();
@@ -210,16 +224,16 @@ export class IbcTxHandler {
         Logger.debug(`end parseIbcTx time ${dateNow}`)
     }
 
-    async getProcessingTxs(substate) {
+    async getProcessingTxs(ibcTxModel,substate) {
         if (substate?.length == 1 && substate[0] === 0) {
-            const ibcTxs = await this.ibcTxModel.queryTxList({
+            const ibcTxs = await ibcTxModel.queryTxList({
                 status: IbcTxStatus.PROCESSING,
                 substate: substate,
                 limit: RecordLimit,
             });
             return ibcTxs
         } else {
-            const substateTxs = await this.ibcTxModel.queryTxListBySubstate({
+            const substateTxs = await ibcTxModel.queryTxListBySubstate({
                 status: IbcTxStatus.PROCESSING,
                 substate: substate,
                 limit: RecordLimit,
@@ -256,8 +270,8 @@ export class IbcTxHandler {
         return packetIds
     }
 
-    async changeIbcTxState(dateNow, substate: number[]): Promise<void> {
-        const ibcTxs = await this.getProcessingTxs(substate)
+    async changeIbcTxState(ibcTxModel,dateNow, substate: number[]): Promise<void> {
+        const ibcTxs = await this.getProcessingTxs(ibcTxModel,substate)
         // const ibcTxs = await this.ibcTxModel.queryTxByRecordId("transferchannel-185transferchannel-111404cosmoshub_4214637C56B2550827988E2F49FB6D5E55D5DC6271A34C68D5499852D939C1BA20")
 
 
@@ -545,7 +559,7 @@ export class IbcTxHandler {
         }
         if (needUpdateTxs?.length) {
             for (let needUpdateTx of needUpdateTxs) {
-                await this.ibcTxModel.updateIbcTx(needUpdateTx);
+                await ibcTxModel.updateIbcTx(needUpdateTx);
             }
         }
         if (denoms?.length) {

@@ -1,20 +1,22 @@
 /* eslint-disable @typescript-eslint/camelcase */
-import {Injectable} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import {Connection} from 'mongoose';
 import {InjectConnection} from '@nestjs/mongoose';
 import {ListStruct, Result} from '../api/ApiResult';
 import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from '../dto/ibc_tx.dto';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
-import {unAuth,TaskEnum} from '../constant';
+import {unAuth, TaskEnum, IbcTxTable, TxType,} from '../constant';
+import {cfg} from '../config/config';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
-import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
 import {TxSchema} from "../schema/tx.schema";
+
 
 @Injectable()
 export class IbcTxService {
     private ibcDenomModel;
+    private ibcTxLatestModel;
     private ibcTxModel;
     private ibcStatisticsModel;
 
@@ -23,10 +25,15 @@ export class IbcTxService {
     }
 
     async getModels(): Promise<void> {
+        this.ibcTxLatestModel = await this.connection.model(
+            'ibcTxLatestModel',
+            IbcTxSchema,
+            IbcTxTable.IbcTxLatestTableName,
+        );
         this.ibcTxModel = await this.connection.model(
             'ibcTxModel',
             IbcTxSchema,
-            'ex_ibc_tx',
+            IbcTxTable.IbcTxTableName,
         );
         this.ibcDenomModel = await this.connection.model(
             'ibcDenomModel',
@@ -42,22 +49,30 @@ export class IbcTxService {
     }
 
     async getStartTxTime(): Promise<number> {
-        const startTx = await this.ibcTxModel.findFirstTx()
+        const startTx = await this.ibcTxLatestModel.findFirstTx()
         return startTx?.tx_time;
     }
 
     async getTxCount(query: IbcTxQueryType, token): Promise<number> {
-        return await this.ibcTxModel.countTxList({...query, token});
+        const count = await this.ibcTxLatestModel.countTxList({...query, token});
+        if (count >= cfg.serverCfg.displayIbcRecordMax) {
+            return cfg.serverCfg.displayIbcRecordMax
+        }
+        return count
     }
 
     async getIbcTxs(query: IbcTxQueryType, token): Promise<IbcTxType[]> {
-        return await this.ibcTxModel.findTxList({...query, token})
+        return await this.ibcTxLatestModel.findTxList({...query, token})
     }
 
-    async findStatisticTxsCount():Promise<IbcStatisticsType> {
-        return await this.ibcStatisticsModel.findStatisticsRecord(
+    async findStatisticTxsCount(): Promise<number> {
+        const statisticData = await this.ibcStatisticsModel.findStatisticsRecord(
             TaskEnum.staticsTxAll,
         );
+        if (statisticData.count_latest >= cfg.serverCfg.displayIbcRecordMax) {
+            return cfg.serverCfg.displayIbcRecordMax
+        }
+        return statisticData.count_latest
     }
 
     async getTokenBySymbol(symbol): Promise<any> {
@@ -75,8 +90,9 @@ export class IbcTxService {
         query: IbcTxListReqDto,
     ): Promise<ListStruct<IbcTxResDto[]> | number> {
         const {use_count, page_num, page_size, symbol, denom, start_time} = query;
-        const date_range = query?.date_range?.split(",")||[0,new Date().getTime()/1000],status = query?.status?.split(",")||[1,2,3,4]
-        let queryData :IbcTxQueryType = {
+        const date_range = query?.date_range?.split(",") || [0, new Date().getTime() / 1000],
+            status = query?.status?.split(",") || [1, 2, 3, 4]
+        let queryData: IbcTxQueryType = {
             useCount: query.use_count,
             date_range: [],
             chain_id: query.chain_id,
@@ -121,32 +137,37 @@ export class IbcTxService {
             return await this.getStartTxTime();
         }
         if (use_count) {
-            if (query.symbol || query.chain_id ||query.denom || (!queryData.date_range.includes(0)) || (queryData.status?.length !== 4)) {
-                return await this.getTxCount(queryData,token)
+            if (query.symbol || query.chain_id || query.denom || (!queryData.date_range.includes(0)) || (queryData.status?.length !== 4)) {
+                return await this.getTxCount(queryData, token)
             }
             // get statistic data
-            const statisticData = await this.findStatisticTxsCount()
-            return statisticData.count
+            return await this.findStatisticTxsCount()
             // return await this.ibcTxModel.countTxList({...query, token});
         } else {
             const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
                 // await this.ibcTxModel.findTxList({...query, token}),
-                await this.getIbcTxs(queryData,token),
+                await this.getIbcTxs(queryData, token),
             );
             return new ListStruct(ibcTxDatas, page_num, page_size);
         }
     };
-    async getConnectByTransferEventNews(eventNews) {
-        let connect = ''
-        if(eventNews?.events_new?.length){
-            eventNews.events_new.forEach( item => {
-                if(item?.events?.length){
-                    item.events.forEach( event => {
-                        if(event?.type === 'send_packet'){
-                            if(event?.attributes?.length){
+
+    async getConnectByTransferEventNews(eventNews,txMsgIndex) {
+        let connect = '', timeout_timestamp = ''
+        if (eventNews?.events_new?.length) {
+            eventNews.events_new.forEach(item => {
+                if (item?.events?.length && item?.msg_index === txMsgIndex) {
+                    item.events.forEach(event => {
+                        if (event?.type === 'send_packet') {
+                            if (event?.attributes?.length) {
                                 event.attributes.forEach(attribute => {
-                                    if(attribute.key === 'packet_connection'){
-                                        connect = attribute.value
+                                    switch (attribute.key) {
+                                        case 'packet_connection':
+                                            connect = attribute.value
+                                            break
+                                        case 'packet_timeout_timestamp':
+                                            timeout_timestamp = attribute.value
+                                            break
                                     }
                                 })
                             }
@@ -155,19 +176,25 @@ export class IbcTxService {
                 }
             })
         }
-        return connect
+        return {connect, timeout_timestamp}
     }
-    async getConnectByRecvPacketEventsNews (eventNews) {
-        let connect = ''
-        if(eventNews?.events_new?.length){
-            eventNews.events_new.forEach( item => {
-                if(item?.events?.length){
-                    item.events.forEach( event => {
-                        if(event?.type === 'send_packet'){
-                            if(event?.attributes?.length){
+
+    async getConnectByRecvPacketEventsNews(eventNews,txMsgIndex) {
+        let connect = '', ackData = ''
+        if (eventNews?.events_new?.length) {
+            eventNews.events_new.forEach(item => {
+                if (item?.events?.length && item?.msg_index === txMsgIndex) {
+                    item.events.forEach(event => {
+                        if (event?.type === 'write_acknowledgement') {
+                            if (event?.attributes?.length) {
                                 event.attributes.forEach(attribute => {
-                                    if(attribute.key === 'packet_connection'){
-                                        connect = attribute.value
+                                    switch (attribute.key) {
+                                        case 'packet_connection':
+                                            connect = attribute.value
+                                            break
+                                        case 'packet_ack':
+                                            ackData = attribute.value
+                                            break
                                     }
                                 })
                             }
@@ -176,11 +203,20 @@ export class IbcTxService {
                 }
             })
         }
-        return connect
+        return {connect, ackData}
     }
-    async getScConnectAndScSigners(scChainID,scTxHash) {
-        let scSigners = null,scConnect = null;
-        if(scChainID && scTxHash){
+
+    async getMsgIndex(tx,txType,packetId) :Promise<number>{
+        for (const index in tx?.msgs) {
+            if (tx?.msgs[index]?.type === txType && tx?.msgs[index]?.msg?.packet_id === packetId){
+                return Number(index)
+            }
+        }
+        return -1
+    }
+    async getScTxInfo(scChainID, scTxHash,packetId) {
+        let scSigners = null, scConnect = null, timeOutTimestamp = null;
+        if (scChainID && scTxHash) {
             const txModel = await this.connection.model(
                 'txModel',
                 TxSchema,
@@ -188,79 +224,103 @@ export class IbcTxService {
             );
             let scTxData = await txModel.queryTxByHash(scTxHash)
 
-            if(scTxData?.length){
-                scSigners =  scTxData[scTxData?.length-1]?.signers
-                scConnect =  scTxData[scTxData?.length-1]?.events_new ? await this.getConnectByTransferEventNews(scTxData[scTxData?.length-1]) : ''
+            if (scTxData?.length) {
+                const scTx = scTxData[scTxData?.length - 1]
+                scSigners = scTx?.signers
+                if (scTx?.events_new) {
+                    const txMsgIndex = await this.getMsgIndex(scTx,TxType.transfer, packetId)
+                    const {connect, timeout_timestamp} = await this.getConnectByTransferEventNews(scTx,txMsgIndex)
+                    scConnect = connect
+                    timeOutTimestamp = timeout_timestamp
+                }
+
             }
         }
         return {
             scSigners,
-            scConnect
+            scConnect,
+            timeOutTimestamp,
         }
-
     }
-    async queryIbcTxDetailsByHash(query:TxWithHashReqDto):Promise<IbcTxDetailsResDto>{
-        let txDetailsData = await this.ibcTxModel.queryTxDetailByHash(query)
-        if(txDetailsData?.length <= 1){
-            let dcChainId,scChainId,scTxHash,dcTxHash;
-            if(txDetailsData?.sc_chain_id){
-                scChainId = txDetailsData.sc_chain_id
-            }
-            if(txDetailsData?.dc_chain_id){
-                dcChainId = txDetailsData.dc_chain_id
-            }
-            if(txDetailsData?.sc_tx_info){
-                scTxHash = txDetailsData?.sc_tx_info?.hash
-            }
-            if(txDetailsData?.dc_tx_info){
-                dcTxHash = txDetailsData?.dc_tx_info?.hash
-            }
 
-            if(scChainId && scTxHash){
-                const {scSigners,scConnect} = await this.getScConnectAndScSigners(scChainId,scTxHash)
-                if(scSigners){
-                    txDetailsData.sc_signers = scSigners
+    async getDcTxInfo(dcChainID, dcTxHash, packetId) {
+        let ack = null, dcConnect = null;
+        if (dcChainID && dcTxHash) {
+            const txModel = await this.connection.model(
+                'txModel',
+                TxSchema,
+                `sync_${dcChainID}_tx`,
+            );
+            let dcTxData = await txModel.queryTxByHash(dcTxHash)
+
+            if (dcTxData?.length) {
+                const dcTx = dcTxData[dcTxData?.length - 1]
+                if (dcTx?.events_new){
+                    const txMsgIndex = await this.getMsgIndex(dcTx,TxType.recv_packet, packetId)
+                    const {connect, ackData} = await this.getConnectByRecvPacketEventsNews(dcTx,txMsgIndex);
+                    dcConnect = connect
+                    ack = ackData
                 }
-                if(scConnect){
-                    txDetailsData.sc_connect = scConnect
-                }
-                /*  if(scTxData?.length){
-                      txDetailsData.sc_signers = scTxData[scTxData?.length-1]?.signers
-                      const scConnect =  scTxData[scTxData?.length-1]?.events_new ? await this.getConnectByTransferEventNews(scTxData[scTxData?.length-1]) : ''
-                      if(scConnect){
-                          txDetailsData.sc_connect = scConnect
-                      }
-                  }*/
-
             }
-            if(dcChainId && dcTxHash){
-                const txModel = await this.connection.model(
-                    'txModel',
-                    TxSchema,
-                    `sync_${dcChainId}_tx`,
-                );
-                let dcTxData = await txModel.queryTxByHash(scTxHash)
-                console.log(dcTxData)
-                if(dcTxData?.length){
-                    txDetailsData.dc_signers = dcTxData[dcTxData?.length-1]?.signers
-                    let msgIndexes = []
-                    if(dcTxData?.msgs?.length){
-                        dcTxData.msgs.forEach( (msg,index) => {
-                            if(msg?.type == 'recv_packet'){
-                                msgIndexes.push(index)
-                            }
-                        })
-                    }
-                    if(msgIndexes?.length){}
-                }
-
-            }
-        }else {
-            /*
-            * TODO
-            * */
-
         }
-        return new IbcTxDetailsResDto(txDetailsData)
+        return {
+            ack,
+            dcConnect
+        }
+    }
+
+    async getIbcTxDetail(txHash) {
+        let ibcTx = await this.ibcTxLatestModel.queryTxDetailByHash(txHash)
+        if (ibcTx.length === 0) {
+            ibcTx =  await this.ibcTxModel.queryTxDetailByHash(txHash)
+        }
+        let ibcTxDetail = [],setMap = new Map
+        for (const one of ibcTx) {
+            if (setMap.has(one.record_id)) {
+                continue
+            }
+            ibcTxDetail.push(one)
+            setMap.set(one.record_id,'')
+        }
+        return ibcTxDetail
+    }
+
+    async getTxInfo(tx) {
+        const packetId = `${tx.sc_port}${tx.sc_channel}${tx.dc_port}${tx.dc_channel}${tx.sequence}`
+        if (tx.sc_chain_id && tx?.sc_tx_info?.hash) {
+            const {scSigners, scConnect} = await this.getScTxInfo(tx.sc_chain_id, tx?.sc_tx_info?.hash, packetId)
+            if (scSigners) {
+                tx.sc_signers = scSigners
+            }
+            if (scConnect) {
+                tx.sc_connect = scConnect
+            }
+        }
+
+        if (tx.dc_chain_id && tx?.dc_tx_info?.hash) {
+            const {ack, dcConnect} = await this.getDcTxInfo(tx.dc_chain_id, tx?.dc_tx_info?.hash, packetId)
+            if (ack) {
+                tx.dc_tx_info.ack = ack
+            }
+            if (dcConnect) {
+                tx.dc_connect = dcConnect
+            }
+        }
+        return tx
+    }
+
+
+    async queryIbcTxDetailsByHash(query: TxWithHashReqDto): Promise<IbcTxDetailsResDto[]> {
+        let txDetailsData = await this.getIbcTxDetail(query)
+        for (let tx of txDetailsData) {
+            tx = await this.getTxInfo(tx)
+            tx.dc_signers = []
+            if (tx?.dc_tx_info?.msg?.msg?.signer) {
+                tx.dc_signers.push(tx?.dc_tx_info?.msg?.msg?.signer)
+            }
+        }
+        return IbcTxDetailsResDto.bundleData(
+            txDetailsData,
+        );
     }
 }
