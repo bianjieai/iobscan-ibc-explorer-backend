@@ -109,6 +109,9 @@ export class IbcTxResDto extends BaseResDto {
     status: number;
     sc_chain_id: string;
     dc_chain_id: string;
+    dc_channel: string;
+    sc_channel: string;
+    sequence: string;
     sc_tx_info: object;
     dc_tx_info?: object;
     base_denom: string;
@@ -125,6 +128,7 @@ export class IbcTxResDto extends BaseResDto {
             dc_chain_id,
             sc_chain_id,
             status,
+            sequence,
             sc_tx_info,
             dc_tx_info,
             base_denom,
@@ -136,6 +140,7 @@ export class IbcTxResDto extends BaseResDto {
         this.sc_addr = sc_addr || '';
         this.dc_addr = dc_addr || '';
         this.status = status;
+        this.sequence = sequence || 0;
         this.sc_chain_id = sc_chain_id || '';
         this.dc_chain_id = dc_chain_id || '';
         this.sc_tx_info = sc_tx_info || {};
