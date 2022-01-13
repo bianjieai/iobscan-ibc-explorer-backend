@@ -36,7 +36,7 @@ export enum TaskEnum {
   transferTx ='ex_sync_transfer_tx',
   updateProcessingTx = 'update_processing_tx',
   updateSubStateTx = 'update_substate_tx',
-  ibcTxCronJob = 'ibc_tx_data_cronjob',
+  ibcTxUpdateCronJob = 'ibc_tx_update_cronjob',
   ibcTxMigrateCronJob = 'ibc_tx_migrate_cronjob',
   ibcDenomCaculateCronJob = 'ibc_denom_caculate_cronjob',
   ibcDenomUpdateCronjob = 'ibc_denom_update_cronjob',

@@ -102,8 +102,8 @@ export class TasksService {
 
   @Cron(cfg.taskCfg.executeTime.ibcTxUpdateCronjob)
   // @Cron('* */2 * * * *')
-  async ibcTxDataCronjob() {
-    this.handleDoTask(TaskEnum.ibcTxCronJob, this.ibcTxDataUpdateTaskService.doTask);
+  async ibcTxUpdateCronjob() {
+    this.handleDoTask(TaskEnum.ibcTxUpdateCronJob, this.ibcTxDataUpdateTaskService.doTask);
   }
 
   @Cron(cfg.taskCfg.executeTime.ibcTxLatestMigrate)
