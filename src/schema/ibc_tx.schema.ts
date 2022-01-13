@@ -55,6 +55,8 @@ IbcTxSchema.index({record_id: -1}, {unique: true});
 IbcTxSchema.index({status: -1, substate:-1, next_retry_time:-1}, {background: true});
 IbcTxSchema.index({status: -1, tx_time: -1, sc_chain_id: -1, 'denoms.sc_denom': -1}, {background: true});
 IbcTxSchema.index({status: -1, tx_time: -1, dc_chain_id: -1, 'denoms.dc_denom': -1}, {background: true});
+IbcTxSchema.index({'sc_tx_info.hash': -1}, {background: true});
+IbcTxSchema.index({'dc_tx_info.hash': -1}, {background: true});
 
 IbcTxSchema.statics = {
     async countActive(): Promise<number> {

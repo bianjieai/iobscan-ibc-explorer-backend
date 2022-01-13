@@ -9,6 +9,8 @@ db.ibc_denom.createIndex({"symbol": -1}, {"background": true});
 
 db.ex_ibc_tx.createIndex({"record_id": -1}, {"unique": true});
 db.ex_ibc_tx.createIndex({"status": -1},{"background":true});
+db.ex_ibc_tx.createIndex({"sc_tx_info.hash": -1},{"background":true});
+db.ex_ibc_tx.createIndex({"dc_tx_info.hash": -1},{"background":true});
 db.ex_ibc_tx.createIndex({"status": -1,"tx_time": -1, "sc_chain_id": -1, "denoms.sc_denom": -1},{"background":true});
 db.ex_ibc_tx.createIndex({"status": -1,"tx_time": -1, "dc_chain_id": -1, "denoms.dc_denom": -1},{"background":true});
 
