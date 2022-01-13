@@ -42,8 +42,8 @@ export class IbcDenomUpdateTaskService {
     async collectChainDenomsMap(ibcDenomData) {
         let chainDenomsMap = new Map,baseDenoms = []
         ibcDenomData.forEach(item => {
-            if (item.chain_id) {
-                if (item.denom.indexOf("ibc/") < 0 ) {
+            if (item?.chain_id) {
+                if (item?.denom?.indexOf("ibc/") < 0 ) {
                     baseDenoms.push(item.denom)
                 }else{
                     if (!chainDenomsMap.has(item.chain_id)) {
