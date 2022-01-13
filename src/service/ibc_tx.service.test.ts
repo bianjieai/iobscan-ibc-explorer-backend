@@ -235,7 +235,7 @@ describe('IbcTxService', () => {
                     }
                 ]
             };
-            const result = await ibcTxService.getConnectByTransferEventNews(eventNews)
+            const result = await ibcTxService.getConnectByTransferEventNews(eventNews,1)
             console.log(result, '----')
         });
     });
