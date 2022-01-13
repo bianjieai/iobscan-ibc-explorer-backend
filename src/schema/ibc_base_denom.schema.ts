@@ -32,6 +32,14 @@ IbcBaseDenomSchema.statics = {
     return this.find();
   },
 
+  async findByDenoms(denoms): Promise<IbcBaseDenomType[]> {
+      return this.find({
+          denom:{
+              $in:denoms,
+          }
+      });
+  },
+
   async insertBaseDenom(ibcBaseDenom): Promise<void>{
         return this.create(ibcBaseDenom);
     },

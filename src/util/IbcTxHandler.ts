@@ -187,7 +187,7 @@ export class IbcTxHandler {
             const taskCount = await this.checkTaskFollowingStatus(chain_id)
             if (!taskCount) continue
 
-            const denomMap = this.getDenomRecordByChainId(chain_id)
+            const denomMap =  await this.getDenomRecordByChainId(chain_id)
 
             const txs = await this.getRecordLimitTx(chain_id, taskRecord.height, RecordLimit)
             let {
@@ -746,7 +746,7 @@ export class IbcTxHandler {
                         if (ibcTx.status === IbcTxStatus.FAILED) {
                             // get base_denom、denom_path from lcd API
                             if (sc_denom.indexOf('ibc') !== -1) {
-                                if (denomMap.has(sc_denom)) {
+                                if (denomMap?.has(sc_denom)) {
                                     const ibcDenom = denomMap.get(sc_denom)
                                     if (ibcDenom?.base_denom) {
                                         base_denom = ibcDenom.base_denom

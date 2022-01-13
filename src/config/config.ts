@@ -61,7 +61,7 @@ export const cfg = {
             // tx: '*/10 * * * * *',
             // chain: '*/10 * * * * *',
             // statistics: '*/10 * * * * *',
-            tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
+            // tx: IBCTX_EXECUTE_TIME || '15 * * * * *',
             chain: IBCCHAIN_EXECUTE_TIME || '* * */1 * * *',
             statistics: IBCSTATISTICS_EXECUTE_TIME || '* */10 * * * *',
 
