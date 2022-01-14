@@ -60,6 +60,7 @@ export class IbcTxLatestMigrateTaskService {
         }
     }
 
+    // limit max value is MaxMigrateBatchLimit
     async migrateData(limit): Promise<void> {
         if (limit <= 0) {
             return
@@ -68,13 +69,14 @@ export class IbcTxLatestMigrateTaskService {
             status: IbcTxStatus.SETTING,
             limit: MaxMigrateBatchLimit
         })
-        let migrateNormalData = 0
-        if (limit > MaxMigrateBatchLimit) {
-            migrateNormalData = limit - MaxMigrateBatchLimit
+        // this migrate status[1,2,3,4] txs data is (limit - settingTxs.length)
+        let limitNormalData = 0
+        if (limit > settingTxs.length) {
+            limitNormalData = limit - settingTxs.length
         }
         let batchTxs = [ ...settingTxs]
-        if (migrateNormalData > 0 ) {
-            const Txs = await this.ibcTxLatestModel.queryTxsLimit(migrateNormalData, 1)
+        if (limitNormalData > 0 ) {
+            const Txs = await this.ibcTxLatestModel.queryTxsLimit(limitNormalData, 1)
             batchTxs = [...Txs]
         }
 
