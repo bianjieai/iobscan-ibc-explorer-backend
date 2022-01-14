@@ -268,6 +268,14 @@ IbcTxSchema.statics = {
     async queryTxDetailByHash(query) : Promise<IbcTxType[]>{
         const {hash} = query
         return this.find({
+            status: {
+                $in: [
+                    IbcTxStatus.SUCCESS,
+                    IbcTxStatus.FAILED,
+                    IbcTxStatus.PROCESSING,
+                    IbcTxStatus.REFUNDED,
+                ],
+            },
             $or: [
                 {"sc_tx_info.hash": hash},
                 {"dc_tx_info.hash": hash}
