@@ -312,6 +312,11 @@ export class IbcTxService {
 
     async queryIbcTxDetailsByHash(query: TxWithHashReqDto): Promise<IbcTxDetailsResDto[]> {
         let txDetailsData = await this.getIbcTxDetail(query)
+        //todo not support detail return many data currently
+        if (txDetailsData.length > 1) {
+            return []
+        }
+
         for (let tx of txDetailsData) {
             tx = await this.getTxInfo(tx)
             tx.dc_signers = []
