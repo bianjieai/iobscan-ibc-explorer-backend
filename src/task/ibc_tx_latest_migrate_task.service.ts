@@ -68,8 +68,15 @@ export class IbcTxLatestMigrateTaskService {
             status: IbcTxStatus.SETTING,
             limit: MaxMigrateBatchLimit
         })
-        const Txs = await this.ibcTxLatestModel.queryTxsLimit(limit, 1)
-        const batchTxs = [...Txs, ...settingTxs]
+        let migrateNormalData = 0
+        if (limit > MaxMigrateBatchLimit) {
+            migrateNormalData = limit - MaxMigrateBatchLimit
+        }
+        let batchTxs = [ ...settingTxs]
+        if (migrateNormalData > 0 ) {
+            const Txs = await this.ibcTxLatestModel.queryTxsLimit(migrateNormalData, 1)
+            batchTxs = [...Txs]
+        }
 
         const session = await this.connection.startSession()
         session.startTransaction()
