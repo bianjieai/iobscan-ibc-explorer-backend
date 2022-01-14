@@ -185,7 +185,7 @@ export class IbcTxService {
             eventNews.events_new.forEach(item => {
                 if (item?.events?.length && item?.msg_index === txMsgIndex) {
                     item.events.forEach(event => {
-                        if (event?.type === 'write_acknowledgement') {
+                        if (event?.type === 'write_acknowledgement' || event?.type === 'recv_packet') {
                             if (event?.attributes?.length) {
                                 event.attributes.forEach(attribute => {
                                     switch (attribute.key) {
