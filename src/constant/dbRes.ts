@@ -8,6 +8,7 @@ export const dbRes = {
         sc_chain_id:1,
         sc_channel:1,
         dc_channel:1,
+        sequence:1,
         denoms:1,
         sc_addr:1,
         'sc_tx_info.hash':1,
