@@ -30,6 +30,7 @@ const {
     IBC_TX_LATEST_MIGRATE,
     IBC_TX_UPDATE_CRONJOB,
     IBC_DENOM_CACULATE_CRONJOB,
+    IBC_MONITOR_CRONJOB,
     IBC_DENOM_UPDATE_CRONJOB
 
 } = process.env;
@@ -73,6 +74,7 @@ export const cfg = {
             ibcTxUpdateCronjob: IBC_TX_UPDATE_CRONJOB || '* * */2 * * *',
             ibcDenomCaculateCronjob: IBC_DENOM_CACULATE_CRONJOB || '* * */1 * * *',
             ibcDenomUpdateCronjob: IBC_DENOM_UPDATE_CRONJOB || '*/30 * * * * *',
+            ibcMonitorCronjob: IBC_MONITOR_CRONJOB || '* */1 * * * *',
         },
         syncTxServiceNameSize: Number(SYNC_TX_SERVICE_NAME_SIZE) || 200,
         increaseHeight: INCREASE_HEIGHT || 1000,

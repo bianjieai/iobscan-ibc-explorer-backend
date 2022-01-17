@@ -248,7 +248,8 @@ describe('IbcTxService', () => {
 
         it('getIbcTxDetail Test', async () => {
             const result = await ibcTxService.getIbcTxDetail({hash:'A7B69456C9C34B477FA021D6781F8F95A704BEC001532AF5D833354961573C98'})
-            console.log(result, '----')
+            // console.log(result, '----')
+            console.log(result.length, '----')
         });
 
         it('getScTxInfo Test', async () => {
@@ -257,7 +258,7 @@ describe('IbcTxService', () => {
         });
 
         it('getDcTxInfo Test', async () => {
-            const result = await ibcTxService.getDcTxInfo("bigbang","AF5CB680C80BC8B48158CD44537A08C4193AB4FDAE406A623F142443456EE6C1","transferchannel-1transferchannel-541")
+            const result = await ibcTxService.getDcTxInfo("cosmoshub_4","E3DFBCF3A15BF971C9C97CBCEBBD81C610B028CE18F285FDC3175A2968CFA2AB","transferchannel-12transferchannel-1823433")
             console.log(result, '----')
         });
     });

@@ -45,7 +45,10 @@ export class TasksService {
     this.handleDoTask(TaskEnum.chain, this.ibcChainConfigTaskService.doTask);
   }
 
-  @Cron('*/10 * * * * *')
+  @Cron(cfg.taskCfg.executeTime.ibcMonitorCronjob, {
+    name: TaskEnum.monitor,
+  })
+  // @Cron('*/10 * * * * *')
   async syncMonitor() {
     this.handleDoTask(TaskEnum.monitor, this.ibMonitorService.doTask);
   }
