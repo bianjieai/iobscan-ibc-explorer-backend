@@ -214,11 +214,6 @@ export class IbcTxHandler {
                     await session.abortTransaction()
                     session.endSession();
                 }
-
-
-                // todo Transaction
-                // await session.commitTransaction();
-                // session.endSession();
             }
 
         }
@@ -273,14 +268,14 @@ export class IbcTxHandler {
 
     async changeIbcTxState(ibcTxModel,dateNow, substate: number[]): Promise<void> {
         const ibcTxs = await this.getProcessingTxs(ibcTxModel,substate)
-        // const ibcTxs = await this.ibcTxModel.queryTxByRecordId("transferchannel-185transferchannel-111404cosmoshub_4214637C56B2550827988E2F49FB6D5E55D5DC6271A34C68D5499852D939C1BA20")
+        // const ibcTxs = await ibcTxModel.queryTxByRecordId("transferchannel-28transferchannel-12163541irishub_qaF29DEFE6DE7C6355489F5D2CCC96EF2D630E351F843852050D1A29317C21FBDB0")
 
 
         let packetIdArr = ibcTxs?.length ? await this.getPacketIds(ibcTxs) : [];
         let recvPacketTxMap = new Map, chainHeightMap = new Map, refundedTxTxMap = new Map,
             acknowledgeTxsMap = new Map, needUpdateTxs = [],
-            denoms = [] //packetIdArr= [],
-        // const allChains = await this.chainConfigModel.findAll();
+            denoms = []
+
         let dcChains = [],scChains = [];
         ibcTxs.forEach(item => {
             if (item?.dc_chain_id ) {
@@ -616,6 +611,7 @@ export class IbcTxHandler {
                             msg.denom_path = denomOriginSplit
                                 .slice(0, denomOriginSplit.length - 1)
                                 .join('/');
+                            break;
                         default:
                             break;
                     }
@@ -687,13 +683,7 @@ export class IbcTxHandler {
                         let base_denom = '';
                         let denom_path = '';
                         let sequence = '';
-                        let lcd = '';
                         //根据 sc_chain_id  sc_port sc_channel 查询目标链的信息
-                        /*
-                        * 能否通过管道直接查询出目标链的数据
-                        * 不要在循环里查询数据库 单独拎出来
-                        * todo 失败状态处理
-                        * */
                         let dcChainConfig: any = {}
                         if (sc_chain_id && allChainsMap) {
                             if (allChainsMap.has(sc_chain_id)) {
@@ -714,37 +704,8 @@ export class IbcTxHandler {
                                 }
                             }
                         }
-                        /* const dcChainConfig = await this.chainConfigModel.findDcChain({
-                             sc_chain_id,
-                             sc_port,
-                             sc_channel,
-                         });*/
-
-                        if (
-                            dcChainConfig &&
-                            dcChainConfig.ibc_info &&
-                            dcChainConfig.ibc_info.length
-                        ) {
-                            lcd = dcChainConfig.lcd;
-                            // dcChainConfig.ibc_info.forEach(info_item => {
-                            //     info_item.paths.forEach(path_item => {
-                            //         if (
-                            //             path_item.channel_id === sc_channel &&
-                            //             path_item.port_id === sc_port
-                            //         ) {
-                            //             dc_chain_id = info_item.chain_id;
-                            //             dc_channel = path_item.counterparty.channel_id;
-                            //             dc_port = path_item.counterparty.port_id;
-                            //         }
-                            //     });
-                            // });
-                        }
-                        /*
-                        * 通过lcd 查询的话可以不可以在起个定时任务去查询
-                        * */
-
                         if (ibcTx.status === IbcTxStatus.FAILED) {
-                            // get base_denom、denom_path from lcd API
+                            // get base_denom、denom_path from ibc_denom collection
                             if (sc_denom.indexOf('ibc') !== -1) {
                                 if (denomMap?.has(sc_denom)) {
                                     const ibcDenom = denomMap.get(sc_denom)
@@ -753,13 +714,6 @@ export class IbcTxHandler {
                                         denom_path = ibcDenom?.denom_path
                                     }
                                 }
-                                // const scDenom = sc_denom.replace('ibc/', '')
-                                /*
-                                * TODO 阻塞流程先注释
-                                * */
-                                /*const result = await ChainHttp.getDenomByLcdAndHash(lcd, scDenom)
-                                base_denom = result?.base_denom;
-                                denom_path = result?.denom_path;*/
                             } else {
                                 base_denom = sc_denom;
                             }
@@ -816,17 +770,7 @@ export class IbcTxHandler {
                                 }
                             }
                         }
-                        // if (Boolean(denom_path) && denom_path.split('/').length > 1) {
-                        //     const dc_port = denom_path.split('/')[0];
-                        //     const dc_channel = denom_path.split('/')[1];
-                        //     if (allChainsDenomPathsMap.has(sc_chain_id)) {
-                        //         const dcDenomPath = allChainsDenomPathsMap.get(sc_chain_id)
-                        //         const currentIbcTxDenomPath = `${dc_channel}${dc_port}`
-                        //         if (dcDenomPath === currentIbcTxDenomPath) {
-                        //             isBaseDenom = false;
-                        //         }
-                        //
-                        //     }
+
 
                         if (ibcTx.status === IbcTxStatus.PROCESSING) {
                             denoms.push({
