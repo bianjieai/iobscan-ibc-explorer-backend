@@ -266,7 +266,8 @@ export class IbcTxHandler {
         return packetIds
     }
 
-    async changeIbcTxState(ibcTxModel,dateNow, substate: number[]): Promise<void> {
+    // if handlIbcTxCron is true,don't need call insertManyDenom save ibc_denom
+    async changeIbcTxState(ibcTxModel,dateNow, substate: number[],handlIbcTxCron:boolean): Promise<void> {
         const ibcTxs = await this.getProcessingTxs(ibcTxModel,substate)
         // const ibcTxs = await ibcTxModel.queryTxByRecordId("transferchannel-28transferchannel-12163541irishub_qaF29DEFE6DE7C6355489F5D2CCC96EF2D630E351F843852050D1A29317C21FBDB0")
 
@@ -558,7 +559,7 @@ export class IbcTxHandler {
                 await ibcTxModel.updateIbcTx(needUpdateTx);
             }
         }
-        if (denoms?.length) {
+        if (denoms?.length && !handlIbcTxCron) {
             await this.ibcDenomModel.insertManyDenom(denoms);
         }
     }

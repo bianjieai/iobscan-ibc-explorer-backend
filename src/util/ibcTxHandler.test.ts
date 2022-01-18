@@ -56,7 +56,7 @@ describe('IbcTxHandler', () => {
             const dateNow = Math.floor(new Date().getTime() / 1000);
             jest.setTimeout(100000000)
             const txmodel = await ibcTxHandler.getIbcTxLatestModel()
-            await ibcTxHandler.changeIbcTxState(txmodel,dateNow,[3])
+            await ibcTxHandler.changeIbcTxState(txmodel,dateNow,[3],false)
             return null
         });
     });
