@@ -68,7 +68,7 @@ export class IbcTxLatestMigrateTaskService {
         }
         const settingTxs = await this.ibcTxLatestModel.queryTxsByStatusLimit({
             status: IbcTxStatus.SETTING,
-            limit: MaxMigrateBatchLimit
+            limit: limit
         })
         // this migrate status[1,2,3,4] txs data is (limit - settingTxs.length)
         let limitNormalData = 0

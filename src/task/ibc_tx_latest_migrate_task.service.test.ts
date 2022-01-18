@@ -16,7 +16,7 @@ describe('IbcTxLatestMigrateTaskService', () => {
     describe('migrateData', () => {
         it('migrateData Test', async () => {
             jest.setTimeout(1000000)
-            await ibcTxLatestMigrateTaskService.migrateData(10)
+            await ibcTxLatestMigrateTaskService.migrateData(5)
             console.log("=====")
         });
         it('startMigrate Test', async () => {
