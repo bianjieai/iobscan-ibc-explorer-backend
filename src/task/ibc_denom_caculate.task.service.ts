@@ -72,7 +72,7 @@ export class IbcDenomCaculateTaskService {
                 //获取最新的ibc_info的hashCode
                 const hashCode = Md5.hashStr(JSON.stringify(chainCfg.ibc_info))
 
-                if (hashCode !== chainCfg?.ibc_info_hash_caculate && chainCfg?.ibc_info?.length > 0) {
+                if (hashCode !== one?.ibc_info_hash_caculate && chainCfg?.ibc_info?.length > 0) {
                     for (const ibcInfo of chainCfg.ibc_info) {
                         if (ibcInfo?.chain_id && ibcInfo?.paths?.length > 0) {
                             ibcInfo.paths.forEach(item => {
@@ -95,9 +95,9 @@ export class IbcDenomCaculateTaskService {
                         const session = await this.connection.startSession()
                         session.startTransaction()
                         try {
-                            chainCfg.ibc_info_hash_caculate = hashCode
+                            one.ibc_info_hash_caculate = hashCode
                             await this.ibcDenomCaculateModel.insertDenomCaculate(ibcDenomInfos,session)
-                            await this.chainConfigModel.updateChainCfgWithSession(chainCfg,session)
+                            await this.ibcBaseDenomModel.updateBaseDenomWithSession(one,session)
 
                             await session.commitTransaction();
                             session.endSession();

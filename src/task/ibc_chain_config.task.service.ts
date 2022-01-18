@@ -108,15 +108,11 @@ export class IbcChainConfigTaskService {
 
               const dcChainIdMap  = await this.getDcChainMap(chain)
 
-              // console.log(dcChainIdMap,"========dcChainIdMap============>>")
-              // console.log(supportChainsIdMap,"========supportChainsIdMap============>>")
-
               chain['ibc_info'] && chain['ibc_info'].forEach(channel => {
                   const key = this.dcChainKey(chain,channel)
                        // get dc_Chainid by key
                   const dc_Chainid = dcChainIdMap.get(key)
-                  // console.log(key,"=============key====>>>")
-                  // console.log(dc_Chainid,"=============dc_Chainid====>>>")
+
                   if (dcChainIdMap.size > 0 && dc_Chainid) {
                           if (supportChainsIdMap.has(dc_Chainid)){
                               // dcChainId find and only include config chain
@@ -140,10 +136,10 @@ export class IbcChainConfigTaskService {
 
               const ibcInfoGroupBy = groupBy(chain['ibc_info'], 'chain_id');
               const ibcInfo = [];
-              // console.log(ibcInfoGroupBy,"========ibcInfoGroupBy============>>")
+
               Object.keys(ibcInfoGroupBy) && Object.keys(ibcInfoGroupBy).forEach(chain_id => {
                   ibcInfo.push({ chain_id, paths: ibcInfoGroupBy[`${chain_id}`] });
-                  // console.log(ibcInfo,"========ibcInfo= in for===========>>")
+
               });
               chain['ibc_info'] = ibcInfo;
 

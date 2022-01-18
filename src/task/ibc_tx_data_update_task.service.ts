@@ -12,6 +12,6 @@ export class IbcTxDataUpdateTaskService {
         const defaultSubstate = 0
         const substate = [defaultSubstate,SubState.SuccessRecvPacketNotFound,SubState.RecvPacketAckFailed,SubState.SuccessTimeoutPacketNotFound]
         const ibcTxModel = this.taskCommonService.getIbcTxModel()
-        await this.taskCommonService.changeIbcTxState(ibcTxModel,dateNow,substate)
+        await this.taskCommonService.changeIbcTxState(ibcTxModel,dateNow,substate,true)
     }
 }

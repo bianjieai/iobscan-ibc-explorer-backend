@@ -5,6 +5,7 @@ export interface IbcBaseDenomType {
   scale: number;
   icon: string;
   is_main_token: boolean;
+  ibc_info_hash_caculate?: string;
   create_at: string;
   update_at: string;
 }
