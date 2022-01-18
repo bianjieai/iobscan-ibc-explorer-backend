@@ -50,11 +50,12 @@ export class IbcTxLatestMigrateTaskService {
         if (migrateCount > value) {
             // migrate max bitch count limit
             if (migrateCount > MaxMigrateBatchLimit) {
-                let batchNum = migrateCount / MaxMigrateBatchLimit
+                let batchNum = Math.floor(migrateCount / MaxMigrateBatchLimit)
+                const batchSize = batchNum * MaxMigrateBatchLimit
                 for (; batchNum > 0; batchNum--) {
                     await this.migrateData(MaxMigrateBatchLimit)
                 }
-                return await this.migrateData(migrateCount - batchNum * MaxMigrateBatchLimit)
+                return await this.migrateData(migrateCount - batchSize)
             }
             return await this.migrateData(migrateCount)
         }
