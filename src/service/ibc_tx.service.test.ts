@@ -17,12 +17,19 @@ describe('IbcTxService', () => {
 
     describe('queryIbcTxList', () => {
         it('queryIbcTxList Test', async () => {
+            jest.setTimeout(100000000)
             const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:true,
-                // status:"1,2,3,4",
-                // date_range:"0,1640074000"
+                status:"1,2,3,4",
+                date_range:"0,1642495903",
+                symbol:'ATOM',
+                // chain_id:'cosmoshub_4',
             };
+            const time1 = Math.floor(new Date().getTime()/1000)
+
             const result = await ibcTxService.queryIbcTxList(query)
-            console.log(result, '----')
+            console.log("time cost====>:",Math.floor(new Date().getTime()/1000) - time1)
+
+            console.log('====count==>>:',result)
         });
     });
 

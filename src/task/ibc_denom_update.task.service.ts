@@ -61,8 +61,8 @@ export class IbcDenomUpdateTaskService {
         return {chainDenomsMap,baseDenoms}
     }
 
-    async getNeedhandleIbcDenoms() {
-        return await this.ibcDenomModel.findUnAuthDenom(RecordLimit)
+    async getNeedhandleIbcDenoms(page_num,page_size) {
+        return await this.ibcDenomModel.findUnAuthDenom(page_num,page_size)
     }
 
     async getIbcDenoms(chainId, denoms) {
@@ -70,8 +70,32 @@ export class IbcDenomUpdateTaskService {
     }
 
     async handleChainDenoms() {
-        const ibcDenoms = await this.getNeedhandleIbcDenoms()
-        const {chainDenomsMap,baseDenoms} = await this.collectChainDenomsMap(ibcDenoms)
+        let pageNum = 1,supportDenoms = []
+        const pageSize = 100
+        const maxPage = 10
+
+        while(pageNum <= maxPage) {
+            const ibcDenoms = await this.getNeedhandleIbcDenoms(pageNum,pageSize)
+            ibcDenoms.forEach(item => {
+                const paths = item?.denom_path?.split("/")
+                //only support one skip path
+                if (paths?.length <= 2){
+                    supportDenoms.push(item)
+                    return item
+                }
+            });
+            //judge handle batch limit and break
+            if (supportDenoms?.length >= RecordLimit) {
+                break;
+            }
+            if (ibcDenoms?.length < pageSize) {
+                break;
+            }
+            pageNum++
+        }
+
+
+        const {chainDenomsMap,baseDenoms} = await this.collectChainDenomsMap(supportDenoms)
         let denomData = []
 
         if (baseDenoms) {
