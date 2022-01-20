@@ -11,6 +11,6 @@ export class IbcUpdateSubStateTxTaskService {
     async doTask(taskName?: TaskEnum): Promise<void> {
         const substate = [SubState.SuccessRecvPacketNotFound,SubState.RecvPacketAckFailed,SubState.SuccessTimeoutPacketNotFound]
         const ibcTxLatestModel = this.taskCommonService.getIbcTxLatestModel()
-        await this.taskCommonService.changeIbcTxState(ibcTxLatestModel,dateNow,substate,false)
+        await this.taskCommonService.changeIbcTxState(ibcTxLatestModel,dateNow,substate,false,[])
     }
 }
