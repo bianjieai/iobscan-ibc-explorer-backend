@@ -52,6 +52,51 @@ export class IbcDenomCaculateTaskService {
         return await this.ibcBaseDenomModel.findAllRecord();
     }
 
+    async caculateChain(oneBaseDenom,channelMap) {
+        const chainCfg: IbcChainConfigType = channelMap.get(oneBaseDenom.chain_id)
+        // caculate ibc_info hash to compare with ibc_info_hash_caculate
+        //获取最新的ibc_info的hashCode
+        const hashCode = Md5.hashStr(JSON.stringify(chainCfg.ibc_info))
+        let ibcDenomInfos = []
+
+        if (hashCode !== oneBaseDenom?.ibc_info_hash_caculate && chainCfg?.ibc_info?.length > 0) {
+            for (const ibcInfo of chainCfg.ibc_info) {
+                if (ibcInfo?.chain_id && ibcInfo?.paths?.length > 0) {
+                    ibcInfo.paths.forEach(item => {
+                        if (item?.counterparty?.port_id && item?.counterparty?.channel_id) {
+                            const denomPath = `${item?.counterparty?.port_id}/${item?.counterparty?.channel_id}`
+                            const ibcDenom = IbcDenom(denomPath, oneBaseDenom.denom)
+                            ibcDenomInfos.push({
+                                symbol: oneBaseDenom.symbol,
+                                base_denom: oneBaseDenom.denom,
+                                denom: ibcDenom,
+                                denom_path: denomPath,
+                                chain_id: ibcInfo.chain_id,
+                                sc_chain_id: oneBaseDenom.chain_id,
+                            })
+                        }
+                    })
+                }
+            }
+            if (ibcDenomInfos?.length > 0) {
+                const session = await this.connection.startSession()
+                session.startTransaction()
+                try {
+                    oneBaseDenom.ibc_info_hash_caculate = hashCode
+                    await this.ibcDenomCaculateModel.insertDenomCaculate(ibcDenomInfos,session)
+                    await this.ibcBaseDenomModel.updateBaseDenomWithSession(oneBaseDenom,session)
+
+                    await session.commitTransaction();
+                    session.endSession();
+                } catch (e) {
+                    Logger.log(e, 'transaction is error')
+                    await session.abortTransaction()
+                    session.endSession();
+                }
+            }
+        }
+    }
+
     async handleChain() {
         const chainConfig = await this.findAllChainConfig()
         const baseDenom = await this.findAllBaseDenom()
@@ -64,50 +109,10 @@ export class IbcDenomCaculateTaskService {
             if (denomMap.has(`${one.chain_id}${one.denom}`)) {
                 continue
             }
-            let ibcDenomInfos = []
+            // let ibcDenomInfos = []
             denomMap.set(`${one.chain_id}${one.denom}`, one)
             if (channelMap.has(one.chain_id)) {
-                const chainCfg: IbcChainConfigType = channelMap.get(one.chain_id)
-                // caculate ibc_info hash to compare with ibc_info_hash_caculate
-                //获取最新的ibc_info的hashCode
-                const hashCode = Md5.hashStr(JSON.stringify(chainCfg.ibc_info))
-
-                if (hashCode !== one?.ibc_info_hash_caculate && chainCfg?.ibc_info?.length > 0) {
-                    for (const ibcInfo of chainCfg.ibc_info) {
-                        if (ibcInfo?.chain_id && ibcInfo?.paths?.length > 0) {
-                            ibcInfo.paths.forEach(item => {
-                                if (item?.counterparty?.port_id && item?.counterparty?.channel_id) {
-                                    const denomPath = `${item?.counterparty?.port_id}/${item?.counterparty?.channel_id}`
-                                    const ibcDenom = IbcDenom(denomPath, one.denom)
-                                    ibcDenomInfos.push({
-                                        symbol: one.symbol,
-                                        base_denom: one.denom,
-                                        denom: ibcDenom,
-                                        denom_path: denomPath,
-                                        chain_id: ibcInfo.chain_id,
-                                        sc_chain_id: one.chain_id,
-                                    })
-                                }
-                            })
-                        }
-                    }
-                    if (ibcDenomInfos?.length > 0) {
-                        const session = await this.connection.startSession()
-                        session.startTransaction()
-                        try {
-                            one.ibc_info_hash_caculate = hashCode
-                            await this.ibcDenomCaculateModel.insertDenomCaculate(ibcDenomInfos,session)
-                            await this.ibcBaseDenomModel.updateBaseDenomWithSession(one,session)
-
-                            await session.commitTransaction();
-                            session.endSession();
-                        } catch (e) {
-                            Logger.log(e, 'transaction is error')
-                            await session.abortTransaction()
-                            session.endSession();
-                        }
-                    }
-                }
+                await this.caculateChain(one, channelMap)
             }
 
         }
