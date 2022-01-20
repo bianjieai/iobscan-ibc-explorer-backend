@@ -34,7 +34,7 @@ describe('IbcDenomHashTaskService', () => {
             console.log('--data-->:',data)
         });
 
-        it('caculateChain Test', async () => {
+        it('caculateBaseDenom Test', async () => {
             const chainConfig = await ibcDenomHashTaskService.findAllChainConfig()
             const AllBaseDenom = await ibcDenomHashTaskService.findAllBaseDenom()
             let denomMap = new Map, channelMap = new Map
@@ -45,7 +45,7 @@ describe('IbcDenomHashTaskService', () => {
             for (const one of chainConfig) {
                 channelMap.set(`${one.chain_id}`, one)
             }
-            await ibcDenomHashTaskService.caculateChain(denomMap.get("cosmoshub_4"),channelMap)
+            await ibcDenomHashTaskService.caculateBaseDenom(denomMap.get("cosmoshub_4"),channelMap)
         });
 
         it('findCount Test', async () => {

@@ -65,7 +65,7 @@ export class IbcDenomCaculateTaskService {
         return caculateDenomMap
     }
 
-    async caculateChain(oneBaseDenom,channelMap) {
+    async caculateBaseDenom(oneBaseDenom, channelMap) {
         const chainCfg: IbcChainConfigType = channelMap.get(oneBaseDenom.chain_id)
         // caculate ibc_info hash to compare with ibc_info_hash_caculate
         //获取最新的ibc_info的hashCode
@@ -130,7 +130,7 @@ export class IbcDenomCaculateTaskService {
         }
         for (const one of baseDenom) {
             if (channelMap.has(one.chain_id)) {
-                await this.caculateChain(one, channelMap)
+                await this.caculateBaseDenom(one, channelMap)
             }
         }
     }
