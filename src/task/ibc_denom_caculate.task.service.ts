@@ -52,6 +52,19 @@ export class IbcDenomCaculateTaskService {
         return await this.ibcBaseDenomModel.findAllRecord();
     }
 
+    // get already caculate ibc denom
+    async getCaculateDenomMap(srcChainId) : Promise<any>{
+        let  caculateDenomMap = new Map
+        const caculateDenom = await this.ibcDenomCaculateModel.findCaculateDenom(srcChainId)
+        for (const one of caculateDenom) {
+            if (one?.denom_path && one?.chain_id && one?.base_denom) {
+                //目标chain_id + denom_path + base_denom
+                caculateDenomMap.set(`${one?.chain_id}${one?.denom_path}${one?.base_denom}`,'')
+            }
+        }
+        return caculateDenomMap
+    }
+
     async caculateChain(oneBaseDenom,channelMap) {
         const chainCfg: IbcChainConfigType = channelMap.get(oneBaseDenom.chain_id)
         // caculate ibc_info hash to compare with ibc_info_hash_caculate
@@ -59,21 +72,31 @@ export class IbcDenomCaculateTaskService {
         const hashCode = Md5.hashStr(JSON.stringify(chainCfg.ibc_info))
         let ibcDenomInfos = []
 
-        if (hashCode !== oneBaseDenom?.ibc_info_hash_caculate && chainCfg?.ibc_info?.length > 0) {
+        //根据baseDenom的chain_id获取已经计算好的denom
+        const  caculateDenomMap = await this.getCaculateDenomMap(oneBaseDenom.chain_id)
+
+        if (hashCode !== oneBaseDenom?.ibc_info_hash_caculate && chainCfg?.ibc_info?.length > 0 && oneBaseDenom?.denom) {
             for (const ibcInfo of chainCfg.ibc_info) {
                 if (ibcInfo?.chain_id && ibcInfo?.paths?.length > 0) {
                     ibcInfo.paths.forEach(item => {
                         if (item?.counterparty?.port_id && item?.counterparty?.channel_id) {
                             const denomPath = `${item?.counterparty?.port_id}/${item?.counterparty?.channel_id}`
                             const ibcDenom = IbcDenom(denomPath, oneBaseDenom.denom)
-                            ibcDenomInfos.push({
-                                symbol: oneBaseDenom.symbol,
-                                base_denom: oneBaseDenom.denom,
-                                denom: ibcDenom,
-                                denom_path: denomPath,
-                                chain_id: ibcInfo.chain_id,
-                                sc_chain_id: oneBaseDenom.chain_id,
-                            })
+
+                            //目标chain_id + denom_path + base_denom
+                            const existKey = `${ibcInfo.chain_id}${denomPath}${oneBaseDenom.denom}`
+
+                            // check if not caculate before push caculate denom to ibcDenomInfos
+                            if (!caculateDenomMap?.has(existKey)) {
+                                ibcDenomInfos.push({
+                                    symbol: oneBaseDenom.symbol,
+                                    base_denom: oneBaseDenom.denom,
+                                    denom: ibcDenom,
+                                    denom_path: denomPath,
+                                    chain_id: ibcInfo.chain_id,
+                                    sc_chain_id: oneBaseDenom.chain_id,
+                                })
+                            }
                         }
                     })
                 }
@@ -100,21 +123,15 @@ export class IbcDenomCaculateTaskService {
     async handleChain() {
         const chainConfig = await this.findAllChainConfig()
         const baseDenom = await this.findAllBaseDenom()
-        let denomMap = new Map, channelMap = new Map
+        let channelMap = new Map
 
         for (const one of chainConfig) {
             channelMap.set(`${one.chain_id}`, one)
         }
         for (const one of baseDenom) {
-            if (denomMap.has(`${one.chain_id}${one.denom}`)) {
-                continue
-            }
-            // let ibcDenomInfos = []
-            denomMap.set(`${one.chain_id}${one.denom}`, one)
             if (channelMap.has(one.chain_id)) {
                 await this.caculateChain(one, channelMap)
             }
-
         }
     }
 }

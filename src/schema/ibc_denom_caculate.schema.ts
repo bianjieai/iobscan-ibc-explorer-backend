@@ -31,9 +31,10 @@ IbcDenomCaculateSchema.statics = {
         return this.count();
     },
 
-    async findAllRecord(): Promise<IbcDenomCaculateType[]> {
-        return this.find();
+    async findCaculateDenom(sc_chain_id): Promise<IbcDenomCaculateType[]> {
+        return this.find({sc_chain_id:sc_chain_id});
     },
+
     async findIbcDenoms(chain_id,denoms): Promise<IbcDenomCaculateType[]> {
         return this.find({
             chain_id:chain_id,

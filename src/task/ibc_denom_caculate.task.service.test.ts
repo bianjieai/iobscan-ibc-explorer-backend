@@ -29,6 +29,11 @@ describe('IbcDenomHashTaskService', () => {
             await ibcDenomHashTaskService.handleChain()
         });
 
+        it('getCaculateDenomMap Test', async () => {
+           const data = await ibcDenomHashTaskService.getCaculateDenomMap("cosmoshub_4")
+            console.log('--data-->:',data)
+        });
+
         it('caculateChain Test', async () => {
             const chainConfig = await ibcDenomHashTaskService.findAllChainConfig()
             const AllBaseDenom = await ibcDenomHashTaskService.findAllBaseDenom()
