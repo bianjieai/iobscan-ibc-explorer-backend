@@ -81,7 +81,6 @@ export class IbcDenomUpdateTaskService {
                 //only support one skip path
                 if (paths?.length <= 2){
                     supportDenoms.push(item)
-                    return item
                 }
             });
             //judge handle batch limit and break
