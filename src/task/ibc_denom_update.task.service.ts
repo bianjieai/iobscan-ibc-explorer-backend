@@ -2,6 +2,7 @@ import {Connection} from 'mongoose';
 import {Injectable} from "@nestjs/common";
 import {InjectConnection} from "@nestjs/mongoose";
 import {RecordLimit, TaskEnum} from "../constant";
+import { cfg } from '../config/config';
 import {IbcDenomSchema} from "../schema/ibc_denom.schema";
 import {IbcBaseDenomSchema} from "../schema/ibc_base_denom.schema";
 import {IbcDenomCaculateSchema} from "../schema/ibc_denom_caculate.schema";
@@ -71,11 +72,10 @@ export class IbcDenomUpdateTaskService {
 
     async handleChainDenoms() {
         let pageNum = 1,supportDenoms = []
-        const pageSize = 100
-        const maxPage = 10
 
-        while(pageNum <= maxPage) {
-            const ibcDenoms = await this.getNeedhandleIbcDenoms(pageNum,pageSize)
+        //judge  supportDenoms size for handle batch limit
+        while(supportDenoms?.length < cfg.serverCfg.updateDenomBatchLimit) {
+            const ibcDenoms = await this.getNeedhandleIbcDenoms(pageNum, RecordLimit)
             ibcDenoms.forEach(item => {
                 const paths = item?.denom_path?.split("/")
                 //only support one skip path
@@ -83,11 +83,9 @@ export class IbcDenomUpdateTaskService {
                     supportDenoms.push(item)
                 }
             });
-            //judge handle batch limit and break
-            if (supportDenoms?.length >= RecordLimit) {
-                break;
-            }
-            if (ibcDenoms?.length < pageSize) {
+
+            // break when finish scan all the ibc denom which symbol is empty.
+            if (ibcDenoms?.length < RecordLimit) {
                 break;
             }
             pageNum++

@@ -12,14 +12,10 @@ const {
     EXECUTE_KEY,
     DISPLAY_IBC_RECORD_MAX,
     FAULT_TOLERANCE_EXECUTE_TIME,
-    SYNC_TX_SERVICE_NAME_SIZE,
     HEARTBEAT_RATE,
     DisableLog,
-    INCREASE_HEIGHT,
-    MAX_OPERATE_TX_COUNT,
     CRON_JOBS,
-    PROPOSALS_LIMIT,
-    IBCTX_EXECUTE_TIME,
+    UPDATE_DENOM_BATCH_LIMIT,
     IBCCHAIN_EXECUTE_TIME,
     IBCSTATISTICS_EXECUTE_TIME,
     CHANNELS_LIMITS,
@@ -53,6 +49,7 @@ export const cfg = {
         iconUri: ICONURI || 'https://keybase.io/_/api/1.0/user/lookup.json',
         executeKey: EXECUTE_KEY,
         displayIbcRecordMax:Number(DISPLAY_IBC_RECORD_MAX || 500000),
+        updateDenomBatchLimit: Number(UPDATE_DENOM_BATCH_LIMIT || 100),
     },
     taskCfg:{
         interval:{
@@ -76,11 +73,7 @@ export const cfg = {
             ibcDenomUpdateCronjob: IBC_DENOM_UPDATE_CRONJOB || '*/30 * * * * *',
             ibcMonitorCronjob: IBC_MONITOR_CRONJOB || '* */1 * * * *',
         },
-        syncTxServiceNameSize: Number(SYNC_TX_SERVICE_NAME_SIZE) || 200,
-        increaseHeight: INCREASE_HEIGHT || 1000,
-        maxOperateTxCount: MAX_OPERATE_TX_COUNT || 100,
         CRON_JOBS: CRON_JOBS ? JSON.parse(CRON_JOBS) : [],
-        proposalsLimit: PROPOSALS_LIMIT || 1000,
     },
 };
 
