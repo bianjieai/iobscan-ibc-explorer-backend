@@ -16,12 +16,20 @@ describe('IbcDenomUpdateTaskService', () => {
 
     describe('Uint Test', () => {
         it('getEmptySymbolDenom Test', async () => {
-            const AllDenom = await ibcDenomUpdateTaskService.getNeedhandleIbcDenoms()
+            jest.setTimeout(100000000)
+            const AllDenom = await ibcDenomUpdateTaskService.getNeedhandleIbcDenoms(1,100)
             const ret = await ibcDenomUpdateTaskService.collectChainDenomsMap(AllDenom)
             console.log(ret,'--ret--')
         });
 
+        it('getNeedhandleIbcDenoms Test', async () => {
+            jest.setTimeout(100000000)
+            const AllDenom = await ibcDenomUpdateTaskService.getNeedhandleIbcDenoms(1,100)
+            console.log(AllDenom,'--AllDenom--')
+        });
+
         it('handleChainDenoms Test', async () => {
+            jest.setTimeout(100000000)
             await ibcDenomUpdateTaskService.handleChainDenoms()
         });
 

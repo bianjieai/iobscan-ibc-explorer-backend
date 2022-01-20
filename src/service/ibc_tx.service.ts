@@ -109,23 +109,9 @@ export class IbcTxService {
         }
         let token = undefined;
         if (symbol === unAuth) {
-            // const resultUnAuth = await this.ibcDenomModel.findRecordBySymbol('');
-            // token = resultUnAuth.map(item => {
-            //     return {
-            //         denom: item.denom,
-            //         chain_id: item.chain_id
-            //     };
-            // });
             token = await this.getTokenBySymbol('')
         } else if (symbol) {
             token = await this.getTokenBySymbol(symbol)
-            // const result = await this.ibcDenomModel.findRecordBySymbol(symbol);
-            // token = result.map(item => {
-            //     return {
-            //         denom: item.denom,
-            //         chain_id: item.chain_id
-            //     };
-            // });
         }
         if (denom) {
             token = [denom];

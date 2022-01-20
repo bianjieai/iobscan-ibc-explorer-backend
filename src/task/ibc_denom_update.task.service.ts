@@ -2,6 +2,7 @@ import {Connection} from 'mongoose';
 import {Injectable} from "@nestjs/common";
 import {InjectConnection} from "@nestjs/mongoose";
 import {RecordLimit, TaskEnum} from "../constant";
+import { cfg } from '../config/config';
 import {IbcDenomSchema} from "../schema/ibc_denom.schema";
 import {IbcBaseDenomSchema} from "../schema/ibc_base_denom.schema";
 import {IbcDenomCaculateSchema} from "../schema/ibc_denom_caculate.schema";
@@ -61,8 +62,8 @@ export class IbcDenomUpdateTaskService {
         return {chainDenomsMap,baseDenoms}
     }
 
-    async getNeedhandleIbcDenoms() {
-        return await this.ibcDenomModel.findUnAuthDenom(RecordLimit)
+    async getNeedhandleIbcDenoms(page_num,page_size) {
+        return await this.ibcDenomModel.findUnAuthDenom(page_num,page_size)
     }
 
     async getIbcDenoms(chainId, denoms) {
@@ -70,8 +71,28 @@ export class IbcDenomUpdateTaskService {
     }
 
     async handleChainDenoms() {
-        const ibcDenoms = await this.getNeedhandleIbcDenoms()
-        const {chainDenomsMap,baseDenoms} = await this.collectChainDenomsMap(ibcDenoms)
+        let pageNum = 1,supportDenoms = []
+
+        //judge  supportDenoms size for handle batch limit
+        while(supportDenoms?.length < cfg.serverCfg.updateDenomBatchLimit) {
+            const ibcDenoms = await this.getNeedhandleIbcDenoms(pageNum, RecordLimit)
+            ibcDenoms.forEach(item => {
+                const paths = item?.denom_path?.split("/")
+                //only support one skip path
+                if (paths?.length <= 2){
+                    supportDenoms.push(item)
+                }
+            });
+
+            // break when finish scan all the ibc denom which symbol is empty.
+            if (ibcDenoms?.length < RecordLimit) {
+                break;
+            }
+            pageNum++
+        }
+
+
+        const {chainDenomsMap,baseDenoms} = await this.collectChainDenomsMap(supportDenoms)
         let denomData = []
 
         if (baseDenoms) {
