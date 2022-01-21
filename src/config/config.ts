@@ -10,6 +10,7 @@ const {
     DB_DATABASE,
     NODE_ENV,
     EXECUTE_KEY,
+    MAX_PAGE_SIZE,
     DISPLAY_IBC_RECORD_MAX,
     FAULT_TOLERANCE_EXECUTE_TIME,
     HEARTBEAT_RATE,
@@ -52,6 +53,7 @@ export const cfg = {
         displayIbcRecordMax:Number(DISPLAY_IBC_RECORD_MAX || 500000),
         updateDenomBatchLimit: Number(UPDATE_DENOM_BATCH_LIMIT || 100),
         updateIbcTxBatchLimit: Number(UPDATE_IBC_TX_BATCH_LIMIT || 100),
+        maxPageSize: Number(MAX_PAGE_SIZE || 100),
     },
     taskCfg:{
         interval:{
