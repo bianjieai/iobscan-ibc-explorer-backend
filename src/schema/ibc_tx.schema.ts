@@ -3,7 +3,7 @@ import * as mongoose from 'mongoose';
 import {AggregateResult24hr, IbcTxQueryType, IbcTxType,} from '../types/schemaTypes/ibc_tx.interface';
 import {parseQuery} from '../helper/ibcTx.helper';
 import {IbcTxStatus, SubState, TxStatus} from '../constant';
-
+import {dbRes} from "../constant/dbRes";
 export const IbcTxSchema = new mongoose.Schema({
     record_id: String,
     sc_addr: String,
@@ -52,9 +52,14 @@ export const IbcTxSchema = new mongoose.Schema({
 });
 
 IbcTxSchema.index({record_id: -1}, {unique: true});
-IbcTxSchema.index({status: -1, substate:-1, next_retry_time:-1}, {background: true});
-IbcTxSchema.index({status: -1, tx_time: -1, sc_chain_id: -1, 'denoms.sc_denom': -1}, {background: true});
-IbcTxSchema.index({status: -1, tx_time: -1, dc_chain_id: -1, 'denoms.dc_denom': -1}, {background: true});
+IbcTxSchema.index({substate:-1, status: -1, next_retry_time:-1}, {background: true});
+IbcTxSchema.index({status: -1, tx_time: -1}, {background: true});
+IbcTxSchema.index({sc_chain_id: -1}, {background: true});
+IbcTxSchema.index({dc_chain_id: -1}, {background: true});
+IbcTxSchema.index({'denoms.sc_denom': -1, sc_chain_id: -1}, {background: true});
+IbcTxSchema.index({'denoms.dc_denom': -1, dc_chain_id: -1}, {background: true});
+IbcTxSchema.index({'sc_tx_info.hash': -1}, {background: true});
+IbcTxSchema.index({'dc_tx_info.hash': -1}, {background: true});
 
 IbcTxSchema.statics = {
     async countActive(): Promise<number> {
@@ -180,7 +185,7 @@ IbcTxSchema.statics = {
     async findTxList(query: IbcTxQueryType): Promise<IbcTxType[]> {
         const queryParams = parseQuery(query);
         const {page_num, page_size} = query;
-        return this.find(queryParams, {_id: 0})
+        return this.find(queryParams, dbRes.txList)
             .skip((Number(page_num) - 1) * Number(page_size))
             .limit(Number(page_size))
             .sort({tx_time: -1});
@@ -196,6 +201,27 @@ IbcTxSchema.statics = {
             .limit(Number(1));
     },
 
+    async queryTxsByStatusLimit(query): Promise<IbcTxType[]> {
+        const {status,limit} = query;
+        return this.find({status: status}, {_id: 0})
+            .sort({tx_time: 1})
+            .limit(Number(limit));
+    },
+
+    async queryTxsLimit(limit:number,sort:number): Promise<IbcTxType[]> {
+        return this.find({
+            status: {
+                $in: [
+                    IbcTxStatus.SUCCESS,
+                    IbcTxStatus.FAILED,
+                    IbcTxStatus.PROCESSING,
+                    IbcTxStatus.REFUNDED,
+                ],
+            }}, {_id: 0})
+            .sort({tx_time: sort})
+            .limit(Number(limit));
+    },
+
     async queryTxList(query): Promise<IbcTxType[]> {
         const {status,substate,limit} = query;
         return this.find({status,substate:{$in:substate}}, {_id: 0})
@@ -207,6 +233,14 @@ IbcTxSchema.statics = {
         return this.find({status,substate:{$in:substate}}, {_id: 0})
             .sort({next_retry_time: 1})
             .limit(Number(limit));
+    },
+
+    async queryTxListByPage(query):Promise<IbcTxType[]> {
+        const {sc_chain_id,status,substate,page,limit} = query;
+        return this.find({sc_chain_id,status,substate:{$in:substate}}, {_id: 0})
+            .skip((Number(page) - 1) * Number(limit))
+            .limit(Number(limit))
+            .sort({tx_time: -1});
     },
     // async distinctChainList(query): Promise<any> {
     //   const { type, dateNow, status } = query;
@@ -227,8 +261,36 @@ IbcTxSchema.statics = {
             if(JSON.stringify(error).includes('E11000')){
                 // Primary key conflict handling
             }else {
-                console.log(error,'insertMany IbcTx error')
+                if (error) {
+                    console.log(error,'insertMany IbcTx error')
+                }
             }
         },session);
     },
+    async deleteManyIbcTx(recordIds, session): Promise<void> {
+        const options = {session, isDeleted: true };
+        const filter = {
+            record_id:{
+                $in:recordIds
+            },
+        }
+        return this.deleteMany(filter, options);
+    },
+    async queryTxDetailByHash(query) : Promise<IbcTxType[]>{
+        const {hash} = query
+        return this.find({
+            status: {
+                $in: [
+                    IbcTxStatus.SUCCESS,
+                    IbcTxStatus.FAILED,
+                    IbcTxStatus.PROCESSING,
+                    IbcTxStatus.REFUNDED,
+                ],
+            },
+            $or: [
+                {"sc_tx_info.hash": hash},
+                {"dc_tx_info.hash": hash}
+            ]
+        }, {__v: 0,_id: 0});
+    }
 };

@@ -8,11 +8,12 @@ import {NodeInfoType} from "../types/lcd.interface";
 import {Logger} from "../logger";
 import {LcdConnectionMetric} from "../monitor/metrics/ibc_chain_lcd_connection.metric";
 import {IbcTxProcessingMetric} from "../monitor/metrics/ibc_tx_processing_cnt.metric";
+import {IbcTxTable} from "../constant/index";
 
 @Injectable()
 export class IbcMonitorService {
     private chainConfigModel;
-    private ibcTxModel;
+    private ibcTxLatestModel;
 
     constructor(@InjectConnection() private readonly connection: Connection,
                 private readonly lcdConnectionMetric: LcdConnectionMetric,
@@ -39,10 +40,10 @@ export class IbcMonitorService {
 
 
         // ibcTxModel
-        this.ibcTxModel = await this.connection.model(
-            'ibcTxModel',
+        this.ibcTxLatestModel = await this.connection.model(
+            'ibcTxLatestModel',
             IbcTxSchema,
-            'ex_ibc_tx',
+            IbcTxTable.IbcTxLatestTableName,
         );
     }
 
@@ -75,7 +76,7 @@ export class IbcMonitorService {
 
 
     async getProcessingCnt() {
-        const processingCnt = await this.ibcTxModel.countProcessing();
+        const processingCnt = await this.ibcTxLatestModel.countProcessing();
         await this.ibcTxProcessMetric.collect(processingCnt)
     }
 

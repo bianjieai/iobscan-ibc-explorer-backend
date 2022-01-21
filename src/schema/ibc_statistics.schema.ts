@@ -5,6 +5,7 @@ export const IbcStatisticsSchema = new mongoose.Schema(
   {
     statistics_name: String,
     count: Number,
+    count_latest: Number,
     statistics_info : String,
     create_at: {
       type: Number,
@@ -17,8 +18,6 @@ export const IbcStatisticsSchema = new mongoose.Schema(
   },
   { versionKey: false },
 );
-
-// todo 冗余的索引
 
 IbcStatisticsSchema.index({ statistics_name: 1 }, { unique: true });
 

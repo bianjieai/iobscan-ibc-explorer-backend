@@ -53,6 +53,11 @@ describe('IbcStatisticsTaskService', () => {
             const record = await ibcStatisticsTaskService.aggregateBaseDenomCnt()
             console.log(record)
         });
+
+        it('getCountinfo Test', async () => {
+            const record = await ibcStatisticsTaskService.getCountinfo()
+            console.log(record)
+        });
     });
 
 })

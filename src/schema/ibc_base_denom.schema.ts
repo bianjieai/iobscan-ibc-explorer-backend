@@ -9,6 +9,7 @@ export const IbcBaseDenomSchema = new mongoose.Schema(
     scale: Number,
     icon: String,
     is_main_token: Boolean,
+    ibc_info_hash_caculate: String,
     create_at: {
       type: Number,
       default: Math.floor(new Date().getTime() / 1000),
@@ -31,6 +32,19 @@ IbcBaseDenomSchema.statics = {
   async findAllRecord(): Promise<IbcBaseDenomType[]> {
     return this.find();
   },
+
+  async findByDenoms(denoms): Promise<IbcBaseDenomType[]> {
+      return this.find({
+          denom:{
+              $in:denoms,
+          }
+      });
+  },
+  async updateBaseDenomWithSession(baseDenom: IbcBaseDenomType,session) {
+        const {chain_id,denom} = baseDenom;
+        const options = {session,upsert: true, new: false, setDefaultsOnInsert: true};
+        return this.findOneAndUpdate({chain_id,denom}, baseDenom, options);
+    },
 
   async insertBaseDenom(ibcBaseDenom): Promise<void>{
         return this.create(ibcBaseDenom);

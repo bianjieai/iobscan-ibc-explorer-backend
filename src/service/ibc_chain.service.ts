@@ -12,7 +12,6 @@ import {IbcStatisticsType} from "../types/schemaTypes/ibc_statistics.interface";
 @Injectable()
 export class IbcChainService {
     private ibcChainConfigModel;
-    private ibcTxModel;
     private ibcStatisticsModel;
 
     constructor(@InjectConnection() private connection: Connection) {
@@ -24,12 +23,6 @@ export class IbcChainService {
             'ibcChainConfigModel',
             IbcChainConfigSchema,
             'chain_config',
-        );
-
-        this.ibcTxModel = await this.connection.model(
-            'ibcTxModel',
-            IbcTxSchema,
-            'ex_ibc_tx',
         );
         // ibcStatisticsModel
         this.ibcStatisticsModel = await this.connection.model(
