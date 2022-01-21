@@ -30,7 +30,7 @@ describe('IbcDenomHashTaskService', () => {
         });
 
         it('getCaculateDenomMap Test', async () => {
-           const data = await ibcDenomHashTaskService.getCaculateDenomMap("cosmoshub_4")
+           const data = await ibcDenomHashTaskService.getCaculateDenomMap("sifchain_1")
             console.log('--data-->:',data)
         });
 

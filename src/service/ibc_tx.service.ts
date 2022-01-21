@@ -99,7 +99,7 @@ export class IbcTxService {
             status: [],
             // token?: { denom: string; chain_id: string }[];
             page_num: page_num,
-            page_size: page_size,
+            page_size: page_size > cfg.serverCfg.maxPageSize ? cfg.serverCfg.maxPageSize : page_size,
         }
         for (const one of date_range) {
             queryData?.date_range.push(Number(one))

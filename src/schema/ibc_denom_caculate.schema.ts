@@ -26,6 +26,7 @@ export const IbcDenomCaculateSchema = new mongoose.Schema(
 );
 
 IbcDenomCaculateSchema.index({chain_id: 1, denom: 1}, {unique: true});
+IbcDenomCaculateSchema.index({sc_chain_id: 1});
 IbcDenomCaculateSchema.statics = {
     async findCount(): Promise<number> {
         return this.count();

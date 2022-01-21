@@ -10,6 +10,6 @@ export class IbcUpdateProcessingTxTaskService {
     async doTask(taskName?: TaskEnum): Promise<void> {
         const defaultSubstate = 0
         const ibcTxLatestModel = this.taskCommonService.getIbcTxLatestModel()
-        await this.taskCommonService.changeIbcTxState(ibcTxLatestModel, dateNow,[defaultSubstate],false)
+        await this.taskCommonService.changeIbcTxState(ibcTxLatestModel, dateNow,[defaultSubstate],false,[])
     }
 }

@@ -25,6 +25,7 @@ import {dateNow} from "../helper/date.helper";
 import {getTaskStatus} from "../helper/task.helper";
 import {SyncTaskSchema} from "../schema/sync.task.schema";
 import {Logger} from "../logger";
+import {IbcChainConfigType} from "../types/schemaTypes/ibc_chain_config.interface";
 
 @Injectable()
 export class IbcTxHandler {
@@ -239,6 +240,21 @@ export class IbcTxHandler {
 
     }
 
+    async getChainsCfg() :Promise<IbcChainConfigType[]>{
+        return  await this.chainConfigModel.findAll();
+    }
+    // get processing ibc tx by page for update batch limit
+    async getProcessingTxsByPage(sc_chain_id,substate,page) {
+        const stateTxs = await this.ibcTxModel.queryTxListByPage({
+                sc_chain_id:sc_chain_id,
+                status: IbcTxStatus.PROCESSING,
+                substate: substate,
+                page: page,
+                limit: RecordLimit,
+        });
+        return stateTxs
+    }
+
     async getPacketIds(txs) {
         const packetIds = []
         if (txs?.length) {
@@ -267,8 +283,11 @@ export class IbcTxHandler {
     }
 
     // if handlIbcTxCron is true,don't need call insertManyDenom save ibc_denom
-    async changeIbcTxState(ibcTxModel,dateNow, substate: number[],handlIbcTxCron:boolean): Promise<void> {
+    async changeIbcTxState(ibcTxModel,dateNow, substate: number[],handlIbcTxCron:boolean,txs :IbcTxType[]): Promise<void> {
         const ibcTxs = await this.getProcessingTxs(ibcTxModel,substate)
+        if (handlIbcTxCron && txs?.length) {
+            ibcTxs.push(txs)
+        }
         // const ibcTxs = await ibcTxModel.queryTxByRecordId("transferchannel-28transferchannel-12163541irishub_qaF29DEFE6DE7C6355489F5D2CCC96EF2D630E351F843852050D1A29317C21FBDB0")
 
 

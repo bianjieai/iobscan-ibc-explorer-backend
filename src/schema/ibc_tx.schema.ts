@@ -234,6 +234,14 @@ IbcTxSchema.statics = {
             .sort({next_retry_time: 1})
             .limit(Number(limit));
     },
+
+    async queryTxListByPage(query):Promise<IbcTxType[]> {
+        const {sc_chain_id,status,substate,page,limit} = query;
+        return this.find({sc_chain_id,status,substate:{$in:substate}}, {_id: 0})
+            .skip((Number(page) - 1) * Number(limit))
+            .limit(Number(limit))
+            .sort({tx_time: -1});
+    },
     // async distinctChainList(query): Promise<any> {
     //   const { type, dateNow, status } = query;
     //   return this.distinct(type, {
