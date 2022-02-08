@@ -18,10 +18,10 @@ describe('IbcTxService', () => {
     describe('queryIbcTxList', () => {
         it('queryIbcTxList Test', async () => {
             jest.setTimeout(100000000)
-            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:true,
+            const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:false,
                 status:"1,2,3,4",
                 date_range:"0,1642495903",
-                symbol:'ATOM',
+                symbol:'Others',
                 // chain_id:'cosmoshub_4',
             };
             const time1 = Math.floor(new Date().getTime()/1000)
@@ -35,9 +35,16 @@ describe('IbcTxService', () => {
 
     describe('getTokenBySymbol', () => {
         it('getTokenBySymbol Test', async () => {
-            const symbol = "osmo"
+            const symbol = ""
             // const symbol = unAuth
             const result = await ibcTxService.getTokenBySymbol(symbol)
+            console.log(result, '----')
+        });
+    });
+
+    describe('getBaseDenomMap', () => {
+        it('getBaseDenomMap Test', async () => {
+            const result = await ibcTxService.getBaseDenomMap()
             console.log(result, '----')
         });
     });

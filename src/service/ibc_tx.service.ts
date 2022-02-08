@@ -5,6 +5,7 @@ import {InjectConnection} from '@nestjs/mongoose';
 import {ListStruct, Result} from '../api/ApiResult';
 import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from '../dto/ibc_tx.dto';
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
+import {IbcBaseDenomSchema} from '../schema/ibc_base_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
 import {unAuth, TaskEnum, IbcTxTable, TxType,} from '../constant';
 import {cfg} from '../config/config';
@@ -16,6 +17,7 @@ import {TxSchema} from "../schema/tx.schema";
 @Injectable()
 export class IbcTxService {
     private ibcDenomModel;
+    private ibcBaseDenomModel;
     private ibcTxLatestModel;
     private ibcTxModel;
     private ibcStatisticsModel;
@@ -39,6 +41,11 @@ export class IbcTxService {
             'ibcDenomModel',
             IbcDenomSchema,
             'ibc_denom',
+        );
+        this.ibcBaseDenomModel = await this.connection.model(
+            'ibcBaseDenomModel',
+            IbcBaseDenomSchema,
+            'ibc_base_denom',
         );
         // ibcStatisticsModel
         this.ibcStatisticsModel = await this.connection.model(
@@ -80,9 +87,21 @@ export class IbcTxService {
         return result.map(item => {
             return {
                 denom: item.denom,
+                base_denom: item.base_denom,
                 chain_id: item.chain_id
             };
         });
+    }
+
+    async getBaseDenomMap() : Promise<any>{
+        let  baseDenomMap = new Map
+        const baseDenom = await this.ibcBaseDenomModel.findAllRecord()
+        if (baseDenom?.length) {
+            for (const item of baseDenom) {
+                baseDenomMap.set(`${item?.denom}`,item?.symbol)
+            }
+        }
+        return baseDenomMap
     }
 
 
@@ -110,6 +129,22 @@ export class IbcTxService {
         let token = undefined;
         if (symbol === unAuth) {
             token = await this.getTokenBySymbol('')
+            // filter token which base_denom exist in ibc_base_denom
+            if (token.length) {
+                const baseDenomMap = await this.getBaseDenomMap()
+
+                let  tokensFilter = []
+                for  (const one of token) {
+                    if (baseDenomMap && !baseDenomMap?.has(`${one?.base_denom}`)) {
+                        tokensFilter.push(one)
+                    }
+                }
+
+                if (tokensFilter?.length) {
+                    token = [...tokensFilter]
+                }
+            }
+
         } else if (symbol) {
             token = await this.getTokenBySymbol(symbol)
         }
