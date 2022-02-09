@@ -135,6 +135,7 @@ export class IbcTxService {
 
                 let  tokensFilter = []
                 for  (const one of token) {
+                    //only push token which base_denom not in ibc_base_denom
                     if (baseDenomMap && !baseDenomMap?.has(`${one?.base_denom}`)) {
                         tokensFilter.push(one)
                     }

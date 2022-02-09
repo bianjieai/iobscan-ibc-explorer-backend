@@ -35,7 +35,7 @@ describe('IbcTxService', () => {
 
     describe('getTokenBySymbol', () => {
         it('getTokenBySymbol Test', async () => {
-            const symbol = ""
+            const symbol = "osmo"
             // const symbol = unAuth
             const result = await ibcTxService.getTokenBySymbol(symbol)
             console.log(result, '----')
