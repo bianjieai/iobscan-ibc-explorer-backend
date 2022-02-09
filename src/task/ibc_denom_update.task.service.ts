@@ -70,8 +70,21 @@ export class IbcDenomUpdateTaskService {
         return await this.ibcDenomCaculateModel.findIbcDenoms(chainId, denoms)
     }
 
+    async getBaseDenomMap() : Promise<any>{
+        let  baseDenomMap = new Map
+        const baseDenom = await this.ibcBaseDenomModel.findAllRecord()
+        if (baseDenom?.length) {
+            for (const item of baseDenom) {
+                baseDenomMap.set(`${item?.denom}`,item?.symbol)
+            }
+        }
+        return baseDenomMap
+    }
+
     async handleChainDenoms() {
         let pageNum = 1,supportDenoms = []
+
+        const baseDenomMap = await this.getBaseDenomMap()
 
         //judge  supportDenoms size for handle batch limit
         while(supportDenoms?.length < cfg.serverCfg.updateDenomBatchLimit) {
@@ -80,7 +93,11 @@ export class IbcDenomUpdateTaskService {
                 const paths = item?.denom_path?.split("/")
                 //only support one skip path
                 if (paths?.length <= 2){
-                    supportDenoms.push(item)
+
+                    //only support denom which base_denom in ibc_base_denom
+                    if (baseDenomMap && baseDenomMap?.has(`${item?.base_denom}`)) {
+                        supportDenoms.push(item)
+                    }
                 }
             });
 
