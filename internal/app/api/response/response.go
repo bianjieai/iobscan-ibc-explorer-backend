@@ -21,17 +21,6 @@ func SuccessWithMsg(msg string, data interface{}) vo.BaseResponse {
 	}
 }
 
-func SuccessWithPage(data interface{}, page vo.Page, total int) vo.BaseResponseWithPage {
-	return vo.BaseResponseWithPage{
-		Code:    0,
-		Message: "success",
-		Data:    data,
-		Page:    page.Page,
-		Size:    page.Size,
-		Total:   total,
-	}
-}
-
 func Fail(code int, msg string, data interface{}) vo.BaseResponse {
 	return vo.BaseResponse{
 		Code:    code,
@@ -42,7 +31,7 @@ func Fail(code int, msg string, data interface{}) vo.BaseResponse {
 
 func FailMsg(msg string) vo.BaseResponse {
 	return vo.BaseResponse{
-		Code:    errors.ERROR,
+		Code:    errors.ErrSystemError,
 		Message: msg,
 		Data:    nil,
 	}

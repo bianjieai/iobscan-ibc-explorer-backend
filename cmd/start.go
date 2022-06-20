@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"os"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/zk"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"os"
 )
 
 var (
@@ -48,12 +50,12 @@ func test() {
 func online() {
 	var config *conf.Config
 
-	zkConn, err := initialization.NewZkConn()
+	zkConn, err := zk.NewZkConn()
 	if err != nil {
 		panic(err)
 	}
 
-	configPath := "/visualization/config"
+	configPath := "/iobscan-ibc-explorer-backend/config"
 	if v, ok := os.LookupEnv(constant.EnvNameZkConfigPath); ok {
 		configPath = v
 	}

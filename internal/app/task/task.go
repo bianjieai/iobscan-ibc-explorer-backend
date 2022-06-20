@@ -1,9 +1,11 @@
 package task
 
 import (
+	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type Task interface {
@@ -51,7 +53,7 @@ func RunOnce(task Task) {
 }
 
 func RunOnceWithLock(task Task) {
-	if err := redisClient.Lock(task.Name(), time.Now().Unix(), task.ExpireTime()); err != nil {
+	if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), task.ExpireTime()); err != nil {
 		logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
 		return
 	}

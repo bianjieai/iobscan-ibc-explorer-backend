@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	App App
-
-	Mongo Mongo `mapstructure:"mongo_sup_tech"`
+	App   App
+	Mongo Mongo
+	Mysql Mysql
 	Redis Redis
+	Log   Log
 }
 
 type Mysql struct {
@@ -30,17 +31,11 @@ type Mongo struct {
 }
 
 type App struct {
-	ServicePath     string
-	ServerName      string
-	Addr            string
-	Env             string
-	LogLevel        string `mapstructure:"log_level"`
-	LogFileName     string `mapstructure:"log_file_name"`
-	LogPath         string `mapstructure:"log_path"`
-	LogmaxAge       int
-	LogrotationTime int
-	StartTask       bool `mapstructure:"start_task"`
-	Version         string
+	Name      string
+	Addr      string
+	Env       string
+	StartTask bool `mapstructure:"start_task"`
+	Version   string
 }
 
 type Redis struct {
@@ -49,6 +44,15 @@ type Redis struct {
 	Password string `json:"-"`
 	Mode     enum.RedisMode
 	Db       int
+}
+
+type Log struct {
+	LogLevel           string `mapstructure:"log_level"`
+	LogFileName        string `mapstructure:"log_file_name"`
+	LogPath            string `mapstructure:"log_path"`
+	LogMaxAgeDay       int    `mapstructure:"log_max_age_day"`
+	LogRotationTimeDay int    `mapstructure:"log_rotation_time_day"`
+	LogOutput          string `mapstructure:"log_output"`
 }
 
 func ReadConfig(data []byte) (*Config, error) {

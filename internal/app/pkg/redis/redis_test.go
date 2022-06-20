@@ -2,9 +2,10 @@ package redis
 
 import (
 	"fmt"
-	v8 "github.com/go-redis/redis/v8"
 	"testing"
 	"time"
+
+	v8 "github.com/go-redis/redis/v8"
 )
 
 type people struct {
@@ -16,12 +17,7 @@ type people struct {
 var client *Client
 
 func TestMain(m *testing.M) {
-	redisClient := v8.NewClient(&v8.Options{
-		Addr:     "127.0.0.1:6379",
-		Username: "",
-		Password: "",
-	})
-	client = New(redisClient)
+	client = New("127.0.0.1:6379", "", "", "single", 0)
 	m.Run()
 }
 

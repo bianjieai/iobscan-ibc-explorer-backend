@@ -6,17 +6,41 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	v8 "github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
-	"time"
+)
+
+const (
+	Cluster = "cluster"
+	Single  = "single"
 )
 
 type Client struct {
 	redisClient v8.UniversalClient
 }
 
-func New(redisClient v8.UniversalClient) *Client {
+func New(addrs, user, password, mode string, db int) *Client {
+	var redisClient v8.UniversalClient
+	if mode == Cluster {
+		redisClient = v8.NewClusterClient(&v8.ClusterOptions{
+			Addrs:    strings.Split(addrs, ","),
+			Username: user,
+			Password: password,
+		})
+	} else if mode == Single {
+		redisClient = v8.NewClient(&v8.Options{
+			Addr:     addrs,
+			Username: user,
+			Password: password,
+			DB:       db,
+		})
+	} else {
+		logrus.Fatal("unknown redis server mode")
+	}
 	return &Client{
 		redisClient: redisClient,
 	}
@@ -42,15 +66,6 @@ func (r *Client) Set(key string, value interface{}, expiration time.Duration) er
 		logrus.Error("redis Set fail, ", err.Error())
 	}
 	return err
-}
-
-// Exists RedisClient `Exists` command.
-func (r *Client) Exists(key string) (bool, error) {
-	res, err := r.redisClient.Exists(context.Background(), key).Result()
-	if err != nil {
-		logrus.Error("redis Set fail, ", err.Error())
-	}
-	return res != 0, err
 }
 
 // SMembers RedisClient `SMembers` command. It returns redis.Nil error when key does not exist
@@ -187,18 +202,6 @@ func (r *Client) UnmarshalHGet(key, field string, value interface{}) error {
 	return nil
 }
 
-// UnmarshalHGetOrElseNil RedisClient `HGET` command with unmarshal, if not find value is nil
-func (r *Client) UnmarshalHGetOrElseNil(key, field string, value interface{}) error {
-	exists, err := r.HExists(key, field)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return nil
-	}
-	return r.UnmarshalHGet(key, field, value)
-}
-
 // UnmarshalHGetAll RedisClient `HGETALL` command with unmarshal
 // when value is string
 func (r *Client) UnmarshalHGetAll(key string, values interface{}) error {
@@ -248,6 +251,14 @@ func (r *Client) Lock(key string, value interface{}, expiration time.Duration) e
 	return nil
 }
 
+func (r *Client) Incr(key string) (int64, error) {
+	incr, err := r.redisClient.Incr(context.Background(), key).Result()
+	if err != nil {
+		logrus.Error("redis incr fail, ", err.Error())
+	}
+	return incr, err
+}
+
 func (r *Client) mapStringToBytes(ms map[string]string) []byte {
 	var res bytes.Buffer
 	res.WriteString("{")
@@ -272,17 +283,29 @@ func (r *Client) Ping() error {
 	return err
 }
 
-func (r *Client) Keys(pattern string) []string {
-	keys := r.redisClient.Keys(context.Background(), pattern)
-	return keys.Val()
+// XAdd values accepts values in the following formats:
+//   - values = []interface{}{"key1", "value1", "key2", "value2"}
+//   - values = []string("key1", "value1", "key2", "value2")
+//   - values = map[string]interface{}{"key1": "value1", "key2": "value2"}
+func (r *Client) XAdd(stream string, values interface{}) (string, error) {
+	messageID, err := r.redisClient.XAdd(context.Background(), &v8.XAddArgs{
+		Stream: stream,
+		Values: values,
+	}).Result()
+	return messageID, err
 }
 
-func (r *Client) TTL(key string) (time.Duration, error) {
-	keys := r.redisClient.TTL(context.Background(), key)
-	return keys.Result()
+func (r *Client) XDel(stream string, ids ...string) (int64, error) {
+	result, err := r.redisClient.XDel(context.Background(), stream, ids...).Result()
+	return result, err
 }
 
-func (r *Client) HExists(key, filed string) (bool, error) {
-	keys := r.redisClient.HExists(context.Background(), key, filed)
-	return keys.Result()
+func (r *Client) XRead(args *v8.XReadArgs) ([]v8.XStream, error) {
+	result, err := r.redisClient.XRead(context.Background(), args).Result()
+	return result, err
+}
+
+func (r *Client) XLen(stream string) (length int64, err error) {
+	length, err = r.redisClient.XLen(context.Background(), stream).Result()
+	return
 }

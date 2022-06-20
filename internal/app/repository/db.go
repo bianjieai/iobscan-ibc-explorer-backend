@@ -9,6 +9,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -59,7 +60,7 @@ func CreateTable(db *gorm.DB) {
 	_ = db.Set("gorm:table_options", "CHARSET=utf8mb4").AutoMigrate()
 }
 
-func NewQMgo(cfg conf.Mongo, ctx context.Context) {
+func InitMgo(cfg conf.Mongo, ctx context.Context) {
 	var maxPoolSize uint64 = 4096
 	client, err := qmgo.NewClient(ctx, &qmgo.Config{
 		Uri: cfg.Url,

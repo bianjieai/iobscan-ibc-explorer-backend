@@ -1,24 +1,34 @@
 package app
 
 import (
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
-	"github.com/sirupsen/logrus"
+	"context"
+	"github.com/gin-gonic/gin"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/sirupsen/logrus"
 )
 
 func Serve(cfg *conf.Config) {
-
+	initCore(cfg)
+	r := gin.Default()
+	api.Routers(r)
+	logrus.Fatal(r.Run(cfg.App.Addr))
 }
 
 func initCore(cfg *conf.Config) {
 	global.Config = cfg
 	initLogger(&cfg.Log)
-	repository.InitMysqlDB(cfg.Mysql)
+	repository.InitMgo(cfg.Mongo, context.Background())
 	cache.InitRedisClient(cfg.Redis)
 }
 
