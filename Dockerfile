@@ -1,13 +1,17 @@
-FROM node:14.4.0-alpine3.12
+FROM golang:1.16.10-alpine3.13 as builder
 
-WORKDIR /app
-COPY . .
+# Set up dependencies
+ENV PACKAGES make gcc git libc-dev bash
 
-RUN apk add git && yarn install && yarn build
+COPY  . $GOPATH/src
+COPY  .netrc /root/
+WORKDIR $GOPATH/src
 
+# Install minimum necessary dependencies, build binary
+RUN apk add --no-cache $PACKAGES && make all
 
-#FROM node:14.4.0-alpine3.12
-#WORKDIR /app
-#COPY . .
-#COPY --from=builder /app/dist /app/dist
-CMD npm run start:prod
+FROM alpine:3.13
+
+COPY --from=builder /go/src/iobscan-ibc-explorer-backend /usr/local/bin/
+
+CMD ["iobscan-ibc-explorer-backend", "start"]

@@ -1,0 +1,25 @@
+[app]
+name = "iobscan-ibc-explorer-backend"
+addr = "0.0.0.0:8000"
+version = "0.4"
+env = "dev"
+start_task = true
+
+[log]
+log_level = "debug"
+log_file_name = "sw"
+log_path = "/var/log"
+log_max_age_day = 15
+log_rotation_time_day = 1
+log_output = "std"
+
+[mongo]
+url = "mongodb://ibc:ibcpassword@192.168.150.60/?connect=direct&authSource=iobscan-ibc"
+database = "iobscan-ibc"
+
+[redis]
+addrs = "127.0.0.1:6379"
+user = ""
+password = ""
+mode = "single"
+db = 0

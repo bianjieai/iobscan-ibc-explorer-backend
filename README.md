@@ -1,23 +1,47 @@
 # iobscan-ibc-explorer-backend
-IBC Explorer Backend
 
-## Installation
+
+## Run
+
+First make
 
 ```bash
-$ npm install
+make build
 ```
 
-npm run build
+then start with
 
-## environment configure:
+```bash
+./iobscan-ibc-explorer-backend start
+```
 
-NODE_ENV=development
-DB_ADDR='192.168.150.40:27017'
-DB_USER='ibc'
-DB_PASSWD='ibcpassword'
-DB_DATABASE='iobscan-ibc'
-LCD_ADDR='http://192.168.150.40:1317'
-CRON_JOBS = '["ex_sync_tx", "ex_sync_chain", "ex_sync_statistics"]'
-IBCTX_EXECUTE_TIME = '15 * * * * *'
-IBCCHAIN_EXECUTE_TIME = '30 * * * * *'
-IBCSTATISTICS_EXECUTE_TIME = '45 * * * * *'
+or
+
+```bash
+./iobscan-ibc-explorer-backend start test -c configFilePath
+```
+
+## Run with docker
+
+You can run application with docker.
+
+```bash
+docker build -t iobscan-ibc-explorer-backend .
+```
+
+then
+
+```bash
+docker run --name iobscan-ibc-explorer-backend -p 8080:8080 iobscan-ibc-explorer-backend
+```
+
+## env params
+
+### ZooKeeper
+
+| param | type   | default           | description                  | example           |
+| :---- | :----- | :---------------- | :--------------------------- | :---------------- |
+| ZK_SERVICES    | string | 127.0.0.1:2182    | zookeeper connection address | 127.0.0.1:2182    |
+| ZK_USERNAME    | string |                   | zookeeper username           | root              |
+| ZK_PASSWD    | string |                   | zookeeper passwd             | 123456            |
+| ZK_CONFIG_PATH    | string | /visualization/config| project config file zNode    | /visualization/config |
