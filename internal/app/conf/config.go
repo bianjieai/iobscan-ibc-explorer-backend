@@ -2,9 +2,9 @@ package conf
 
 import (
 	"bytes"
-	"github.com/spf13/viper"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/enum"
+	"github.com/spf13/viper"
 )
 
 type Config struct {

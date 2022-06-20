@@ -8,10 +8,11 @@ package redis
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
 // StringTemplate for string

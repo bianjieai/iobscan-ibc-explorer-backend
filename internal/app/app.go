@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"os"
 	"path"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
 )
