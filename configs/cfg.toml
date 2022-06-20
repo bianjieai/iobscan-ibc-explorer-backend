@@ -1,0 +1,13 @@
+[app]
+name = "visualization-server"
+addr = "0.0.0.0:8000"
+env = "dev"
+log_level = "info"
+start_task = true
+lcd_uri = "http://10.0.1.116:1317"
+version = "0.10"
+session_expired_second = 3600
+
+[mongo]
+url = "mongodb://cschain:cschainpassword@10.0.1.8:30475/?connect=direct&authSource=explorer-sync"
+database = "explorer-sync"
