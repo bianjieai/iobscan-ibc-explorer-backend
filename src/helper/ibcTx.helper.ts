@@ -24,10 +24,18 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
     queryParams.$and = [];
   }
   if (chain_id) {
-    const $or = [];
-    $or.push({ sc_chain_id: chain_id });
-    $or.push({ dc_chain_id: chain_id });
-    queryParams.$and.push({ $or });
+    const chains:string[] = chain_id.split(",")
+    switch (chains.length) {
+      case 1:// transfer_chain or recv_chain
+        const $or = [];
+        $or.push({sc_chain_id: chain_id});
+        $or.push({dc_chain_id: chain_id});
+        queryParams.$and.push({$or});
+        break;
+      case 2://transfer_chain and recv_chain
+        queryParams.$and.push({sc_chain_id:chains[0],dc_chain_id:chains[1]})
+        break;
+    }
   }
   if (token && token.length) {
     const $or = [];
