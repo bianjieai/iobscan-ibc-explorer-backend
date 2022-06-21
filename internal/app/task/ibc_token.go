@@ -92,6 +92,7 @@ func (t *TokenTask) setTokenPrice(existedTokenList, newTokenList entity.IBCToken
 	tokenPriceMap, err := tokenPriceRepo.GetAll()
 	if err != nil {
 		logrus.Errorf("task %s `setTokenPrice` error, %v", t.Name(), err)
+		return existedTokenList, newTokenList, err
 	}
 
 	baseDenomMap := baseDenomList.ConvertToMap()

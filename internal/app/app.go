@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
 	"os"
 	"path"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
@@ -68,8 +68,6 @@ func initLogger(logCfg *conf.Log) {
 }
 
 func startTask() {
-	task.RegisterTasks( //&task.TokenPriceTask{},
-		&task.TokenTask{},
-	)
+	task.RegisterTasks(&task.TokenPriceTask{}, &task.TokenTask{})
 	task.Start()
 }
