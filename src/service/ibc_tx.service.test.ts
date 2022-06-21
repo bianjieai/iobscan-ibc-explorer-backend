@@ -21,8 +21,8 @@ describe('IbcTxService', () => {
             const query: IbcTxListReqDto = { page_num: 1, page_size: 10,use_count:false,
                 status:"1,2,3,4",
                 date_range:"0,1642495903",
-                symbol:'Others',
-                // chain_id:'cosmoshub_4',
+                // symbol:'Others',
+                chain_id:'cosmoshub_4,osmosis_1',
             };
             const time1 = Math.floor(new Date().getTime()/1000)
 
