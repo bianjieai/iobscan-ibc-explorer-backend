@@ -8,4 +8,3 @@ build
 .env
 node_modules
 dist
-cmd/*
