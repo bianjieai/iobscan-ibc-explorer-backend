@@ -16,6 +16,7 @@ import (
 
 var db *gorm.DB
 var mgo *qmgo.Client
+var ibcDatabase string
 
 func InitMysqlDB(cfg conf.Mysql) *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
@@ -74,4 +75,5 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 		logrus.Fatalf("connect mongo failed, uri: %s, err:%s", cfg.Url, err.Error())
 	}
 	mgo = client
+	ibcDatabase = cfg.Database
 }
