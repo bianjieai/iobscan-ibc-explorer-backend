@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
 	"os"
 	"path"
 	"strings"
@@ -20,6 +21,10 @@ import (
 
 func Serve(cfg *conf.Config) {
 	initCore(cfg)
+	if cfg.App.StartTask {
+		startTask()
+	}
+
 	r := gin.Default()
 	api.Routers(r)
 	logrus.Fatal(r.Run(cfg.App.Addr))
@@ -60,4 +65,11 @@ func initLogger(logCfg *conf.Log) {
 	} else {
 		logrus.SetOutput(os.Stdout)
 	}
+}
+
+func startTask() {
+	task.RegisterTasks( //&task.TokenPriceTask{},
+		&task.TokenTask{},
+	)
+	task.Start()
 }
