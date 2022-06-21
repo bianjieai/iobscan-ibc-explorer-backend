@@ -5,3 +5,6 @@ vendor
 build
 
 *.log
+.env
+node_modules
+dist
