@@ -17,3 +17,14 @@ type IBCDenom struct {
 func (i IBCDenom) CollectionName() string {
 	return "ibc_denom"
 }
+
+type IBCDenomList []*IBCDenom
+type IBCDenomMap map[string]*IBCDenom
+
+func (l IBCDenomList) ConvertToMap() IBCDenomMap {
+	res := make(map[string]*IBCDenom)
+	for _, v := range l {
+		res[v.ChainId+v.Denom] = v
+	}
+	return res
+}

@@ -103,3 +103,12 @@ func HttpPost(url string, reqBody interface{}) (bz []byte, err error) {
 	bz, err = ioutil.ReadAll(resp.Body)
 	return bz, nil
 }
+
+func InArray(arr []string, e string) bool {
+	for _, v := range arr {
+		if v == e {
+			return true
+		}
+	}
+	return false
+}

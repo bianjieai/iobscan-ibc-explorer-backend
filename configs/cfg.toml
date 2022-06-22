@@ -14,7 +14,8 @@ log_rotation_time_day = 1
 log_output = "std"
 
 [mongo]
-url = "mongodb://ibc:ibcpassword@192.168.150.60/?connect=direct&authSource=iobscan-ibc"
+url = "mongodb://ibc:ibcpassword@192.168.150.60:27018/?connect=direct&authSource=iobscan-ibc"
+#url = "mongodb://ibc:ibcpassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc"
 database = "iobscan-ibc"
 
 [redis]
@@ -23,3 +24,6 @@ user = ""
 password = ""
 mode = "single"
 db = 0
+
+[spi]
+coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"

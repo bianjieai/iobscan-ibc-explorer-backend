@@ -4,6 +4,18 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 )
 
+type IbcTxStatus int
+
+const (
+	IbcTxStatusSuccess    IbcTxStatus = 1
+	IbcTxStatusFailed     IbcTxStatus = 2
+	IbcTxStatusProcessing IbcTxStatus = 3
+	IbcTxStatusRefunded   IbcTxStatus = 4
+	IbcTxStatusSetting    IbcTxStatus = 5
+)
+
+var IbcTxUsefulStatus = []IbcTxStatus{IbcTxStatusSuccess, IbcTxStatusFailed, IbcTxStatusProcessing, IbcTxStatusRefunded}
+
 const (
 	CollectionNameExIbcTx       = "ex_ibc_tx"
 	CollectionNameExIbcTxLatest = "ex_ibc_tx_latest"

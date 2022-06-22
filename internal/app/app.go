@@ -13,6 +13,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
@@ -20,6 +21,10 @@ import (
 
 func Serve(cfg *conf.Config) {
 	initCore(cfg)
+	if cfg.App.StartTask {
+		startTask()
+	}
+
 	r := gin.Default()
 	api.Routers(r)
 	logrus.Fatal(r.Run(cfg.App.Addr))
@@ -60,4 +65,11 @@ func initLogger(logCfg *conf.Log) {
 	} else {
 		logrus.SetOutput(os.Stdout)
 	}
+}
+
+func startTask() {
+	task.RegisterTasks(
+		//&task.TokenPriceTask{},
+		&task.TokenTask{})
+	task.Start()
 }

@@ -1,6 +1,9 @@
 package task
 
-import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+)
 
 const (
 	EveryMinute     = "0 */1 * * * ?"
@@ -15,5 +18,15 @@ const (
 )
 
 var (
-	tokenRepo repository.ITokenRepo = new(repository.TokenRepo)
+	//cache
+	tokenPriceRepo  cache.TokenPriceCacheRepo
+	denomSupplyRepo cache.DenomSupplyCacheRepo
+
+	// mongo
+	tokenRepo           repository.ITokenRepo           = new(repository.TokenRepo)
+	baseDenomRepo       repository.IBaseDenomRepo       = new(repository.BaseDenomRepo)
+	denomRepo           repository.IDenomRepo           = new(repository.DenomRepo)
+	tokenStatisticsRepo repository.ITokenStatisticsRepo = new(repository.TokenStatisticsRepo)
+	chainConfigRepo     repository.IChainConfigRepo     = new(repository.ChainConfigRepo)
+	ibcTxRepo           repository.IExIbcTxRepo         = new(repository.ExIbcTxRepo)
 )
