@@ -15,4 +15,5 @@ const (
 const (
 	tokenPrice  = "token_price"
 	denomSupply = "denom_supply_%s"
+	ibcInfoHash = "ibc_info_hash"
 )

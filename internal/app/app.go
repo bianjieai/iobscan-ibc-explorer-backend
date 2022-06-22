@@ -69,7 +69,7 @@ func initLogger(logCfg *conf.Log) {
 
 func startTask() {
 	task.RegisterTasks(
-		//&task.TokenPriceTask{},
+		&task.IbcChainCronTask{},
 		&task.TokenTask{})
 	task.Start()
 }

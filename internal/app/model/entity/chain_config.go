@@ -5,7 +5,7 @@ type (
 		ChainId        string     `bson:"chain_id"`
 		Icon           string     `bson:"icon"`
 		ChainName      string     `bson:"chain_name"`
-		LcdApiPath     string     `bson:"lcd_api_path"`
+		LcdApiPath     ApiPath    `bson:"lcd_api_path"`
 		Lcd            string     `bson:"lcd"`
 		IbcInfo        []*IbcInfo `bson:"ibc_info"`
 		IbcInfoHashLcd string     `bson:"ibc_info_hash_lcd"`
