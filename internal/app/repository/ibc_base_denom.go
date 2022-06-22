@@ -9,6 +9,7 @@ import (
 )
 
 type IBaseDenomRepo interface {
+	FindAll() (entity.IBCBaseDenomList, error)
 }
 
 var _ IBaseDenomRepo = new(BaseDenomRepo)
@@ -20,8 +21,8 @@ func (repo *BaseDenomRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCBaseDenom{}.CollectionName())
 }
 
-func (repo *BaseDenomRepo) FindAll() ([]*entity.IBCBaseDenom, error) {
-	var res []*entity.IBCBaseDenom
+func (repo *BaseDenomRepo) FindAll() (entity.IBCBaseDenomList, error) {
+	var res entity.IBCBaseDenomList
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
 	return res, err
 }

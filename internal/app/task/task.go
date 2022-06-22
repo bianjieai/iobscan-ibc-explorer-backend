@@ -34,7 +34,7 @@ func Start() {
 	c := cron.New(cron.WithSeconds())
 	for _, v := range GetTasks() {
 		task := v
-		RunOnce(task)
+		go RunOnce(task)
 
 		_, err := c.AddFunc(task.Cron(), func() {
 			RunOnceWithLock(task)

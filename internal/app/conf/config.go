@@ -13,6 +13,7 @@ type Config struct {
 	Mysql Mysql
 	Redis Redis
 	Log   Log
+	Spi   Spi
 }
 
 type Mysql struct {
@@ -53,6 +54,10 @@ type Log struct {
 	LogMaxAgeDay       int    `mapstructure:"log_max_age_day"`
 	LogRotationTimeDay int    `mapstructure:"log_rotation_time_day"`
 	LogOutput          string `mapstructure:"log_output"`
+}
+
+type Spi struct {
+	CoingeckoPriceUrl string `mapstructure:"coingecko_price_url"`
 }
 
 func ReadConfig(data []byte) (*Config, error) {

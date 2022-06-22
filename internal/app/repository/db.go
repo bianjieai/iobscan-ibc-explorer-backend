@@ -71,6 +71,7 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 		},
 		Database:    cfg.Database,
 		MaxPoolSize: &maxPoolSize,
+		Database:    cfg.Database,
 	})
 	if err != nil {
 		logrus.Fatalf("connect mongo failed, uri: %s, err:%s", cfg.Url, err.Error())
