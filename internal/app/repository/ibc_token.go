@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -30,11 +31,17 @@ func (repo *TokenRepo) FindAll() (entity.IBCTokenList, error) {
 }
 
 func (repo *TokenRepo) InsertBatch(batch []*entity.IBCToken) error {
+	now := time.Now().Unix()
+	for _, v := range batch {
+		v.UpdateAt = now
+		v.CreateAt = now
+	}
 	_, err := repo.coll().InsertMany(context.Background(), batch)
 	return err
 }
 
 func (repo *TokenRepo) UpdateToken(token *entity.IBCToken) error {
+	token.UpdateAt = time.Now().Unix()
 	query := bson.M{
 		"base_denom": token.BaseDenom,
 		"chain_id":   token.ChainId,

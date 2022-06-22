@@ -95,7 +95,7 @@ func (t *TokenTask) Run() {
 	}
 
 	// 更新ibc chain
-
+	t.updateIBCChain()
 }
 
 func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, error) {
@@ -180,7 +180,7 @@ func (t *TokenTask) setTokenPrice(existedTokenList, newTokenList entity.IBCToken
 func (t *TokenTask) analyzeChainConf() error {
 	configList, err := chainConfigRepo.FindAll()
 	if err != nil {
-		logrus.Errorf("task %s setSupply error, %v", t.Name(), err)
+		logrus.Errorf("task %s analyzeChainConf error, %v", t.Name(), err)
 		return err
 	}
 
@@ -467,7 +467,7 @@ func (t *TokenTask) caculateTokenStatistics(existedTokenList, newTokenList entit
 // ==============================================================================================================
 // 以下主要是对于ibc_token_statistics 集合数据的处理与计算
 
-func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int, error) {
+func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error) {
 	ibcDenomStrList := t.ibcDenomMap[ibcToken.BaseDenom]
 	ibcDenomCaculateList, err := denomCaculateRepo.FindByDenoms(ibcDenomStrList)
 	if err != nil {
@@ -508,7 +508,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int, error) {
 		logrus.Errorf("task %s ibcDenomBase error, %v", t.Name(), err)
 		return 0, err
 	}
-	return len(allTokenStatisticsList), nil
+	return int64(len(allTokenStatisticsList)), nil
 }
 
 func (t *TokenTask) ibcReceiveTxs(baseDenom, originalChainId string) map[string]int64 {
@@ -606,6 +606,10 @@ func (t *TokenTask) updateIBCChain() {
 		return
 	}
 
-	// todo
-
+	for _, v := range ibcChainList {
+		err = chainRepo.UpdateIbcTokenValue(v.ChainId, v.Count, v.DenomValue)
+		if err != nil {
+			logrus.Errorf("task %s updateIBCChain error, %v", t.Name(), err)
+		}
+	}
 }

@@ -16,7 +16,9 @@ type IBCToken struct {
 	Supply         string    `bson:"supply"`
 	TransferAmount string    `bson:"transfer_amount"`
 	TransferTxs    int64     `bson:"transfer_txs"`
-	ChainsInvolved int       `bson:"chains_involved"`
+	ChainsInvolved int64     `bson:"chains_involved"`
+	CreateAt       int64     `bson:"create_at"`
+	UpdateAt       int64     `bson:"update_at"`
 }
 
 func (i IBCToken) CollectionName() string {
