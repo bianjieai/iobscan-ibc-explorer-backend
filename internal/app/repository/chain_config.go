@@ -8,6 +8,8 @@ import (
 )
 
 type IChainConfigRepo interface {
+	FindAll() ([]*entity.ChainConfig, error)
+	FindOne(chainId string) (*entity.ChainConfig, error)
 }
 
 var _ IChainConfigRepo = new(ChainConfigRepo)

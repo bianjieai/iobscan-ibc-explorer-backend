@@ -5,6 +5,7 @@ type IBCTokenStatistics struct {
 	DenomPath   string  `bson:"denom_path"`
 	BaseDenom   string  `bson:"base_denom"`
 	ChainId     string  `bson:"chain_id"`
+	OriginalId  string  `bson:"original_id"`
 	Type        string  `bson:"type"`
 	IBCHops     int     `bson:"ibc_hops"`
 	DenomAmount string  `bson:"denom_amount"`
