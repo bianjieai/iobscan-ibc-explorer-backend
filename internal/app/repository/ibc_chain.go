@@ -4,7 +4,9 @@ import (
 	"context"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
+	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
+	moptions "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -52,4 +54,14 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 				"update_at":        time.Now().Unix(),
 			},
 		})
+}
+
+func (repo *IbcChainRepo) EnsureIndexes() {
+	var indexes []options.IndexModel
+	indexes = append(indexes, options.IndexModel{
+		Key:          []string{"-chain_id"},
+		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+	})
+
+	ensureIndexes(entity.IBCChain{}.CollectionName(), indexes)
 }

@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/qiniu/qmgo/options"
 	"net/url"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
@@ -71,11 +73,46 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 		},
 		Database:    cfg.Database,
 		MaxPoolSize: &maxPoolSize,
-		Database:    cfg.Database,
 	})
 	if err != nil {
 		logrus.Fatalf("connect mongo failed, uri: %s, err:%s", cfg.Url, err.Error())
 	}
 	mgo = client
 	ibcDatabase = cfg.Database
+	//auto create indexs
+	ensureDocsIndexes()
+}
+
+var (
+	Collections = []Docs{
+		new(IbcChainRepo),
+	}
+)
+
+type (
+	Docs interface {
+		// ensure indexes
+		EnsureIndexes()
+	}
+)
+
+func ensureDocsIndexes() {
+	if len(Collections) > 0 {
+		for _, v := range Collections {
+			v.EnsureIndexes()
+		}
+	}
+}
+
+func ensureIndexes(collectionName string, indexes []options.IndexModel) {
+	c := mgo.Database(ibcDatabase).Collection(collectionName)
+	if len(indexes) > 0 {
+		for _, v := range indexes {
+			if err := c.CreateOneIndex(context.Background(), v); err != nil {
+				logrus.Warn("ensure index fail", "collectionName", collectionName,
+					"index", utils.MarshalJsonIgnoreErr(v),
+					"err", err.Error())
+			}
+		}
+	}
 }
