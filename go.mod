@@ -20,4 +20,5 @@ require (
 	go.mongodb.org/mongo-driver v1.9.0
 	gorm.io/driver/mysql v1.3.4
 	gorm.io/gorm v1.23.6
+	github.com/shopspring/decimal v1.3.1
 )

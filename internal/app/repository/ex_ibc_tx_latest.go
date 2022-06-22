@@ -14,6 +14,8 @@ type IExIbcTxRepo interface {
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	CountBaseDenomTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
 	CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
+	CountIBCTokenRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
+	CountIBCTokenHistoryRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -88,6 +90,43 @@ func (repo *ExIbcTxRepo) CountBaseDenomTransferTxs() ([]*dto.CountBaseDenomTrans
 func (repo *ExIbcTxRepo) CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error) {
 	pipe := repo.countBaseDenomTransferTxsPipe()
 	var res []*dto.CountBaseDenomTransferAmountDTO
+	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(baseDenom, chainId string) []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"denoms.sc_denom": baseDenom,
+			"sc_chain_id":     chainId,
+			"status":          entity.IbcTxStatusSuccess,
+		},
+	}
+
+	group := bson.M{
+		"$group": bson.M{
+			"_id": "$denoms.dc_denom",
+			"count": bson.M{
+				"$sum": 1,
+			},
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, group)
+	return pipe
+}
+
+func (repo *ExIbcTxRepo) CountIBCTokenRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
+	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom, chainId)
+	var res []*dto.CountIBCTokenRecvTxsDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
+	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom, chainId)
+	var res []*dto.CountIBCTokenRecvTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

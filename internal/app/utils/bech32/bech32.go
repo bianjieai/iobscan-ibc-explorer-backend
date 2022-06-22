@@ -15,7 +15,7 @@ func Convert(dst, bech32str string) string {
 		return ""
 	}
 
-	dstAddr, err := convertAndEncode(dst, bz)
+	dstAddr, err := ConvertAndEncode(dst, bz)
 	if err != nil {
 		logrus.Errorf("decoding Bech32 address failed: must provide an valid bech32 address, bech32str: %s", bech32str)
 		return ""
@@ -23,7 +23,7 @@ func Convert(dst, bech32str string) string {
 	return dstAddr
 }
 
-func convertAndEncode(hrp string, data []byte) (string, error) {
+func ConvertAndEncode(hrp string, data []byte) (string, error) {
 	converted, err := convertBits(data, 8, 5, true)
 	if err != nil {
 		return "", fmt.Errorf("encoding bech32 failed, %s", err.Error())

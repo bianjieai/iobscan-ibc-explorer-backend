@@ -13,6 +13,7 @@ const (
 
 // redis key
 const (
-	tokenPrice  = "token_price"
-	denomSupply = "denom_supply_%s"
+	tokenPrice       = "token_price"
+	denomSupply      = "denom_supply:%s"
+	denomTransAmount = "denom_trans_amount:%s"
 )

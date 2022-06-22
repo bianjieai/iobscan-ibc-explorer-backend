@@ -7,6 +7,7 @@ type (
 		ChainName      string     `bson:"chain_name"`
 		LcdApiPath     string     `bson:"lcd_api_path"`
 		Lcd            string     `bson:"lcd"`
+		AddrPrefix     string     `bson:"addr_prefix"`
 		IbcInfo        []*IbcInfo `bson:"ibc_info"`
 		IbcInfoHashLcd string     `bson:"ibc_info_hash_lcd"`
 	}

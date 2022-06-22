@@ -6,7 +6,18 @@ type SupplyResp struct {
 		Amount string `json:"amount"`
 	} `json:"supply"`
 	Pagination struct {
-		NextKey string `json:"next_key"`
-		Total   string `json:"total"`
+		NextKey *string `json:"next_key"`
+		Total   string  `json:"total"`
+	} `json:"pagination"`
+}
+
+type BalancesResp struct {
+	Balances []struct {
+		Denom  string `json:"denom"`
+		Amount string `json:"amount"`
+	} `json:"balances"`
+	Pagination struct {
+		NextKey *string `json:"next_key"`
+		Total   string  `json:"total"`
 	} `json:"pagination"`
 }
