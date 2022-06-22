@@ -15,6 +15,7 @@ type IBCRelayer struct {
 	TransferTotalTxs      int64  `bson:"transfer_total_txs"`
 	TransferSuccessTxs    int64  `bson:"transfer_success_txs"`
 	TransferTotalTxsValue string `bson:"transfer_total_txs_value"`
+	LatestTxTime          int64  `bson:"latest_tx_time"`
 	CreateAt              string `bson:"create_at"`
 	UpdateAt              string `bson:"update_at"`
 }

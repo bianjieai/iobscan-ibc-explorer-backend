@@ -9,8 +9,8 @@ type IBCChain struct {
 	IbcTokensValue   string `bson:"ibc_tokens_value"`
 	TransferTxs      int64  `bson:"transfer_txs"`
 	TransferTxsValue string `bson:"transfer_txs_value"`
-	CreateAt         string `bson:"create_at"`
-	UpdateAt         string `bson:"update_at"`
+	CreateAt         int64  `bson:"create_at"`
+	UpdateAt         int64  `bson:"update_at"`
 }
 
 func (i IBCChain) CollectionName() string {

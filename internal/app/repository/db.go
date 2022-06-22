@@ -69,6 +69,7 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 			MaxStalenessMS: 90000,
 			Mode:           readpref.SecondaryPreferredMode,
 		},
+		Database:    cfg.Database,
 		MaxPoolSize: &maxPoolSize,
 	})
 	if err != nil {

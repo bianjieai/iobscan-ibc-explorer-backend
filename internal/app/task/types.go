@@ -15,5 +15,9 @@ const (
 )
 
 var (
-	tokenRepo repository.ITokenRepo = new(repository.TokenRepo)
+	tokenRepo    repository.ITokenRepo       = new(repository.TokenRepo)
+	chainCfgRepo repository.IChainConfigRepo = new(repository.ChainConfigRepo)
+	chainRepo    repository.IChainRepo       = new(repository.IbcChainRepo)
+	ibcTxRepo    repository.IExIbcTxRepo     = new(repository.ExIbcTxRepo)
+	relayerRepo  repository.IRelayerRepo     = new(repository.IbcRelayerRepo)
 )
