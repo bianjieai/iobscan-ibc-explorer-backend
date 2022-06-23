@@ -2,6 +2,7 @@ package entity
 
 type IBCRelayerStatistics struct {
 	RelayerId          string  `bson:"relayer_id"`
+	ChainId            string  `bson:"chain_id"`
 	TransferBaseDenom  string  `bson:"transfer_base_denom"`
 	TransferAmount     string  `bson:"transfer_amount"`
 	TransferTotalValue float64 `bson:"transfer_total_value"`
