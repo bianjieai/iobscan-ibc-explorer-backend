@@ -35,4 +35,6 @@ var (
 	chainRepo           repository.IChainRepo           = new(repository.IbcChainRepo)
 	relayerRepo         repository.IRelayerRepo         = new(repository.IbcRelayerRepo)
 	txRepo              repository.ITxRepo              = new(repository.TxRepo)
+	channelRepo           repository.IChannelRepo           = new(repository.ChannelRepo)
+	channelStatisticsRepo repository.IChannelStatisticsRepo = new(repository.ChannelStatisticsRepo)
 )
