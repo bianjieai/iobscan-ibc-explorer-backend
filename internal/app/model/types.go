@@ -12,7 +12,9 @@ type (
 	}
 
 	TxMsg struct {
-		Type string      `bson:"type"`
-		Msg  interface{} `bson:"msg"`
+		Type string `bson:"type"`
+		Msg  struct {
+			PacketId string `bson:"packet_id"`
+		} `bson:"msg"`
 	}
 )
