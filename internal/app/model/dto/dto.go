@@ -11,3 +11,14 @@ type GetDenomGroupByBaseDenomDTO struct {
 	BaseDenom string   `bson:"_id"`
 	Denom     []string `bson:"denom"`
 }
+
+type CountIBCTokenRecvTxsDTO struct {
+	Denom string `bson:"_id"`
+	Count int64  `bson:"count"`
+}
+
+type AggregateIBCChainDTO struct {
+	ChainId    string  `bson:"_id"`
+	DenomValue float64 `bson:"denom_value"`
+	Count      int64   `bson:"count"`
+}

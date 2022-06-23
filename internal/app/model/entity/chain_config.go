@@ -1,5 +1,9 @@
 package entity
 
+const (
+	ApiBalancesPathPlaceholder = "{address}"
+)
+
 type (
 	ChainConfig struct {
 		ChainId        string     `bson:"chain_id"`
@@ -7,12 +11,15 @@ type (
 		ChainName      string     `bson:"chain_name"`
 		LcdApiPath     ApiPath    `bson:"lcd_api_path"`
 		Lcd            string     `bson:"lcd"`
+		AddrPrefix     string     `bson:"addr_prefix"`
 		IbcInfo        []*IbcInfo `bson:"ibc_info"`
 		IbcInfoHashLcd string     `bson:"ibc_info_hash_lcd"`
 	}
 	ApiPath struct {
 		ChannelsPath    string `bson:"channels_path"`
 		ClientStatePath string `bson:"client_state_path"`
+		SupplyPath      string `bson:"supply_path"`
+		BalancesPath    string `bson:"balances_path"`
 	}
 	IbcInfo struct {
 		ChainId string         `bson:"chain_id"`

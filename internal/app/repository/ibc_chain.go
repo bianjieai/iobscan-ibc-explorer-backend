@@ -16,6 +16,7 @@ const (
 
 type IChainRepo interface {
 	InserOrUpdate(chain entity.IBCChain) error
+	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -51,6 +52,17 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 			"$set": bson.M{
 				"channels":         chain.Channels,
 				"connected_chains": chain.ConnectedChains,
+				"update_at":        time.Now().Unix(),
+			},
+		})
+}
+
+func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
+		bson.M{
+			"$set": bson.M{
+				"ibc_tokens":       tokens,
+				"ibc_tokens_value": tokenValue,
 				"update_at":        time.Now().Unix(),
 			},
 		})

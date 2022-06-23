@@ -1,9 +1,31 @@
 package bech32
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"testing"
 )
+
+func TestGetEscrowAddress(t *testing.T) {
+	bz := getEscrowAddress("transfer", "channel-3")
+	andEncode, err := ConvertAndEncode("iaa", bz)
+	if err != nil {
+		panic(err)
+	}
+
+	t.Log(andEncode)
+}
+
+func getEscrowAddress(portID, channelID string) []byte {
+	contents := fmt.Sprintf("%s/%s", portID, channelID)
+	// ADR 028 AddressHash construction
+	preImage := []byte("ics20-1")
+	preImage = append(preImage, 0)
+	preImage = append(preImage, contents...)
+	hash := sha256.Sum256(preImage)
+	return hash[:20]
+}
 
 func TestConvert(t *testing.T) {
 	dst := "fva"

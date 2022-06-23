@@ -20,13 +20,14 @@ const (
 var (
 	//cache
 	tokenPriceRepo   cache.TokenPriceCacheRepo
-	denomSupplyRepo  cache.DenomSupplyCacheRepo
+	denomDataRepo    cache.DenomDataCacheRepo
 	ibcInfoHashCache cache.IbcInfoHashCacheRepo
 
 	// mongo
 	tokenRepo           repository.ITokenRepo           = new(repository.TokenRepo)
 	baseDenomRepo       repository.IBaseDenomRepo       = new(repository.BaseDenomRepo)
 	denomRepo           repository.IDenomRepo           = new(repository.DenomRepo)
+	denomCaculateRepo   repository.IDenomCaculateRepo   = new(repository.DenomCaculateRepo)
 	tokenStatisticsRepo repository.ITokenStatisticsRepo = new(repository.TokenStatisticsRepo)
 	chainConfigRepo     repository.IChainConfigRepo     = new(repository.ChainConfigRepo)
 	ibcTxRepo           repository.IExIbcTxRepo         = new(repository.ExIbcTxRepo)
