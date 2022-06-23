@@ -21,11 +21,12 @@ import (
 )
 
 type TokenTask struct {
-	chainIds         []string                // 系统支持的chain列表
-	chainLcdMap      map[string]string       // chain lcd地址
-	escrowAddressMap map[string][]string     // chain ibc跨链托管地址
-	baseDenomList    entity.IBCBaseDenomList // 所有的base denom
-	ibcDenomMap      map[string][]string     // base denom 和其对应的跨链ibc denom的映射关系
+	chainIds         []string                  // 系统支持的chain列表
+	chainLcdMap      map[string]string         // chain lcd地址
+	chainLcdApiMap   map[string]entity.ApiPath // chain lcd api地址
+	escrowAddressMap map[string][]string       // chain ibc跨链托管地址
+	baseDenomList    entity.IBCBaseDenomList   // 所有的base denom
+	ibcDenomMap      map[string][]string       // base denom 和其对应的跨链ibc denom的映射关系
 }
 
 func (t *TokenTask) Name() string {
@@ -186,10 +187,12 @@ func (t *TokenTask) analyzeChainConf() error {
 
 	chainIds := make([]string, 0, len(configList))
 	chainLcdMap := make(map[string]string)
+	chainLcdApiMap := make(map[string]entity.ApiPath)
 	escrowAddressMap := make(map[string][]string)
 	for _, v := range configList {
 		chainIds = append(chainIds, v.ChainId)
 		chainLcdMap[v.ChainId] = v.Lcd
+		chainLcdApiMap[v.ChainId] = v.LcdApiPath
 		address, err := t.analyzeChainEscrowAddress(v.IbcInfo, v.AddrPrefix)
 		if err != nil {
 			continue
@@ -245,10 +248,10 @@ func (t *TokenTask) setDenomSupply(existedTokenList, newTokenList entity.IBCToke
 			}
 		}
 
-		go func(l, c string, ds []string) {
-			t.getSupplyFromLcd(l, c, ds)
+		go func(c string, ds []string) {
+			t.getSupplyFromLcd(c, ds)
 			waitGroup.Done()
-		}(t.chainLcdMap[v], v, denoms)
+		}(v, denoms)
 	}
 	waitGroup.Wait()
 
@@ -269,10 +272,12 @@ func (t *TokenTask) setDenomSupply(existedTokenList, newTokenList entity.IBCToke
 	return nil
 }
 
-func (t *TokenTask) getSupplyFromLcd(lcd, chainId string, denoms []string) {
+func (t *TokenTask) getSupplyFromLcd(chainId string, denoms []string) {
+	lcd := t.chainLcdMap[chainId]
+	apiPath := t.chainLcdApiMap[chainId].SupplyPath
+	baseUrl := fmt.Sprintf("%s%s", lcd, apiPath)
 	limit := 500
 	key := ""
-	baseUrl := lcd + constant.LcdSupplyUrl
 
 	for {
 		var url string
@@ -349,10 +354,10 @@ func (t *TokenTask) setIbcTransferAmount(existedTokenList, newTokenList entity.I
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(len(t.chainIds))
 	for _, v := range t.chainIds {
-		go func(c, l string, addrs []string) {
-			t.getTransAmountFromLcd(c, l, addrs)
+		go func(c string, addrs []string) {
+			t.getTransAmountFromLcd(c, addrs)
 			waitGroup.Done()
-		}(t.chainLcdMap[v], v, t.escrowAddressMap[v])
+		}(v, t.escrowAddressMap[v])
 	}
 	waitGroup.Wait()
 
@@ -376,12 +381,14 @@ func (t *TokenTask) setIbcTransferAmount(existedTokenList, newTokenList entity.I
 	return nil
 }
 
-func (t *TokenTask) getTransAmountFromLcd(chainId, lcd string, addrList []string) {
+func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 	denomTransAmountMap := make(map[string]decimal.Decimal)
+	lcd := t.chainLcdMap[chainId]
+	apiPath := t.chainLcdApiMap[chainId].BalancesPath
 	for _, addr := range addrList { // 一条链上的所有地址都要查询一遍，并按denom分组计数
 		limit := 500
 		key := ""
-		baseUrl := fmt.Sprintf("%s%s/%s", lcd, constant.LcdBalancesUrl, addr)
+		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", lcd, apiPath), entity.ApiBalancesPathPlaceholder, addr)
 
 		for { // 计算地址上所锁定的denom的数量
 			var url string

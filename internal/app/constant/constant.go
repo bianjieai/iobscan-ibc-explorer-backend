@@ -15,7 +15,4 @@ const (
 	IBCTokenPreFix        = "ibc"
 	IBCHopsIndex          = "/channel"
 	DefaultValuePrecision = 5
-
-	LcdSupplyUrl   = "/cosmos/bank/v1beta1/supply"
-	LcdBalancesUrl = "/cosmos/bank/v1beta1/balances"
 )

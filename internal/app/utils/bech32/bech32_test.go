@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestName(t *testing.T) {
-	bz := getEscrowAddress("transfer", "channel-12")
-	andEncode, err := ConvertAndEncode("ki", bz)
+func TestGetEscrowAddress(t *testing.T) {
+	bz := getEscrowAddress("transfer", "channel-3")
+	andEncode, err := ConvertAndEncode("iaa", bz)
 	if err != nil {
 		panic(err)
 	}
