@@ -4,7 +4,7 @@ FROM golang:1.16.10-alpine3.13 as builder
 ENV PACKAGES make gcc git libc-dev bash
 
 COPY  . $GOPATH/src
-COPY  .netrc /root/
+#COPY  .netrc /root/
 WORKDIR $GOPATH/src
 
 # Install minimum necessary dependencies, build binary
