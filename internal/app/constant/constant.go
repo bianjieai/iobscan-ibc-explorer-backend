@@ -13,6 +13,4 @@ const (
 	IbcTokenPreFix    = "ibc"
 
 	LcdSupplyUrl = "/cosmos/bank/v1beta1/supply"
-
-	ChannelStateOpen = "STATE_OPEN"
 )

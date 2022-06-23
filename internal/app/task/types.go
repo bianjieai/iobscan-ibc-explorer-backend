@@ -22,7 +22,6 @@ var (
 	tokenPriceRepo   cache.TokenPriceCacheRepo
 	denomSupplyRepo  cache.DenomSupplyCacheRepo
 	ibcInfoHashCache cache.IbcInfoHashCacheRepo
-	ibcInfoCache     cache.IbcInfoCacheRepo
 
 	// mongo
 	tokenRepo           repository.ITokenRepo           = new(repository.TokenRepo)
@@ -32,6 +31,4 @@ var (
 	chainConfigRepo     repository.IChainConfigRepo     = new(repository.ChainConfigRepo)
 	ibcTxRepo           repository.IExIbcTxRepo         = new(repository.ExIbcTxRepo)
 	chainRepo           repository.IChainRepo           = new(repository.IbcChainRepo)
-	relayerRepo         repository.IRelayerRepo         = new(repository.IbcRelayerRepo)
-	txRepo              repository.ITxRepo              = new(repository.TxRepo)
 )
