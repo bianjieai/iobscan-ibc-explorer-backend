@@ -1,23 +1,30 @@
 package entity
 
+type RelayerStatus int
+
+const (
+	RelayerUnknow  RelayerStatus = -1
+	RelayerStop    RelayerStatus = 0
+	RelayerRunning RelayerStatus = 1
+)
+
 type IBCRelayer struct {
-	RelayerId             string `bson:"relayer_id"`
-	ChainA                string `bson:"chain_a"`
-	ChainB                string `bson:"chain_b"`
-	ChannelA              string `bson:"channel_a"`
-	ChannelB              string `bson:"channel_b"`
-	ChainAAddress         string `bson:"chain_a_address"`
-	ChainBAddress         string `bson:"chain_b_address"`
-	TimePeriod            int    `bson:"time_period"`
-	Status                int    `bson:"status"`
-	ChannelAUpdateAt      int64  `bson:"channel_a_update_at"`
-	ChannelBUpdateAt      int64  `bson:"channel_b_update_at"`
-	TransferTotalTxs      int64  `bson:"transfer_total_txs"`
-	TransferSuccessTxs    int64  `bson:"transfer_success_txs"`
-	TransferTotalTxsValue string `bson:"transfer_total_txs_value"`
-	LatestTxTime          int64  `bson:"latest_tx_time"`
-	CreateAt              string `bson:"create_at"`
-	UpdateAt              string `bson:"update_at"`
+	RelayerId             string        `bson:"relayer_id"`
+	ChainA                string        `bson:"chain_a"`
+	ChainB                string        `bson:"chain_b"`
+	ChannelA              string        `bson:"channel_a"`
+	ChannelB              string        `bson:"channel_b"`
+	ChainAAddress         []string      `bson:"chain_a_address"`
+	ChainBAddress         string        `bson:"chain_b_address"`
+	TimePeriod            int64         `bson:"time_period"`
+	Status                RelayerStatus `bson:"status"`
+	UpdateTime            int64         `bson:"update_time"`
+	TransferTotalTxs      int64         `bson:"transfer_total_txs"`
+	TransferSuccessTxs    int64         `bson:"transfer_success_txs"`
+	TransferTotalTxsValue string        `bson:"transfer_total_txs_value"`
+	LatestTxTime          int64         `bson:"latest_tx_time"`
+	CreateAt              int64         `bson:"create_at"`
+	UpdateAt              int64         `bson:"update_at"`
 }
 
 func (i IBCRelayer) CollectionName() string {

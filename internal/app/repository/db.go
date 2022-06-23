@@ -86,6 +86,7 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 var (
 	Collections = []Docs{
 		new(IbcChainRepo),
+		new(IbcRelayerRepo),
 	}
 )
 
