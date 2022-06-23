@@ -24,12 +24,14 @@ var (
 	ibcInfoHashCache cache.IbcInfoHashCacheRepo
 
 	// mongo
-	tokenRepo           repository.ITokenRepo           = new(repository.TokenRepo)
-	baseDenomRepo       repository.IBaseDenomRepo       = new(repository.BaseDenomRepo)
-	denomRepo           repository.IDenomRepo           = new(repository.DenomRepo)
-	denomCaculateRepo   repository.IDenomCaculateRepo   = new(repository.DenomCaculateRepo)
-	tokenStatisticsRepo repository.ITokenStatisticsRepo = new(repository.TokenStatisticsRepo)
-	chainConfigRepo     repository.IChainConfigRepo     = new(repository.ChainConfigRepo)
-	ibcTxRepo           repository.IExIbcTxRepo         = new(repository.ExIbcTxRepo)
-	chainRepo           repository.IChainRepo           = new(repository.IbcChainRepo)
+	tokenRepo             repository.ITokenRepo             = new(repository.TokenRepo)
+	baseDenomRepo         repository.IBaseDenomRepo         = new(repository.BaseDenomRepo)
+	denomRepo             repository.IDenomRepo             = new(repository.DenomRepo)
+	denomCaculateRepo     repository.IDenomCaculateRepo     = new(repository.DenomCaculateRepo)
+	tokenStatisticsRepo   repository.ITokenStatisticsRepo   = new(repository.TokenStatisticsRepo)
+	channelRepo           repository.IChannelRepo           = new(repository.ChannelRepo)
+	channelStatisticsRepo repository.IChannelStatisticsRepo = new(repository.ChannelStatisticsRepo)
+	chainConfigRepo       repository.IChainConfigRepo       = new(repository.ChainConfigRepo)
+	ibcTxRepo             repository.IExIbcTxRepo           = new(repository.ExIbcTxRepo)
+	chainRepo             repository.IChainRepo             = new(repository.IbcChainRepo)
 )
