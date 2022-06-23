@@ -2,11 +2,16 @@ package task
 
 import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 	"time"
 )
 
 type IbcChainCronTask struct {
+}
+
+func init() {
+	RegisterTasks(&IbcChainCronTask{})
 }
 
 func (t *IbcChainCronTask) Name() string {
@@ -33,8 +38,13 @@ func (t *IbcChainCronTask) Run() {
 		_ = ibcInfoHashCache.Set(chainCfg.ChainId, chainCfg.IbcInfoHashLcd)
 		conntectedChains := len(chainCfg.IbcInfo)
 		channels := 0
+		ibcInfoCache.SetExpiredTime(chainCfg.ChainId, 1*time.Hour)
 		for _, val := range chainCfg.IbcInfo {
 			channels += len(val.Paths)
+			//save cache
+			if len(val.Paths) > 0 {
+				_ = ibcInfoCache.Set(chainCfg.ChainId, val.ChainId, string(utils.MarshalJsonIgnoreErr(val.Paths)))
+			}
 		}
 		data := createChainData(chainCfg.ChainId, channels, conntectedChains)
 		chains = append(chains, data)

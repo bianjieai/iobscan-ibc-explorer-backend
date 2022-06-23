@@ -17,4 +17,5 @@ const (
 	denomSupply      = "denom_supply:%s"
 	denomTransAmount = "denom_trans_amount:%s"
 	ibcInfoHash      = "ibc_info_hash"
+	ibcInfo          = "ibc_info:%s"
 )

@@ -22,3 +22,15 @@ type AggregateIBCChainDTO struct {
 	DenomValue float64 `bson:"denom_value"`
 	Count      int64   `bson:"count"`
 }
+
+type GetRelayerInfoDTO struct {
+	DcChainAddress string `bson:"dc_chain_address"`
+	ScChainId      string `bson:"sc_chain_id"`
+	ScChannel      string `bson:"sc_channel"`
+	DcChainId      string `bson:"dc_chain_id"`
+	DcChannel      string `bson:"dc_channel"`
+}
+
+type GetRelayerScChainAddreeDTO struct {
+	ScChainAddress string `bson:"sc_chain_address"`
+}

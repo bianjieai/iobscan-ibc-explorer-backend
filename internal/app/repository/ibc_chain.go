@@ -17,6 +17,8 @@ const (
 type IChainRepo interface {
 	InserOrUpdate(chain entity.IBCChain) error
 	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error
+	UpdateRelayers(chainId string, relayers int64) error
+	FindAll() ([]*entity.IBCChain, error)
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -32,6 +34,15 @@ func (repo *IbcChainRepo) FindAll() ([]*entity.IBCChain, error) {
 	var res []*entity.IBCChain
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
 	return res, err
+}
+
+func (repo *IbcChainRepo) UpdateRelayers(chainId string, relayers int64) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
+		bson.M{
+			"$set": bson.M{
+				"relayers": relayers,
+			},
+		})
 }
 
 func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
