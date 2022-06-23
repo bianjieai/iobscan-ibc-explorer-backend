@@ -18,8 +18,8 @@ type (
 	ApiPath struct {
 		ChannelsPath    string `bson:"channels_path"`
 		ClientStatePath string `bson:"client_state_path"`
-		SupplyPath      string `json:"supply_path"`
-		BalancesPath    string `json:"balances_path"`
+		SupplyPath      string `bson:"supply_path"`
+		BalancesPath    string `bson:"balances_path"`
 	}
 	IbcInfo struct {
 		ChainId string         `bson:"chain_id"`
