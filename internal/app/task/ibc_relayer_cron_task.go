@@ -8,7 +8,6 @@ import (
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
-	"sync"
 	"time"
 )
 
@@ -27,17 +26,8 @@ func (t *IbcRelayerCronTask) Cron() string {
 }
 
 func (t *IbcRelayerCronTask) Run() {
-	group := sync.WaitGroup{}
-	group.Add(2)
-	go func() {
-		defer group.Done()
-		t.handleNewRelayer()
-	}()
-	go func() {
-		defer group.Done()
-		t.CheckAndChangeStatus()
-	}()
-	group.Wait()
+	t.handleNewRelayer()
+	t.CheckAndChangeStatus()
 	t.UpdateIbcChainsRelayer()
 }
 
@@ -59,7 +49,7 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 	relayersHistoryData := t.handleIbcTxHistory(latestTxTime)
 	relayersData = append(relayersData, relayersHistoryData...)
 	if len(relayersData) > 0 {
-		if err := relayerRepo.Insert(relayersData); err != nil {
+		if err := relayerRepo.Insert(relayersData); err != nil && !qmgo.IsDup(err) {
 			logrus.Error("insert  relayer data fail, ", err.Error())
 		}
 	}
@@ -90,19 +80,18 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 				}
 			}
 			paths := t.getChannelsStatus(val.ChainA, val.ChainB)
-			status := entity.RelayerUnknow
 			//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 			if val.Status == entity.RelayerRunning {
 				for _, path := range paths {
-					if path.ChannelId == val.ChannelB {
+					if path.ChannelId == val.ChannelA {
 						if path.State != constant.ChannelStateOpen {
-							status = entity.RelayerStop
+							val.Status = entity.RelayerStop
 							break
 						}
 					}
-					if path.Counterparty.ChannelId == val.ChannelA {
+					if path.Counterparty.ChannelId == val.ChannelB {
 						if path.Counterparty.State != constant.ChannelStateOpen {
-							status = entity.RelayerStop
+							val.Status = entity.RelayerStop
 							break
 						}
 					}
@@ -112,23 +101,26 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 				if val.TimePeriod > updateTime-val.UpdateTime {
 					var channelStatus []string
 					for _, path := range paths {
-						if path.ChannelId == val.ChannelB {
+						if path.ChannelId == val.ChannelA {
 							channelStatus = append(channelStatus, path.State)
 						}
-						if path.Counterparty.ChannelId == val.ChannelA {
+						if path.Counterparty.ChannelId == val.ChannelB {
 							channelStatus = append(channelStatus, path.Counterparty.State)
 						}
 					}
 					if len(channelStatus) == 2 {
 						if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
-							status = entity.RelayerRunning
+							val.Status = entity.RelayerRunning
 						}
 					}
 				}
 			}
+			if val.Status != entity.RelayerRunning && val.Status != entity.RelayerStop {
+				val.Status = entity.RelayerStop
+			}
 			if err := relayerRepo.Update(val.RelayerId, bson.M{
 				"$set": bson.M{
-					"status":      status,
+					"status":      val.Status,
 					"update_time": updateTime,
 					"time_period": timePeriod,
 					"update_at":   time.Now().Unix(),
@@ -236,15 +228,16 @@ func (t *IbcRelayerCronTask) creteRelayerData(dto *dto.GetRelayerInfoDTO,
 	}
 	relayerId := utils.Md5(dto.ScChannel + dto.DcChannel + dto.ScChainId + dto.DcChainId + chainAAddr + dto.DcChainAddress)
 	return entity.IBCRelayer{
-		RelayerId:     relayerId,
-		ChainA:        dto.ScChainId,
-		ChainB:        dto.DcChainId,
-		ChannelA:      dto.ScChannel,
-		ChannelB:      dto.DcChannel,
-		ChainAAddress: chainAAddress,
-		ChainBAddress: dto.DcChainAddress,
-		CreateAt:      time.Now().Unix(),
-		UpdateAt:      time.Now().Unix(),
+		RelayerId:        relayerId,
+		ChainA:           dto.ScChainId,
+		ChainB:           dto.DcChainId,
+		ChannelA:         dto.ScChannel,
+		ChannelB:         dto.DcChannel,
+		ChainAAddress:    chainAAddr,
+		ChainAAllAddress: chainAAddress,
+		ChainBAddress:    dto.DcChainAddress,
+		CreateAt:         time.Now().Unix(),
+		UpdateAt:         time.Now().Unix(),
 	}
 }
 

@@ -3,9 +3,8 @@ package entity
 type RelayerStatus int
 
 const (
-	RelayerUnknow  RelayerStatus = -1
-	RelayerStop    RelayerStatus = 0
 	RelayerRunning RelayerStatus = 1
+	RelayerStop    RelayerStatus = 2
 )
 
 type IBCRelayer struct {
@@ -14,7 +13,8 @@ type IBCRelayer struct {
 	ChainB                string        `bson:"chain_b"`
 	ChannelA              string        `bson:"channel_a"`
 	ChannelB              string        `bson:"channel_b"`
-	ChainAAddress         []string      `bson:"chain_a_address"`
+	ChainAAddress         string        `bson:"chain_a_address"`
+	ChainAAllAddress      []string      `bson:"chain_a_all_address"`
 	ChainBAddress         string        `bson:"chain_b_address"`
 	TimePeriod            int64         `bson:"time_period"`
 	Status                RelayerStatus `bson:"status"`

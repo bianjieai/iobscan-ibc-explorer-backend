@@ -44,6 +44,7 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetR
 			"sc_chain_address": "$_id",
 		},
 	}
+	//sort for latest relayer address on sc_chain
 	sort := bson.M{
 		"$sort": bson.M{
 			"height": -1,
