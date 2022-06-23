@@ -15,4 +15,5 @@ const (
 	IBCTokenPreFix        = "ibc"
 	IBCHopsIndex          = "/channel"
 	DefaultValuePrecision = 5
+	ChannelStateOpen      = "STATE_OPEN"
 )
