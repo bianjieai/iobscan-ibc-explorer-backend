@@ -45,3 +45,48 @@ func TestExIbcTxRepo_GetOneRelayerScTxPacketId(t *testing.T) {
 	ret1, _ := json.Marshal(data1)
 	t.Log(string(ret1))
 }
+
+func TestExIbcTxRepo_GetHistoryRelayerSuccessPacketTxs(t *testing.T) {
+	data, err := new(ExIbcTxRepo).CountHistoryRelayerSuccessPacketTxs()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	ret, _ := json.Marshal(data)
+	t.Log(string(ret))
+	data1, err1 := new(ExIbcTxRepo).CountRelayerSuccessPacketTxs()
+	if err1 != nil {
+		t.Fatal(err1.Error())
+	}
+	ret1, _ := json.Marshal(data1)
+	t.Log(string(ret1))
+}
+
+func TestExIbcTxRepo_GetRelayerPacketTxs(t *testing.T) {
+	data, err := new(ExIbcTxRepo).CountRelayerPacketTxs()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	ret, _ := json.Marshal(data)
+	t.Log(string(ret))
+	data1, err1 := new(ExIbcTxRepo).CountHistoryRelayerPacketTxs()
+	if err1 != nil {
+		t.Fatal(err1.Error())
+	}
+	ret1, _ := json.Marshal(data1)
+	t.Log(string(ret1))
+}
+
+func TestExIbcTxRepo_GetRelayerPacketAmount(t *testing.T) {
+	data, err := new(ExIbcTxRepo).CountRelayerPacketAmount()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	ret, _ := json.Marshal(data)
+	t.Log(string(ret))
+	data1, err1 := new(ExIbcTxRepo).CountHistoryRelayerPacketAmount()
+	if err1 != nil {
+		t.Fatal(err1.Error())
+	}
+	ret1, _ := json.Marshal(data1)
+	t.Log(string(ret1))
+}

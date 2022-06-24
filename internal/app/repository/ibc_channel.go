@@ -12,6 +12,7 @@ import (
 )
 
 type IChannelRepo interface {
+	UpdateOne(filter interface{}, update interface{}) error
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
 	UpdateChannel(channel *entity.IBCChannel) error
@@ -24,6 +25,10 @@ type ChannelRepo struct {
 
 func (repo *ChannelRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChannel{}.CollectionName())
+}
+
+func (repo *ChannelRepo) UpdateOne(filter interface{}, update interface{}) error {
+	return repo.coll().UpdateOne(context.Background(), filter, update)
 }
 
 func (repo *ChannelRepo) EnsureIndexes() {

@@ -33,6 +33,32 @@ type GetRelayerInfoDTO struct {
 	DcChannel      string `bson:"dc_channel"`
 }
 
+type CountRelayerPacketTxsCntDTO struct {
+	DcChainAddress string `bson:"dc_chain_address"`
+	DcChainId      string `bson:"dc_chain_id"`
+	Count          int64  `bson:"count"`
+}
+
+type CountRelayerPacketAmountDTO struct {
+	DcChainAddress string  `bson:"dc_chain_address"`
+	DcChainId      string  `bson:"dc_chain_id"`
+	BaseDenom      string  `bson:"base_denom"`
+	Amount         float64 `bson:"amount"`
+}
+type CountRelayerTotalValueDTO struct {
+	RelayerId string  `bson:"relayer_id"`
+	ChainId   string  `bson:"chain_id"`
+	Amount    float64 `bson:"amount"`
+}
+
+type CountChannelRelayersDTO struct {
+	ChainA   string `bson:"chain_a"`
+	ChannelA string `bson:"channel_a"`
+	ChainB   string `bson:"chain_b"`
+	ChannelB string `bson:"channel_b"`
+	Count    int64  `bson:"count"`
+}
+
 type GetRelayerScChainAddreeDTO struct {
 	ScChainAddress string `bson:"sc_chain_address"`
 }

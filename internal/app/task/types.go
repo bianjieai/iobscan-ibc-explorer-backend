@@ -37,4 +37,5 @@ var (
 	txRepo                repository.ITxRepo                = new(repository.TxRepo)
 	channelRepo           repository.IChannelRepo           = new(repository.ChannelRepo)
 	channelStatisticsRepo repository.IChannelStatisticsRepo = new(repository.ChannelStatisticsRepo)
+	relayerStatisticsRepo repository.IRelayerStatisticsRepo = new(repository.RelayerStatisticsRepo)
 )
