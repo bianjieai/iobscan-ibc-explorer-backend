@@ -98,7 +98,16 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 			return
 		}
 		for _, relayer := range relayers {
-			t.handleOneRelayerInfo(relayer)
+			timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer.ChainA, relayer.ChainB)
+			if err != nil {
+				logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
+				continue
+			}
+			if timePeriod == -1 {
+				//todo call relayer api (uri为/chain/:id in https://hermes.informal.systems/rest-api.html)
+			}
+			t.handleOneRelayerInfo(relayer, updateTime, timePeriod)
+			t.updateIbcChannelRelayerInfo(relayer, updateTime)
 		}
 		if len(relayers) < int(limit) {
 			break
@@ -125,15 +134,7 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 	}
 }
 
-func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer) {
-	timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer.ChainA, relayer.ChainB)
-	if err != nil {
-		logrus.Error(err.Error())
-		return
-	}
-	if timePeriod == -1 {
-		//todo call relayer api (uri为/chain/:id in https://hermes.informal.systems/rest-api.html)
-	}
+func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
 	//Running=>Close: update_client 时间大于relayer基准周期
 	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
 		if relayer.Status == entity.RelayerRunning {
@@ -189,6 +190,9 @@ func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer) {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
 	}
 
+}
+
+func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(relayer *entity.IBCRelayer, updateTime int64) {
 	if len(t.channelRelayerCnt) > 0 || updateTime > 0 {
 		data := bson.M{}
 		if len(t.channelRelayerCnt) > 0 {
@@ -210,7 +214,6 @@ func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer) {
 			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
 		}
 	}
-
 }
 
 //set cache value redis key: ibc_channel_relayer_cnt
