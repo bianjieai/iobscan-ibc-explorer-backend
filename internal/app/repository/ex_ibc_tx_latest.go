@@ -21,6 +21,12 @@ type IExIbcTxRepo interface {
 	GetLatestTxTime() (int64, error)
 	GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
+	CountHistoryRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountHistoryRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
+	CountRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -221,5 +227,151 @@ func (repo *ExIbcTxRepo) GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInf
 	var res entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), repo.oneRelayerPacketCond(dto)).
 		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").One(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) relayerSuccessPacketCond() []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"status": entity.IbcTxStatusSuccess,
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"dc_chain_id": "$dc_chain_id",
+				//"dc_channel":  "$dc_channel",
+				"relayer": "$dc_tx_info.msg.msg.signer",
+			},
+			"count": bson.M{
+				"$sum": 1,
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"dc_chain_address": "$_id.relayer",
+			"dc_chain_id":      "$_id.dc_chain_id",
+			//"dc_channel":      "$_id.dc_channel",
+			"count": "$count",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	return pipe
+}
+
+func (repo *ExIbcTxRepo) relayerPacketCond() []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+			"sc_tx_info.status": entity.TxStatusSuccess,
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"dc_chain_id": "$dc_chain_id",
+				//"dc_channel":  "$dc_channel",
+				"relayer": "$dc_tx_info.msg.msg.signer",
+			},
+			"count": bson.M{
+				"$sum": 1,
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"dc_chain_address": "$_id.relayer",
+			"dc_chain_id":      "$_id.dc_chain_id",
+			//"dc_channel":      "$_id.dc_channel",
+			"count": "$count",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	return pipe
+}
+
+func (repo *ExIbcTxRepo) relayerPacketAmountCond() []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+			"sc_tx_info.status": entity.TxStatusSuccess,
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"dc_chain_id": "$dc_chain_id",
+				//"dc_channel":  "$dc_channel",
+				"relayer":    "$dc_tx_info.msg.msg.signer",
+				"base_denom": "$base_denom",
+			},
+			"amount": bson.M{
+				"$sum": bson.M{"$toDouble": "$sc_tx_info.msg_amount.amount"},
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"dc_chain_address": "$_id.relayer",
+			"dc_chain_id":      "$_id.dc_chain_id",
+			//"dc_channel":      "$_id.dc_channel",
+			"base_denom": "$_id.base_denom",
+			"amount":     "$amount",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	return pipe
+}
+
+func (repo *ExIbcTxRepo) CountHistoryRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerSuccessPacketCond()
+	var res []*dto.CountRelayerPacketTxsCntDTO
+	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerSuccessPacketCond()
+	var res []*dto.CountRelayerPacketTxsCntDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountHistoryRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerPacketCond()
+	var res []*dto.CountRelayerPacketTxsCntDTO
+	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerPacketCond()
+	var res []*dto.CountRelayerPacketTxsCntDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error) {
+	pipe := repo.relayerPacketAmountCond()
+	var res []*dto.CountRelayerPacketAmountDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error) {
+	pipe := repo.relayerPacketAmountCond()
+	var res []*dto.CountRelayerPacketAmountDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

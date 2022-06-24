@@ -38,7 +38,7 @@ func (t *IbcChainCronTask) Run() {
 		_ = ibcInfoHashCache.Set(chainCfg.ChainId, chainCfg.IbcInfoHashLcd)
 		conntectedChains := len(chainCfg.IbcInfo)
 		channels := 0
-		ibcInfoCache.SetExpiredTime(chainCfg.ChainId, 1*time.Hour)
+		ibcInfoCache.SetExpiredTime(chainCfg.ChainId, 5*time.Minute)
 		for _, val := range chainCfg.IbcInfo {
 			channels += len(val.Paths)
 			//save cache

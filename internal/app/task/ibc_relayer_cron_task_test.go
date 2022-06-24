@@ -29,3 +29,29 @@ func TestIbcRelayerCronTask_getChannelsStatus(t *testing.T) {
 func TestIbcRelayerCronTask_CheckAndChangeStatus(t *testing.T) {
 	new(IbcRelayerCronTask).CheckAndChangeStatus()
 }
+
+func TestIbcRelayerCronTask_cacheIbcChannelRelayer(t *testing.T) {
+	task := new(IbcRelayerCronTask)
+	task.cacheIbcChannelRelayer()
+	t.Log(task.channelRelayerCnt)
+}
+
+func TestIbcRelayerCronTask_CountRelayerPacketTxs(t *testing.T) {
+	task := new(IbcRelayerCronTask)
+	task.CountRelayerPacketTxs()
+	task.saveOrUpdateRelayerTxs()
+	t.Log(task.relayerTxsMap)
+}
+
+func TestIbcRelayerCronTask_CountRelayerPacketTxsAmount(t *testing.T) {
+	task := new(IbcRelayerCronTask)
+	task.CountRelayerPacketTxsAmount()
+	task.saveOrUpdateRelayerTxs()
+	//t.Log(task.relayerAmtsMap)
+}
+
+func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {
+	task := new(IbcRelayerCronTask)
+	task.CountRelayerPacketTxsAmount()
+	task.caculateRelayerTotalValue()
+}
