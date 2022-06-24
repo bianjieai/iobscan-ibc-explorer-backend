@@ -1,14 +1,15 @@
 package task
 
 import (
-	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
+	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"math"
 	"strings"
 	"time"
 )
@@ -29,8 +30,8 @@ type (
 		TxsSuccess int64
 	}
 	AmtItem struct {
-		Amount utils.Dec
-		Value  utils.Dec
+		Amount decimal.Decimal
+		Value  decimal.Decimal
 	}
 	CoinItem struct {
 		Price float64
@@ -292,12 +293,11 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxsAmount() {
 		relayerAmtsMap := make(map[string]AmtItem, 20)
 		for _, amt := range relayerAmounts {
 			key := amt.DcChainId + ":" + amt.BaseDenom + ":" + amt.DcChainAddress
-			decAmt := utils.NewDec(int64(amt.Amount))
-			baseDenomValue := utils.NewDec(0)
+			decAmt := decimal.NewFromFloat(amt.Amount)
+			baseDenomValue := decimal.NewFromFloat(0)
 			if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
-				decPrice, _ := utils.NewDecFromStr(fmt.Sprint(coin.Price))
 				if coin.Scale > 0 {
-					baseDenomValue = decAmt.QuoInt(utils.NewIntWithDecimal(1, coin.Scale)).Mul(decPrice)
+					baseDenomValue = decAmt.DivRound(decimal.NewFromFloat(math.Pow10(coin.Scale)), constant.DefaultValuePrecision).Mul(decimal.NewFromFloat(coin.Price))
 				}
 			}
 			value, exist := relayerAmtsMap[key]
@@ -339,7 +339,7 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 	return
 }
 
-func createIBCRelayerStatistics(chainId, relayerId, baseDenom string, amount, value utils.Dec) entity.IBCRelayerStatistics {
+func createIBCRelayerStatistics(chainId, relayerId, baseDenom string, amount, value decimal.Decimal) entity.IBCRelayerStatistics {
 	return entity.IBCRelayerStatistics{
 		RelayerId:          relayerId,
 		ChainId:            chainId,
