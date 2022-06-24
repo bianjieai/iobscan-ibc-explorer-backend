@@ -5,6 +5,11 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 )
 
+const (
+	TxStatusSuccess IbcTxStatus = 1
+	TxStatusFailed  IbcTxStatus = 0
+)
+
 type (
 	Tx struct {
 		Time      int64         `bson:"time"`

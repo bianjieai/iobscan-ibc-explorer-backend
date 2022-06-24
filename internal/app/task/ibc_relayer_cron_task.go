@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -8,11 +9,34 @@ import (
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"strings"
 	"time"
 )
 
 type IbcRelayerCronTask struct {
+	//key: DcChainId+":"+DcChainAddress
+	relayerTxsMap map[string]TxsItem
+	//key: DcChainId+":"+BaseDenom+":"+DcChainAddress
+	relayerAmtsMap map[string]AmtItem
+	//key: ChainA+ChainB+ChannelA+ChannelB
+	channelRelayerCnt map[string]int64
+	//key: BaseDenom
+	denomPriceMap map[string]CoinItem
 }
+type (
+	TxsItem struct {
+		Txs        int64
+		TxsSuccess int64
+	}
+	AmtItem struct {
+		Amount utils.Dec
+		Value  utils.Dec
+	}
+	CoinItem struct {
+		Price float64
+		Scale int
+	}
+)
 
 func init() {
 	RegisterTasks(&IbcRelayerCronTask{})
@@ -28,7 +52,11 @@ func (t *IbcRelayerCronTask) Cron() string {
 func (t *IbcRelayerCronTask) Run() {
 	t.handleNewRelayer()
 	t.CheckAndChangeStatus()
-	t.UpdateIbcChainsRelayer()
+	t.saveOrUpdateRelayerTxs()
+}
+
+func (t *IbcRelayerCronTask) ExpireTime() time.Duration {
+	return 3*time.Minute - 2*time.Second
 }
 
 func (t *IbcRelayerCronTask) handleNewRelayer() {
@@ -52,7 +80,11 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 		if err := relayerRepo.Insert(relayersData); err != nil && !qmgo.IsDup(err) {
 			logrus.Error("insert  relayer data fail, ", err.Error())
 		}
+		t.updateIbcChainsRelayer()
+		t.cacheIbcChannelRelayer()
 	}
+	t.CountRelayerPacketTxs()
+	t.CountRelayerPacketTxsAmount()
 }
 
 func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
@@ -64,74 +96,292 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		for _, val := range relayers {
-			timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(val.ChainA, val.ChainB)
-			if err != nil {
-				logrus.Error(err.Error())
-				continue
-			}
-			if timePeriod == -1 {
-				//todo call relayer api (uri为/chain/:id in https://hermes.informal.systems/rest-api.html)
-			}
-			//Running=>Close: update_client 时间大于relayer基准周期
-			if val.TimePeriod > 0 && val.UpdateTime > 0 && val.TimePeriod < updateTime-val.UpdateTime {
-				if val.Status == entity.RelayerRunning {
-					val.Status = entity.RelayerStop
-				}
-			}
-			paths := t.getChannelsStatus(val.ChainA, val.ChainB)
-			//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
-			if val.Status == entity.RelayerRunning {
-				for _, path := range paths {
-					if path.ChannelId == val.ChannelA {
-						if path.State != constant.ChannelStateOpen {
-							val.Status = entity.RelayerStop
-							break
-						}
-					}
-					if path.Counterparty.ChannelId == val.ChannelB {
-						if path.Counterparty.State != constant.ChannelStateOpen {
-							val.Status = entity.RelayerStop
-							break
-						}
-					}
-				}
-			} else {
-				// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
-				if val.TimePeriod > updateTime-val.UpdateTime {
-					var channelStatus []string
-					for _, path := range paths {
-						if path.ChannelId == val.ChannelA {
-							channelStatus = append(channelStatus, path.State)
-						}
-						if path.Counterparty.ChannelId == val.ChannelB {
-							channelStatus = append(channelStatus, path.Counterparty.State)
-						}
-					}
-					if len(channelStatus) == 2 {
-						if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
-							val.Status = entity.RelayerRunning
-						}
-					}
-				}
-			}
-			if val.Status != entity.RelayerRunning && val.Status != entity.RelayerStop {
-				val.Status = entity.RelayerStop
-			}
-			if err := relayerRepo.Update(val.RelayerId, bson.M{
-				"$set": bson.M{
-					"status":      val.Status,
-					"update_time": updateTime,
-					"time_period": timePeriod,
-					"update_at":   time.Now().Unix(),
-				}}); err != nil {
-				logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
-			}
+		for _, relayer := range relayers {
+			t.handleOneRelayerInfo(relayer)
 		}
 		if len(relayers) < int(limit) {
 			break
 		}
 		skip += limit
+	}
+}
+
+func (t *IbcRelayerCronTask) getTokenPriceMap() {
+	coinIdPriceMap, _ := tokenPriceRepo.GetAll()
+	baseDenoms, err := baseDenomRepo.FindAll()
+	if err != nil {
+		logrus.Error("find base_denom fail, ", err.Error())
+		return
+	}
+	if len(coinIdPriceMap) == 0 {
+		return
+	}
+	t.denomPriceMap = make(map[string]CoinItem, len(baseDenoms))
+	for _, val := range baseDenoms {
+		if price, ok := coinIdPriceMap[val.CoinId]; ok {
+			t.denomPriceMap[val.Denom] = CoinItem{Price: price, Scale: val.Scale}
+		}
+	}
+}
+
+func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer) {
+	timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer.ChainA, relayer.ChainB)
+	if err != nil {
+		logrus.Error(err.Error())
+		return
+	}
+	if timePeriod == -1 {
+		//todo call relayer api (uri为/chain/:id in https://hermes.informal.systems/rest-api.html)
+	}
+	//Running=>Close: update_client 时间大于relayer基准周期
+	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
+		if relayer.Status == entity.RelayerRunning {
+			relayer.Status = entity.RelayerStop
+		}
+	}
+	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
+	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
+	if relayer.Status == entity.RelayerRunning {
+		for _, path := range paths {
+			if path.ChannelId == relayer.ChannelA {
+				if path.State != constant.ChannelStateOpen {
+					relayer.Status = entity.RelayerStop
+					break
+				}
+			}
+			if path.Counterparty.ChannelId == relayer.ChannelB {
+				if path.Counterparty.State != constant.ChannelStateOpen {
+					relayer.Status = entity.RelayerStop
+					break
+				}
+			}
+		}
+	} else {
+		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
+		if relayer.TimePeriod > updateTime-relayer.UpdateTime {
+			var channelStatus []string
+			for _, path := range paths {
+				if path.ChannelId == relayer.ChannelA {
+					channelStatus = append(channelStatus, path.State)
+				}
+				if path.Counterparty.ChannelId == relayer.ChannelB {
+					channelStatus = append(channelStatus, path.Counterparty.State)
+				}
+			}
+			if len(channelStatus) == 2 {
+				if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
+					relayer.Status = entity.RelayerRunning
+				}
+			}
+		}
+	}
+	if relayer.Status != entity.RelayerRunning && relayer.Status != entity.RelayerStop {
+		relayer.Status = entity.RelayerStop
+	}
+	if err := relayerRepo.Update(relayer.RelayerId, bson.M{
+		"$set": bson.M{
+			"status":      relayer.Status,
+			"update_time": updateTime,
+			"time_period": timePeriod,
+			"update_at":   time.Now().Unix(),
+		}}); err != nil {
+		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
+	}
+
+	if len(t.channelRelayerCnt) > 0 || updateTime > 0 {
+		data := bson.M{}
+		if len(t.channelRelayerCnt) > 0 {
+			if count, ok := t.channelRelayerCnt[relayer.ChainA+relayer.ChainB+relayer.ChannelA+relayer.ChannelB]; ok {
+				data["relayers"] = count
+			}
+		}
+		if updateTime > 0 {
+			data["channel_update_at"] = updateTime
+		}
+		if err := channelRepo.UpdateOne(bson.M{
+			"chain_a":   relayer.ChainA,
+			"chain_b":   relayer.ChainB,
+			"channel_a": relayer.ChannelA,
+			"channel_b": relayer.ChannelB,
+		}, bson.M{
+			"$set": data,
+		}); err != nil && err != qmgo.ErrNoSuchDocuments {
+			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
+		}
+	}
+
+}
+
+//set cache value redis key: ibc_channel_relayer_cnt
+func (t *IbcRelayerCronTask) cacheIbcChannelRelayer() {
+	channelRelayersDto, err := relayerRepo.CountChannelRelayers()
+	if err != nil {
+		logrus.Error("count channel relayers fail, ", err.Error())
+		return
+	}
+	t.channelRelayerCnt = make(map[string]int64, len(channelRelayersDto))
+	for _, one := range channelRelayersDto {
+		t.channelRelayerCnt[one.ChainA+one.ChainB+one.ChannelA+one.ChannelB] = one.Count
+	}
+}
+func collectTxs(data []*dto.CountRelayerPacketTxsCntDTO, hookTxs func() ([]*dto.CountRelayerPacketTxsCntDTO,
+	error)) []*dto.CountRelayerPacketTxsCntDTO {
+
+	relayerTxsCntDto, err := hookTxs()
+	if err != nil {
+		logrus.Error("collectTx hookTxs have fail, ", err.Error())
+		return data
+	}
+
+	data = append(data, relayerTxsCntDto...)
+
+	return data
+}
+
+//cache transferTxs,successTransferTx
+func (t *IbcRelayerCronTask) CountRelayerPacketTxs() {
+	relayerTxs := make([]*dto.CountRelayerPacketTxsCntDTO, 0, 20)
+	relayerSuccessTxs := make([]*dto.CountRelayerPacketTxsCntDTO, 0, 20)
+	//relayer txs count
+	relayerTxs = collectTxs(relayerTxs, ibcTxRepo.CountRelayerPacketTxs)
+	relayerTxs = collectTxs(relayerTxs, ibcTxRepo.CountHistoryRelayerPacketTxs)
+
+	//relayer success txs count
+	relayerSuccessTxs = collectTxs(relayerSuccessTxs, ibcTxRepo.CountRelayerSuccessPacketTxs)
+	relayerSuccessTxs = collectTxs(relayerSuccessTxs, ibcTxRepo.CountHistoryRelayerSuccessPacketTxs)
+
+	t.relayerTxsMap = make(map[string]TxsItem, 20)
+	for _, tx := range relayerTxs {
+		key := tx.DcChainId + ":" + tx.DcChainAddress
+		value, exist := t.relayerTxsMap[key]
+		if exist {
+			value.Txs += tx.Count
+			t.relayerTxsMap[key] = value
+		} else {
+			t.relayerTxsMap[key] = TxsItem{Txs: tx.Count}
+		}
+	}
+
+	for _, tx := range relayerSuccessTxs {
+		key := tx.DcChainId + ":" + tx.DcChainAddress
+		value, exist := t.relayerTxsMap[key]
+		if exist {
+			value.TxsSuccess += tx.Count
+			t.relayerTxsMap[key] = value
+		} else {
+			t.relayerTxsMap[key] = TxsItem{TxsSuccess: tx.Count}
+		}
+	}
+}
+
+func (t *IbcRelayerCronTask) CountRelayerPacketTxsAmount() {
+	t.getTokenPriceMap()
+	relayerAmounts := make([]*dto.CountRelayerPacketAmountDTO, 0, 20)
+	if amounts, err := ibcTxRepo.CountRelayerPacketAmount(); err != nil {
+		logrus.Error(err.Error())
+	} else {
+		relayerAmounts = append(relayerAmounts, amounts...)
+	}
+	if amounts, err := ibcTxRepo.CountHistoryRelayerPacketAmount(); err != nil {
+		logrus.Error(err.Error())
+	} else {
+		relayerAmounts = append(relayerAmounts, amounts...)
+	}
+
+	createAmounts := func(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]AmtItem {
+		relayerAmtsMap := make(map[string]AmtItem, 20)
+		for _, amt := range relayerAmounts {
+			key := amt.DcChainId + ":" + amt.BaseDenom + ":" + amt.DcChainAddress
+			decAmt := utils.NewDec(int64(amt.Amount))
+			baseDenomValue := utils.NewDec(0)
+			if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
+				decPrice, _ := utils.NewDecFromStr(fmt.Sprint(coin.Price))
+				if coin.Scale > 0 {
+					baseDenomValue = decAmt.QuoInt(utils.NewIntWithDecimal(1, coin.Scale)).Mul(decPrice)
+				}
+			}
+			value, exist := relayerAmtsMap[key]
+			if exist {
+				value.Amount = value.Amount.Add(decAmt)
+				value.Value = value.Value.Add(baseDenomValue)
+				relayerAmtsMap[key] = value
+			} else {
+				relayerAmtsMap[key] = AmtItem{Amount: decAmt, Value: baseDenomValue}
+			}
+		}
+		return relayerAmtsMap
+	}
+
+	t.relayerAmtsMap = createAmounts(relayerAmounts)
+	t.caculateRelayerTotalValue()
+}
+
+//this function use data returned by CountRelayerPacketTxsAmount
+func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
+	var relayerStatics []entity.IBCRelayerStatistics
+	for key, value := range t.relayerAmtsMap {
+		if arrs := strings.Split(key, ":"); len(arrs) == 3 {
+			chainId, baseDenom, relayerAddr := arrs[0], arrs[1], arrs[2]
+			relayerData, err := relayerRepo.FindRelayerId(chainId, relayerAddr)
+			if err != nil {
+				logrus.Error(chainId, relayerAddr, "find relayer id fail, ", err.Error())
+				continue
+			}
+			item := createIBCRelayerStatistics(chainId, relayerData.RelayerId, baseDenom, value.Amount, value.Value)
+			relayerStatics = append(relayerStatics, item)
+		}
+	}
+	for _, val := range relayerStatics {
+		if err := relayerStatisticsRepo.InserOrUpdate(val); err != nil {
+			logrus.Error("insert or update relayer statistic fail ", err.Error())
+		}
+	}
+	return
+}
+
+func createIBCRelayerStatistics(chainId, relayerId, baseDenom string, amount, value utils.Dec) entity.IBCRelayerStatistics {
+	return entity.IBCRelayerStatistics{
+		RelayerId:          relayerId,
+		ChainId:            chainId,
+		TransferBaseDenom:  baseDenom,
+		TransferAmount:     amount.String(),
+		TransferTotalValue: value.String(),
+		CreateAt:           time.Now().Unix(),
+		UpdateAt:           time.Now().Unix(),
+	}
+}
+func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxs() {
+	if len(t.relayerTxsMap) > 0 {
+		totalValueDtos, err := relayerStatisticsRepo.CountRelayerTotalValue()
+		if err != nil {
+			logrus.Error("count relayer transfer_total_txs_value failed, ", err.Error())
+		}
+		totalValueMap := make(map[string]float64, len(totalValueDtos))
+		for _, val := range totalValueDtos {
+			totalValueMap[val.ChainId+val.RelayerId] = val.Amount
+		}
+
+		for key, val := range t.relayerTxsMap {
+			if arrs := strings.Split(key, ":"); len(arrs) == 2 {
+				chain_id, relayerAddr := arrs[0], arrs[1]
+				relayerData, err := relayerRepo.FindRelayerId(chain_id, relayerAddr)
+				if err != nil {
+					logrus.Error("find relayer id fail, ", err.Error())
+					continue
+				}
+				totalValue, _ := totalValueMap[chain_id+relayerData.RelayerId]
+				if err := relayerRepo.Update(relayerData.RelayerId, bson.M{
+					"$set": bson.M{
+						"transfer_total_txs":       val.Txs,
+						"transfer_success_txs":     val.TxsSuccess,
+						"transfer_total_txs_value": totalValue,
+						"update_at":                time.Now().Unix(),
+					},
+				}); err != nil {
+					logrus.Error(err.Error())
+				}
+			}
+		}
 	}
 }
 
@@ -144,11 +394,8 @@ func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*ent
 	}
 	return ibcPaths
 }
-func (t *IbcRelayerCronTask) CountTxsAndSuccessRate() {
 
-}
-
-func (t *IbcRelayerCronTask) UpdateIbcChainsRelayer() {
+func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 	res, err := chainRepo.FindAll()
 	if err != nil {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
@@ -188,7 +435,7 @@ func (t *IbcRelayerCronTask) handleIbcTxLatest(latestTxTime int64) []entity.IBCR
 			logrus.Errorf("get ibcTxLatest relayer packetId fail, %s", err.Error())
 			continue
 		}
-		relayers = append(relayers, t.creteRelayerData(dto, scAddrs))
+		relayers = append(relayers, t.createRelayerData(dto, scAddrs))
 	}
 	return relayers
 }
@@ -211,12 +458,12 @@ func (t *IbcRelayerCronTask) handleIbcTxHistory(latestTxTime int64) []entity.IBC
 			logrus.Errorf("get ibcTxLatest relayer packetId fail, %s", err.Error())
 			continue
 		}
-		relayers = append(relayers, t.creteRelayerData(dto, scAddrs))
+		relayers = append(relayers, t.createRelayerData(dto, scAddrs))
 	}
 	return relayers
 }
 
-func (t *IbcRelayerCronTask) creteRelayerData(dto *dto.GetRelayerInfoDTO,
+func (t *IbcRelayerCronTask) createRelayerData(dto *dto.GetRelayerInfoDTO,
 	scAddrs []*dto.GetRelayerScChainAddreeDTO) entity.IBCRelayer {
 	chainAAddress := make([]string, 0, len(scAddrs))
 	for _, val := range scAddrs {
@@ -239,10 +486,6 @@ func (t *IbcRelayerCronTask) creteRelayerData(dto *dto.GetRelayerInfoDTO,
 		CreateAt:         time.Now().Unix(),
 		UpdateAt:         time.Now().Unix(),
 	}
-}
-
-func (t *IbcRelayerCronTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 2*time.Second
 }
 
 //1: timePeriod
