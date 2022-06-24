@@ -10,7 +10,7 @@ const (
 	DefaultTimeFormat     = "2006-01-02 15:04:05"
 	DefaultCurrency       = "$"
 	UnknownTokenPrice     = -1
-	UnknownDenomAmount    = ""
+	UnknownDenomAmount    = "-1"
 	ZeroDenomAmount       = "0"
 	IBCTokenPreFix        = "ibc"
 	IBCHopsIndex          = "/channel"

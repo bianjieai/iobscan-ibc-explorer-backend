@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/shopspring/decimal"
+
 type CountBaseDenomTransferAmountDTO struct {
 	BaseDenom string `bson:"base_denom"`
 	ScChainId string `bson:"sc_chain_id"`
@@ -33,4 +35,22 @@ type GetRelayerInfoDTO struct {
 
 type GetRelayerScChainAddreeDTO struct {
 	ScChainAddress string `bson:"sc_chain_address"`
+}
+
+type AggrIBCChannelTxsDTO struct {
+	BaseDenom string  `bson:"base_denom"`
+	ScChainId string  `bson:"sc_chain_id"`
+	DcChainId string  `bson:"dc_chain_id"`
+	ScChannel string  `bson:"sc_channel"`
+	DcChannel string  `bson:"dc_channel"`
+	Count     int64   `bson:"count"`
+	Amount    float64 `bson:"amount"`
+}
+
+type ChannelStatisticsDTO struct {
+	ChannelId       string
+	MirrorChannelId string
+	BaseDenom       string
+	TxsCount        int64
+	TxsAmount       decimal.Decimal
 }
