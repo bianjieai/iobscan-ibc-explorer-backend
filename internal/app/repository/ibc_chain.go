@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
@@ -69,13 +70,17 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 }
 
 func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error {
+	updateData := bson.M{
+		"ibc_tokens":       tokens,
+		"update_at":        time.Now().Unix(),
+		"ibc_tokens_value": "",
+	}
+	if tokenValue > 0 {
+		updateData["ibc_tokens_value"] = fmt.Sprint(tokenValue)
+	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
-			"$set": bson.M{
-				"ibc_tokens":       tokens,
-				"ibc_tokens_value": tokenValue,
-				"update_at":        time.Now().Unix(),
-			},
+			"$set": updateData,
 		})
 }
 

@@ -10,6 +10,7 @@ import (
 )
 
 type IRelayerConfigRepo interface {
+	FindAll() ([]*entity.IBCRelayerConfig, error)
 }
 
 var _ IRelayerConfigRepo = new(RelayerConfigRepo)

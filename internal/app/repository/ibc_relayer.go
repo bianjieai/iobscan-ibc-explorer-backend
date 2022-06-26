@@ -2,12 +2,15 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	moptions "go.mongodb.org/mongo-driver/mongo/options"
+	"strings"
+	"time"
 )
 
 const (
@@ -18,8 +21,10 @@ const (
 type IRelayerRepo interface {
 	FindLatestOne() (*entity.IBCRelayer, error)
 	Insert(relayer []entity.IBCRelayer) error
-	Update(relayerId string, data bson.M) error
+	UpdateStatusAndTime(relayerId string, status int, updateTime, timePeriod int64) error
+	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue float64) error
 	FindAll(skip, limit int64) ([]*entity.IBCRelayer, error)
+	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
 	FindRelayersCnt(chainId string) (int64, error)
 	CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error)
 	FindRelayerId(chainId string, relayerAddr string) (*entity.IBCRelayer, error)
@@ -60,6 +65,29 @@ func (repo *IbcRelayerRepo) FindAll(skip, limit int64) ([]*entity.IBCRelayer, er
 	return res, err
 }
 
+func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error) {
+	var (
+		res   []*entity.IBCRelayer
+		total int64
+	)
+	filter := bson.M{}
+	if chainId != "" {
+		chains := strings.Split(chainId, ",")
+		filter["$or"] = []bson.M{
+			{"chain_a": bson.M{"$in": chains}},
+			{"chain_b": bson.M{"$in": chains}},
+		}
+	}
+	if status > 0 {
+		filter["status"] = status
+	}
+	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("+update_time").All(&res)
+	if useCount {
+		total, err = repo.coll().Find(context.Background(), filter).Count()
+	}
+	return res, total, err
+}
+
 func (repo *IbcRelayerRepo) Insert(relayer []entity.IBCRelayer) error {
 	if _, err := repo.coll().InsertMany(context.Background(), relayer); err != nil {
 		return err
@@ -67,8 +95,27 @@ func (repo *IbcRelayerRepo) Insert(relayer []entity.IBCRelayer) error {
 	return nil
 }
 
-func (repo *IbcRelayerRepo) Update(relayerId string, data bson.M) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, data)
+func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue float64) error {
+	updateData := bson.M{
+		"transfer_total_txs":       txs,
+		"transfer_success_txs":     txsSuccess,
+		"transfer_total_txs_value": "",
+		"update_at":                time.Now().Unix(),
+	}
+	if totalValue > 0 {
+		updateData["transfer_total_txs_value"] = fmt.Sprint(totalValue)
+	}
+	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, bson.M{
+		"$set": updateData})
+}
+func (repo *IbcRelayerRepo) UpdateStatusAndTime(relayerId string, status int, updateTime, timePeriod int64) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, bson.M{
+		"$set": bson.M{
+			"status":      status,
+			"update_time": updateTime,
+			"time_period": timePeriod,
+			"update_at":   time.Now().Unix(),
+		}})
 }
 
 func (repo *IbcRelayerRepo) FindLatestOne() (*entity.IBCRelayer, error) {
