@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
@@ -16,6 +19,8 @@ type IChannelRepo interface {
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
 	UpdateChannel(channel *entity.IBCChannel) error
+	List(chainA, chainB string, status entity.ChannelStatus, pageNum, pageSize int64) (entity.IBCChannelList, error)
+	CountList(chainA, chainB string, status entity.ChannelStatus) (int64, error)
 }
 
 var _ IChannelRepo = new(ChannelRepo)
@@ -29,6 +34,52 @@ func (repo *ChannelRepo) coll() *qmgo.Collection {
 
 func (repo *ChannelRepo) UpdateOne(filter interface{}, update interface{}) error {
 	return repo.coll().UpdateOne(context.Background(), filter, update)
+}
+
+func (repo *ChannelRepo) analyzeListParam(chainA, chainB string, status entity.ChannelStatus) map[string]interface{} {
+	chainCond := make(map[string]interface{}, 0)
+	if chainA == constant.AllChain && chainB == constant.AllChain {
+		// 无条件
+	} else if chainA == constant.AllChain {
+		chainCond["$or"] = []bson.M{
+			{"chain_a": chainB}, {"chain_b": chainB},
+		}
+	} else if chainB == constant.AllChain {
+		chainCond["$or"] = []bson.M{{"chain_a": chainA}, {"chain_b": chainA}}
+	} else {
+		chainCond["$or"] = []bson.M{
+			{"chain_a": chainA, "chain_b": chainB}, {"chain_a": chainB, "chain_b": chainA},
+		}
+	}
+
+	statusCond := make(map[string]interface{}, 0)
+	if status != 0 {
+		statusCond["status"] = status
+	}
+
+	if len(chainCond) == 0 && len(statusCond) == 0 {
+		return bson.M{}
+	} else if len(chainCond) == 0 {
+		return statusCond
+	} else if len(statusCond) == 0 {
+		return chainCond
+	} else {
+		return bson.M{"$and": bson.A{statusCond, chainCond}}
+	}
+}
+
+func (repo *ChannelRepo) List(chainA, chainB string, status entity.ChannelStatus, pageNum, pageSize int64) (entity.IBCChannelList, error) {
+	param := repo.analyzeListParam(chainA, chainB, status)
+	fmt.Println(utils.MustMarshalJsonToStr(param))
+	var res entity.IBCChannelList
+	err := repo.coll().Find(context.Background(), param).Limit(pageSize).Skip((pageNum - 1) * pageSize).Sort("-transfer_txs").All(&res)
+	return res, err
+}
+
+func (repo *ChannelRepo) CountList(chainA, chainB string, status entity.ChannelStatus) (int64, error) {
+	param := repo.analyzeListParam(chainA, chainB, status)
+	count, err := repo.coll().Find(context.Background(), param).Count()
+	return count, err
 }
 
 func (repo *ChannelRepo) EnsureIndexes() {

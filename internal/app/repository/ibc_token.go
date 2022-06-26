@@ -12,6 +12,8 @@ import (
 )
 
 type ITokenRepo interface {
+	List(baseDenoms []string, chainId string, tokenType entity.TokenType, pageNum, pageSize int64) (entity.IBCTokenList, error)
+	CountList(baseDenoms []string, chainId string, tokenType entity.TokenType) (int64, error)
 	FindAll() (entity.IBCTokenList, error)
 	InsertBatch(batch []*entity.IBCToken) error
 	UpdateToken(token *entity.IBCToken) error
@@ -34,6 +36,38 @@ func (repo *TokenRepo) EnsureIndexes() {
 
 func (repo *TokenRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCToken{}.CollectionName())
+}
+
+func (repo *TokenRepo) analyzeListParam(baseDenoms []string, chainId string, tokenType entity.TokenType) map[string]interface{} {
+	q := make(map[string]interface{})
+	if len(baseDenoms) > 0 {
+		q["base_denom"] = bson.M{
+			"$in": baseDenoms,
+		}
+	}
+
+	if chainId != "" {
+		q["chain_id"] = chainId
+	}
+
+	if tokenType != "" {
+		q["type"] = tokenType
+	}
+
+	return q
+}
+
+func (repo *TokenRepo) List(baseDenoms []string, chainId string, tokenType entity.TokenType, pageNum, pageSize int64) (entity.IBCTokenList, error) {
+	param := repo.analyzeListParam(baseDenoms, chainId, tokenType)
+	var res entity.IBCTokenList
+	err := repo.coll().Find(context.Background(), param).Limit(pageSize).Skip((pageNum - 1) * pageSize).Sort("-chains_involved").All(&res)
+	return res, err
+}
+
+func (repo *TokenRepo) CountList(baseDenoms []string, chainId string, tokenType entity.TokenType) (int64, error) {
+	param := repo.analyzeListParam(baseDenoms, chainId, tokenType)
+	count, err := repo.coll().Find(context.Background(), param).Count()
+	return count, err
 }
 
 func (repo *TokenRepo) FindAll() (entity.IBCTokenList, error) {

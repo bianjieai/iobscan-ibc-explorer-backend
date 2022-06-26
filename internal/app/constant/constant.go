@@ -16,4 +16,8 @@ const (
 	IBCHopsIndex          = "/channel"
 	DefaultValuePrecision = 5
 	ChannelStateOpen      = "STATE_OPEN"
+	DefaultPageSize       = 10
+	DefaultPageNum        = 10
+	OtherDenom            = "others"
+	AllChain              = "allchain"
 )

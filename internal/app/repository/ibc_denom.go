@@ -12,6 +12,7 @@ import (
 type IDenomRepo interface {
 	FindBaseDenom() (entity.IBCDenomList, error)
 	GetDenomGroupByBaseDenom() ([]*dto.GetDenomGroupByBaseDenomDTO, error)
+	FindTokenOthers() (entity.IBCDenomList, error)
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -43,5 +44,11 @@ func (repo *DenomRepo) GetDenomGroupByBaseDenom() ([]*dto.GetDenomGroupByBaseDen
 	pipe = append(pipe, group)
 	var res []*dto.GetDenomGroupByBaseDenomDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *DenomRepo) FindTokenOthers() (entity.IBCDenomList, error) {
+	var res entity.IBCDenomList
+	err := repo.coll().Find(context.Background(), bson.M{"symbol": "", "is_base_denom": true}).All(&res)
 	return res, err
 }

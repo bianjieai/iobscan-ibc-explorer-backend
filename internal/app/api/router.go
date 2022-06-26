@@ -28,10 +28,12 @@ func Routers(Router *gin.Engine) {
 func tokenPage(r *gin.RouterGroup) {
 	ctl := rest.TokenController{}
 	r.GET("/tokenList", ctl.List)
+	r.GET("/:base_denom/ibcTokenList", ctl.IBCTokenList)
 }
 
 func channelPage(r *gin.RouterGroup) {
-
+	ctl := rest.ChannelController{}
+	r.GET("/channelList", ctl.List)
 }
 
 func chainPage(r *gin.RouterGroup) {
