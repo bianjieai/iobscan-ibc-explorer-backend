@@ -17,7 +17,7 @@ type IBCTokenStatistics struct {
 	Type        TokenStatisticsType `bson:"type"`
 	IBCHops     int                 `bson:"ibc_hops"`
 	DenomAmount string              `bson:"denom_amount"`
-	DenomValue  float64             `bson:"denom_value"`
+	DenomValue  string              `bson:"denom_value"`
 	ReceiveTxs  int64               `bson:"receive_txs"`
 	CreateAt    int64               `bson:"create_at"`
 	UpdateAt    int64               `bson:"update_at"`

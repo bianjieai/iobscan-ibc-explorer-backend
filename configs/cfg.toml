@@ -3,7 +3,7 @@ name = "iobscan-ibc-explorer-backend"
 addr = "0.0.0.0:8000"
 version = "0.4"
 env = "dev"
-start_task = true
+start_task = false
 
 [log]
 log_level = "debug"

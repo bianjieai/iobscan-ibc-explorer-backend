@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	moptions "go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
@@ -17,6 +18,7 @@ const (
 type IChainRepo interface {
 	InserOrUpdate(chain entity.IBCChain) error
 	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error
+	UpdateTransferTxs(chainId string, txs int64, txsValue string) error
 	UpdateRelayers(chainId string, relayers int64) error
 	FindAll() ([]*entity.IBCChain, error)
 }
@@ -75,6 +77,17 @@ func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, toke
 				"ibc_tokens":       tokens,
 				"ibc_tokens_value": tokenValue,
 				"update_at":        time.Now().Unix(),
+			},
+		})
+}
+
+func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue string) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
+		bson.M{
+			"$set": bson.M{
+				"transfer_txs":       txs,
+				"transfer_txs_value": txsValue,
+				"update_at":          time.Now().Unix(),
 			},
 		})
 }

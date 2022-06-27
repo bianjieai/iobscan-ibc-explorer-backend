@@ -27,6 +27,8 @@ type IExIbcTxRepo interface {
 	CountRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
 	CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
 	CountRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
+	AggrIBCChannelTxs() ([]*dto.AggrIBCChannelTxsDTO, error)
+	AggrIBCChannelHistoryTxs() ([]*dto.AggrIBCChannelTxsDTO, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -373,5 +375,63 @@ func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerP
 	pipe := repo.relayerPacketAmountCond()
 	var res []*dto.CountRelayerPacketAmountDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe() []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":  "$base_denom",
+				"sc_chain_id": "$sc_chain_id",
+				"dc_chain_id": "$dc_chain_id",
+				"sc_channel":  "$sc_channel",
+				"dc_channel":  "$dc_channel",
+			},
+			"count": bson.M{
+				"$sum": 1,
+			},
+			"amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$sc_tx_info.msg_amount.amount",
+				},
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":         0,
+			"base_denom":  "$_id.base_denom",
+			"sc_chain_id": "$_id.sc_chain_id",
+			"dc_chain_id": "$_id.dc_chain_id",
+			"sc_channel":  "$_id.sc_channel",
+			"dc_channel":  "$_id.dc_channel",
+			"count":       "$count",
+			"amount":      "$amount",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	return pipe
+}
+
+func (repo *ExIbcTxRepo) AggrIBCChannelTxs() ([]*dto.AggrIBCChannelTxsDTO, error) {
+	pipe := repo.AggrIBCChannelTxsPipe()
+	var res []*dto.AggrIBCChannelTxsDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) AggrIBCChannelHistoryTxs() ([]*dto.AggrIBCChannelTxsDTO, error) {
+	pipe := repo.AggrIBCChannelTxsPipe()
+	var res []*dto.AggrIBCChannelTxsDTO
+	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
