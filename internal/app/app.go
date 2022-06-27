@@ -24,6 +24,9 @@ func Serve(cfg *conf.Config) {
 	if cfg.App.StartTask {
 		startTask()
 	}
+	if cfg.App.ApiCacheAliveSeconds > 0 {
+		api.SetApiCacheAliveTime(cfg.App.ApiCacheAliveSeconds)
+	}
 
 	r := gin.Default()
 	api.Routers(r)

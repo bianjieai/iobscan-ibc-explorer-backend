@@ -32,11 +32,12 @@ type Mongo struct {
 }
 
 type App struct {
-	Name      string
-	Addr      string
-	Env       string
-	StartTask bool `mapstructure:"start_task"`
-	Version   string
+	Name                 string
+	Addr                 string
+	Env                  string
+	StartTask            bool `mapstructure:"start_task"`
+	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
+	Version              string
 }
 
 type Redis struct {
