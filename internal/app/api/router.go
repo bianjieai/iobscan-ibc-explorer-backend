@@ -30,6 +30,7 @@ func Routers(Router *gin.Engine) {
 	channelPage(ibcRouter)
 	chainPage(ibcRouter)
 	relayerPage(ibcRouter)
+	cacheTools(ibcRouter)
 }
 
 func tokenPage(r *gin.RouterGroup) {
@@ -51,4 +52,9 @@ func chainPage(r *gin.RouterGroup) {
 func relayerPage(r *gin.RouterGroup) {
 	ctl := rest.RelayerController{}
 	r.GET("/relayerList", cache.CachePage(store, 3*time.Second, ctl.List))
+}
+
+func cacheTools(r *gin.RouterGroup) {
+	ctl := rest.CacheController{}
+	r.DELETE("/:key", ctl.Del)
 }
