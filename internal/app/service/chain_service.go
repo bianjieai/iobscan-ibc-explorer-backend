@@ -1,9 +1,12 @@
 package service
 
-import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+)
 
 type IChainService interface {
-	List(req *vo.ChainListReq) (vo.ChainListResp, error)
+	List(req *vo.ChainListReq) (vo.ChainListResp, errors.Error)
 }
 
 type ChainService struct {
@@ -12,20 +15,17 @@ type ChainService struct {
 
 var _ IChainService = new(ChainService)
 
-func (svc *ChainService) List(req *vo.ChainListReq) (vo.ChainListResp, error) {
+func (svc *ChainService) List(req *vo.ChainListReq) (vo.ChainListResp, errors.Error) {
 	var resp vo.ChainListResp
-	//todo current no use request data
-	rets, err := chainRepo.FindAll()
+	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	rets, err := chainRepo.FindAll(skip, limit)
 	if err != nil {
-		return resp, err
+		return resp, errors.Wrap(err)
 	}
 	for _, val := range rets {
 		resp.Items = append(resp.Items, svc.dto.LoadDto(val))
 	}
-	resp.PageInfo = vo.PageInfo{
-		PageNum:  req.PageNum,
-		PageSize: req.PageSize,
-	}
-	resp.Total = len(rets)
+	page := vo.BuildPageInfo(int64(len(rets)), req.PageNum, req.PageSize)
+	resp.PageInfo = page
 	return resp, nil
 }

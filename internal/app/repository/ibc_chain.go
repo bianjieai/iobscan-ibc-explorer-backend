@@ -28,7 +28,7 @@ type IChainRepo interface {
 	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error
 	UpdateTransferTxs(chainId string, txs int64, txsValue string) error
 	UpdateRelayers(chainId string, relayers int64) error
-	FindAll() ([]*entity.IBCChain, error)
+	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -40,9 +40,9 @@ func (repo *IbcChainRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChain{}.CollectionName())
 }
 
-func (repo *IbcChainRepo) FindAll() ([]*entity.IBCChain, error) {
+func (repo *IbcChainRepo) FindAll(skip, limit int64) ([]*entity.IBCChain, error) {
 	var res []*entity.IBCChain
-	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-" + ChainFieldIbcTokens).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).Sort("-" + ChainFieldIbcTokens).All(&res)
 	return res, err
 }
 

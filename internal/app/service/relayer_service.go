@@ -1,12 +1,13 @@
 package service
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 )
 
 type IRelayerService interface {
-	List(req *vo.RelayerListReq) (vo.RelayerListResp, error)
+	List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error)
 }
 
 type RelayerService struct {
@@ -15,16 +16,16 @@ type RelayerService struct {
 
 var _ IRelayerService = new(RelayerService)
 
-func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, error) {
+func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error) {
 	var resp vo.RelayerListResp
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
 	rets, total, err := relayerRepo.FindAllBycond(req.Chain, req.Status, skip, limit, req.UseCount)
 	if err != nil {
-		return resp, err
+		return resp, errors.Wrap(err)
 	}
 	relayerCfgs, err := relayerCfgRepo.FindAll()
 	if err != nil {
-		return resp, err
+		return resp, errors.Wrap(err)
 	}
 	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
 	for _, val := range relayerCfgs {
@@ -38,10 +39,7 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 		}
 		resp.Items = append(resp.Items, item)
 	}
-	resp.PageInfo = vo.PageInfo{
-		PageNum:  req.PageNum,
-		PageSize: req.PageSize,
-	}
-	resp.Total = total
+	page := vo.BuildPageInfo(total, req.PageNum, req.PageSize)
+	resp.PageInfo = page
 	return resp, nil
 }

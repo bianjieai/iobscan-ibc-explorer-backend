@@ -24,7 +24,6 @@ type ChainDto struct {
 type ChainListResp struct {
 	Items    []ChainDto `json:"items"`
 	PageInfo PageInfo   `json:"page_info"`
-	Total    int        `json:"total"`
 }
 
 func (dto ChainDto) LoadDto(chain *entity.IBCChain) ChainDto {

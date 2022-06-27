@@ -34,7 +34,6 @@ type RelayerDto struct {
 type RelayerListResp struct {
 	Items    []RelayerDto `json:"items"`
 	PageInfo PageInfo     `json:"page_info"`
-	Total    int64        `json:"total"`
 }
 
 func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayer) RelayerDto {

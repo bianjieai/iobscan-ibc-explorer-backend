@@ -330,7 +330,7 @@ func createIBCRelayerStatistics(chainId, relayerId, baseDenom string, amount, va
 		ChainId:            chainId,
 		TransferBaseDenom:  baseDenom,
 		TransferAmount:     amount.String(),
-		TransferTotalValue: value.String(),
+		TransferTotalValue: value.Round(constant.DefaultValuePrecision).String(),
 		CreateAt:           time.Now().Unix(),
 		UpdateAt:           time.Now().Unix(),
 	}
@@ -374,7 +374,7 @@ func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*ent
 }
 
 func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
-	res, err := chainRepo.FindAll()
+	res, err := chainRepo.FindAll(0, 0)
 	if err != nil {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
 		return

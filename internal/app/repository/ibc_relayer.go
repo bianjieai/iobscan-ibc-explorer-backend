@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -89,7 +90,7 @@ func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limi
 		if length := len(chains); length <= 2 {
 			switch length {
 			case 1:
-				if !strings.Contains(chainId, "allchains") {
+				if !strings.Contains(chainId, constant.AllChain) {
 					filter["$or"] = []bson.M{
 						{RelayerFieldChainA: chains[0]},
 						{RelayerFieldChainB: chains[0]},
@@ -97,11 +98,11 @@ func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limi
 				}
 				break
 			case 2:
-				if strings.Contains(chainId, "allchains") {
-					if chains[0] == chains[1] && chains[0] == "allchains" {
+				if strings.Contains(chainId, constant.AllChain) {
+					if chains[0] == chains[1] && chains[0] == constant.AllChain {
 						//nothing to do
 					} else {
-						index := strings.Index(chainId, "allchains")
+						index := strings.Index(chainId, constant.AllChain)
 						if index > 0 {
 							filter[RelayerFieldChainA] = chains[0]
 						} else {

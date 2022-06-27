@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"net/http"
 
@@ -15,12 +14,12 @@ type RelayerController struct {
 func (ctl *RelayerController) List(c *gin.Context) {
 	var req vo.RelayerListReq
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusOK, response.FailError(errors.Wrap(err)))
+		c.JSON(http.StatusOK, response.FailBadRequest(err))
 		return
 	}
 	resp, err := relayerService.List(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, response.FailError(errors.Wrap(err)))
+		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(resp))

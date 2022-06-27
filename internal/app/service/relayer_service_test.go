@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"testing"
 )
@@ -13,7 +14,7 @@ func TestRelayerService_List(t *testing.T) {
 		},
 		UseCount: false,
 		Status:   2,
-		Chain:    "allchains",
+		Chain:    constant.AllChain,
 	})
 	if err != nil {
 		t.Fatal(err.Error())
