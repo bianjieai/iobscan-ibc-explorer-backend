@@ -15,8 +15,13 @@ import (
 )
 
 var (
-	store = persistence.NewInMemoryStore(time.Second)
+	store        = persistence.NewInMemoryStore(time.Second)
+	aliveSeconds = 3
 )
+
+func SetApiCacheAliveTime(duration int) {
+	aliveSeconds = duration
+}
 
 func Routers(Router *gin.Engine) {
 	Router.Use(middleware.Cors())
@@ -30,6 +35,7 @@ func Routers(Router *gin.Engine) {
 	channelPage(ibcRouter)
 	chainPage(ibcRouter)
 	relayerPage(ibcRouter)
+	cacheTools(ibcRouter)
 }
 
 func tokenPage(r *gin.RouterGroup) {
@@ -45,10 +51,15 @@ func channelPage(r *gin.RouterGroup) {
 
 func chainPage(r *gin.RouterGroup) {
 	ctl := rest.ChainController{}
-	r.GET("/chainList", cache.CachePage(store, 3*time.Second, ctl.List))
+	r.GET("/chainList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
 }
 
 func relayerPage(r *gin.RouterGroup) {
 	ctl := rest.RelayerController{}
-	r.GET("/relayerList", cache.CachePage(store, 3*time.Second, ctl.List))
+	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+}
+
+func cacheTools(r *gin.RouterGroup) {
+	ctl := rest.CacheController{}
+	r.DELETE("/:key", ctl.Del)
 }

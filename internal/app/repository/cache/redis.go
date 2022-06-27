@@ -19,3 +19,9 @@ func GetRedisClient() *redis.Client {
 func RedisStatus() bool {
 	return rc.Ping() == nil
 }
+
+// RedisDel Redis `DEL` command
+func RedisDel(keys ...string) (int64, error) {
+	result, err := rc.Del(keys...)
+	return result, err
+}

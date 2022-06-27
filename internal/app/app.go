@@ -24,6 +24,9 @@ func Serve(cfg *conf.Config) {
 	if cfg.App.StartTask {
 		startTask()
 	}
+	if cfg.App.ApiCacheAliveSeconds > 0 {
+		api.SetApiCacheAliveTime(cfg.App.ApiCacheAliveSeconds)
+	}
 
 	r := gin.Default()
 	api.Routers(r)
@@ -69,6 +72,11 @@ func initLogger(logCfg *conf.Log) {
 
 func startTask() {
 	task.RegisterTasks(
-		&task.TokenTask{})
+		&task.TokenTask{},
+		&task.ChannelTask{},
+		&task.IbcChainCronTask{},
+		&task.IbcRelayerCronTask{},
+		&task.TokenPriceTask{},
+	)
 	task.Start()
 }
