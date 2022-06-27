@@ -10,10 +10,6 @@ import (
 type IbcChainCronTask struct {
 }
 
-func init() {
-	RegisterTasks(&IbcChainCronTask{})
-}
-
 func (t *IbcChainCronTask) Name() string {
 	return "ibc_chain_task"
 }
