@@ -52,7 +52,7 @@ func (t *IbcRelayerCronTask) Run() {
 }
 
 func (t *IbcRelayerCronTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 2*time.Second
+	return 1*time.Minute - 2*time.Second
 }
 
 func (t *IbcRelayerCronTask) handleNewRelayer() {
