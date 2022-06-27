@@ -5,13 +5,12 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 )
 
 type ITokenService interface {
-	List(baseDenom, chainId string, tokenType entity.TokenType, useCount bool, pageNum, pageSize int64) (*vo.TokenListResp, errors.Error)
-	IBCTokenList(baseDenom, chainId string, tokenType entity.TokenStatisticsType, useCount bool, pageNum, pageSize int64) (*vo.IBCTokenListResp, errors.Error)
+	List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error)
+	IBCTokenList(baseDenom string, req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error)
 }
 
 type TokenService struct {
@@ -19,10 +18,10 @@ type TokenService struct {
 
 var _ ITokenService = new(TokenService)
 
-func (svc *TokenService) List(baseDenom, chainId string, tokenType entity.TokenType, useCount bool, pageNum, pageSize int64) (*vo.TokenListResp, errors.Error) {
+func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error) {
 	var baseDenomList []string
-	if baseDenom != "" {
-		if strings.ToLower(baseDenom) == constant.OtherDenom {
+	if req.BaseDenom != "" {
+		if strings.ToLower(req.BaseDenom) == constant.OtherDenom {
 			others, err := denomRepo.FindTokenOthers()
 			if err != nil {
 				return nil, errors.Wrap(err)
@@ -32,11 +31,12 @@ func (svc *TokenService) List(baseDenom, chainId string, tokenType entity.TokenT
 				baseDenomList = append(baseDenomList, v.BaseDenom)
 			}
 		} else {
-			baseDenomList = []string{baseDenom}
+			baseDenomList = []string{req.BaseDenom}
 		}
 	}
 
-	list, err := tokenRepo.List(baseDenomList, chainId, tokenType, pageNum, pageSize)
+	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	list, err := tokenRepo.List(baseDenomList, req.Chain, req.TokenType, skip, limit)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -56,22 +56,23 @@ func (svc *TokenService) List(baseDenom, chainId string, tokenType entity.TokenT
 	}
 
 	var totalItem int64
-	if useCount {
-		totalItem, err = tokenRepo.CountList(baseDenomList, chainId, tokenType)
+	if req.UseCount {
+		totalItem, err = tokenRepo.CountList(baseDenomList, req.Chain, req.TokenType)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 	}
 
-	page := vo.BuildPageInfo(totalItem, pageNum, pageSize)
+	page := vo.BuildPageInfo(totalItem, req.PageNum, req.PageSize)
 	return &vo.TokenListResp{
 		Items:    items,
 		PageInfo: page,
 	}, nil
 }
 
-func (svc *TokenService) IBCTokenList(baseDenom, chainId string, tokenType entity.TokenStatisticsType, useCount bool, pageNum, pageSize int64) (*vo.IBCTokenListResp, errors.Error) {
-	list, err := tokenStatisticsRepo.List(baseDenom, chainId, tokenType, pageNum, pageSize)
+func (svc *TokenService) IBCTokenList(baseDenom string, req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error) {
+	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	list, err := tokenStatisticsRepo.List(baseDenom, req.Chain, req.TokenType, skip, limit)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -90,14 +91,14 @@ func (svc *TokenService) IBCTokenList(baseDenom, chainId string, tokenType entit
 	}
 
 	var totalItem int64
-	if useCount {
-		totalItem, err = tokenStatisticsRepo.CountList(baseDenom, chainId, tokenType)
+	if req.UseCount {
+		totalItem, err = tokenStatisticsRepo.CountList(baseDenom, req.Chain, req.TokenType)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 	}
 
-	page := vo.BuildPageInfo(totalItem, pageNum, pageSize)
+	page := vo.BuildPageInfo(totalItem, req.PageNum, req.PageSize)
 	return &vo.IBCTokenListResp{
 		Items:    items,
 		PageInfo: page,

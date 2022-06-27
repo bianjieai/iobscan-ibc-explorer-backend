@@ -15,7 +15,7 @@ type ITokenStatisticsRepo interface {
 	FindByBaseDenom(baseDenom, originChainId string) ([]*entity.IBCTokenStatistics, error)
 	BatchSwap(batch []*entity.IBCTokenStatistics, baseDenom, originChainId string) error
 	AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, error)
-	List(baseDenom, chainId string, tokenType entity.TokenStatisticsType, pageNum, pageSize int64) ([]*entity.IBCTokenStatistics, error)
+	List(baseDenom, chainId string, tokenType entity.TokenStatisticsType, skip, limit int64) ([]*entity.IBCTokenStatistics, error)
 	CountList(baseDenom, chainId string, tokenType entity.TokenStatisticsType) (int64, error)
 }
 
@@ -116,10 +116,10 @@ func (repo *TokenStatisticsRepo) analyzeListParam(baseDenom, chainId string, tok
 	return q
 }
 
-func (repo *TokenStatisticsRepo) List(baseDenom, chainId string, tokenType entity.TokenStatisticsType, pageNum, pageSize int64) ([]*entity.IBCTokenStatistics, error) {
+func (repo *TokenStatisticsRepo) List(baseDenom, chainId string, tokenType entity.TokenStatisticsType, skip, limit int64) ([]*entity.IBCTokenStatistics, error) {
 	param := repo.analyzeListParam(baseDenom, chainId, tokenType)
 	var res []*entity.IBCTokenStatistics
-	err := repo.coll().Find(context.Background(), param).Limit(pageSize).Skip((pageNum - 1) * pageSize).Sort("-denom_amount").All(&res)
+	err := repo.coll().Find(context.Background(), param).Limit(limit).Skip(skip).Sort("-denom_amount").All(&res)
 	return res, err
 }
 

@@ -2,6 +2,14 @@ package vo
 
 import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 
+type TokenListReq struct {
+	Page
+	BaseDenom string           `json:"base_denom" form:"base_denom"`
+	Chain     string           `json:"chain" form:"chain"`
+	TokenType entity.TokenType `json:"token_type" form:"token_type"`
+	UseCount  bool             `json:"use_count" form:"use_count"`
+}
+
 type TokenListResp struct {
 	Items    []TokenItem `json:"items"`
 	PageInfo PageInfo    `json:"page_info"`
@@ -16,6 +24,13 @@ type TokenItem struct {
 	ChainsInvolved    int64   `json:"chains_involved"`
 	IBCTransferTxs    int64   `json:"ibc_transfer_txs"`
 	IBCTransferAmount string  `json:"ibc_transfer_amount"`
+}
+
+type IBCTokenListReq struct {
+	Page
+	Chain     string                     `json:"chain" form:"chain"`
+	TokenType entity.TokenStatisticsType `json:"token_type" form:"token_type"`
+	UseCount  bool                       `json:"use_count" form:"use_count"`
 }
 
 type IBCTokenListResp struct {

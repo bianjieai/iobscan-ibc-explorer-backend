@@ -1,21 +1,40 @@
 package service
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 )
 
 type IChannelService interface {
-	List(chainA, chainB string, status entity.ChannelStatus, useCount bool, pageNum, pageSize int64) (*vo.ChannelListResp, errors.Error)
+	List(req *vo.ChannelListReq) (*vo.ChannelListResp, errors.Error)
 }
+
+var _ IChannelService = new(ChannelService)
 
 type ChannelService struct {
 }
 
-func (svc *ChannelService) List(chainA, chainB string, status entity.ChannelStatus, useCount bool, pageNum, pageSize int64) (*vo.ChannelListResp, errors.Error) {
-	list, err := channelRepo.List(chainA, chainB, status, pageNum, pageSize)
+func (svc *ChannelService) List(req *vo.ChannelListReq) (*vo.ChannelListResp, errors.Error) {
+	var chainA, chainB string
+	if req.Chain == "" {
+		chainA = constant.AllChain
+		chainB = constant.AllChain
+	} else {
+		split := strings.Split(req.Chain, ",")
+		if len(split) != 2 {
+			return nil, errors.WrapBadRequest(fmt.Errorf("chain parameter format error"))
+		} else {
+			chainA = split[0]
+			chainB = split[1]
+		}
+	}
+
+	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	list, err := channelRepo.List(chainA, chainB, req.Status, skip, limit)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -38,14 +57,14 @@ func (svc *ChannelService) List(chainA, chainB string, status entity.ChannelStat
 	}
 
 	var totalItem int64
-	if useCount {
-		totalItem, err = channelRepo.CountList(chainA, chainB, status)
+	if req.UseCount {
+		totalItem, err = channelRepo.CountList(chainA, chainB, req.Status)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 	}
 
-	page := vo.BuildPageInfo(totalItem, pageNum, pageSize)
+	page := vo.BuildPageInfo(totalItem, req.PageNum, req.PageSize)
 	return &vo.ChannelListResp{
 		Items:    items,
 		PageInfo: page,

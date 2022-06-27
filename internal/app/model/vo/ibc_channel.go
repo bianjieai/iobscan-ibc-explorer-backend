@@ -2,6 +2,13 @@ package vo
 
 import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 
+type ChannelListReq struct {
+	Page
+	Chain    string               `json:"chain" form:"chain"`
+	Status   entity.ChannelStatus `json:"status" form:"status"`
+	UseCount bool                 `json:"use_count" form:"use_count"`
+}
+
 type ChannelListResp struct {
 	Items    []ChannelItem `json:"items"`
 	PageInfo PageInfo      `json:"page_info"`

@@ -12,7 +12,7 @@ import (
 )
 
 type ITokenRepo interface {
-	List(baseDenoms []string, chainId string, tokenType entity.TokenType, pageNum, pageSize int64) (entity.IBCTokenList, error)
+	List(baseDenoms []string, chainId string, tokenType entity.TokenType, skip, limit int64) (entity.IBCTokenList, error)
 	CountList(baseDenoms []string, chainId string, tokenType entity.TokenType) (int64, error)
 	FindAll() (entity.IBCTokenList, error)
 	InsertBatch(batch []*entity.IBCToken) error
@@ -57,10 +57,10 @@ func (repo *TokenRepo) analyzeListParam(baseDenoms []string, chainId string, tok
 	return q
 }
 
-func (repo *TokenRepo) List(baseDenoms []string, chainId string, tokenType entity.TokenType, pageNum, pageSize int64) (entity.IBCTokenList, error) {
+func (repo *TokenRepo) List(baseDenoms []string, chainId string, tokenType entity.TokenType, skip, limit int64) (entity.IBCTokenList, error) {
 	param := repo.analyzeListParam(baseDenoms, chainId, tokenType)
 	var res entity.IBCTokenList
-	err := repo.coll().Find(context.Background(), param).Limit(pageSize).Skip((pageNum - 1) * pageSize).Sort("-chains_involved").All(&res)
+	err := repo.coll().Find(context.Background(), param).Limit(limit).Skip(skip).Sort("-chains_involved").All(&res)
 	return res, err
 }
 

@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -19,7 +17,7 @@ type IChannelRepo interface {
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
 	UpdateChannel(channel *entity.IBCChannel) error
-	List(chainA, chainB string, status entity.ChannelStatus, pageNum, pageSize int64) (entity.IBCChannelList, error)
+	List(chainA, chainB string, status entity.ChannelStatus, skip, limit int64) (entity.IBCChannelList, error)
 	CountList(chainA, chainB string, status entity.ChannelStatus) (int64, error)
 }
 
@@ -68,11 +66,10 @@ func (repo *ChannelRepo) analyzeListParam(chainA, chainB string, status entity.C
 	}
 }
 
-func (repo *ChannelRepo) List(chainA, chainB string, status entity.ChannelStatus, pageNum, pageSize int64) (entity.IBCChannelList, error) {
+func (repo *ChannelRepo) List(chainA, chainB string, status entity.ChannelStatus, skip, limit int64) (entity.IBCChannelList, error) {
 	param := repo.analyzeListParam(chainA, chainB, status)
-	fmt.Println(utils.MustMarshalJsonToStr(param))
 	var res entity.IBCChannelList
-	err := repo.coll().Find(context.Background(), param).Limit(pageSize).Skip((pageNum - 1) * pageSize).Sort("-transfer_txs").All(&res)
+	err := repo.coll().Find(context.Background(), param).Limit(limit).Skip(skip).Sort("-transfer_txs").All(&res)
 	return res, err
 }
 
