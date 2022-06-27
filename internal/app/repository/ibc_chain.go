@@ -2,22 +2,25 @@ package repository
 
 import (
 	"context"
-	"time"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	moptions "go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 const (
-	ChainFieldChainId         = "chain_id"
-	ChainFieldIbcTokens       = "ibc_tokens"
-	ChainFieldRelayers        = "relayers"
-	ChainFieldChannels        = "channels"
-	ChainFieldConnectedChains = "connected_chains"
-	ChainFieldIbcTokensValue  = "ibc_tokens_value"
-	ChainFieldUpdateAt        = "update_at"
+	ChainFieldChainId          = "chain_id"
+	ChainFieldIbcTokens        = "ibc_tokens"
+	ChainFieldRelayers         = "relayers"
+	ChainFieldChannels         = "channels"
+	ChainFieldConnectedChains  = "connected_chains"
+	ChainFieldIbcTokensValue   = "ibc_tokens_value"
+	ChainFieldTransferTxs      = "transfer_txs"
+	ChainFieldTransferTxsValue = "transfer_txs_value"
+	ChainFieldUpdateAt         = "update_at"
 )
 
 type IChainRepo interface {
@@ -94,9 +97,9 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue 
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
 			"$set": bson.M{
-				"transfer_txs":       txs,
-				"transfer_txs_value": txsValue,
-				"update_at":          time.Now().Unix(),
+				ChainFieldTransferTxs:      txs,
+				ChainFieldTransferTxsValue: txsValue,
+				ChainFieldUpdateAt:         time.Now().Unix(),
 			},
 		})
 }
