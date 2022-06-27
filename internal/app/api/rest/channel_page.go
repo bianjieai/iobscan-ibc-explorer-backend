@@ -52,12 +52,12 @@ func (ctl *ChannelController) List(c *gin.Context) {
 
 	pageNum, err := strconv.ParseInt(pageNumStr, 10, 64)
 	if err != nil {
-		pageNum = 1
+		pageNum = constant.DefaultPageNum
 	}
 
 	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 64)
 	if err != nil {
-		pageSize = constant.DefaultPageNum
+		pageSize = constant.DefaultPageSize
 	}
 
 	res, e := channelService.List(chainA, chainB, entity.ChannelStatus(status), useCount, pageNum, pageSize)

@@ -17,7 +17,7 @@ const (
 	DefaultValuePrecision = 5
 	ChannelStateOpen      = "STATE_OPEN"
 	DefaultPageSize       = 10
-	DefaultPageNum        = 10
+	DefaultPageNum        = 1
 	OtherDenom            = "others"
 	AllChain              = "allchain"
 )

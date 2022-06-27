@@ -29,12 +29,12 @@ func (ctl *TokenController) List(c *gin.Context) {
 
 	pageNum, err := strconv.ParseInt(pageNumStr, 10, 64)
 	if err != nil {
-		pageNum = 1
+		pageNum = constant.DefaultPageNum
 	}
 
 	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 64)
 	if err != nil {
-		pageSize = constant.DefaultPageNum
+		pageSize = constant.DefaultPageSize
 	}
 
 	res, e := tokenService.List(baseDenom, chain, entity.TokenType(TokenType), useCount, pageNum, pageSize)
@@ -61,12 +61,12 @@ func (ctl *TokenController) IBCTokenList(c *gin.Context) {
 
 	pageNum, err := strconv.ParseInt(pageNumStr, 10, 64)
 	if err != nil {
-		pageNum = 1
+		pageNum = constant.DefaultPageNum
 	}
 
 	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 64)
 	if err != nil {
-		pageSize = constant.DefaultPageNum
+		pageSize = constant.DefaultPageSize
 	}
 
 	res, e := tokenService.IBCTokenList(baseDenom, chain, entity.TokenStatisticsType(TokenType), useCount, pageNum, pageSize)
