@@ -73,6 +73,7 @@ func startTask() {
 		&task.ChannelTask{},
 		&task.IbcChainCronTask{},
 		&task.IbcRelayerCronTask{},
+		&task.TokenPriceTask{},
 	)
 	task.Start()
 }
