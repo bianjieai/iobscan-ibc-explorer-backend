@@ -1,6 +1,8 @@
 package cache
 
-import "time"
+import (
+	"time"
+)
 
 // redis key expiration
 const (
@@ -18,4 +20,5 @@ const (
 	denomTransAmount = "denom_trans_amount:%s"
 	ibcInfoHash      = "ibc_info_hash"
 	ibcInfo          = "ibc_info:%s"
+	ibcRelayerCfg    = "ibc_relayer_config"
 )

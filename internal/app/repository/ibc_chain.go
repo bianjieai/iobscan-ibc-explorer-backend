@@ -12,7 +12,13 @@ import (
 )
 
 const (
-	ChainFieldChainId = "chain_id"
+	ChainFieldChainId         = "chain_id"
+	ChainFieldIbcTokens       = "ibc_tokens"
+	ChainFieldRelayers        = "relayers"
+	ChainFieldChannels        = "channels"
+	ChainFieldConnectedChains = "connected_chains"
+	ChainFieldIbcTokensValue  = "ibc_tokens_value"
+	ChainFieldUpdateAt        = "update_at"
 )
 
 type IChainRepo interface {
@@ -33,7 +39,7 @@ func (repo *IbcChainRepo) coll() *qmgo.Collection {
 
 func (repo *IbcChainRepo) FindAll() ([]*entity.IBCChain, error) {
 	var res []*entity.IBCChain
-	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-" + ChainFieldIbcTokens).All(&res)
 	return res, err
 }
 
@@ -41,7 +47,7 @@ func (repo *IbcChainRepo) UpdateRelayers(chainId string, relayers int64) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
 			"$set": bson.M{
-				"relayers": relayers,
+				ChainFieldRelayers: relayers,
 			},
 		})
 }
@@ -62,21 +68,21 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: res.ChainId},
 		bson.M{
 			"$set": bson.M{
-				"channels":         chain.Channels,
-				"connected_chains": chain.ConnectedChains,
-				"update_at":        time.Now().Unix(),
+				ChainFieldChannels:        chain.Channels,
+				ChainFieldConnectedChains: chain.ConnectedChains,
+				ChainFieldUpdateAt:        time.Now().Unix(),
 			},
 		})
 }
 
 func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error {
 	updateData := bson.M{
-		"ibc_tokens":       tokens,
-		"update_at":        time.Now().Unix(),
-		"ibc_tokens_value": "",
+		ChainFieldIbcTokens:      tokens,
+		ChainFieldUpdateAt:       time.Now().Unix(),
+		ChainFieldIbcTokensValue: "",
 	}
 	if tokenValue > 0 {
-		updateData["ibc_tokens_value"] = fmt.Sprint(tokenValue)
+		updateData[ChainFieldIbcTokensValue] = fmt.Sprint(tokenValue)
 	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
@@ -87,7 +93,7 @@ func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, toke
 func (repo *IbcChainRepo) EnsureIndexes() {
 	var indexes []options.IndexModel
 	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-chain_id"},
+		Key:          []string{"-" + ChainFieldChainId},
 		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
 	})
 

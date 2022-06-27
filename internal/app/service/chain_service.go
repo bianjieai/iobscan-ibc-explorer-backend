@@ -14,6 +14,7 @@ var _ IChainService = new(ChainService)
 
 func (svc *ChainService) List(req *vo.ChainListReq) (vo.ChainListResp, error) {
 	var resp vo.ChainListResp
+	//todo current no use request data
 	rets, err := chainRepo.FindAll()
 	if err != nil {
 		return resp, err

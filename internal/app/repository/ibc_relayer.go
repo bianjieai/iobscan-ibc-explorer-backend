@@ -14,8 +14,21 @@ import (
 )
 
 const (
-	RelayerFieldelayerId     = "relayer_id"
-	RelayerFieldLatestTxTime = "latest_tx_time"
+	RelayerFieldelayerId              = "relayer_id"
+	RelayerFieldLatestTxTime          = "latest_tx_time"
+	RelayerFieldTransferTotalTxs      = "transfer_total_txs"
+	RelayerFieldTransferSuccessTxs    = "transfer_success_txs"
+	RelayerFieldTransferTotalTxsValue = "transfer_total_txs_value"
+	RelayerFieldUpdateTime            = "update_time"
+	RelayerFieldTimePeriod            = "time_period"
+	RelayerFieldStatus                = "status"
+	RelayerFieldChainA                = "chain_a"
+	RelayerFieldChainB                = "chain_b"
+	RelayerFieldChannelA              = "channel_a"
+	RelayerFieldChannelB              = "channel_b"
+	RelayerFieldChainAAddress         = "chain_a_address"
+	RelayerFieldChainBAddress         = "chain_b_address"
+	RelayerFieldUpdateAt              = "update_at"
 )
 
 type IRelayerRepo interface {
@@ -38,18 +51,18 @@ type IbcRelayerRepo struct {
 func (repo *IbcRelayerRepo) EnsureIndexes() {
 	var indexes []options.IndexModel
 	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-chain_a", "-channel_a", "-chain_a_address"},
+		Key:          []string{"-" + RelayerFieldChainA, "-" + RelayerFieldChannelA, "-" + RelayerFieldChainAAddress},
 		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
 	})
 	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-chain_b", "-channel_b", "-chain_b_address"},
+		Key:          []string{"-" + RelayerFieldChainB, "-" + RelayerFieldChannelB, "-" + RelayerFieldChainBAddress},
 		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
 	})
 	indexes = append(indexes, options.IndexModel{
-		Key: []string{"-chain_b_address", "-chain_b"},
+		Key: []string{"-" + RelayerFieldChainBAddress, "-" + RelayerFieldChainB},
 	})
 	indexes = append(indexes, options.IndexModel{
-		Key: []string{"-chain_a_address", "-chain_a"},
+		Key: []string{"-" + RelayerFieldChainAAddress, "-" + RelayerFieldChainA},
 	})
 
 	ensureIndexes(entity.IBCRelayer{}.CollectionName(), indexes)
@@ -61,7 +74,7 @@ func (repo *IbcRelayerRepo) coll() *qmgo.Collection {
 
 func (repo *IbcRelayerRepo) FindAll(skip, limit int64) ([]*entity.IBCRelayer, error) {
 	var res []*entity.IBCRelayer
-	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).Sort("+update_time").All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).Sort("+" + RelayerFieldUpdateTime).All(&res)
 	return res, err
 }
 
@@ -73,15 +86,42 @@ func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limi
 	filter := bson.M{}
 	if chainId != "" {
 		chains := strings.Split(chainId, ",")
-		filter["$or"] = []bson.M{
-			{"chain_a": bson.M{"$in": chains}},
-			{"chain_b": bson.M{"$in": chains}},
+		if length := len(chains); length <= 2 {
+			switch length {
+			case 1:
+				if !strings.Contains(chainId, "allchains") {
+					filter["$or"] = []bson.M{
+						{RelayerFieldChainA: chains[0]},
+						{RelayerFieldChainB: chains[0]},
+					}
+				}
+				break
+			case 2:
+				if strings.Contains(chainId, "allchains") {
+					if chains[0] == chains[1] && chains[0] == "allchains" {
+						//nothing to do
+					} else {
+						index := strings.Index(chainId, "allchains")
+						if index > 0 {
+							filter[RelayerFieldChainA] = chains[0]
+						} else {
+							filter[RelayerFieldChainB] = chains[1]
+						}
+					}
+				} else {
+					filter["$or"] = []bson.M{
+						{RelayerFieldChainA: chains[0], RelayerFieldChainB: chains[1]},
+						{RelayerFieldChainA: chains[1], RelayerFieldChainB: chains[0]},
+					}
+				}
+				break
+			}
 		}
 	}
 	if status > 0 {
-		filter["status"] = status
+		filter[RelayerFieldStatus] = status
 	}
-	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("+update_time").All(&res)
+	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-" + RelayerFieldTransferTotalTxs).All(&res)
 	if useCount {
 		total, err = repo.coll().Find(context.Background(), filter).Count()
 	}
@@ -97,13 +137,13 @@ func (repo *IbcRelayerRepo) Insert(relayer []entity.IBCRelayer) error {
 
 func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue float64) error {
 	updateData := bson.M{
-		"transfer_total_txs":       txs,
-		"transfer_success_txs":     txsSuccess,
-		"transfer_total_txs_value": "",
-		"update_at":                time.Now().Unix(),
+		RelayerFieldTransferTotalTxs:      txs,
+		RelayerFieldTransferSuccessTxs:    txsSuccess,
+		RelayerFieldTransferTotalTxsValue: "",
+		RelayerFieldUpdateAt:              time.Now().Unix(),
 	}
 	if totalValue > 0 {
-		updateData["transfer_total_txs_value"] = fmt.Sprint(totalValue)
+		updateData[RelayerFieldTransferTotalTxsValue] = fmt.Sprint(totalValue)
 	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, bson.M{
 		"$set": updateData})
@@ -111,24 +151,24 @@ func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int6
 func (repo *IbcRelayerRepo) UpdateStatusAndTime(relayerId string, status int, updateTime, timePeriod int64) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, bson.M{
 		"$set": bson.M{
-			"status":      status,
-			"update_time": updateTime,
-			"time_period": timePeriod,
-			"update_at":   time.Now().Unix(),
+			RelayerFieldStatus:     status,
+			RelayerFieldUpdateTime: updateTime,
+			RelayerFieldTimePeriod: timePeriod,
+			RelayerFieldUpdateAt:   time.Now().Unix(),
 		}})
 }
 
 func (repo *IbcRelayerRepo) FindLatestOne() (*entity.IBCRelayer, error) {
 	var res *entity.IBCRelayer
-	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-latest_tx_time").One(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-" + RelayerFieldLatestTxTime).One(&res)
 	return res, err
 }
 
 func (repo *IbcRelayerRepo) FindRelayersCnt(chainId string) (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{
 		"$or": []bson.M{
-			{"chain_a": chainId},
-			{"chain_b": chainId},
+			{RelayerFieldChainA: chainId},
+			{RelayerFieldChainB: chainId},
 		},
 	}).Count()
 }
@@ -137,8 +177,8 @@ func (repo *IbcRelayerRepo) FindRelayerId(chainId string, relayerAddr string) (*
 	var res *entity.IBCRelayer
 	err := repo.coll().Find(context.Background(), bson.M{
 		"$or": []bson.M{
-			{"chain_a": chainId, "chain_a_address": relayerAddr},
-			{"chain_b": chainId, "chain_b_address": relayerAddr},
+			{RelayerFieldChainA: chainId, RelayerFieldChainAAddress: relayerAddr},
+			{RelayerFieldChainB: chainId, RelayerFieldChainBAddress: relayerAddr},
 		},
 	}).Select(bson.M{RelayerFieldelayerId: 1}).One(&res)
 	return res, err
