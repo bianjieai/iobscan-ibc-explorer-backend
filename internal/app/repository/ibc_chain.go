@@ -2,17 +2,25 @@ package repository
 
 import (
 	"context"
-	"time"
-
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	moptions "go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 const (
-	ChainFieldChainId = "chain_id"
+	ChainFieldChainId          = "chain_id"
+	ChainFieldIbcTokens        = "ibc_tokens"
+	ChainFieldRelayers         = "relayers"
+	ChainFieldChannels         = "channels"
+	ChainFieldConnectedChains  = "connected_chains"
+	ChainFieldIbcTokensValue   = "ibc_tokens_value"
+	ChainFieldTransferTxs      = "transfer_txs"
+	ChainFieldTransferTxsValue = "transfer_txs_value"
+	ChainFieldUpdateAt         = "update_at"
 )
 
 type IChainRepo interface {
@@ -20,7 +28,7 @@ type IChainRepo interface {
 	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error
 	UpdateTransferTxs(chainId string, txs int64, txsValue string) error
 	UpdateRelayers(chainId string, relayers int64) error
-	FindAll() ([]*entity.IBCChain, error)
+	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -32,9 +40,9 @@ func (repo *IbcChainRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChain{}.CollectionName())
 }
 
-func (repo *IbcChainRepo) FindAll() ([]*entity.IBCChain, error) {
+func (repo *IbcChainRepo) FindAll(skip, limit int64) ([]*entity.IBCChain, error) {
 	var res []*entity.IBCChain
-	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).Sort("-" + ChainFieldIbcTokens).All(&res)
 	return res, err
 }
 
@@ -42,7 +50,7 @@ func (repo *IbcChainRepo) UpdateRelayers(chainId string, relayers int64) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
 			"$set": bson.M{
-				"relayers": relayers,
+				ChainFieldRelayers: relayers,
 			},
 		})
 }
@@ -63,21 +71,25 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: res.ChainId},
 		bson.M{
 			"$set": bson.M{
-				"channels":         chain.Channels,
-				"connected_chains": chain.ConnectedChains,
-				"update_at":        time.Now().Unix(),
+				ChainFieldChannels:        chain.Channels,
+				ChainFieldConnectedChains: chain.ConnectedChains,
+				ChainFieldUpdateAt:        time.Now().Unix(),
 			},
 		})
 }
 
 func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error {
+	updateData := bson.M{
+		ChainFieldIbcTokens:      tokens,
+		ChainFieldUpdateAt:       time.Now().Unix(),
+		ChainFieldIbcTokensValue: "",
+	}
+	if tokenValue > 0 {
+		updateData[ChainFieldIbcTokensValue] = fmt.Sprint(tokenValue)
+	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
-			"$set": bson.M{
-				"ibc_tokens":       tokens,
-				"ibc_tokens_value": tokenValue,
-				"update_at":        time.Now().Unix(),
-			},
+			"$set": updateData,
 		})
 }
 
@@ -85,9 +97,9 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue 
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
 			"$set": bson.M{
-				"transfer_txs":       txs,
-				"transfer_txs_value": txsValue,
-				"update_at":          time.Now().Unix(),
+				ChainFieldTransferTxs:      txs,
+				ChainFieldTransferTxsValue: txsValue,
+				ChainFieldUpdateAt:         time.Now().Unix(),
 			},
 		})
 }
@@ -95,7 +107,7 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue 
 func (repo *IbcChainRepo) EnsureIndexes() {
 	var indexes []options.IndexModel
 	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-chain_id"},
+		Key:          []string{"-" + ChainFieldChainId},
 		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
 	})
 

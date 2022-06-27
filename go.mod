@@ -3,6 +3,7 @@ module github.com/bianjieai/iobscan-ibc-explorer-backend
 go 1.16
 
 require (
+	github.com/gin-contrib/cache v1.1.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/jonboulle/clockwork v0.3.0 // indirect

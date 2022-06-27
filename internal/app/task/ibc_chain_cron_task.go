@@ -28,7 +28,6 @@ func (t *IbcChainCronTask) Run() {
 	}
 	var chains []entity.IBCChain
 	//set redis key expired time
-	ibcInfoHashCache.SetExpiredTime(3 * time.Minute)
 	for _, chainCfg := range chainCfgs {
 		hashVal, _ := ibcInfoHashCache.Get(chainCfg.ChainId)
 		//check hashValLcd if have change for reduce update or insert times
@@ -38,7 +37,6 @@ func (t *IbcChainCronTask) Run() {
 		_ = ibcInfoHashCache.Set(chainCfg.ChainId, chainCfg.IbcInfoHashLcd)
 		conntectedChains := len(chainCfg.IbcInfo)
 		channels := 0
-		ibcInfoCache.SetExpiredTime(chainCfg.ChainId, 5*time.Minute)
 		for _, val := range chainCfg.IbcInfo {
 			channels += len(val.Paths)
 			//save cache

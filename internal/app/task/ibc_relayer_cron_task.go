@@ -8,7 +8,6 @@ import (
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
 	"math"
 	"strings"
 	"time"
@@ -47,7 +46,7 @@ func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
 }
 func (t *IbcRelayerCronTask) Cron() string {
-	return TwentyMinute
+	return EveryMinute
 }
 
 func (t *IbcRelayerCronTask) Run() {
@@ -180,13 +179,7 @@ func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer, up
 	if relayer.Status != entity.RelayerRunning && relayer.Status != entity.RelayerStop {
 		relayer.Status = entity.RelayerStop
 	}
-	if err := relayerRepo.Update(relayer.RelayerId, bson.M{
-		"$set": bson.M{
-			"status":      relayer.Status,
-			"update_time": updateTime,
-			"time_period": timePeriod,
-			"update_at":   time.Now().Unix(),
-		}}); err != nil {
+	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, int(relayer.Status), updateTime, timePeriod); err != nil {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
 	}
 
@@ -194,23 +187,12 @@ func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer, up
 
 func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(relayer *entity.IBCRelayer, updateTime int64) {
 	if len(t.channelRelayerCnt) > 0 || updateTime > 0 {
-		data := bson.M{}
+		var relayerCnt int64
 		if len(t.channelRelayerCnt) > 0 {
-			if count, ok := t.channelRelayerCnt[relayer.ChainA+relayer.ChainB+relayer.ChannelA+relayer.ChannelB]; ok {
-				data["relayers"] = count
-			}
+			relayerCnt, _ = t.channelRelayerCnt[relayer.ChainA+relayer.ChainB+relayer.ChannelA+relayer.ChannelB]
 		}
-		if updateTime > 0 {
-			data["channel_update_at"] = updateTime
-		}
-		if err := channelRepo.UpdateOne(bson.M{
-			"chain_a":   relayer.ChainA,
-			"chain_b":   relayer.ChainB,
-			"channel_a": relayer.ChannelA,
-			"channel_b": relayer.ChannelB,
-		}, bson.M{
-			"$set": data,
-		}); err != nil && err != qmgo.ErrNoSuchDocuments {
+		if err := channelRepo.UpdateOne(relayer.ChainA, relayer.ChainA, relayer.ChannelA, relayer.ChannelB,
+			updateTime, relayerCnt); err != nil && err != qmgo.ErrNoSuchDocuments {
 			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
 		}
 	}
@@ -348,7 +330,7 @@ func createIBCRelayerStatistics(chainId, relayerId, baseDenom string, amount, va
 		ChainId:            chainId,
 		TransferBaseDenom:  baseDenom,
 		TransferAmount:     amount.String(),
-		TransferTotalValue: value.String(),
+		TransferTotalValue: value.Round(constant.DefaultValuePrecision).String(),
 		CreateAt:           time.Now().Unix(),
 		UpdateAt:           time.Now().Unix(),
 	}
@@ -373,14 +355,7 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxs() {
 					continue
 				}
 				totalValue, _ := totalValueMap[chain_id+relayerData.RelayerId]
-				if err := relayerRepo.Update(relayerData.RelayerId, bson.M{
-					"$set": bson.M{
-						"transfer_total_txs":       val.Txs,
-						"transfer_success_txs":     val.TxsSuccess,
-						"transfer_total_txs_value": totalValue,
-						"update_at":                time.Now().Unix(),
-					},
-				}); err != nil {
+				if err := relayerRepo.UpdateTxsInfo(relayerData.RelayerId, val.Txs, val.TxsSuccess, totalValue); err != nil {
 					logrus.Error(err.Error())
 				}
 			}
@@ -399,7 +374,7 @@ func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*ent
 }
 
 func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
-	res, err := chainRepo.FindAll()
+	res, err := chainRepo.FindAll(0, 0)
 	if err != nil {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
 		return
