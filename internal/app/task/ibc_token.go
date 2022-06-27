@@ -504,7 +504,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 				Type:        denomType,
 				IBCHops:     t.ibcHops(v.DenomPath),
 				DenomAmount: denomAmount,
-				DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale),
+				DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
 				ReceiveTxs:  ibcReceiveTxsMap[v.Denom],
 			})
 		}
@@ -542,23 +542,19 @@ func (t *TokenTask) ibcReceiveTxs(baseDenom, originalChainId string) map[string]
 	return txsMap
 }
 
-func (t *TokenTask) ibcDenomValue(amount string, price float64, scale int) float64 {
+func (t *TokenTask) ibcDenomValue(amount string, price float64, scale int) decimal.Decimal {
 	if amount == constant.UnknownDenomAmount || amount == constant.ZeroDenomAmount || price == 0 || price == constant.UnknownTokenPrice {
-		return 0
+		return decimal.Zero
 	}
 
 	amountDecimal, err := decimal.NewFromString(amount)
 	if err != nil {
 		logrus.Errorf("task %s ibcDenomValue error, %v", t.Name(), err)
-		return 0
+		return decimal.Zero
 	}
 
-	value, exact := amountDecimal.Div(decimal.NewFromFloat(math.Pow10(scale))).
-		Mul(decimal.NewFromFloat(price)).
-		Round(constant.DefaultValuePrecision).Float64()
-	if !exact {
-		logrus.Warning("value is too larger, float64 is wrong type")
-	}
+	value := amountDecimal.Div(decimal.NewFromFloat(math.Pow10(scale))).
+		Mul(decimal.NewFromFloat(price))
 
 	return value
 }
