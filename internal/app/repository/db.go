@@ -3,13 +3,13 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"github.com/qiniu/qmgo/options"
 	"net/url"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
+	"github.com/qiniu/qmgo/options"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"gorm.io/driver/mysql"
@@ -89,6 +89,10 @@ var (
 		new(IbcRelayerRepo),
 		new(RelayerConfigRepo),
 		new(RelayerStatisticsRepo),
+		//new(TokenRepo),
+		//new(TokenStatisticsRepo),
+		//new(ChannelRepo),
+		//new(ChannelStatisticsRepo),
 	}
 )
 

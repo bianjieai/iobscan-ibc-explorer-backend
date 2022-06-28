@@ -12,6 +12,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ChannelTask struct {
@@ -68,7 +69,7 @@ func (t *ChannelTask) Run() {
 	}
 
 	for _, v := range existedChannelList {
-		if err = channelRepo.UpdateChannel(v); err != nil {
+		if err = channelRepo.UpdateChannel(v); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Errorf("task %s UpdateChannel error, %v", t.Name(), err)
 		}
 	}
@@ -100,7 +101,7 @@ func (t *ChannelTask) analyzeChainConfig() error {
 			for _, p := range info.Paths {
 				channelA = p.ChannelId
 				channelB = p.Counterparty.ChannelId
-				channelId, mirrorChannelId := t.generateChannelId(chainA, channelA, chainB, channelB)
+				channelId, mirrorChannelId := generateChannelId(chainA, channelA, chainB, channelB)
 
 				if utils.InArray(channelMirrorIds, channelId) || utils.InArray(channelMirrorIds, mirrorChannelId) { // 已经存在
 					continue
@@ -122,7 +123,7 @@ func (t *ChannelTask) analyzeChainConfig() error {
 	return nil
 }
 
-func (t *ChannelTask) generateChannelId(chainA, channelA, chainB, channelB string) (string, string) {
+func generateChannelId(chainA, channelA, chainB, channelB string) (string, string) {
 	return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB), fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
 }
 
@@ -222,7 +223,8 @@ func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChann
 	// todo
 	for _, v := range newChannelList {
 		// 查询,初始的LatestSettlementTime 为channel的 open confirm 时间
-		v.LatestSettlementTime = time.Now().Unix()
+		// channel open confirm 时间的获取当前没有实现，先设为0
+		v.LatestSettlementTime = 0
 	}
 
 	for _, v := range existedChannelList {
@@ -272,7 +274,7 @@ func (t *ChannelTask) channelStatistics() ([]*dto.ChannelStatisticsDTO, error) {
 	integration := func(cl []*dto.ChannelStatisticsDTO, aggr []*dto.AggrIBCChannelTxsDTO) []*dto.ChannelStatisticsDTO {
 		for _, v := range aggr {
 			isExisted := false
-			ChannelId, MirrorChannelId := t.generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
+			ChannelId, MirrorChannelId := generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
 			for _, c := range cl {
 				if (t.channelEqual(ChannelId, c.ChannelId) || t.channelEqual(MirrorChannelId, c.ChannelId)) && v.BaseDenom == c.BaseDenom { // 同一个channel
 					c.TxsCount += v.Count

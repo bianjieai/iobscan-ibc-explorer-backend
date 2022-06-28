@@ -62,7 +62,14 @@ func (t *TokenPriceTask) Run() {
 
 	priceMap := make(map[string]string)
 	for k, v := range priceResp {
-		priceMap[k] = strconv.FormatFloat(v["usd"], 'f', 8, 64)
+		result := strconv.FormatFloat(v["usd"], 'f', 12, 64)
+		for strings.HasSuffix(result, "0") {
+			result = strings.TrimSuffix(result, "0")
+		}
+		if strings.HasSuffix(result, ".") {
+			result = strings.TrimSuffix(result, ".")
+		}
+		priceMap[k] = result
 	}
 
 	err = tokenPriceRepo.BatchSet(priceMap)

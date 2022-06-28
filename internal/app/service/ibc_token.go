@@ -46,6 +46,7 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 		items = append(items, vo.TokenItem{
 			BaseDenom:         v.BaseDenom,
 			ChainId:           v.ChainId,
+			TokenType:         v.Type,
 			Supply:            v.Supply,
 			Currency:          v.Currency,
 			Price:             v.Price,
