@@ -106,19 +106,19 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 			}
 			if timePeriod == -1 {
 				//get unbonding time from cache
-				var chainAUnbondT,chainBUnbondT int64
-				chainAUnbondTime,_ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
-				if chainAUnbondTime != ""{
-					chainAUnbondT,_ = strconv.ParseInt(strings.ReplaceAll(chainAUnbondTime,"s",""),10,64)
+				var chainAUnbondT, chainBUnbondT int64
+				chainAUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
+				if chainAUnbondTime != "" {
+					chainAUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainAUnbondTime, "s", ""), 10, 64)
 				}
-				chainBUnbondTime,_ := unbondTimeCache.GetUnbondTime(relayer.ChainB)
-				if chainBUnbondTime != ""{
-					chainBUnbondT,_ = strconv.ParseInt(strings.ReplaceAll(chainBUnbondTime,"s",""),10,64)
+				chainBUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainB)
+				if chainBUnbondTime != "" {
+					chainBUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainBUnbondTime, "s", ""), 10, 64)
 				}
-				if chainAUnbondT>0 && chainBUnbondT > 0 {
-					if chainAUnbondT >= chainBUnbondT{
+				if chainAUnbondT > 0 && chainBUnbondT > 0 {
+					if chainAUnbondT >= chainBUnbondT {
 						timePeriod = chainBUnbondT
-					}else{
+					} else {
 						timePeriod = chainAUnbondT
 					}
 				}
@@ -164,11 +164,11 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	group.Add(len(configList))
 	for _, val := range configList {
 		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", val.Lcd, val.LcdApiPath.ParamsPath), entity.ParamsModulePathPlaceholder, entity.StakeModule)
-		go func(baseUrl,chainId string) {
+		go func(baseUrl, chainId string) {
 			defer group.Done()
 			bz, err := utils.HttpGet(baseUrl)
 			if err != nil {
-				logrus.Errorf("task %s staking %s params error, %v", t.Name(),baseUrl, err)
+				logrus.Errorf("task %s staking %s params error, %v", t.Name(), baseUrl, err)
 				return
 			}
 
@@ -178,8 +178,8 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 				logrus.Errorf("%s unmarshal staking params error, %v", t.Name(), err)
 				return
 			}
-			_ = unbondTimeCache.SetUnbondTime(chainId,stakeparams.Params.UnbondingTime)
-		}(baseUrl,val.ChainId)
+			_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
+		}(baseUrl, val.ChainId)
 	}
 	group.Wait()
 }
