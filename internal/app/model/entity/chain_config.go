@@ -2,6 +2,8 @@ package entity
 
 const (
 	ApiBalancesPathPlaceholder = "{address}"
+	ParamsModulePathPlaceholder = "{module}"
+	StakeModule = "staking"
 )
 
 type (
@@ -20,6 +22,7 @@ type (
 		ClientStatePath string `bson:"client_state_path"`
 		SupplyPath      string `bson:"supply_path"`
 		BalancesPath    string `bson:"balances_path"`
+		ParamsPath      string `bson:"params_path"`
 	}
 	IbcInfo struct {
 		ChainId string         `bson:"chain_id"`

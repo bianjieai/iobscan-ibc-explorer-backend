@@ -55,3 +55,8 @@ func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {
 	task.CountRelayerPacketTxsAmount()
 	task.caculateRelayerTotalValue()
 }
+
+func TestIbcRelayerCronTask_getChainUnbondTimeFromLcd(t *testing.T) {
+	task := new(IbcRelayerCronTask)
+	task.cacheChainUnbondTimeFromLcd()
+}

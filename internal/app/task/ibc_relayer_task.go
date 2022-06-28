@@ -1,15 +1,20 @@
 package task
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"math"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -78,6 +83,7 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 		}
 		t.updateIbcChainsRelayer()
 		t.cacheIbcChannelRelayer()
+		t.cacheChainUnbondTimeFromLcd()
 	}
 	t.CountRelayerPacketTxs()
 	t.CountRelayerPacketTxsAmount()
@@ -99,7 +105,23 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 				continue
 			}
 			if timePeriod == -1 {
-				//todo call relayer api (uri为/chain/:id in https://hermes.informal.systems/rest-api.html)
+				//get unbonding time from cache
+				var chainAUnbondT,chainBUnbondT int64
+				chainAUnbondTime,_ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
+				if chainAUnbondTime != ""{
+					chainAUnbondT,_ = strconv.ParseInt(strings.ReplaceAll(chainAUnbondTime,"s",""),10,64)
+				}
+				chainBUnbondTime,_ := unbondTimeCache.GetUnbondTime(relayer.ChainB)
+				if chainBUnbondTime != ""{
+					chainBUnbondT,_ = strconv.ParseInt(strings.ReplaceAll(chainBUnbondTime,"s",""),10,64)
+				}
+				if chainAUnbondT>0 && chainBUnbondT > 0 {
+					if chainAUnbondT >= chainBUnbondT{
+						timePeriod = chainBUnbondT
+					}else{
+						timePeriod = chainAUnbondT
+					}
+				}
 			}
 			t.handleOneRelayerInfo(relayer, updateTime, timePeriod)
 			t.updateIbcChannelRelayerInfo(relayer, updateTime)
@@ -127,6 +149,39 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 			t.denomPriceMap[val.Denom] = CoinItem{Price: price, Scale: val.Scale}
 		}
 	}
+}
+
+func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
+	configList, err := chainConfigRepo.FindAll()
+	if err != nil {
+		logrus.Errorf("task %s analyzeChainConf error, %v", t.Name(), err)
+		return
+	}
+	if len(configList) == 0 {
+		return
+	}
+	group := sync.WaitGroup{}
+	group.Add(len(configList))
+	for _, val := range configList {
+		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", val.Lcd, val.LcdApiPath.ParamsPath), entity.ParamsModulePathPlaceholder, entity.StakeModule)
+		go func(baseUrl,chainId string) {
+			defer group.Done()
+			bz, err := utils.HttpGet(baseUrl)
+			if err != nil {
+				logrus.Errorf("task %s staking %s params error, %v", t.Name(),baseUrl, err)
+				return
+			}
+
+			var stakeparams vo.StakeParams
+			err = json.Unmarshal(bz, &stakeparams)
+			if err != nil {
+				logrus.Errorf("%s unmarshal staking params error, %v", t.Name(), err)
+				return
+			}
+			_ = unbondTimeCache.SetUnbondTime(chainId,stakeparams.Params.UnbondingTime)
+		}(baseUrl,val.ChainId)
+	}
+	group.Wait()
 }
 
 func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
