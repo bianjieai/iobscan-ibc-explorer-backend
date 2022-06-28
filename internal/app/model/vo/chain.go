@@ -22,8 +22,9 @@ type ChainDto struct {
 }
 
 type ChainListResp struct {
-	Items    []ChainDto `json:"items"`
-	PageInfo PageInfo   `json:"page_info"`
+	Items     []ChainDto `json:"items"`
+	PageInfo  PageInfo   `json:"page_info"`
+	TimeStamp int64      `json:"time_stamp"`
 }
 
 func (dto ChainDto) LoadDto(chain *entity.IBCChain) ChainDto {

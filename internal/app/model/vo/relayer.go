@@ -32,8 +32,9 @@ type RelayerDto struct {
 }
 
 type RelayerListResp struct {
-	Items    []RelayerDto `json:"items"`
-	PageInfo PageInfo     `json:"page_info"`
+	Items     []RelayerDto `json:"items"`
+	PageInfo  PageInfo     `json:"page_info"`
+	TimeStamp int64        `json:"time_stamp"`
 }
 
 func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayer) RelayerDto {

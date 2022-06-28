@@ -4,6 +4,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"time"
 )
 
 type IRelayerService interface {
@@ -41,5 +42,6 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	}
 	page := vo.BuildPageInfo(total, req.PageNum, req.PageSize)
 	resp.PageInfo = page
+	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }

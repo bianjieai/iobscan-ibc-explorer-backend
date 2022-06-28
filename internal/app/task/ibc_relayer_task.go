@@ -38,10 +38,6 @@ type (
 	}
 )
 
-func init() {
-	RegisterTasks(&IbcRelayerCronTask{})
-}
-
 func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
 }

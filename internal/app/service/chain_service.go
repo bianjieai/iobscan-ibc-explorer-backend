@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"time"
 )
 
 type IChainService interface {
@@ -27,5 +28,6 @@ func (svc *ChainService) List(req *vo.ChainListReq) (vo.ChainListResp, errors.Er
 	}
 	page := vo.BuildPageInfo(int64(len(rets)), req.PageNum, req.PageSize)
 	resp.PageInfo = page
+	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
