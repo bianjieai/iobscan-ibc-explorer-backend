@@ -12,6 +12,11 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
+	"math"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 type IbcRelayerCronTask struct {
@@ -150,7 +155,7 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	configList, err := chainConfigRepo.FindAll()
 	if err != nil {
-		logrus.Errorf("task %s analyzeChainConf error, %v", t.Name(), err)
+		logrus.Errorf("task %s cacheChainUnbondTimeFromLcd error, %v", t.Name(), err)
 		return
 	}
 	if len(configList) == 0 {
