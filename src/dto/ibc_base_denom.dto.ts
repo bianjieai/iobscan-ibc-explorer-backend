@@ -8,8 +8,8 @@ export class IbcBaseDenomResDto extends BaseResDto {
   scale: number;
   icon: string;
   is_main_token: boolean;
-  create_at: string;
-  update_at: string;
+  create_at: number;
+  update_at: number;
 
   constructor(value) {
     super()

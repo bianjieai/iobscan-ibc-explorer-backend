@@ -5,8 +5,8 @@ export interface IbcDenomType {
   denom_path: string;
   symbol: string;
   is_source_chain: boolean;
-  create_at: string;
-  update_at: string;
+  create_at: number;
+  update_at: number;
 }
 
 export  interface AggregateBaseDenomCnt {

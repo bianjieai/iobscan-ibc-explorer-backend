@@ -6,6 +6,8 @@ export const Delimiter = '|';
 
 export const unAuth = 'Others';
 
+export const AllChain = 'allchain';
+
 export enum SubState {
   // recv_packet success tx not found
   SuccessRecvPacketNotFound = 1,
