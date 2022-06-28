@@ -675,9 +675,9 @@ export class IbcTxHandler {
                                 dc_denom: '',
                             },
                             base_denom: '',
-                            create_at: '',
-                            update_at: '',
-                            tx_time: '',
+                            create_at: 0,
+                            update_at: 0,
+                            tx_time: 0,
                         };
                         switch (tx.status) {
                             case TxStatus.SUCCESS:
@@ -801,7 +801,7 @@ export class IbcTxHandler {
                                 is_source_chain: !Boolean(denom_path),
                                 is_base_denom: isBaseDenom,
                                 create_at: dateNow,
-                                update_at: ''
+                                update_at: dateNow
                             })
                         }
                         handledTx.push(ibcTx)

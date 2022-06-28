@@ -62,6 +62,7 @@ IbcDenomSchema.statics = {
             {
                 $match: {
                     is_base_denom: true,
+                    is_source_chain: true,
                 }
             },
             {

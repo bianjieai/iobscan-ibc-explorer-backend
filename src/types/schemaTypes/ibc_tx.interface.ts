@@ -17,9 +17,9 @@ export interface IbcTxType {
   log: object;
   denoms: object;
   base_denom: string;
-  create_at: string;
-  update_at: string;
-  tx_time: string;
+  create_at: number;
+  update_at: number;
+  tx_time: number;
   retry_times?: number;
   next_try_time?: number;
 }
