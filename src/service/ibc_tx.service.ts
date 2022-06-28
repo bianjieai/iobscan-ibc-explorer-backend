@@ -85,11 +85,12 @@ export class IbcTxService {
     async getTokenBySymbol(symbol): Promise<any> {
         const result = await this.ibcDenomModel.findRecordBySymbol(symbol);
         return result.map(item => {
-            return {
-                denom: item.denom,
-                base_denom: item.base_denom,
-                chain_id: item.chain_id
-            };
+            return item.base_denom;
+            // return {
+            //     denom: item.denom,
+            //     base_denom: item.base_denom,
+            //     chain_id: item.chain_id
+            // };
         });
     }
 
@@ -136,7 +137,8 @@ export class IbcTxService {
                 let  tokensFilter = []
                 for  (const one of token) {
                     //only push token which base_denom not in ibc_base_denom
-                    if (baseDenomMap && !baseDenomMap?.has(`${one?.base_denom}`)) {
+                    // if (baseDenomMap && !baseDenomMap?.has(`${one?.base_denom}`)) {
+                    if (baseDenomMap && !baseDenomMap?.has(one)) {
                         tokensFilter.push(one)
                     }
                 }
