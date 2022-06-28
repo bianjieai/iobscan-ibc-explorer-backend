@@ -42,7 +42,7 @@ func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
 }
 func (t *IbcRelayerCronTask) Cron() string {
-	return EveryMinute
+	return ThreeMinute
 }
 
 func (t *IbcRelayerCronTask) Run() {

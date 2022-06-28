@@ -223,7 +223,8 @@ func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChann
 	// todo
 	for _, v := range newChannelList {
 		// 查询,初始的LatestSettlementTime 为channel的 open confirm 时间
-		v.LatestSettlementTime = time.Now().Unix()
+		// channel open confirm 时间的获取当前没有实现，先设为0
+		v.LatestSettlementTime = 0
 	}
 
 	for _, v := range existedChannelList {

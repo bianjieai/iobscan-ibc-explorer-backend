@@ -21,7 +21,7 @@ or
 ./iobscan-ibc-explorer-backend start test -c configFilePath
 ```
 
-## Run with docke
+## Run with docker
 
 You can run application with docker.
 
