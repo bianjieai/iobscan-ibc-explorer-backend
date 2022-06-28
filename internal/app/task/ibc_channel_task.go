@@ -101,7 +101,7 @@ func (t *ChannelTask) analyzeChainConfig() error {
 			for _, p := range info.Paths {
 				channelA = p.ChannelId
 				channelB = p.Counterparty.ChannelId
-				channelId, mirrorChannelId := t.generateChannelId(chainA, channelA, chainB, channelB)
+				channelId, mirrorChannelId := generateChannelId(chainA, channelA, chainB, channelB)
 
 				if utils.InArray(channelMirrorIds, channelId) || utils.InArray(channelMirrorIds, mirrorChannelId) { // 已经存在
 					continue
@@ -123,7 +123,7 @@ func (t *ChannelTask) analyzeChainConfig() error {
 	return nil
 }
 
-func (t *ChannelTask) generateChannelId(chainA, channelA, chainB, channelB string) (string, string) {
+func generateChannelId(chainA, channelA, chainB, channelB string) (string, string) {
 	return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB), fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
 }
 
@@ -274,7 +274,7 @@ func (t *ChannelTask) channelStatistics() ([]*dto.ChannelStatisticsDTO, error) {
 	integration := func(cl []*dto.ChannelStatisticsDTO, aggr []*dto.AggrIBCChannelTxsDTO) []*dto.ChannelStatisticsDTO {
 		for _, v := range aggr {
 			isExisted := false
-			ChannelId, MirrorChannelId := t.generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
+			ChannelId, MirrorChannelId := generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
 			for _, c := range cl {
 				if (t.channelEqual(ChannelId, c.ChannelId) || t.channelEqual(MirrorChannelId, c.ChannelId)) && v.BaseDenom == c.BaseDenom { // 同一个channel
 					c.TxsCount += v.Count

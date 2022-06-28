@@ -16,14 +16,15 @@ type TokenListResp struct {
 }
 
 type TokenItem struct {
-	BaseDenom         string  `json:"base_denom"`
-	ChainId           string  `json:"chain_id"`
-	Supply            string  `json:"supply"`
-	Currency          string  `json:"currency"`
-	Price             float64 `json:"price"`
-	ChainsInvolved    int64   `json:"chains_involved"`
-	IBCTransferTxs    int64   `json:"ibc_transfer_txs"`
-	IBCTransferAmount string  `json:"ibc_transfer_amount"`
+	BaseDenom         string           `json:"base_denom"`
+	ChainId           string           `json:"chain_id"`
+	TokenType         entity.TokenType `json:"token_type"`
+	Supply            string           `json:"supply"`
+	Currency          string           `json:"currency"`
+	Price             float64          `json:"price"`
+	ChainsInvolved    int64            `json:"chains_involved"`
+	IBCTransferTxs    int64            `json:"ibc_transfer_txs"`
+	IBCTransferAmount string           `json:"ibc_transfer_amount"`
 }
 
 type IBCTokenListReq struct {
