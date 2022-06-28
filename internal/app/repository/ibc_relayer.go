@@ -41,7 +41,7 @@ type IRelayerRepo interface {
 	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
 	FindRelayersCnt(chainId string) (int64, error)
 	CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error)
-	FindRelayerId(chainId string, relayerAddr string) (*entity.IBCRelayer, error)
+	FindRelayerId(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error)
 }
 
 var _ IRelayerRepo = new(IbcRelayerRepo)
@@ -174,12 +174,12 @@ func (repo *IbcRelayerRepo) FindRelayersCnt(chainId string) (int64, error) {
 	}).Count()
 }
 
-func (repo *IbcRelayerRepo) FindRelayerId(chainId string, relayerAddr string) (*entity.IBCRelayer, error) {
+func (repo *IbcRelayerRepo) FindRelayerId(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error) {
 	var res *entity.IBCRelayer
 	err := repo.coll().Find(context.Background(), bson.M{
 		"$or": []bson.M{
-			{RelayerFieldChainA: chainId, RelayerFieldChainAAddress: relayerAddr},
-			{RelayerFieldChainB: chainId, RelayerFieldChainBAddress: relayerAddr},
+			{RelayerFieldChainA: chainId, RelayerFieldChannelA: channel, RelayerFieldChainAAddress: relayerAddr},
+			{RelayerFieldChainB: chainId, RelayerFieldChannelB: channel, RelayerFieldChainBAddress: relayerAddr},
 		},
 	}).Select(bson.M{RelayerFieldelayerId: 1}).One(&res)
 	return res, err

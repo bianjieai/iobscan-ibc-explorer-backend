@@ -242,8 +242,8 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond() []bson.M {
 		"$group": bson.M{
 			"_id": bson.M{
 				"dc_chain_id": "$dc_chain_id",
-				//"dc_channel":  "$dc_channel",
-				"relayer": "$dc_tx_info.msg.msg.signer",
+				"dc_channel":  "$dc_channel",
+				"relayer":     "$dc_tx_info.msg.msg.signer",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -255,8 +255,8 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond() []bson.M {
 			"_id":              0,
 			"dc_chain_address": "$_id.relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
-			//"dc_channel":      "$_id.dc_channel",
-			"count": "$count",
+			"dc_channel":       "$_id.dc_channel",
+			"count":            "$count",
 		},
 	}
 	var pipe []bson.M
@@ -277,8 +277,8 @@ func (repo *ExIbcTxRepo) relayerPacketCond() []bson.M {
 		"$group": bson.M{
 			"_id": bson.M{
 				"dc_chain_id": "$dc_chain_id",
-				//"dc_channel":  "$dc_channel",
-				"relayer": "$dc_tx_info.msg.msg.signer",
+				"dc_channel":  "$dc_channel",
+				"relayer":     "$dc_tx_info.msg.msg.signer",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -290,8 +290,8 @@ func (repo *ExIbcTxRepo) relayerPacketCond() []bson.M {
 			"_id":              0,
 			"dc_chain_address": "$_id.relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
-			//"dc_channel":      "$_id.dc_channel",
-			"count": "$count",
+			"dc_channel":       "$_id.dc_channel",
+			"count":            "$count",
 		},
 	}
 	var pipe []bson.M
@@ -312,9 +312,9 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond() []bson.M {
 		"$group": bson.M{
 			"_id": bson.M{
 				"dc_chain_id": "$dc_chain_id",
-				//"dc_channel":  "$dc_channel",
-				"relayer":    "$dc_tx_info.msg.msg.signer",
-				"base_denom": "$base_denom",
+				"dc_channel":  "$dc_channel",
+				"relayer":     "$dc_tx_info.msg.msg.signer",
+				"base_denom":  "$base_denom",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$sc_tx_info.msg_amount.amount"},
@@ -326,9 +326,9 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond() []bson.M {
 			"_id":              0,
 			"dc_chain_address": "$_id.relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
-			//"dc_channel":      "$_id.dc_channel",
-			"base_denom": "$_id.base_denom",
-			"amount":     "$amount",
+			"dc_channel":       "$_id.dc_channel",
+			"base_denom":       "$_id.base_denom",
+			"amount":           "$amount",
 		},
 	}
 	var pipe []bson.M
