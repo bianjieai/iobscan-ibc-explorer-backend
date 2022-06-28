@@ -1,6 +1,10 @@
 package task
 
 import (
+	"math"
+	"strings"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -8,9 +12,7 @@ import (
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"math"
-	"strings"
-	"time"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IbcRelayerCronTask struct {
@@ -42,7 +44,7 @@ func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
 }
 func (t *IbcRelayerCronTask) Cron() string {
-	return EveryMinute
+	return ThreeMinute
 }
 
 func (t *IbcRelayerCronTask) Run() {
@@ -187,8 +189,12 @@ func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(relayer *entity.IBCRela
 		if len(t.channelRelayerCnt) > 0 {
 			relayerCnt, _ = t.channelRelayerCnt[relayer.ChainA+relayer.ChainB+relayer.ChannelA+relayer.ChannelB]
 		}
-		if err := channelRepo.UpdateOne(relayer.ChainA, relayer.ChainA, relayer.ChannelA, relayer.ChannelB,
-			updateTime, relayerCnt); err != nil && err != qmgo.ErrNoSuchDocuments {
+
+		ChannelId, MirrorChannelId := generateChannelId(relayer.ChainA, relayer.ChannelA, relayer.ChainB, relayer.ChannelB)
+		if err := channelRepo.UpdateOne(ChannelId, updateTime, relayerCnt); err != nil && err != mongo.ErrNoDocuments {
+			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
+		}
+		if err := channelRepo.UpdateOne(MirrorChannelId, updateTime, relayerCnt); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
 		}
 	}

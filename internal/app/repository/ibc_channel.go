@@ -13,7 +13,7 @@ import (
 )
 
 type IChannelRepo interface {
-	UpdateOne(chainA, chainB, channelA, channelB string, updateTime, relayerCnt int64) error
+	UpdateOne(channelId string, updateTime, relayerCnt int64) error
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
 	UpdateChannel(channel *entity.IBCChannel) error
@@ -30,12 +30,9 @@ func (repo *ChannelRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChannel{}.CollectionName())
 }
 
-func (repo *ChannelRepo) UpdateOne(chainA, chainB, channelA, channelB string, updateTime, relayerCnt int64) error {
+func (repo *ChannelRepo) UpdateOne(channelId string, updateTime, relayerCnt int64) error {
 	filter := bson.M{
-		"chain_a":   chainA,
-		"chain_b":   chainB,
-		"channel_a": channelA,
-		"channel_b": channelB,
+		"channel_id": channelId,
 	}
 	return repo.coll().UpdateOne(context.Background(), filter, bson.M{
 		"$set": bson.M{
