@@ -7,3 +7,7 @@ var tokenTask TokenTask
 func TestTokenTaskRun(t *testing.T) {
 	tokenTask.Run()
 }
+
+func TestUpdateIBCChain(t *testing.T) {
+	tokenTask.updateIBCChain()
+}

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -61,6 +62,10 @@ func (repo *TokenStatisticsRepo) BatchSwap(batch []*entity.IBCTokenStatistics, b
 			return nil, nil
 		}
 
+		for _, v := range batch {
+			v.CreateAt = time.Now().Unix()
+			v.UpdateAt = time.Now().Unix()
+		}
 		if _, err := repo.coll().InsertMany(sessCtx, batch); err != nil {
 			return nil, err
 		}

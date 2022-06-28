@@ -18,6 +18,7 @@ import (
 	v8 "github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type TokenTask struct {
@@ -90,7 +91,7 @@ func (t *TokenTask) Run() {
 
 	for _, v := range existedTokenList {
 		err = tokenRepo.UpdateToken(v)
-		if err != nil {
+		if err != nil && err != mongo.ErrNoDocuments {
 			logrus.Errorf("task %s insert update token error, %v", t.Name(), err)
 		}
 	}
@@ -201,6 +202,7 @@ func (t *TokenTask) analyzeChainConf() error {
 	}
 	t.chainIds = chainIds
 	t.chainLcdMap = chainLcdMap
+	t.chainLcdApiMap = chainLcdApiMap
 	t.escrowAddressMap = escrowAddressMap
 	return nil
 }
@@ -388,6 +390,7 @@ func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 	for _, addr := range addrList { // 一条链上的所有地址都要查询一遍，并按denom分组计数
 		limit := 500
 		key := ""
+		earlyTermination := false
 		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", lcd, apiPath), entity.ApiBalancesPathPlaceholder, addr)
 
 		for { // 计算地址上所锁定的denom的数量
@@ -400,6 +403,9 @@ func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 
 			bz, err := utils.HttpGet(url)
 			if err != nil {
+				if t.isConnectionErr(err) {
+					earlyTermination = true
+				}
 				logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
 				break
 			}
@@ -433,15 +439,20 @@ func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 			}
 		}
 
+		if earlyTermination {
+			break
+		}
 	}
 
-	denomTransAmountStrMap := make(map[string]string)
-	for k, v := range denomTransAmountMap {
-		denomTransAmountStrMap[k] = v.String()
-	}
-	err := denomDataRepo.SetTransferAmount(chainId, denomTransAmountStrMap)
-	if err != nil {
-		logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
+	if len(denomTransAmountMap) > 0 {
+		denomTransAmountStrMap := make(map[string]string)
+		for k, v := range denomTransAmountMap {
+			denomTransAmountStrMap[k] = v.String()
+		}
+		err := denomDataRepo.SetTransferAmount(chainId, denomTransAmountStrMap)
+		if err != nil {
+			logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
+		}
 	}
 }
 
@@ -485,16 +496,26 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 	ibcReceiveTxsMap := t.ibcReceiveTxs(ibcToken.BaseDenom, ibcToken.ChainId)
 	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
 
-	allTokenStatisticsList := make([]*entity.IBCTokenStatistics, 0, len(ibcDenomCaculateList))
+	allTokenStatisticsList := make([]*entity.IBCTokenStatistics, 0, len(ibcDenomCaculateList)+1)
+
+	genesisDenomAmount := t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
+	allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenStatistics{
+		Denom:       ibcToken.BaseDenom,
+		DenomPath:   "",
+		BaseDenom:   ibcToken.BaseDenom,
+		ChainId:     ibcToken.ChainId,
+		OriginalId:  ibcToken.ChainId,
+		Type:        entity.TokenStatisticsTypeGenesis,
+		IBCHops:     0,
+		DenomAmount: genesisDenomAmount,
+		DenomValue:  t.ibcDenomValue(genesisDenomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
+		ReceiveTxs:  ibcReceiveTxsMap[ibcToken.BaseDenom],
+	})
+
 	for _, v := range ibcDenomCaculateList {
 		if v.ScChainId == ibcToken.ChainId {
 			denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcToken.Type)
-			var denomAmount string
-			if denomType == entity.TokenStatisticsTypeGenesis { // 原生链的计算方式不一样
-				denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
-			} else {
-				denomAmount = t.ibcDenomAmount(v.ChainId, v.Denom)
-			}
+			denomAmount := t.ibcDenomAmount(v.ChainId, v.Denom)
 			allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenStatistics{
 				Denom:       v.Denom,
 				DenomPath:   v.DenomPath,
@@ -568,6 +589,10 @@ func (t *TokenTask) ibcDenomAmount(chainId, denom string) string {
 }
 
 func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
+	if supply == constant.UnknownDenomAmount || transAmount == constant.UnknownDenomAmount {
+		return constant.UnknownDenomAmount
+	}
+
 	sd, err := decimal.NewFromString(supply)
 	if err != nil {
 		return constant.UnknownDenomAmount
@@ -615,4 +640,8 @@ func (t *TokenTask) updateIBCChain() {
 			logrus.Errorf("task %s updateIBCChain error, %v", t.Name(), err)
 		}
 	}
+}
+
+func (t *TokenTask) isConnectionErr(err error) bool {
+	return strings.Contains(err.Error(), "connection refused")
 }

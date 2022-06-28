@@ -12,6 +12,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ChannelTask struct {
@@ -68,7 +69,7 @@ func (t *ChannelTask) Run() {
 	}
 
 	for _, v := range existedChannelList {
-		if err = channelRepo.UpdateChannel(v); err != nil {
+		if err = channelRepo.UpdateChannel(v); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Errorf("task %s UpdateChannel error, %v", t.Name(), err)
 		}
 	}
