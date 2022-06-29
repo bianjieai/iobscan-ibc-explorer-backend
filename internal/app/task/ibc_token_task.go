@@ -130,7 +130,7 @@ func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, err
 			Supply:         constant.UnknownDenomAmount,
 			TransferAmount: constant.UnknownDenomAmount,
 			TransferTxs:    0,
-			ChainsInvolved: 0,
+			ChainsInvolved: 1, // 初始值为 1
 		})
 	}
 
@@ -318,13 +318,13 @@ func (t *TokenTask) setIbcTransferTxs(existedTokenList, newTokenList entity.IBCT
 		for _, v := range tokenList {
 			var count int64
 			for _, tx := range txsCount {
-				if tx.BaseDenom == v.BaseDenom && (tx.DcChainId == v.ChainId || tx.ScChainId == v.ChainId) {
+				if tx.BaseDenom == v.BaseDenom {
 					count += tx.Count
 				}
 			}
 
 			for _, tx := range historyTxsCount {
-				if tx.BaseDenom == v.BaseDenom && (tx.DcChainId == v.ChainId || tx.ScChainId == v.ChainId) {
+				if tx.BaseDenom == v.BaseDenom {
 					count += tx.Count
 				}
 			}
@@ -455,13 +455,17 @@ func (t *TokenTask) getTokenScale(baseDenom, chainId string) int {
 
 func (t *TokenTask) caculateTokenStatistics(existedTokenList, newTokenList entity.IBCTokenList) {
 	for _, v := range existedTokenList {
-		chainNum, _ := t.ibcTokenStatistics(v)
-		v.ChainsInvolved = chainNum
+		chainNum, err := t.ibcTokenStatistics(v)
+		if err != nil {
+			v.ChainsInvolved = chainNum
+		}
 	}
 
 	for _, v := range newTokenList {
-		chainNum, _ := t.ibcTokenStatistics(v)
-		v.ChainsInvolved = chainNum
+		chainNum, err := t.ibcTokenStatistics(v)
+		if err != nil {
+			v.ChainsInvolved = chainNum
+		}
 	}
 }
 

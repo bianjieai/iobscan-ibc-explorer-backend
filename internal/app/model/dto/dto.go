@@ -3,9 +3,7 @@ package dto
 import "github.com/shopspring/decimal"
 
 type CountBaseDenomTransferAmountDTO struct {
-	BaseDenom string `bson:"base_denom"`
-	ScChainId string `bson:"sc_chain_id"`
-	DcChainId string `bson:"dc_chain_id"`
+	BaseDenom string `bson:"_id"`
 	Count     int64  `bson:"count"`
 }
 
