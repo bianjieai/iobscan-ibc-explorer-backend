@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
@@ -18,14 +19,14 @@ var _ IRelayerConfigRepo = new(RelayerConfigRepo)
 type RelayerConfigRepo struct {
 }
 
+func CreateRelayerChannelPair(chainA, chainB, channelA, channelB string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", chainA, chainB, channelA, channelB)
+}
 func (repo *RelayerConfigRepo) EnsureIndexes() {
 	var indexes []options.IndexModel
 	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-relayer_name", "-relayer_id"},
+		Key:          []string{"-relayer_channel_pair"},
 		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-	indexes = append(indexes, options.IndexModel{
-		Key: []string{"-relayer_id"},
 	})
 
 	ensureIndexes(entity.IBCRelayerConfig{}.CollectionName(), indexes)
