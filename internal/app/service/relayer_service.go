@@ -4,6 +4,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"time"
 )
 
@@ -30,11 +31,12 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	}
 	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
 	for _, val := range relayerCfgs {
-		relayerCfgMap[val.RelayerId] = *val
+		relayerCfgMap[val.RelayerChannelPair] = *val
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
-		if cfg, ok := relayerCfgMap[val.RelayerId]; ok {
+		relayerChannelPair := repository.CreateRelayerChannelPair(val.ChainA, val.ChainB, val.ChannelA, val.ChannelB)
+		if cfg, ok := relayerCfgMap[relayerChannelPair]; ok {
 			item.RelayerName = cfg.RelayerName
 			item.RelayerIcon = cfg.Icon
 		}

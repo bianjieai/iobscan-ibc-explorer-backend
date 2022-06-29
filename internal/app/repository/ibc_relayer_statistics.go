@@ -24,7 +24,7 @@ type RelayerStatisticsRepo struct {
 func (repo *RelayerStatisticsRepo) EnsureIndexes() {
 	var indexes []options.IndexModel
 	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-transfer_base_denom", "-relayer_id", "-chain_id"},
+		Key:          []string{"-transfer_base_denom", "-relayer_id", "-chain_id", "-channel"},
 		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
 	})
 	indexes = append(indexes, options.IndexModel{
@@ -51,6 +51,7 @@ func (repo *RelayerStatisticsRepo) InserOrUpdate(data entity.IBCRelayerStatistic
 		"transfer_base_denom": data.TransferBaseDenom,
 		"relayer_id":          data.RelayerId,
 		"chain_id":            data.ChainId,
+		"channel":             data.Channel,
 	}
 	err := repo.coll().Find(context.Background(), filter).One(&res)
 	if err != nil {
@@ -81,6 +82,7 @@ func (repo *RelayerStatisticsRepo) CountRelayerTotalValue() ([]*dto.CountRelayer
 			"_id": bson.M{
 				"relayer_id": "$relayer_id",
 				"chain_id":   "$chain_id",
+				"channel":    "$channel",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$transfer_total_value"},
@@ -92,6 +94,7 @@ func (repo *RelayerStatisticsRepo) CountRelayerTotalValue() ([]*dto.CountRelayer
 			"_id":        0,
 			"relayer_id": "$_id.relayer_id",
 			"chain_id":   "$_id.chain_id",
+			"channel":    "$_id.channel",
 			"amount":     "$amount",
 		},
 	}
