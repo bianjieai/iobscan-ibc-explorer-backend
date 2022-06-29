@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ func (t *TokenPriceTask) ExpireTime() time.Duration {
 }
 
 func (t *TokenPriceTask) Run() {
+	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
@@ -77,4 +79,5 @@ func (t *TokenPriceTask) Run() {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
 		return
 	}
+	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
 }

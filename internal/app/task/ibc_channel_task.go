@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"math"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ func (t *ChannelTask) ExpireTime() time.Duration {
 }
 
 func (t *ChannelTask) Run() {
+	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
 	if err := t.analyzeChainConfig(); err != nil {
 		return
 	}
@@ -81,6 +83,7 @@ func (t *ChannelTask) Run() {
 			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chainId, err)
 		}
 	}
+	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
 }
 
 func (t *ChannelTask) analyzeChainConfig() error {

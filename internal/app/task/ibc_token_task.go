@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"math"
 	"strings"
 	"sync"
@@ -43,6 +44,7 @@ func (t *TokenTask) ExpireTime() time.Duration {
 }
 
 func (t *TokenTask) Run() {
+	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
 	err := t.analyzeChainConf()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
@@ -98,6 +100,7 @@ func (t *TokenTask) Run() {
 
 	// 更新ibc chain
 	t.updateIBCChain()
+	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
 }
 
 func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, error) {

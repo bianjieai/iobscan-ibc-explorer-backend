@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"os"
 	"path"
 	"strings"
@@ -21,15 +22,17 @@ import (
 
 func Serve(cfg *conf.Config) {
 	initCore(cfg)
-	if cfg.App.StartTask {
-		startTask()
-	}
+
 	if cfg.App.ApiCacheAliveSeconds > 0 {
 		api.SetApiCacheAliveTime(cfg.App.ApiCacheAliveSeconds)
 	}
 
 	r := gin.Default()
 	api.Routers(r)
+	go monitor.Start(cfg.App.Prometheus)
+	if cfg.App.StartTask {
+		startTask()
+	}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
 

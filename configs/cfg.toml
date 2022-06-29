@@ -5,6 +5,7 @@ version = "0.4"
 env = "dev"
 start_task = false
 api_cache_alive_seconds=3
+prometheus_port="9090"
 
 [log]
 log_level = "debug"

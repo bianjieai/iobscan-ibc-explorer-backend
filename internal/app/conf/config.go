@@ -38,6 +38,7 @@ type App struct {
 	StartTask            bool `mapstructure:"start_task"`
 	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
 	Version              string
+	Prometheus           string `mapstructure:"prometheus_port"`
 }
 
 type Redis struct {
