@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"math"
 	"strings"
 	"sync"
@@ -43,24 +42,23 @@ func (t *TokenTask) ExpireTime() time.Duration {
 	return 3*time.Minute - 1*time.Second
 }
 
-func (t *TokenTask) Run() {
-	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
+func (t *TokenTask) Run() int {
 	err := t.analyzeChainConf()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 	t.baseDenomList = baseDenomList
 
 	existedTokenList, newTokenList, err := t.getAllToken()
 	if err != nil {
-		return
+		return -1
 	}
 
 	// 部分数据统计出错可以直接忽略error,继续计算后面的指标
@@ -75,7 +73,7 @@ func (t *TokenTask) Run() {
 	ibcDenomList, err := denomRepo.GetDenomGroupByBaseDenom()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 	ibcDenomMap := make(map[string][]string)
 	for _, v := range ibcDenomList {
@@ -100,7 +98,7 @@ func (t *TokenTask) Run() {
 
 	// 更新ibc chain
 	t.updateIBCChain()
-	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
+	return 1
 }
 
 func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, error) {

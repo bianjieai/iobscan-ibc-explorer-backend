@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
@@ -11,7 +12,7 @@ import (
 type Task interface {
 	Name() string
 	Cron() string // CronExpression
-	Run()
+	Run() int
 	ExpireTime() time.Duration // redis expireTime
 }
 
@@ -48,7 +49,8 @@ func Start() {
 
 func RunOnce(task Task) {
 	logrus.Infof("task %s start", task.Name())
-	task.Run()
+	metricValue := task.Run()
+	monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
 	logrus.Infof("task %s end", task.Name())
 }
 

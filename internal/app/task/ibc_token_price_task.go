@@ -28,12 +28,12 @@ func (t *TokenPriceTask) ExpireTime() time.Duration {
 	return 3*time.Minute - 1*time.Second
 }
 
-func (t *TokenPriceTask) Run() {
+func (t *TokenPriceTask) Run() int {
 	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 
 	var coinIds []string
@@ -44,7 +44,7 @@ func (t *TokenPriceTask) Run() {
 	}
 
 	if len(coinIds) == 0 {
-		return
+		return -1
 	}
 
 	ids := strings.Join(coinIds, ",")
@@ -52,14 +52,14 @@ func (t *TokenPriceTask) Run() {
 	bz, err := utils.HttpGet(url)
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 
 	var priceResp map[string]map[string]float64
 	err = json.Unmarshal(bz, &priceResp)
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 
 	priceMap := make(map[string]string)
@@ -77,7 +77,7 @@ func (t *TokenPriceTask) Run() {
 	err = tokenPriceRepo.BatchSet(priceMap)
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
-	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
+	return 1
 }

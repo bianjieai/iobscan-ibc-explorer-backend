@@ -7,7 +7,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
@@ -58,11 +57,11 @@ func (t *IbcRelayerCronTask) Cron() string {
 	return ThreeMinute
 }
 
-func (t *IbcRelayerCronTask) Run() {
+func (t *IbcRelayerCronTask) Run() int {
 	t.handleNewRelayer()
 	t.CheckAndChangeStatus()
 	t.saveOrUpdateRelayerTxs()
-	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
+	return 1
 }
 
 func (t *IbcRelayerCronTask) ExpireTime() time.Duration {

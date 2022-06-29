@@ -2,7 +2,6 @@ package task
 
 import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -17,12 +16,11 @@ func (t *IbcChainCronTask) Name() string {
 func (t *IbcChainCronTask) Cron() string {
 	return EveryMinute
 }
-func (t *IbcChainCronTask) Run() {
-	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
+func (t *IbcChainCronTask) Run() int {
 	chainCfgs, err := chainConfigRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %s", t.Name(), err.Error())
-		return
+		return -1
 	}
 	var chains []entity.IBCChain
 	//set redis key expired time
@@ -51,7 +49,7 @@ func (t *IbcChainCronTask) Run() {
 			logrus.Errorf("ibc_chain inser or update fail, %s", err.Error())
 		}
 	}
-	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
+	return 1
 
 }
 func createChainData(chainId string, channels int, conntectedChains int) entity.IBCChain {

@@ -36,15 +36,15 @@ func (t *ChannelTask) ExpireTime() time.Duration {
 	return 3*time.Minute - 1*time.Second
 }
 
-func (t *ChannelTask) Run() {
+func (t *ChannelTask) Run() int {
 	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
 	if err := t.analyzeChainConfig(); err != nil {
-		return
+		return -1
 	}
 
 	existedChannelList, newChannelList, err := t.getAllChannel()
 	if err != nil {
-		return
+		return -1
 	}
 
 	// 部分数据统计出错可以直接忽略error,继续计算后面的指标
@@ -55,13 +55,13 @@ func (t *ChannelTask) Run() {
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 	t.baseDenomMap = baseDenomList.ConvertToMap()
 
 	statistics, err := t.channelStatistics()
 	if err != nil {
-		return
+		return -1
 	}
 
 	t.setTransferTxs(existedChannelList, newChannelList, statistics) // 计算txs和交易价值，同时更新ibc_channel_statistics
@@ -83,7 +83,7 @@ func (t *ChannelTask) Run() {
 			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chainId, err)
 		}
 	}
-	monitor.SetCronTaskStatusMetricValue(t.Name(), 1)
+	return 1
 }
 
 func (t *ChannelTask) analyzeChainConfig() error {
