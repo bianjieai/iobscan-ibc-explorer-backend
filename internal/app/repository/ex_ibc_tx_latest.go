@@ -67,29 +67,15 @@ func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe() []bson.M {
 
 	group := bson.M{
 		"$group": bson.M{
-			"_id": bson.M{
-				"base_denom":  "$base_denom",
-				"sc_chain_id": "$sc_chain_id",
-				"dc_chain_id": "$dc_chain_id",
-			},
+			"_id": "$base_denom",
 			"count": bson.M{
 				"$sum": 1,
 			},
 		},
 	}
 
-	project := bson.M{
-		"$project": bson.M{
-			"_id":         0,
-			"base_denom":  "$_id.base_denom",
-			"sc_chain_id": "$_id.sc_chain_id",
-			"dc_chain_id": "$_id.dc_chain_id",
-			"count":       "$count",
-		},
-	}
-
 	var pipe []bson.M
-	pipe = append(pipe, match, group, project)
+	pipe = append(pipe, match, group)
 	return pipe
 }
 

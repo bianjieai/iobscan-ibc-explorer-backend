@@ -89,10 +89,10 @@ var (
 		new(IbcRelayerRepo),
 		new(RelayerConfigRepo),
 		new(RelayerStatisticsRepo),
-		//new(TokenRepo),
-		//new(TokenStatisticsRepo),
-		//new(ChannelRepo),
-		//new(ChannelStatisticsRepo),
+		new(TokenRepo),
+		new(TokenStatisticsRepo),
+		new(ChannelRepo),
+		new(ChannelStatisticsRepo),
 	}
 )
 

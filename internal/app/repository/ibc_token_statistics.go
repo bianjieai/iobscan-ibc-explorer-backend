@@ -51,8 +51,7 @@ func (repo *TokenStatisticsRepo) FindByBaseDenom(baseDenom, chainId string) ([]*
 func (repo *TokenStatisticsRepo) BatchSwap(batch []*entity.IBCTokenStatistics, baseDenom, originChainId string) error {
 	callback := func(sessCtx context.Context) (interface{}, error) {
 		query := bson.M{
-			"base_denom":  baseDenom,
-			"original_id": originChainId,
+			"base_denom": baseDenom,
 		}
 		if _, err := repo.coll().RemoveAll(sessCtx, query); err != nil {
 			return nil, err
