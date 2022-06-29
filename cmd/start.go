@@ -7,13 +7,12 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/zk"
 	"github.com/spf13/cobra"
 )
 
 var (
-	localConfig string
-	startCmd    = &cobra.Command{
+	ConfigFilePath string
+	startCmd       = &cobra.Command{
 		Use:   "start",
 		Short: "Start Iobscan IBC Explorer Backend.",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -32,11 +31,12 @@ var (
 func init() {
 	rootCmd.AddCommand(startCmd)
 	startCmd.AddCommand(testCmd)
-	testCmd.Flags().StringVarP(&localConfig, "CONFIG", "c", "", "conf path: /opt/local.toml")
+	testCmd.Flags().StringVarP(&ConfigFilePath, "CONFIG", "c", "", "conf path: /opt/local.toml")
+
 }
 
 func test() {
-	data, err := ioutil.ReadFile(localConfig)
+	data, err := ioutil.ReadFile(ConfigFilePath)
 	if err != nil {
 		panic(err)
 	}
@@ -50,16 +50,13 @@ func test() {
 func online() {
 	var config *conf.Config
 
-	zkConn, err := zk.NewZkConn()
-	if err != nil {
-		panic(err)
+	filepath, found := os.LookupEnv(constant.EnvNameConfigFilePath)
+	if found {
+		ConfigFilePath = filepath
+	} else {
+		panic("not found CONFIG_FILE_PATH")
 	}
-
-	configPath := "/iobscan-ibc-explorer-backend/config"
-	if v, ok := os.LookupEnv(constant.EnvNameZkConfigPath); ok {
-		configPath = v
-	}
-	data, _, err := zkConn.Get(configPath)
+	data, err := ioutil.ReadFile(ConfigFilePath)
 	if err != nil {
 		panic(err)
 	}
