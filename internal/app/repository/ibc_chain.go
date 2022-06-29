@@ -2,13 +2,13 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	moptions "go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 
 type IChainRepo interface {
 	InserOrUpdate(chain entity.IBCChain) error
-	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error
+	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue string) error
 	UpdateTransferTxs(chainId string, txs int64, txsValue string) error
 	UpdateRelayers(chainId string, relayers int64) error
 	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
@@ -78,15 +78,13 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 		})
 }
 
-func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue float64) error {
+func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue string) error {
 	updateData := bson.M{
 		ChainFieldIbcTokens:      tokens,
 		ChainFieldUpdateAt:       time.Now().Unix(),
-		ChainFieldIbcTokensValue: "",
+		ChainFieldIbcTokensValue: tokenValue,
 	}
-	if tokenValue > 0 {
-		updateData[ChainFieldIbcTokensValue] = fmt.Sprint(tokenValue)
-	}
+
 	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
 		bson.M{
 			"$set": updateData,

@@ -7,9 +7,9 @@ type IBCBaseDenom struct {
 	Scale       int    `bson:"scale"`
 	Icon        string `bson:"icon"`
 	IsMainToken bool   `bson:"is_main_token"`
-	CreateAt    int64  `bson:"create_at"`
-	UpdateAt    int64  `bson:"update_at"`
-	CoinId      string `bson:"coin_id"`
+	//CreateAt    int64  `bson:"create_at"`
+	//UpdateAt    int64  `bson:"update_at"`
+	CoinId string `bson:"coin_id"`
 }
 
 func (i IBCBaseDenom) CollectionName() string {
@@ -22,7 +22,7 @@ type IBCBaseDenomMap map[string]*IBCBaseDenom
 func (l IBCBaseDenomList) ConvertToMap() IBCBaseDenomMap {
 	res := make(map[string]*IBCBaseDenom)
 	for _, v := range l {
-		res[v.ChainId+v.Denom] = v
+		res[v.Denom] = v
 	}
 	return res
 }

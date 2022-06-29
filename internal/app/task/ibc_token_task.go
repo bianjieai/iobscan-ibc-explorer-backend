@@ -27,7 +27,7 @@ type TokenTask struct {
 	chainLcdApiMap   map[string]entity.ApiPath // chain lcd api地址
 	escrowAddressMap map[string][]string       // chain ibc跨链托管地址
 	baseDenomList    entity.IBCBaseDenomList   // 所有的base denom
-	ibcDenomMap      map[string][]string       // base denom 和其对应的跨链ibc denom的映射关系
+	//ibcDenomMap      map[string][]string       // base denom 和其对应的跨链ibc denom的映射关系
 }
 
 func (t *TokenTask) Name() string {
@@ -70,17 +70,6 @@ func (t *TokenTask) Run() {
 
 	_ = t.setIbcTransferAmount(existedTokenList, newTokenList)
 
-	ibcDenomList, err := denomRepo.GetDenomGroupByBaseDenom()
-	if err != nil {
-		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
-	}
-	ibcDenomMap := make(map[string][]string)
-	for _, v := range ibcDenomList {
-		ibcDenomMap[v.BaseDenom] = v.Denom
-	}
-	t.ibcDenomMap = ibcDenomMap
-
 	t.caculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
 
 	// 更新数据到数据库
@@ -118,13 +107,13 @@ func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, err
 	var newTokenList entity.IBCTokenList
 
 	for _, v := range tokenList {
-		_, ok := existedTokenMap[v.ChainId+v.BaseDenom]
+		_, ok := existedTokenMap[v.BaseDenom]
 		if ok { // token 已存在
 			continue
 		}
 
 		var tokenType entity.TokenType
-		_, ok = baseDenomMap[v.ChainId+v.BaseDenom]
+		_, ok = baseDenomMap[v.BaseDenom]
 		if ok {
 			tokenType = entity.TokenTypeAuthed
 		} else {
@@ -158,12 +147,8 @@ func (t *TokenTask) setTokenPrice(existedTokenList, newTokenList entity.IBCToken
 	baseDenomMap := t.baseDenomList.ConvertToMap()
 	setPrice := func(tokenList entity.IBCTokenList, tokenPriceMap map[string]float64) {
 		for _, v := range tokenList {
-			denom, ok := baseDenomMap[v.ChainId+v.BaseDenom]
-			if !ok {
-				continue
-			}
-
-			if denom.CoinId == "" {
+			denom, ok := baseDenomMap[v.BaseDenom]
+			if !ok || denom.CoinId == "" {
 				continue
 			}
 
@@ -486,54 +471,52 @@ func (t *TokenTask) caculateTokenStatistics(existedTokenList, newTokenList entit
 // 以下主要是对于ibc_token_statistics 集合数据的处理与计算
 
 func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error) {
-	ibcDenomStrList := t.ibcDenomMap[ibcToken.BaseDenom]
-	ibcDenomCaculateList, err := denomCaculateRepo.FindByDenoms(ibcDenomStrList)
+	ibcDenomCaculateList, err := denomCaculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
 	if err != nil {
-		logrus.Errorf("task %s ibcDenomBase error, %v", t.Name(), err)
+		logrus.Errorf("task %s denomCaculateRepo.FindByBaseDenom error, %v", t.Name(), err)
 		return 0, nil
 	}
 
+	denomList, err := denomRepo.FindByBaseDenom(ibcToken.BaseDenom)
+	if err != nil {
+		logrus.Errorf("task %s FindByBaseDenom error, %v", t.Name(), err)
+		return 0, nil
+	}
+
+	ibcDenomCaculateStrList := make([]string, 0, len(ibcDenomCaculateList))
+	for _, v := range ibcDenomCaculateList {
+		ibcDenomCaculateStrList = append(ibcDenomCaculateStrList, v.Denom)
+	}
 	ibcReceiveTxsMap := t.ibcReceiveTxs(ibcToken.BaseDenom, ibcToken.ChainId)
 	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
 
-	allTokenStatisticsList := make([]*entity.IBCTokenStatistics, 0, len(ibcDenomCaculateList)+1)
-
-	genesisDenomAmount := t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
-	allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenStatistics{
-		Denom:       ibcToken.BaseDenom,
-		DenomPath:   "",
-		BaseDenom:   ibcToken.BaseDenom,
-		ChainId:     ibcToken.ChainId,
-		OriginalId:  ibcToken.ChainId,
-		Type:        entity.TokenStatisticsTypeGenesis,
-		IBCHops:     0,
-		DenomAmount: genesisDenomAmount,
-		DenomValue:  t.ibcDenomValue(genesisDenomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
-		ReceiveTxs:  ibcReceiveTxsMap[ibcToken.BaseDenom],
-	})
-
-	for _, v := range ibcDenomCaculateList {
-		if v.ScChainId == ibcToken.ChainId {
-			denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcToken.Type)
-			denomAmount := t.ibcDenomAmount(v.ChainId, v.Denom)
-			allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenStatistics{
-				Denom:       v.Denom,
-				DenomPath:   v.DenomPath,
-				BaseDenom:   ibcToken.BaseDenom,
-				ChainId:     v.ChainId,
-				OriginalId:  ibcToken.ChainId,
-				Type:        denomType,
-				IBCHops:     t.ibcHops(v.DenomPath),
-				DenomAmount: denomAmount,
-				DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
-				ReceiveTxs:  ibcReceiveTxsMap[v.Denom],
-			})
+	allTokenStatisticsList := make([]*entity.IBCTokenStatistics, 0, len(denomList))
+	for _, v := range denomList {
+		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcDenomCaculateStrList)
+		var denomAmount string
+		if denomType == entity.TokenStatisticsTypeGenesis {
+			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
+		} else {
+			denomAmount = t.ibcDenomAmount(v.ChainId, v.Denom)
 		}
+
+		allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenStatistics{
+			Denom:       v.Denom,
+			DenomPath:   v.DenomPath,
+			BaseDenom:   ibcToken.BaseDenom,
+			ChainId:     v.ChainId,
+			OriginalId:  ibcToken.ChainId,
+			Type:        denomType,
+			IBCHops:     t.ibcHops(v.DenomPath),
+			DenomAmount: denomAmount,
+			DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
+			ReceiveTxs:  ibcReceiveTxsMap[v.Denom],
+		})
 	}
 
 	err = tokenStatisticsRepo.BatchSwap(allTokenStatisticsList, ibcToken.BaseDenom, ibcToken.ChainId) // 删除旧数据，插入新数据
 	if err != nil {
-		logrus.Errorf("task %s ibcDenomBase error, %v", t.Name(), err)
+		logrus.Errorf("task %s BatchSwap error,base denom:%s, %v", t.Name(), ibcToken.BaseDenom, err)
 		return 0, err
 	}
 	return int64(len(allTokenStatisticsList)), nil
@@ -606,16 +589,16 @@ func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
 	return sd.Sub(td).String()
 }
 
-func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom string, tokenType entity.TokenType) entity.TokenStatisticsType {
+func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom string, ibcHash []string) entity.TokenStatisticsType {
 	if baseDenom == denom {
 		return entity.TokenStatisticsTypeGenesis
 	}
 
-	if tokenType == entity.TokenTypeAuthed {
+	if utils.InArray(ibcHash, denom) {
 		return entity.TokenStatisticsTypeAuthed
+	} else {
+		return entity.TokenStatisticsTypeOther
 	}
-
-	return entity.TokenStatisticsTypeOther
 }
 
 func (t *TokenTask) ibcHops(denomPath string) int {
@@ -635,8 +618,8 @@ func (t *TokenTask) updateIBCChain() {
 	}
 
 	for _, v := range ibcChainList {
-		err = chainRepo.UpdateIbcTokenValue(v.ChainId, v.Count, v.DenomValue)
-		if err != nil {
+		vd := decimal.NewFromFloat(v.DenomValue).String()
+		if err = chainRepo.UpdateIbcTokenValue(v.ChainId, v.Count, vd); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Errorf("task %s updateIBCChain error, %v", t.Name(), err)
 		}
 	}

@@ -11,6 +11,7 @@ import (
 
 type IDenomRepo interface {
 	FindBaseDenom() (entity.IBCDenomList, error)
+	FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error)
 	GetDenomGroupByBaseDenom() ([]*dto.GetDenomGroupByBaseDenomDTO, error)
 	FindTokenOthers() (entity.IBCDenomList, error)
 }
@@ -26,7 +27,13 @@ func (repo *DenomRepo) coll() *qmgo.Collection {
 
 func (repo *DenomRepo) FindBaseDenom() (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
-	err := repo.coll().Find(context.Background(), bson.M{"is_base_denom": true}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"is_base_denom": true, "is_source_chain": true}).All(&res)
+	return res, err
+}
+
+func (repo *DenomRepo) FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error) {
+	var res entity.IBCDenomList
+	err := repo.coll().Find(context.Background(), bson.M{"base_denom": baseDenom}).All(&res)
 	return res, err
 }
 

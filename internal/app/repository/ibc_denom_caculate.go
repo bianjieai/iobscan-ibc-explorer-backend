@@ -9,7 +9,7 @@ import (
 )
 
 type IDenomCaculateRepo interface {
-	FindByDenoms(denoms []string) ([]*entity.IBCDenomCaculate, error)
+	FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCaculate, error)
 }
 
 var _ IDenomCaculateRepo = new(DenomCaculateRepo)
@@ -21,11 +21,9 @@ func (repo *DenomCaculateRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCDenomCaculate{}.CollectionName())
 }
 
-func (repo *DenomCaculateRepo) FindByDenoms(denoms []string) ([]*entity.IBCDenomCaculate, error) {
+func (repo *DenomCaculateRepo) FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCaculate, error) {
 	var res []*entity.IBCDenomCaculate
-	qurey := bson.M{"denom": bson.M{
-		"$in": denoms,
-	}}
+	qurey := bson.M{"base_denom": baseDenom}
 	err := repo.coll().Find(context.Background(), qurey).All(&res)
 	return res, err
 }

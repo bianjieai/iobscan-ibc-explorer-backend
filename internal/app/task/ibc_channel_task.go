@@ -77,7 +77,7 @@ func (t *ChannelTask) Run() {
 	// 更新ibc_chain
 	for chainId, txs := range t.chainTxsMap {
 		txsValue := t.chainTxsValueMap[chainId].Round(constant.DefaultValuePrecision).String()
-		if err = chainRepo.UpdateTransferTxs(chainId, txs, txsValue); err != nil {
+		if err = chainRepo.UpdateTransferTxs(chainId, txs, txsValue); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chainId, err)
 		}
 	}
@@ -155,7 +155,7 @@ func (t *ChannelTask) channelEqual(channelId1, channelId2 string) bool {
 		return false
 	}
 
-	chainA2, channelA2, chainB2, channelB2, err := t.parseChannelId(channelId1)
+	chainA2, channelA2, chainB2, channelB2, err := t.parseChannelId(channelId2)
 	if err != nil {
 		return false
 	}
@@ -381,27 +381,18 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 }
 
 func (t *ChannelTask) calculateValue(amount decimal.Decimal, baseDenom string) decimal.Decimal {
-	var coinId string
-	var scale int
-	for _, v := range t.baseDenomMap {
-		if v.Denom == baseDenom {
-			coinId = v.CoinId
-			scale = v.Scale
-			break
-		}
-	}
-
-	if coinId == "" {
+	denom, ok := t.baseDenomMap[baseDenom]
+	if !ok || denom.CoinId == "" {
 		return decimal.Zero
 	}
 
-	price, err := tokenPriceRepo.Get(coinId)
+	price, err := tokenPriceRepo.Get(denom.CoinId)
 	if err != nil {
 		logrus.Errorf("task %s calculateValue error, %v", t.Name(), err)
 		return decimal.Zero
 	}
 
-	value := amount.Div(decimal.NewFromFloat(math.Pow10(scale))).
+	value := amount.Div(decimal.NewFromFloat(math.Pow10(denom.Scale))).
 		Mul(decimal.NewFromFloat(price))
 
 	return value
