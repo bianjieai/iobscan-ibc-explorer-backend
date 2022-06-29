@@ -23,6 +23,7 @@ var (
 	denomDataRepo    cache.DenomDataCacheRepo
 	ibcInfoHashCache cache.IbcInfoHashCacheRepo
 	ibcInfoCache     cache.IbcInfoCacheRepo
+	unbondTimeCache  cache.UnbondTimeCacheRepo
 
 	// mongo
 	tokenRepo             repository.ITokenRepo             = new(repository.TokenRepo)

@@ -21,3 +21,9 @@ type BalancesResp struct {
 		Total   string  `json:"total"`
 	} `json:"pagination"`
 }
+
+type StakeParams struct {
+	Params struct {
+		UnbondingTime     string `json:"unbonding_time"`
+	} `json:"params"`
+}

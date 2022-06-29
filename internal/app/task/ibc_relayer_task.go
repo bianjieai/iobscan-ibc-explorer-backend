@@ -1,24 +1,26 @@
 package task
 
 import (
-	"math"
-	"strings"
-	"time"
-
+	"encoding/json"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
+	"math"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 type IbcRelayerCronTask struct {
-	//key: DcChainId+":"+DcChainAddress
-	relayerTxsMap map[string]TxsItem
-	//key: DcChainId+":"+BaseDenom+":"+DcChainAddress
+	relayerTxsMap  map[string]TxsItem
 	relayerAmtsMap map[string]AmtItem
 	//key: ChainA+ChainB+ChannelA+ChannelB
 	channelRelayerCnt map[string]int64
@@ -39,6 +41,14 @@ type (
 		Scale int
 	}
 )
+
+func relayerTxsMapKey(chainId, dcChainAddr, dcChannel string) string {
+	return fmt.Sprintf("%s:%s:%s", chainId, dcChainAddr, dcChannel)
+}
+
+func relayerAmtsMapKey(chainId, baseDenom, dcChainAddr, dcChannel string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", chainId, baseDenom, dcChainAddr, dcChannel)
+}
 
 func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
@@ -80,6 +90,7 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 		}
 		t.updateIbcChainsRelayer()
 		t.cacheIbcChannelRelayer()
+		t.cacheChainUnbondTimeFromLcd()
 	}
 	t.CountRelayerPacketTxs()
 	t.CountRelayerPacketTxsAmount()
@@ -101,7 +112,23 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 				continue
 			}
 			if timePeriod == -1 {
-				//todo call relayer api (uri为/chain/:id in https://hermes.informal.systems/rest-api.html)
+				//get unbonding time from cache
+				var chainAUnbondT, chainBUnbondT int64
+				chainAUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
+				if chainAUnbondTime != "" {
+					chainAUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainAUnbondTime, "s", ""), 10, 64)
+				}
+				chainBUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainB)
+				if chainBUnbondTime != "" {
+					chainBUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainBUnbondTime, "s", ""), 10, 64)
+				}
+				if chainAUnbondT > 0 && chainBUnbondT > 0 {
+					if chainAUnbondT >= chainBUnbondT {
+						timePeriod = chainBUnbondT
+					} else {
+						timePeriod = chainAUnbondT
+					}
+				}
 			}
 			t.handleOneRelayerInfo(relayer, updateTime, timePeriod)
 			t.updateIbcChannelRelayerInfo(relayer, updateTime)
@@ -129,6 +156,39 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 			t.denomPriceMap[val.Denom] = CoinItem{Price: price, Scale: val.Scale}
 		}
 	}
+}
+
+func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
+	configList, err := chainConfigRepo.FindAll()
+	if err != nil {
+		logrus.Errorf("task %s cacheChainUnbondTimeFromLcd error, %v", t.Name(), err)
+		return
+	}
+	if len(configList) == 0 {
+		return
+	}
+	group := sync.WaitGroup{}
+	group.Add(len(configList))
+	for _, val := range configList {
+		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", val.Lcd, val.LcdApiPath.ParamsPath), entity.ParamsModulePathPlaceholder, entity.StakeModule)
+		go func(baseUrl, chainId string) {
+			defer group.Done()
+			bz, err := utils.HttpGet(baseUrl)
+			if err != nil {
+				logrus.Errorf("task %s staking %s params error, %v", t.Name(), baseUrl, err)
+				return
+			}
+
+			var stakeparams vo.StakeParams
+			err = json.Unmarshal(bz, &stakeparams)
+			if err != nil {
+				logrus.Errorf("%s unmarshal staking params error, %v", t.Name(), err)
+				return
+			}
+			_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
+		}(baseUrl, val.ChainId)
+	}
+	group.Wait()
 }
 
 func (t *IbcRelayerCronTask) handleOneRelayerInfo(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
@@ -240,7 +300,7 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxs() {
 
 	t.relayerTxsMap = make(map[string]TxsItem, 20)
 	for _, tx := range relayerTxs {
-		key := tx.DcChainId + ":" + tx.DcChainAddress
+		key := relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
 		value, exist := t.relayerTxsMap[key]
 		if exist {
 			value.Txs += tx.Count
@@ -251,7 +311,7 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxs() {
 	}
 
 	for _, tx := range relayerSuccessTxs {
-		key := tx.DcChainId + ":" + tx.DcChainAddress
+		key := relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
 		value, exist := t.relayerTxsMap[key]
 		if exist {
 			value.TxsSuccess += tx.Count
@@ -279,7 +339,7 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxsAmount() {
 	createAmounts := func(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]AmtItem {
 		relayerAmtsMap := make(map[string]AmtItem, 20)
 		for _, amt := range relayerAmounts {
-			key := amt.DcChainId + ":" + amt.BaseDenom + ":" + amt.DcChainAddress
+			key := relayerAmtsMapKey(amt.DcChainId, amt.BaseDenom, amt.DcChainAddress, amt.DcChannel)
 			decAmt := decimal.NewFromFloat(amt.Amount)
 			baseDenomValue := decimal.NewFromFloat(0)
 			if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
@@ -307,14 +367,14 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxsAmount() {
 func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 	var relayerStatics []entity.IBCRelayerStatistics
 	for key, value := range t.relayerAmtsMap {
-		if arrs := strings.Split(key, ":"); len(arrs) == 3 {
-			chainId, baseDenom, relayerAddr := arrs[0], arrs[1], arrs[2]
-			relayerData, err := relayerRepo.FindRelayerId(chainId, relayerAddr)
+		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
+			chainId, baseDenom, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
+			relayerData, err := relayerRepo.FindRelayerId(chainId, relayerAddr, channel)
 			if err != nil {
 				logrus.Error(chainId, relayerAddr, "find relayer id fail, ", err.Error())
 				continue
 			}
-			item := createIBCRelayerStatistics(chainId, relayerData.RelayerId, baseDenom, value.Amount, value.Value)
+			item := createIBCRelayerStatistics(channel, chainId, relayerData.RelayerId, baseDenom, value.Amount, value.Value)
 			relayerStatics = append(relayerStatics, item)
 		}
 	}
@@ -326,10 +386,11 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 	return
 }
 
-func createIBCRelayerStatistics(chainId, relayerId, baseDenom string, amount, value decimal.Decimal) entity.IBCRelayerStatistics {
+func createIBCRelayerStatistics(channel, chainId, relayerId, baseDenom string, amount, value decimal.Decimal) entity.IBCRelayerStatistics {
 	return entity.IBCRelayerStatistics{
 		RelayerId:          relayerId,
 		ChainId:            chainId,
+		Channel:            channel,
 		TransferBaseDenom:  baseDenom,
 		TransferAmount:     amount.String(),
 		TransferTotalValue: value.Round(constant.DefaultValuePrecision).String(),
@@ -345,18 +406,18 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxs() {
 		}
 		totalValueMap := make(map[string]float64, len(totalValueDtos))
 		for _, val := range totalValueDtos {
-			totalValueMap[val.ChainId+val.RelayerId] = val.Amount
+			totalValueMap[val.ChainId+val.RelayerId+val.Channel] = val.Amount
 		}
 
 		for key, val := range t.relayerTxsMap {
-			if arrs := strings.Split(key, ":"); len(arrs) == 2 {
-				chain_id, relayerAddr := arrs[0], arrs[1]
-				relayerData, err := relayerRepo.FindRelayerId(chain_id, relayerAddr)
+			if arrs := strings.Split(key, ":"); len(arrs) == 3 {
+				chain_id, relayerAddr, channel := arrs[0], arrs[1], arrs[2]
+				relayerData, err := relayerRepo.FindRelayerId(chain_id, relayerAddr, channel)
 				if err != nil {
 					logrus.Error("find relayer id fail, ", err.Error())
 					continue
 				}
-				totalValue, _ := totalValueMap[chain_id+relayerData.RelayerId]
+				totalValue, _ := totalValueMap[chain_id+relayerData.RelayerId+channel]
 				if err := relayerRepo.UpdateTxsInfo(relayerData.RelayerId, val.Txs, val.TxsSuccess, totalValue); err != nil {
 					logrus.Error(err.Error())
 				}

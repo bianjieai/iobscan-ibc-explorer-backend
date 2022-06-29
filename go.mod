@@ -11,7 +11,6 @@ require (
 	github.com/lestrrat-go/strftime v1.0.6 // indirect
 	github.com/qiniu/qmgo v1.1.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
