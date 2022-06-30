@@ -7,7 +7,6 @@ import (
 	"math"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
@@ -34,28 +33,24 @@ func (t *TokenTask) Name() string {
 	return "ibc_token_task"
 }
 
-func (t *TokenTask) Cron() string {
+func (t *TokenTask) Cron() int {
 	return ThreeMinute
 }
 
-func (t *TokenTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 1*time.Second
-}
-
-func (t *TokenTask) Run() {
+func (t *TokenTask) Run() int {
 	err := t.analyzeChainConf()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 
 	if err = t.initDenomData(); err != nil {
-		return
+		return -1
 	}
 
 	existedTokenList, newTokenList, err := t.getAllToken()
 	if err != nil {
-		return
+		return -1
 	}
 
 	// 部分数据统计出错可以直接忽略error,继续计算后面的指标
@@ -84,6 +79,7 @@ func (t *TokenTask) Run() {
 
 	// 更新ibc chain
 	t.updateIBCChain()
+	return 1
 }
 
 func (t *TokenTask) initDenomData() error {
