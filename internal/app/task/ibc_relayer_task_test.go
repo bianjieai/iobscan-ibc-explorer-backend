@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"testing"
 )
@@ -14,7 +15,13 @@ func TestIbcRelayerCronTask_Run(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
-	data, data1, err := new(IbcRelayerCronTask).getTimePeriodAndupdateTime("bigbang", "qa_iris_snapshot")
+	data, data1, err := new(IbcRelayerCronTask).getTimePeriodAndupdateTime(&entity.IBCRelayer{
+		ChainA:        "bigbang",
+		ChainB:        "irishub_qa",
+		ChainAAddress: "cosmos16mrml9n668a6ywxsxvtkdymy9kh5m595ygr6g7",
+		ChainBAddress: "iaa1u3tpcx5088rx3lzzt0gg73lt9zugrjp730apj8",
+		UpdateTime:    1623218166,
+	})
 	if err != nil {
 		t.Fatal(err.Error())
 	}

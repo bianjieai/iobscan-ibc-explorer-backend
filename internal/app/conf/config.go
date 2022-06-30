@@ -14,6 +14,7 @@ type Config struct {
 	Redis Redis
 	Log   Log
 	Spi   Spi
+	Task  Task
 }
 
 type Mysql struct {
@@ -38,6 +39,7 @@ type App struct {
 	StartTask            bool `mapstructure:"start_task"`
 	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
 	Version              string
+	Prometheus           string `mapstructure:"prometheus_port"`
 }
 
 type Redis struct {
@@ -55,6 +57,15 @@ type Log struct {
 	LogMaxAgeDay       int    `mapstructure:"log_max_age_day"`
 	LogRotationTimeDay int    `mapstructure:"log_rotation_time_day"`
 	LogOutput          string `mapstructure:"log_output"`
+}
+
+type Task struct {
+	CronTimeChainTask      int `mapstructure:"cron_time_chain_task"`
+	CronTimeChannelTask    int `mapstructure:"cron_time_channel_task"`
+	CronTimeRelayerTask    int `mapstructure:"cron_time_relayer_task"`
+	CronTimeTokenTask      int `mapstructure:"cron_time_token_task"`
+	CronTimeTokenPriceTask int `mapstructure:"cron_time_token_price_task"`
+	RedisLockExpireTime    int `mapstructure:"redis_lock_expire_time"`
 }
 
 type Spi struct {
