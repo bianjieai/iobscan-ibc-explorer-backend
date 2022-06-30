@@ -7,9 +7,9 @@ type CountBaseDenomTransferAmountDTO struct {
 	Count     int64  `bson:"count"`
 }
 
-type GetDenomGroupByBaseDenomDTO struct {
-	BaseDenom string   `bson:"_id"`
-	Denom     []string `bson:"denom"`
+type GetDenomGroupByChainIdDTO struct {
+	ChainId string   `bson:"_id"`
+	Denom   []string `bson:"denom"`
 }
 
 type CountIBCTokenRecvTxsDTO struct {
