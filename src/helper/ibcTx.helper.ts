@@ -38,6 +38,9 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
           if (chain_id?.includes(AllChain)) {
             if ((chains[0] === chains[1]) && (chains[0] === AllChain)) {
               // nothing to do
+              if (!token) {
+                delete queryParams.$and
+              }
             }else{
               const index = chain_id?.indexOf(AllChain)
               if (index > 0) { //chain-id,allchain
