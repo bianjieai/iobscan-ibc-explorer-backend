@@ -1,11 +1,12 @@
 package task
 
 import (
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,7 +59,8 @@ func RunOnce(task Task) {
 			return
 		}
 		logrus.Infof("task %s start", task.Name())
-		task.Run()
+		metricValue := task.Run()
+		monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
 		//unlock redis mux
 		cache.GetRedisClient().Del(task.Name())
 		logrus.Infof("task %s end", task.Name())

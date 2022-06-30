@@ -14,8 +14,8 @@ type IExIbcTxRepo interface {
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	CountBaseDenomTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
 	CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
-	CountIBCTokenRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
-	CountIBCTokenHistoryRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
+	CountIBCTokenRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
+	CountIBCTokenHistoryRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
 	GetRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetHistoryRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetLatestTxTime() (int64, error)
@@ -93,12 +93,11 @@ func (repo *ExIbcTxRepo) CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDen
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(baseDenom, chainId string) []bson.M {
+func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(baseDenom string) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
-			"denoms.sc_denom": baseDenom,
-			"sc_chain_id":     chainId,
-			"status":          entity.IbcTxStatusSuccess,
+			"base_denom": baseDenom,
+			"status":     entity.IbcTxStatusSuccess,
 		},
 	}
 
@@ -116,15 +115,15 @@ func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(baseDenom, chainId string) []b
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) CountIBCTokenRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
-	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom, chainId)
+func (repo *ExIbcTxRepo) CountIBCTokenRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
+	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom)
 	var res []*dto.CountIBCTokenRecvTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(baseDenom, chainId string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
-	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom, chainId)
+func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
+	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom)
 	var res []*dto.CountIBCTokenRecvTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
