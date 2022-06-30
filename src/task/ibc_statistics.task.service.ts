@@ -171,7 +171,8 @@ export class IbcStatisticsTaskService {
 
         // channel_closed
         const channel_closed = channels_all_record.filter(channel => {
-            return channel.state === 'STATE_CLOSED';
+            // return channel.state === 'STATE_CLOSED';
+            return channel.state !== 'STATE_OPEN';
         }).length;
 
         const {tx_all_new,tx_all,tx_success,tx_failed} = await this.getCountinfo()
