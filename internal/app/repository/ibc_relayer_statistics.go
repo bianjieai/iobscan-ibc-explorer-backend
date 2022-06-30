@@ -5,9 +5,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -21,18 +19,18 @@ var _ IRelayerStatisticsRepo = new(RelayerStatisticsRepo)
 type RelayerStatisticsRepo struct {
 }
 
-func (repo *RelayerStatisticsRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-transfer_base_denom", "-relayer_id", "-chain_id", "-channel"},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-	indexes = append(indexes, options.IndexModel{
-		Key: []string{"-relayer_id", "-chain_id"},
-	})
-
-	ensureIndexes(entity.IBCRelayerStatistics{}.CollectionName(), indexes)
-}
+//func (repo *RelayerStatisticsRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"-transfer_base_denom", "-relayer_id", "-chain_id", "-channel"},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//	indexes = append(indexes, options.IndexModel{
+//		Key: []string{"-relayer_id", "-chain_id"},
+//	})
+//
+//	ensureIndexes(entity.IBCRelayerStatistics{}.CollectionName(), indexes)
+//}
 
 func (repo *RelayerStatisticsRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayerStatistics{}.CollectionName())
