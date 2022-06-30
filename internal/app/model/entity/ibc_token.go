@@ -31,7 +31,7 @@ type IBCTokenMap map[string]*IBCToken
 func (l IBCTokenList) ConvertToMap() IBCTokenMap {
 	res := make(map[string]*IBCToken)
 	for _, v := range l {
-		res[v.ChainId+v.BaseDenom] = v
+		res[v.BaseDenom] = v
 	}
 	return res
 }

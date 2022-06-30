@@ -29,3 +29,11 @@ db = 0
 
 [spi]
 coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
+
+[task]
+cron_time_chain_task = 5
+cron_time_channel_task = 5
+cron_time_relayer_task = 5
+cron_time_token_price_task = 5
+cron_time_token_task = 5
+redis_lock_expire_time= 300

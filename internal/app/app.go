@@ -41,6 +41,7 @@ func initCore(cfg *conf.Config) {
 	initLogger(&cfg.Log)
 	repository.InitMgo(cfg.Mongo, context.Background())
 	cache.InitRedisClient(cfg.Redis)
+	task.LoadTaskConf(cfg.Task)
 }
 
 func initLogger(logCfg *conf.Log) {

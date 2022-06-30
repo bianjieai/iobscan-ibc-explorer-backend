@@ -3,14 +3,12 @@ package task
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
+	"strconv"
+	"strings"
 )
 
 type TokenPriceTask struct {
@@ -20,16 +18,14 @@ func (t *TokenPriceTask) Name() string {
 	return "ibc_token_price_task"
 }
 
-func (t *TokenPriceTask) Cron() string {
+func (t *TokenPriceTask) Cron() int {
+	if taskConf.CronTimeTokenPriceTask > 0 {
+		return taskConf.CronTimeTokenPriceTask
+	}
 	return ThreeMinute
 }
 
-func (t *TokenPriceTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 1*time.Second
-}
-
 func (t *TokenPriceTask) Run() int {
-	monitor.SetCronTaskStatusMetricValue(t.Name(), -1)
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
