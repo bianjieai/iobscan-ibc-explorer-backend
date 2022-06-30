@@ -2,7 +2,6 @@ package task
 
 import (
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"math"
 	"strings"
 	"time"
@@ -35,7 +34,7 @@ func (t *ChannelTask) Cron() int {
 	return ThreeMinute
 }
 
-func (t *ChannelTask) Run() {
+func (t *ChannelTask) Run() int {
 	if err := t.analyzeChainConfig(); err != nil {
 		return -1
 	}

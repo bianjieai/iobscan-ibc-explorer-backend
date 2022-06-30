@@ -16,7 +16,10 @@ type Task interface {
 	//ExpireTime() time.Duration // redis expireTime
 }
 
-var tasks []Task
+var (
+	tasks    []Task
+	taskConf conf.Task
+)
 
 func RegisterTasks(task ...Task) {
 	tasks = append(tasks, task...)

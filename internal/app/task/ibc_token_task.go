@@ -39,7 +39,7 @@ func (t *TokenTask) Cron() int {
 	return ThreeMinute
 }
 
-func (t *TokenTask) Run() {
+func (t *TokenTask) Run() int {
 	err := t.analyzeChainConf()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
@@ -76,7 +76,6 @@ func (t *TokenTask) Run() {
 	for _, v := range ibcDenomList {
 		ibcDenomMap[v.BaseDenom] = v.Denom
 	}
-	t.ibcDenomMap = ibcDenomMap
 
 	t.caculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
 
