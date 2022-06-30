@@ -6,9 +6,7 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -102,12 +100,12 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue 
 		})
 }
 
-func (repo *IbcChainRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-" + ChainFieldChainId},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-
-	ensureIndexes(entity.IBCChain{}.CollectionName(), indexes)
-}
+//func (repo *IbcChainRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"-" + ChainFieldChainId},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//
+//	ensureIndexes(entity.IBCChain{}.CollectionName(), indexes)
+//}

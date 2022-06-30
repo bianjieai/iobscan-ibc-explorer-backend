@@ -7,9 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 	"strings"
 	"time"
 )
@@ -49,25 +47,25 @@ var _ IRelayerRepo = new(IbcRelayerRepo)
 type IbcRelayerRepo struct {
 }
 
-func (repo *IbcRelayerRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-" + RelayerFieldChainA, "-" + RelayerFieldChannelA, "-" + RelayerFieldChainAAddress},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-" + RelayerFieldChainB, "-" + RelayerFieldChannelB, "-" + RelayerFieldChainBAddress},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-	indexes = append(indexes, options.IndexModel{
-		Key: []string{"-" + RelayerFieldChainBAddress, "-" + RelayerFieldChainB},
-	})
-	indexes = append(indexes, options.IndexModel{
-		Key: []string{"-" + RelayerFieldChainAAddress, "-" + RelayerFieldChainA},
-	})
-
-	ensureIndexes(entity.IBCRelayer{}.CollectionName(), indexes)
-}
+//func (repo *IbcRelayerRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"-" + RelayerFieldChainA, "-" + RelayerFieldChannelA, "-" + RelayerFieldChainAAddress},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"-" + RelayerFieldChainB, "-" + RelayerFieldChannelB, "-" + RelayerFieldChainBAddress},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//	indexes = append(indexes, options.IndexModel{
+//		Key: []string{"-" + RelayerFieldChainBAddress, "-" + RelayerFieldChainB},
+//	})
+//	indexes = append(indexes, options.IndexModel{
+//		Key: []string{"-" + RelayerFieldChainAAddress, "-" + RelayerFieldChainA},
+//	})
+//
+//	ensureIndexes(entity.IBCRelayer{}.CollectionName(), indexes)
+//}
 
 func (repo *IbcRelayerRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayer{}.CollectionName())

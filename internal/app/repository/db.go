@@ -7,9 +7,7 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"gorm.io/driver/mysql"
@@ -80,46 +78,46 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 	mgo = client
 	ibcDatabase = cfg.Database
 	//auto create indexs
-	ensureDocsIndexes()
+	//ensureDocsIndexes()
 }
 
-var (
-	Collections = []Docs{
-		new(IbcChainRepo),
-		new(IbcRelayerRepo),
-		new(RelayerConfigRepo),
-		new(RelayerStatisticsRepo),
-		new(TokenRepo),
-		new(TokenStatisticsRepo),
-		new(ChannelRepo),
-		new(ChannelStatisticsRepo),
-	}
-)
-
-type (
-	Docs interface {
-		// ensure indexes
-		EnsureIndexes()
-	}
-)
-
-func ensureDocsIndexes() {
-	if len(Collections) > 0 {
-		for _, v := range Collections {
-			v.EnsureIndexes()
-		}
-	}
-}
-
-func ensureIndexes(collectionName string, indexes []options.IndexModel) {
-	c := mgo.Database(ibcDatabase).Collection(collectionName)
-	if len(indexes) > 0 {
-		for _, v := range indexes {
-			if err := c.CreateOneIndex(context.Background(), v); err != nil {
-				logrus.Warn("ensure index fail", "collectionName", collectionName,
-					"index", utils.MarshalJsonIgnoreErr(v),
-					"err", err.Error())
-			}
-		}
-	}
-}
+//var (
+//	Collections = []Docs{
+//		new(IbcChainRepo),
+//		new(IbcRelayerRepo),
+//		new(RelayerConfigRepo),
+//		new(RelayerStatisticsRepo),
+//		new(TokenRepo),
+//		new(TokenStatisticsRepo),
+//		new(ChannelRepo),
+//		new(ChannelStatisticsRepo),
+//	}
+//)
+//
+//type (
+//	Docs interface {
+//		// ensure indexes
+//		EnsureIndexes()
+//	}
+//)
+//
+//func ensureDocsIndexes() {
+//	if len(Collections) > 0 {
+//		for _, v := range Collections {
+//			v.EnsureIndexes()
+//		}
+//	}
+//}
+//
+//func ensureIndexes(collectionName string, indexes []options.IndexModel) {
+//	c := mgo.Database(ibcDatabase).Collection(collectionName)
+//	if len(indexes) > 0 {
+//		for _, v := range indexes {
+//			if err := c.CreateOneIndex(context.Background(), v); err != nil {
+//				logrus.Warn("ensure index fail", "collectionName", collectionName,
+//					"index", utils.MarshalJsonIgnoreErr(v),
+//					"err", err.Error())
+//			}
+//		}
+//	}
+//}

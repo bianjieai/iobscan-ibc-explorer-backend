@@ -7,9 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IChannelRepo interface {
@@ -87,15 +85,15 @@ func (repo *ChannelRepo) CountList(chainA, chainB string, status entity.ChannelS
 	return count, err
 }
 
-func (repo *ChannelRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"channel_id"},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-
-	ensureIndexes(entity.IBCChannel{}.CollectionName(), indexes)
-}
+//func (repo *ChannelRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"channel_id"},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//
+//	ensureIndexes(entity.IBCChannel{}.CollectionName(), indexes)
+//}
 
 func (repo *ChannelRepo) FindAll() (entity.IBCChannelList, error) {
 	var res entity.IBCChannelList
