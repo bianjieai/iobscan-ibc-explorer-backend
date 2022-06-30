@@ -247,7 +247,12 @@ func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(relayer *entity.IBCRela
 	if len(t.channelRelayerCnt) > 0 || updateTime > 0 {
 		var relayerCnt int64
 		if len(t.channelRelayerCnt) > 0 {
-			relayerCnt, _ = t.channelRelayerCnt[relayer.ChainA+relayer.ChainB+relayer.ChannelA+relayer.ChannelB]
+			if relayercnt, ok := t.channelRelayerCnt[relayer.ChainA+relayer.ChainB+relayer.ChannelA+relayer.ChannelB]; ok {
+				relayerCnt += relayercnt
+			}
+			if relayercnt, ok := t.channelRelayerCnt[relayer.ChainB+relayer.ChainA+relayer.ChannelB+relayer.ChannelA]; ok {
+				relayerCnt += relayercnt
+			}
 		}
 
 		ChannelId, MirrorChannelId := generateChannelId(relayer.ChainA, relayer.ChannelA, relayer.ChainB, relayer.ChannelB)
