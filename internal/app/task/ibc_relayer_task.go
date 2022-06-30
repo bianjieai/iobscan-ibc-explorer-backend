@@ -106,7 +106,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeStatus() {
 			return
 		}
 		for _, relayer := range relayers {
-			timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer.ChainA, relayer.ChainB)
+			timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer)
 			if err != nil {
 				logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
 				continue
@@ -532,22 +532,37 @@ func (t *IbcRelayerCronTask) createRelayerData(dto *dto.GetRelayerInfoDTO,
 //1: timePeriod
 //2: updateTime
 //3: error
-func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(chainA, chainB string) (int64, int64, error) {
-	updateTimeA, timePeriodA, err := txRepo.GetTimePeriodByUpdateClient(chainA)
+func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64, error) {
+	updateTimeA, timePeriodA, err := txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, relayer.UpdateTime)
 	if err != nil {
 		return 0, 0, err
 	}
-	updateTimeB, timePeriodB, err := txRepo.GetTimePeriodByUpdateClient(chainB)
+	updateTimeB, timePeriodB, err := txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, relayer.UpdateTime)
 	if err != nil {
 		return 0, 0, err
 	}
 	timePeriod := timePeriodB
-	if timePeriodA >= timePeriodB {
-		timePeriod = timePeriodA
-	}
 	updateTime := updateTimeB
-	if updateTimeA >= updateTimeB {
-		updateTime = updateTimeA
+	if timePeriodA >= timePeriodB && timePeriodB > 0 {
+		// 两条链对应timePeriodB均不为-1，表示均正常取最大基准周期
+		timePeriod = timePeriodA
+		if updateTimeA >= updateTimeB {
+			updateTime = updateTimeA
+		}
+	} else if timePeriodA == timePeriodB && timePeriodB == -1 {
+		// 两条链对应timePeriodB均为-1，表示均正常取最大基准周期
+		timePeriod = -1
+		if updateTimeA >= updateTimeB {
+			updateTime = updateTimeA
+		}
+	} else if timePeriodA == -1 || timePeriodB == -1 {
+		//如果有一条链update_client没有查到，就不更新updateTime
+		updateTime = relayer.UpdateTime
+		timePeriod = relayer.TimePeriod
+	}
+	//判断更新时间如果小于历史更新时间，就不更新
+	if updateTime < relayer.UpdateTime {
+		updateTime = relayer.UpdateTime
 	}
 	return timePeriod, updateTime, nil
 }
