@@ -6,6 +6,8 @@ import (
 	"github.com/weichang-bianjie/metric-sdk/types"
 )
 
+const defaultPort = "9090"
+
 type Monitor interface {
 	Report(reports ...func())
 }
@@ -15,6 +17,9 @@ type client struct {
 }
 
 func NewMonitor(port string) Monitor {
+	if port == "" {
+		port = defaultPort
+	}
 	metricClient := metric_sdk.NewClient(types.Config{
 		Address: fmt.Sprintf(":%v", port),
 	})
