@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
 type ITokenService interface {
@@ -22,14 +23,12 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 	var baseDenomList []string
 	if req.BaseDenom != "" {
 		if strings.ToLower(req.BaseDenom) == constant.OtherDenom {
-			others, err := denomRepo.FindTokenOthers()
+			others, err := getTokenOthers()
 			if err != nil {
 				return nil, errors.Wrap(err)
 			}
 
-			for _, v := range others {
-				baseDenomList = append(baseDenomList, v.BaseDenom)
-			}
+			baseDenomList = others
 		} else {
 			baseDenomList = []string{req.BaseDenom}
 		}
@@ -104,4 +103,31 @@ func (svc *TokenService) IBCTokenList(baseDenom string, req *vo.IBCTokenListReq)
 		Items:    items,
 		PageInfo: page,
 	}, nil
+}
+
+func getTokenOthers() ([]string, error) {
+	allBaseDenom, err := baseDenomRepo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+
+	noSymbolDenomList, err := denomRepo.FindNoSymbolDenoms()
+	if err != nil {
+		return nil, err
+	}
+
+	noSymbolDenomSet := utils.NewStringSet()
+	for _, v := range noSymbolDenomList {
+		noSymbolDenomSet.Add(v.BaseDenom)
+	}
+
+	baseDenomMap := allBaseDenom.ConvertToMap()
+	for k, _ := range noSymbolDenomSet {
+		_, ok := baseDenomMap[k]
+		if ok {
+			noSymbolDenomSet.Remove(k)
+		}
+	}
+
+	return noSymbolDenomSet.ToSlice(), nil
 }

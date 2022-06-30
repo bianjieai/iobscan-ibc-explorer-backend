@@ -466,15 +466,17 @@ func (t *TokenTask) caculateTokenStatistics(existedTokenList, newTokenList entit
 	for _, v := range existedTokenList {
 		chainNum, err := t.ibcTokenStatistics(v)
 		if err != nil {
-			v.ChainsInvolved = chainNum
+			continue
 		}
+		v.ChainsInvolved = chainNum
 	}
 
 	for _, v := range newTokenList {
 		chainNum, err := t.ibcTokenStatistics(v)
 		if err != nil {
-			v.ChainsInvolved = chainNum
+			continue
 		}
+		v.ChainsInvolved = chainNum
 	}
 }
 
