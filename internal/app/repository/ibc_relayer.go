@@ -104,9 +104,15 @@ func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limi
 					} else {
 						index := strings.Index(chainId, constant.AllChain)
 						if index > 0 {
-							filter[RelayerFieldChainA] = chains[0]
+							filter["$or"] = []bson.M{
+								{RelayerFieldChainA: chains[0]},
+								{RelayerFieldChainB: chains[0]},
+							}
 						} else {
-							filter[RelayerFieldChainB] = chains[1]
+							filter["$or"] = []bson.M{
+								{RelayerFieldChainA: chains[1]},
+								{RelayerFieldChainB: chains[1]},
+							}
 						}
 					}
 				} else {

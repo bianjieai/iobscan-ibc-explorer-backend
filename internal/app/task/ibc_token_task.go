@@ -4,11 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"math"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -19,6 +14,9 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
+	"math"
+	"strings"
+	"sync"
 )
 
 type TokenTask struct {
@@ -34,31 +32,30 @@ func (t *TokenTask) Name() string {
 	return "ibc_token_task"
 }
 
-func (t *TokenTask) Cron() string {
+func (t *TokenTask) Cron() int {
+	if taskConf.CronTimeTokenTask > 0 {
+		return taskConf.CronTimeTokenTask
+	}
 	return ThreeMinute
 }
 
-func (t *TokenTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 1*time.Second
-}
-
-func (t *TokenTask) Run() {
+func (t *TokenTask) Run() int {
 	err := t.analyzeChainConf()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return
+		return -1
 	}
 	t.baseDenomList = baseDenomList
 
 	existedTokenList, newTokenList, err := t.getAllToken()
 	if err != nil {
-		return
+		return -1
 	}
 
 	// 部分数据统计出错可以直接忽略error,继续计算后面的指标
@@ -69,6 +66,16 @@ func (t *TokenTask) Run() {
 	_ = t.setIbcTransferTxs(existedTokenList, newTokenList)
 
 	_ = t.setIbcTransferAmount(existedTokenList, newTokenList)
+
+	ibcDenomList, err := denomRepo.GetDenomGroupByBaseDenom()
+	if err != nil {
+		logrus.Errorf("task %s run error, %v", t.Name(), err)
+		return -1
+	}
+	ibcDenomMap := make(map[string][]string)
+	for _, v := range ibcDenomList {
+		ibcDenomMap[v.BaseDenom] = v.Denom
+	}
 
 	t.caculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
 
@@ -87,6 +94,7 @@ func (t *TokenTask) Run() {
 
 	// 更新ibc chain
 	t.updateIBCChain()
+	return 1
 }
 
 func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, error) {

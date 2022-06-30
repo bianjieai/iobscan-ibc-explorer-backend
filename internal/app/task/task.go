@@ -1,21 +1,25 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
-	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
 type Task interface {
 	Name() string
-	Cron() string // CronExpression
-	Run()
-	ExpireTime() time.Duration // redis expireTime
+	Cron() int // CronExpression
+	Run() int
+	//ExpireTime() time.Duration // redis expireTime
 }
 
-var tasks []Task
+var (
+	tasks    []Task
+	taskConf conf.Task
+)
 
 func RegisterTasks(task ...Task) {
 	tasks = append(tasks, task...)
@@ -26,37 +30,37 @@ func GetTasks() []Task {
 	return tasks
 }
 
+func LoadTaskConf(taskCfg conf.Task) {
+	taskConf = taskCfg
+}
+
 func Start() {
 	if len(GetTasks()) == 0 {
 		return
 	}
 
-	c := cron.New(cron.WithSeconds())
 	for _, v := range GetTasks() {
 		task := v
 		go RunOnce(task)
-
-		_, err := c.AddFunc(task.Cron(), func() {
-			RunOnceWithLock(task)
-		})
-		if err != nil {
-			logrus.Fatal("cron job err", err)
-		}
 	}
-	c.Start()
 }
 
 func RunOnce(task Task) {
-	logrus.Infof("task %s start", task.Name())
-	task.Run()
-	logrus.Infof("task %s end", task.Name())
-}
-
-func RunOnceWithLock(task Task) {
-	if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), task.ExpireTime()); err != nil {
-		logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
-		return
+	redisLockExpireTime := time.Duration(RedisLockExpireTime) * time.Second
+	if taskConf.RedisLockExpireTime > 0 {
+		redisLockExpireTime = time.Duration(taskConf.RedisLockExpireTime) * time.Second
 	}
 
-	RunOnce(task)
+	utils.RunTimer(task.Cron(), utils.Sec, func() {
+		//lock redis mux
+		if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), redisLockExpireTime); err != nil {
+			logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
+			return
+		}
+		logrus.Infof("task %s start", task.Name())
+		task.Run()
+		//unlock redis mux
+		cache.GetRedisClient().Del(task.Name())
+		logrus.Infof("task %s end", task.Name())
+	})
 }
