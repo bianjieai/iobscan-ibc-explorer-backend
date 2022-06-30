@@ -13,7 +13,10 @@ type IbcChainCronTask struct {
 func (t *IbcChainCronTask) Name() string {
 	return "ibc_chain_task"
 }
-func (t *IbcChainCronTask) Cron() string {
+func (t *IbcChainCronTask) Cron() int {
+	if taskConf.CronTimeChainTask > 0 {
+		return taskConf.CronTimeChainTask
+	}
 	return EveryMinute
 }
 func (t *IbcChainCronTask) Run() {

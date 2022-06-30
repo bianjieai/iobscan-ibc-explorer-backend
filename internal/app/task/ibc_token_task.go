@@ -4,11 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"math"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -19,6 +14,9 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
+	"math"
+	"strings"
+	"sync"
 )
 
 type TokenTask struct {
@@ -34,12 +32,11 @@ func (t *TokenTask) Name() string {
 	return "ibc_token_task"
 }
 
-func (t *TokenTask) Cron() string {
+func (t *TokenTask) Cron() int {
+	if taskConf.CronTimeTokenTask > 0 {
+		return taskConf.CronTimeTokenTask
+	}
 	return ThreeMinute
-}
-
-func (t *TokenTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 1*time.Second
 }
 
 func (t *TokenTask) Run() {

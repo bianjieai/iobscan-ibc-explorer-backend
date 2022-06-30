@@ -53,7 +53,10 @@ func relayerAmtsMapKey(chainId, baseDenom, dcChainAddr, dcChannel string) string
 func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
 }
-func (t *IbcRelayerCronTask) Cron() string {
+func (t *IbcRelayerCronTask) Cron() int {
+	if taskConf.CronTimeRelayerTask > 0 {
+		return taskConf.CronTimeRelayerTask
+	}
 	return ThreeMinute
 }
 
@@ -61,10 +64,6 @@ func (t *IbcRelayerCronTask) Run() {
 	t.handleNewRelayer()
 	t.CheckAndChangeStatus()
 	t.saveOrUpdateRelayerTxs()
-}
-
-func (t *IbcRelayerCronTask) ExpireTime() time.Duration {
-	return 3*time.Minute - 2*time.Second
 }
 
 func (t *IbcRelayerCronTask) handleNewRelayer() {
