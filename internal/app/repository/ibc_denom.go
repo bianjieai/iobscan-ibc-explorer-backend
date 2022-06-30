@@ -13,7 +13,7 @@ type IDenomRepo interface {
 	FindBaseDenom() (entity.IBCDenomList, error)
 	FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error)
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
-	FindTokenOthers() (entity.IBCDenomList, error)
+	FindNoSymbolDenoms() (entity.IBCDenomList, error)
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -54,8 +54,8 @@ func (repo *DenomRepo) GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDT
 	return res, err
 }
 
-func (repo *DenomRepo) FindTokenOthers() (entity.IBCDenomList, error) {
+func (repo *DenomRepo) FindNoSymbolDenoms() (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
-	err := repo.coll().Find(context.Background(), bson.M{"symbol": "", "is_base_denom": true}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"symbol": ""}).All(&res)
 	return res, err
 }
