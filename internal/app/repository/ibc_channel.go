@@ -122,12 +122,12 @@ func (repo *ChannelRepo) UpdateChannel(channel *entity.IBCChannel) error {
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"status":                 channel.Status,
-			"operating_period":       channel.OperatingPeriod,
-			"latest_settlement_time": channel.LatestSettlementTime,
-			"transfer_txs":           channel.TransferTxs,
-			"transfer_txs_value":     channel.TransferTxsValue,
-			"update_at":              time.Now().Unix(),
+			"status":             channel.Status,
+			"operating_period":   channel.OperatingPeriod,
+			"latest_open_time":   channel.LatestOpenTime,
+			"transfer_txs":       channel.TransferTxs,
+			"transfer_txs_value": channel.TransferTxsValue,
+			"update_at":          time.Now().Unix(),
 		},
 	}
 	return repo.coll().UpdateOne(context.Background(), query, update)
