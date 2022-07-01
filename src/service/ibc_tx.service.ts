@@ -110,7 +110,7 @@ export class IbcTxService {
         query: IbcTxListReqDto,
     ): Promise<ListStruct<IbcTxResDto[]> | number> {
         const {use_count, page_num, page_size, symbol, denom, start_time} = query;
-        const date_range = query?.date_range?.split(",") || [0, new Date().getTime() / 1000],
+        const date_range = query?.date_range?.split(","),
             status = query?.status?.split(",") || [1, 2, 3, 4]
         let queryData: IbcTxQueryType = {
             useCount: query.use_count,
@@ -121,8 +121,10 @@ export class IbcTxService {
             page_num: page_num,
             page_size: page_size > cfg.serverCfg.maxPageSize ? cfg.serverCfg.maxPageSize : page_size,
         }
-        for (const one of date_range) {
-            queryData?.date_range.push(Number(one))
+        if (date_range?.length && !date_range.includes("0")) {
+            for (const one of date_range) {
+                queryData?.date_range.push(Number(one))
+            }
         }
         for (const one of status) {
             queryData?.status.push(Number(one))
