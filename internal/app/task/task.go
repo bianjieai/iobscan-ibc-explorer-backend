@@ -58,11 +58,12 @@ func RunOnce(task Task) {
 			logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
 			return
 		}
+		startTime := time.Now().Unix()
 		logrus.Infof("task %s start", task.Name())
 		metricValue := task.Run()
 		monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
 		//unlock redis mux
 		cache.GetRedisClient().Del(task.Name())
-		logrus.Infof("task %s end", task.Name())
+		logrus.Infof("task %s end, time use %d(s)", task.Name(), time.Now().Unix()-startTime)
 	})
 }
