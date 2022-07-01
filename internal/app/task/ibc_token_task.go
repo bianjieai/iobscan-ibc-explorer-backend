@@ -633,7 +633,7 @@ func (t *TokenTask) updateIBCChain() {
 	}
 
 	for _, v := range ibcChainList {
-		vd := decimal.NewFromFloat(v.DenomValue).String()
+		vd := decimal.NewFromFloat(v.DenomValue).Round(constant.DefaultValuePrecision).String()
 		if err = chainRepo.UpdateIbcTokenValue(v.ChainId, v.Count, vd); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Errorf("task %s updateIBCChain error, %v", t.Name(), err)
 		}
