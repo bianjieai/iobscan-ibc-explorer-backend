@@ -85,6 +85,8 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 	relayersHistoryData := t.handleIbcTxHistory(latestTxTime)
 	relayersData = append(relayersData, relayersHistoryData...)
 	if len(relayersData) > 0 {
+		relayersData = t.distinctRelayer(relayersData)
+		relayersData = t.filterDbExist(relayersData)
 		if err := relayerRepo.Insert(relayersData); err != nil && !qmgo.IsDup(err) {
 			logrus.Error("insert  relayer data fail, ", err.Error())
 		}
@@ -94,6 +96,40 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 	}
 	t.CountRelayerPacketTxs()
 	t.CountRelayerPacketTxsAmount()
+}
+
+func (t *IbcRelayerCronTask) filterDbExist(relayers []entity.IBCRelayer) []entity.IBCRelayer {
+	relayerMap, err := relayerCache.FindAll()
+	if err != nil {
+		return relayers
+	}
+	var distinctArr []entity.IBCRelayer
+	for _, val := range relayers {
+		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
+		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
+		_, exist := relayerMap[key]
+		_, exist1 := relayerMap[key1]
+		if !exist && !exist1 {
+			distinctArr = append(distinctArr, val)
+		}
+	}
+	return distinctArr
+}
+func (t *IbcRelayerCronTask) distinctRelayer(relayers []entity.IBCRelayer) []entity.IBCRelayer {
+	distRelayerMap := make(map[string]bool, len(relayers))
+	var distinctArr []entity.IBCRelayer
+	for _, val := range relayers {
+		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
+		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
+		_, exist := distRelayerMap[key]
+		_, exist1 := distRelayerMap[key1]
+		if !exist && !exist1 {
+			distRelayerMap[key] = true
+			distRelayerMap[key1] = true
+			distinctArr = append(distinctArr, val)
+		}
+	}
+	return distinctArr
 }
 
 func (t *IbcRelayerCronTask) CheckAndChangeStatus() {

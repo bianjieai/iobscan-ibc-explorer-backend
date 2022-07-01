@@ -18,6 +18,7 @@ var (
 	ibcInfoHashCache cache.IbcInfoHashCacheRepo
 	ibcInfoCache     cache.IbcInfoCacheRepo
 	unbondTimeCache  cache.UnbondTimeCacheRepo
+	relayerCache     cache.RelayerCacheRepo
 
 	// mongo
 	tokenRepo             repository.ITokenRepo             = new(repository.TokenRepo)

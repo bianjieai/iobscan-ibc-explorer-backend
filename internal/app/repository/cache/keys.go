@@ -21,5 +21,6 @@ const (
 	ibcInfoHash      = "ibc_info_hash"
 	ibcInfo          = "ibc_info:%s"
 	ibcRelayerCfg    = "ibc_relayer_config"
+	ibcRelayer       = "ibc_relayer"
 	chainUnbondTime  = "chain_unbond_time"
 )
