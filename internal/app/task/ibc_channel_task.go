@@ -274,7 +274,7 @@ func (t *ChannelTask) setStatusAndOperatingPeriod(existedChannelList entity.IBCC
 			}
 
 			now := time.Now().Unix()
-			v.OperatingPeriod += now - v.LatestOpenTime
+			v.OperatingPeriod = now - v.LatestOpenTime
 			v.Status = currentStatus
 		}
 	}
