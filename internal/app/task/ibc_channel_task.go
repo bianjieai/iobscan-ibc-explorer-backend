@@ -35,6 +35,7 @@ func (t *ChannelTask) Cron() int {
 }
 
 func (t *ChannelTask) Run() int {
+	t.clear()
 	if err := t.analyzeChainConfig(); err != nil {
 		return -1
 	}
@@ -81,6 +82,11 @@ func (t *ChannelTask) Run() int {
 		}
 	}
 	return 1
+}
+
+func (t *ChannelTask) clear() {
+	t.chainTxsMap = make(map[string]int64)
+	t.chainTxsValueMap = make(map[string]decimal.Decimal)
 }
 
 func (t *ChannelTask) analyzeChainConfig() error {
@@ -350,12 +356,6 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 	var ibcList []*entity.IBCChannelStatistics
 	var txsCount int64 = 0
 	var txsValue = decimal.Zero
-	if t.chainTxsMap == nil {
-		t.chainTxsMap = make(map[string]int64)
-	}
-	if t.chainTxsValueMap == nil {
-		t.chainTxsValueMap = make(map[string]decimal.Decimal)
-	}
 
 	for _, v := range statistics {
 		if channelId == v.ChannelId || channelId == v.MirrorChannelId {
