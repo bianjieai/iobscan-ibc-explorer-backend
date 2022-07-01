@@ -200,19 +200,19 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 		}
 
 		newChannelList = append(newChannelList, &entity.IBCChannel{
-			ChannelId:            v,
-			ChainA:               chainA,
-			ChainB:               chainB,
-			ChannelA:             channelA,
-			ChannelB:             channelB,
-			Status:               entity.ChannelStatusOpened,
-			OperatingPeriod:      0,
-			LatestSettlementTime: 0,
-			Relayers:             0,
-			TransferTxs:          0,
-			TransferTxsValue:     "",
-			CreateAt:             time.Now().Unix(),
-			UpdateAt:             time.Now().Unix(),
+			ChannelId:        v,
+			ChainA:           chainA,
+			ChainB:           chainB,
+			ChannelA:         channelA,
+			ChannelB:         channelB,
+			Status:           entity.ChannelStatusOpened, // 默认开启状态
+			OperatingPeriod:  0,
+			LatestOpenTime:   0,
+			Relayers:         0,
+			TransferTxs:      0,
+			TransferTxsValue: "",
+			CreateAt:         time.Now().Unix(),
+			UpdateAt:         time.Now().Unix(),
 		})
 	}
 
@@ -223,13 +223,24 @@ func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChann
 	// todo
 	for _, v := range newChannelList {
 		// 查询,初始的LatestSettlementTime 为channel的 open confirm 时间
-		// channel open confirm 时间的获取当前没有实现，先设为0
-		v.LatestSettlementTime = 0
+		// channel open confirm 时间的获取当前从配置读取
+		chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB)
+		if err != nil {
+			continue
+		}
+		v.LatestOpenTime = chanConf.ChannelOpenAt
 	}
 
 	for _, v := range existedChannelList {
-		// 之前没有设置open 时间或者之前关闭了，现在重新打开channel
-		if (v.LatestSettlementTime == 0) || (v.Status == entity.ChannelStatusClosed && t.channelStatusMap[v.ChannelId] == entity.ChannelStatusOpened) {
+		// 之前没有设置open 时间且是open状态的
+		if v.LatestOpenTime == 0 && v.Status == entity.ChannelStatusOpened {
+			if chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+				v.LatestOpenTime = chanConf.ChannelOpenAt
+			}
+		}
+
+		// 之前关闭了,现在重新打开channel
+		if v.Status == entity.ChannelStatusClosed && t.channelStatusMap[v.ChannelId] == entity.ChannelStatusOpened {
 			// 查询
 
 		}
@@ -240,16 +251,25 @@ func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChann
 func (t *ChannelTask) setStatusAndOperatingPeriod(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) {
 	set := func(list entity.IBCChannelList) {
 		for _, v := range list {
-			status, ok := t.channelStatusMap[v.ChannelId]
-			if ok {
-				v.Status = status
+			currentStatus, ok := t.channelStatusMap[v.ChannelId]
+			if !ok {
+				currentStatus = entity.ChannelStatusOpened
 			}
 
-			if v.LatestSettlementTime != 0 {
-				now := time.Now().Unix()
-				v.OperatingPeriod += now - v.LatestSettlementTime
-				v.LatestSettlementTime = now
+			if v.LatestOpenTime == 0 { // channel open 时间不确定，设置状态，处理下一个
+				v.Status = currentStatus
+				continue
 			}
+
+			// 1、channel 一直是close的, 持续工作时间不变
+			// 2、channel 从open->close, close->open, open->open 状态变化时，持续工作时间更新
+			if v.Status == entity.ChannelStatusClosed && currentStatus == entity.ChannelStatusClosed {
+				continue
+			}
+
+			now := time.Now().Unix()
+			v.OperatingPeriod += now - v.LatestOpenTime
+			v.Status = currentStatus
 		}
 	}
 
