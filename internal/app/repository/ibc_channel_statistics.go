@@ -5,9 +5,7 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IChannelStatisticsRepo interface {
@@ -19,15 +17,15 @@ var _ IChannelStatisticsRepo = new(ChannelStatisticsRepo)
 type ChannelStatisticsRepo struct {
 }
 
-func (repo *ChannelStatisticsRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"channel_id, transfer_base_denom"},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-
-	ensureIndexes(entity.IBCChannelStatistics{}.CollectionName(), indexes)
-}
+//func (repo *ChannelStatisticsRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"channel_id, transfer_base_denom"},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//
+//	ensureIndexes(entity.IBCChannelStatistics{}.CollectionName(), indexes)
+//}
 
 func (repo *ChannelStatisticsRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChannelStatistics{}.CollectionName())

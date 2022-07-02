@@ -7,9 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ITokenStatisticsRepo interface {
@@ -29,15 +27,15 @@ func (repo *TokenStatisticsRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenStatistics{}.CollectionName())
 }
 
-func (repo *TokenStatisticsRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"denom", "chain_id"},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-
-	ensureIndexes(entity.IBCTokenStatistics{}.CollectionName(), indexes)
-}
+//func (repo *TokenStatisticsRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"denom", "chain_id"},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//
+//	ensureIndexes(entity.IBCTokenStatistics{}.CollectionName(), indexes)
+//}
 
 func (repo *TokenStatisticsRepo) FindByBaseDenom(baseDenom, chainId string) ([]*entity.IBCTokenStatistics, error) {
 	var res []*entity.IBCTokenStatistics

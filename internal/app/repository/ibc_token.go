@@ -6,9 +6,7 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ITokenRepo interface {
@@ -24,15 +22,15 @@ var _ ITokenRepo = new(TokenRepo)
 type TokenRepo struct {
 }
 
-func (repo *TokenRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"base_denom", "chain_id"},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
-
-	ensureIndexes(entity.IBCToken{}.CollectionName(), indexes)
-}
+//func (repo *TokenRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"base_denom", "chain_id"},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//
+//	ensureIndexes(entity.IBCToken{}.CollectionName(), indexes)
+//}
 
 func (repo *TokenRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCToken{}.CollectionName())

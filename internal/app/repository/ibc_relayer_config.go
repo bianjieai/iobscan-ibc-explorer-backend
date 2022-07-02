@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	"github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	moptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IRelayerConfigRepo interface {
@@ -22,15 +20,16 @@ type RelayerConfigRepo struct {
 func CreateRelayerChannelPair(chainA, chainB, channelA, channelB string) string {
 	return fmt.Sprintf("%s:%s:%s:%s", chainA, chainB, channelA, channelB)
 }
-func (repo *RelayerConfigRepo) EnsureIndexes() {
-	var indexes []options.IndexModel
-	indexes = append(indexes, options.IndexModel{
-		Key:          []string{"-relayer_channel_pair"},
-		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-	})
 
-	ensureIndexes(entity.IBCRelayerConfig{}.CollectionName(), indexes)
-}
+//func (repo *RelayerConfigRepo) EnsureIndexes() {
+//	var indexes []options.IndexModel
+//	indexes = append(indexes, options.IndexModel{
+//		Key:          []string{"-relayer_channel_pair"},
+//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
+//	})
+//
+//	ensureIndexes(entity.IBCRelayerConfig{}.CollectionName(), indexes)
+//}
 func (repo *RelayerConfigRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayerConfig{}.CollectionName())
 }
