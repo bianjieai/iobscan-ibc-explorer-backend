@@ -259,6 +259,10 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	group.Add(len(configList))
 	for _, val := range configList {
 		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", val.Lcd, val.LcdApiPath.ParamsPath), entity.ParamsModulePathPlaceholder, entity.StakeModule)
+		value, err := unbondTimeCache.GetUnbondTime(val.ChainId)
+		if err == nil && len(value) > 0 {
+			continue
+		}
 		go func(baseUrl, chainId string) {
 			defer group.Done()
 			bz, err := utils.HttpGet(baseUrl)
@@ -540,7 +544,7 @@ func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*ent
 }
 
 func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
-	res, err := chainRepo.FindAll(0, 0)
+	res, err := chainCache.FindAll()
 	if err != nil {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
 		return
