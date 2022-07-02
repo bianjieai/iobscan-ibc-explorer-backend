@@ -11,11 +11,16 @@ var (
 )
 
 func TestIbcRelayerCronTask_handleIbcTxLatest(t *testing.T) {
-	task.handleIbcTxLatest(0)
+	tx := task.handleIbcTxLatest(0)
+	t.Log(string(utils.MarshalJsonIgnoreErr(tx)))
 }
 
 func TestIbcRelayerCronTask_Run(t *testing.T) {
 	task.Run()
+}
+
+func TestIbcRelayerCronTask_handleNewRelayer(t *testing.T) {
+	task.handleNewRelayer()
 }
 
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {

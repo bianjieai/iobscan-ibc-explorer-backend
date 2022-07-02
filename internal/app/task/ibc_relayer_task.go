@@ -98,6 +98,7 @@ func (t *IbcRelayerCronTask) handleNewRelayer() {
 	t.CountRelayerPacketTxsAmount()
 }
 
+//use cache map check relayer if exist
 func (t *IbcRelayerCronTask) filterDbExist(relayers []entity.IBCRelayer) []entity.IBCRelayer {
 	relayerMap, err := relayerCache.FindAll()
 	if err != nil {
@@ -341,24 +342,28 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxs() {
 
 	t.relayerTxsMap = make(map[string]TxsItem, 20)
 	for _, tx := range relayerTxs {
-		key := relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
-		value, exist := t.relayerTxsMap[key]
-		if exist {
-			value.Txs += tx.Count
-			t.relayerTxsMap[key] = value
-		} else {
-			t.relayerTxsMap[key] = TxsItem{Txs: tx.Count}
+		if tx.DcChainAddress != "" && tx.DcChainId != "" && tx.DcChannel != "" {
+			key := relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
+			value, exist := t.relayerTxsMap[key]
+			if exist {
+				value.Txs += tx.Count
+				t.relayerTxsMap[key] = value
+			} else {
+				t.relayerTxsMap[key] = TxsItem{Txs: tx.Count}
+			}
 		}
 	}
 
 	for _, tx := range relayerSuccessTxs {
-		key := relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
-		value, exist := t.relayerTxsMap[key]
-		if exist {
-			value.TxsSuccess += tx.Count
-			t.relayerTxsMap[key] = value
-		} else {
-			t.relayerTxsMap[key] = TxsItem{TxsSuccess: tx.Count}
+		if tx.DcChainAddress != "" && tx.DcChainId != "" && tx.DcChannel != "" {
+			key := relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
+			value, exist := t.relayerTxsMap[key]
+			if exist {
+				value.TxsSuccess += tx.Count
+				t.relayerTxsMap[key] = value
+			} else {
+				t.relayerTxsMap[key] = TxsItem{TxsSuccess: tx.Count}
+			}
 		}
 	}
 }
@@ -380,21 +385,23 @@ func (t *IbcRelayerCronTask) CountRelayerPacketTxsAmount() {
 	createAmounts := func(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]AmtItem {
 		relayerAmtsMap := make(map[string]AmtItem, 20)
 		for _, amt := range relayerAmounts {
-			key := relayerAmtsMapKey(amt.DcChainId, amt.BaseDenom, amt.DcChainAddress, amt.DcChannel)
-			decAmt := decimal.NewFromFloat(amt.Amount)
-			baseDenomValue := decimal.NewFromFloat(0)
-			if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
-				if coin.Scale > 0 {
-					baseDenomValue = decAmt.DivRound(decimal.NewFromFloat(math.Pow10(coin.Scale)), constant.DefaultValuePrecision).Mul(decimal.NewFromFloat(coin.Price))
+			if amt.DcChainAddress != "" && amt.DcChainId != "" && amt.DcChannel != "" {
+				key := relayerAmtsMapKey(amt.DcChainId, amt.BaseDenom, amt.DcChainAddress, amt.DcChannel)
+				decAmt := decimal.NewFromFloat(amt.Amount)
+				baseDenomValue := decimal.NewFromFloat(0)
+				if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
+					if coin.Scale > 0 {
+						baseDenomValue = decAmt.DivRound(decimal.NewFromFloat(math.Pow10(coin.Scale)), constant.DefaultValuePrecision).Mul(decimal.NewFromFloat(coin.Price))
+					}
 				}
-			}
-			value, exist := relayerAmtsMap[key]
-			if exist {
-				value.Amount = value.Amount.Add(decAmt)
-				value.Value = value.Value.Add(baseDenomValue)
-				relayerAmtsMap[key] = value
-			} else {
-				relayerAmtsMap[key] = AmtItem{Amount: decAmt, Value: baseDenomValue}
+				value, exist := relayerAmtsMap[key]
+				if exist {
+					value.Amount = value.Amount.Add(decAmt)
+					value.Value = value.Value.Add(baseDenomValue)
+					relayerAmtsMap[key] = value
+				} else {
+					relayerAmtsMap[key] = AmtItem{Amount: decAmt, Value: baseDenomValue}
+				}
 			}
 		}
 		return relayerAmtsMap
@@ -412,7 +419,9 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 			chainId, baseDenom, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
 			relayerData, err := relayerRepo.FindRelayerId(chainId, relayerAddr, channel)
 			if err != nil {
-				logrus.Error(chainId, relayerAddr, "find relayer id fail, ", err.Error())
+				if err != qmgo.ErrNoSuchDocuments {
+					logrus.Warn(chainId, relayerAddr, channel, "find relayer id fail, ", err.Error())
+				}
 				continue
 			}
 			item := createIBCRelayerStatistics(channel, chainId, relayerData.RelayerId, baseDenom, value.Amount, value.Value)
@@ -452,13 +461,15 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxs() {
 
 		for key, val := range t.relayerTxsMap {
 			if arrs := strings.Split(key, ":"); len(arrs) == 3 {
-				chain_id, relayerAddr, channel := arrs[0], arrs[1], arrs[2]
-				relayerData, err := relayerRepo.FindRelayerId(chain_id, relayerAddr, channel)
+				chainId, relayerAddr, channel := arrs[0], arrs[1], arrs[2]
+				relayerData, err := relayerRepo.FindRelayerId(chainId, relayerAddr, channel)
 				if err != nil {
-					logrus.Error("find relayer id fail, ", err.Error())
+					if err != qmgo.ErrNoSuchDocuments {
+						logrus.Warn(chainId, relayerAddr, channel, "find relayer id fail, ", err.Error())
+					}
 					continue
 				}
-				totalValue, _ := totalValueMap[chain_id+relayerData.RelayerId+channel]
+				totalValue, _ := totalValueMap[chainId+relayerData.RelayerId+channel]
 				if err := relayerRepo.UpdateTxsInfo(relayerData.RelayerId, val.Txs, val.TxsSuccess, totalValue); err != nil {
 					logrus.Error(err.Error())
 				}
@@ -506,18 +517,18 @@ func (t *IbcRelayerCronTask) handleIbcTxLatest(latestTxTime int64) []entity.IBCR
 		return nil
 	}
 	var relayers []entity.IBCRelayer
-	for _, dto := range relayerDtos {
-		ibcTx, err := ibcTxRepo.GetOneRelayerScTxPacketId(dto)
-		if err != nil {
-			logrus.Errorf("get ibcTxLatest relayer packetId fail, %s", err.Error())
-			continue
+	for _, val := range relayerDtos {
+		var scAddrs []*dto.GetRelayerScChainAddreeDTO
+		if val.ScChainId != "" && val.DcChainId != "" && val.ScChannel != "" && val.DcChannel != "" && val.DcChainAddress != "" {
+			if ibcTx, err := ibcTxRepo.GetOneRelayerScTxPacketId(val); err == nil {
+				scAddrs, err = txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, val.ScChainId)
+				if err != nil {
+					logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
+				}
+			}
 		}
-		scAddrs, err := txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, dto.ScChainId)
-		if err != nil {
-			logrus.Errorf("get ibcTxLatest relayer packetId fail, %s", err.Error())
-			continue
-		}
-		relayers = append(relayers, t.createRelayerData(dto, scAddrs))
+
+		relayers = append(relayers, t.createRelayerData(val, scAddrs))
 	}
 	return relayers
 }
@@ -529,18 +540,17 @@ func (t *IbcRelayerCronTask) handleIbcTxHistory(latestTxTime int64) []entity.IBC
 		return nil
 	}
 	var relayers []entity.IBCRelayer
-	for _, dto := range relayerDtos {
-		ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(dto)
-		if err != nil {
-			logrus.Errorf("get ibcTxLatest relayer packetId fail, %s", err.Error())
-			continue
+	for _, val := range relayerDtos {
+		var scAddrs []*dto.GetRelayerScChainAddreeDTO
+		if val.ScChainId != "" && val.DcChainId != "" && val.ScChannel != "" && val.DcChannel != "" && val.DcChainAddress != "" {
+			if ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(val); err == nil {
+				scAddrs, err = txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, val.ScChainId)
+				if err != nil {
+					logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
+				}
+			}
 		}
-		scAddrs, err := txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, dto.ScChainId)
-		if err != nil {
-			logrus.Errorf("get ibcTxLatest relayer packetId fail, %s", err.Error())
-			continue
-		}
-		relayers = append(relayers, t.createRelayerData(dto, scAddrs))
+		relayers = append(relayers, t.createRelayerData(val, scAddrs))
 	}
 	return relayers
 }
@@ -549,7 +559,9 @@ func (t *IbcRelayerCronTask) createRelayerData(dto *dto.GetRelayerInfoDTO,
 	scAddrs []*dto.GetRelayerScChainAddreeDTO) entity.IBCRelayer {
 	chainAAddress := make([]string, 0, len(scAddrs))
 	for _, val := range scAddrs {
-		chainAAddress = append(chainAAddress, val.ScChainAddress)
+		if val.ScChainAddress != "" {
+			chainAAddress = append(chainAAddress, val.ScChainAddress)
+		}
 	}
 	chainAAddr := ""
 	if len(chainAAddress) > 0 {

@@ -29,6 +29,7 @@ func (repo *RelayerCacheRepo) FindAll() (map[string]string, error) {
 			relayerMapCache[key] = ""
 			relayerMapCache[key1] = ""
 		}
+		rc.Expire(ibcRelayer, oneMin)
 		_, _ = rc.HSet(ibcRelayer, relayerMapCache)
 		return relayerMapCache, nil
 	}
