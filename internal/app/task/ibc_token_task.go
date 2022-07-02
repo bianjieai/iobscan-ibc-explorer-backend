@@ -296,6 +296,11 @@ func (t *TokenTask) getSupplyFromLcd(chainId string) {
 			return
 		}
 
+		// 第一页查询成功时，清除之前的老数据
+		if key == "" {
+			_, _ = denomDataRepo.DelSupply(chainId)
+		}
+
 		for _, v := range supplyResp.Supply { // ibc denom 和 链原生denom的amount 存下来
 			if strings.HasPrefix(v.Denom, constant.IBCTokenPreFix) || utils.InArray(denoms, v.Denom) {
 				_ = denomDataRepo.SetSupply(chainId, v.Denom, v.Amount)
@@ -439,13 +444,13 @@ func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 	}
 
 	if len(denomTransAmountMap) > 0 {
+		_, _ = denomDataRepo.DelTransferAmount(chainId) // 清除旧数据
 		denomTransAmountStrMap := make(map[string]string)
 		for k, v := range denomTransAmountMap {
 			denomTransAmountStrMap[k] = v.String()
 		}
-		err := denomDataRepo.SetTransferAmount(chainId, denomTransAmountStrMap)
-		if err != nil {
-			logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
+		if err := denomDataRepo.SetTransferAmount(chainId, denomTransAmountStrMap); err != nil {
+			logrus.Errorf("task %s denomDataRepo.SetTransferAmount error, %v", t.Name(), err)
 		}
 	}
 }
@@ -641,5 +646,5 @@ func (t *TokenTask) updateIBCChain() {
 }
 
 func (t *TokenTask) isConnectionErr(err error) bool {
-	return strings.Contains(err.Error(), "connection refused")
+	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout")
 }
