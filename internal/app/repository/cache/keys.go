@@ -10,6 +10,7 @@ const (
 	threeHours                 = 3 * time.Hour
 	oneDay                     = 24 * time.Hour
 	oneMin                     = 60 * time.Second
+	FiveMin                    = 5 * time.Minute
 	NoExpiration time.Duration = -1
 )
 
