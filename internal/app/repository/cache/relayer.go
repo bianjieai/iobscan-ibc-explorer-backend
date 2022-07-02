@@ -22,16 +22,17 @@ func (repo *RelayerCacheRepo) FindAll() (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		relayerMapCache := make(map[string]string, len(relayers))
-		for _, val := range relayers {
-			key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
-			key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
-			relayerMapCache[key] = ""
-			relayerMapCache[key1] = ""
+		if len(relayers) > 0 {
+			relayerMapCache := make(map[string]string, len(relayers))
+			for _, val := range relayers {
+				key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
+				key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
+				relayerMapCache[key] = ""
+				relayerMapCache[key1] = ""
+			}
+			_, _ = rc.HSet(ibcRelayer, relayerMapCache)
+			return relayerMapCache, nil
 		}
-		rc.Expire(ibcRelayer, oneMin)
-		_, _ = rc.HSet(ibcRelayer, relayerMapCache)
-		return relayerMapCache, nil
 	}
 	return value, nil
 }

@@ -106,22 +106,73 @@ func (t *IbcRelayerCronTask) filterDbExist(relayers []entity.IBCRelayer) []entit
 	}
 	var distinctArr []entity.IBCRelayer
 	for _, val := range relayers {
+		if val.ChainAAddress == "" {
+			val.ChainAAllAddress = t.getSrcChainAddress(&dto.GetRelayerInfoDTO{
+				ScChainId:      val.ChainA,
+				ScChannel:      val.ChannelA,
+				DcChainId:      val.ChainB,
+				DcChannel:      val.ChannelB,
+				DcChainAddress: val.ChainBAddress,
+			})
+			if len(val.ChainAAllAddress) > 0 {
+				val.ChainAAddress = val.ChainAAllAddress[0]
+			}
+		}
 		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
 		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
 		_, exist := relayerMap[key]
 		_, exist1 := relayerMap[key1]
 		if !exist && !exist1 {
+			val.RelayerId = utils.Md5(val.ChannelA + val.ChannelB + val.ChainA + val.ChainB + val.ChainAAddress + val.ChainBAddress)
 			distinctArr = append(distinctArr, val)
 		}
 	}
 	return distinctArr
 }
+func (t *IbcRelayerCronTask) getSrcChainAddress(val *dto.GetRelayerInfoDTO) []string {
+	//查询relayer在原链所有地址
+	var scAddrs []*dto.GetRelayerScChainAddreeDTO
+	if ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(val); err == nil {
+		scAddrs, err = txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, val.ScChainId)
+		if err != nil {
+			logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
+		}
+	}
+	chainAAddress := make([]string, 0, len(scAddrs))
+	for _, val := range scAddrs {
+		if val.ScChainAddress != "" {
+			chainAAddress = append(chainAAddress, val.ScChainAddress)
+		}
+	}
+	return chainAAddress
+}
 func (t *IbcRelayerCronTask) distinctRelayer(relayers []entity.IBCRelayer) []entity.IBCRelayer {
 	distRelayerMap := make(map[string]bool, len(relayers))
 	var distinctArr []entity.IBCRelayer
+	checkSameMap := make(map[string]string, 20)
+	//收集relayer双向链的地址
 	for _, val := range relayers {
-		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
-		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
+		if val.ChainBAddress != "" {
+			keyB := fmt.Sprintf("%s%s", val.ChainB, val.ChannelB)
+			checkSameMap[keyB] = val.ChainBAddress
+		} else if val.ChainAAddress != "" {
+			keyA := fmt.Sprintf("%s%s", val.ChainA, val.ChannelA)
+			checkSameMap[keyA] = val.ChainAAddress
+		}
+	}
+	for _, val := range relayers {
+		//获取对方链地址信息
+		if val.ChainBAddress == "" {
+			key := fmt.Sprintf("%s%s", val.ChainB, val.ChannelB)
+			val.ChainBAddress, _ = checkSameMap[key]
+		}
+		//获取对方链地址信息
+		if val.ChainAAddress == "" {
+			key := fmt.Sprintf("%s%s", val.ChainA, val.ChannelA)
+			val.ChainAAddress, _ = checkSameMap[key]
+		}
+		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChannelA, val.ChainAAddress)
+		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChannelB, val.ChainBAddress)
 		_, exist := distRelayerMap[key]
 		_, exist1 := distRelayerMap[key1]
 		if !exist && !exist1 {
@@ -518,17 +569,7 @@ func (t *IbcRelayerCronTask) handleIbcTxLatest(latestTxTime int64) []entity.IBCR
 	}
 	var relayers []entity.IBCRelayer
 	for _, val := range relayerDtos {
-		var scAddrs []*dto.GetRelayerScChainAddreeDTO
-		if val.ScChainId != "" && val.DcChainId != "" && val.ScChannel != "" && val.DcChannel != "" && val.DcChainAddress != "" {
-			if ibcTx, err := ibcTxRepo.GetOneRelayerScTxPacketId(val); err == nil {
-				scAddrs, err = txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, val.ScChainId)
-				if err != nil {
-					logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
-				}
-			}
-		}
-
-		relayers = append(relayers, t.createRelayerData(val, scAddrs))
+		relayers = append(relayers, t.createRelayerData(val))
 	}
 	return relayers
 }
@@ -541,44 +582,20 @@ func (t *IbcRelayerCronTask) handleIbcTxHistory(latestTxTime int64) []entity.IBC
 	}
 	var relayers []entity.IBCRelayer
 	for _, val := range relayerDtos {
-		var scAddrs []*dto.GetRelayerScChainAddreeDTO
-		if val.ScChainId != "" && val.DcChainId != "" && val.ScChannel != "" && val.DcChannel != "" && val.DcChainAddress != "" {
-			if ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(val); err == nil {
-				scAddrs, err = txRepo.GetRelayerScChainAddr(ibcTx.ScTxInfo.Msg.Msg.PacketId, val.ScChainId)
-				if err != nil {
-					logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
-				}
-			}
-		}
-		relayers = append(relayers, t.createRelayerData(val, scAddrs))
+		relayers = append(relayers, t.createRelayerData(val))
 	}
 	return relayers
 }
 
-func (t *IbcRelayerCronTask) createRelayerData(dto *dto.GetRelayerInfoDTO,
-	scAddrs []*dto.GetRelayerScChainAddreeDTO) entity.IBCRelayer {
-	chainAAddress := make([]string, 0, len(scAddrs))
-	for _, val := range scAddrs {
-		if val.ScChainAddress != "" {
-			chainAAddress = append(chainAAddress, val.ScChainAddress)
-		}
-	}
-	chainAAddr := ""
-	if len(chainAAddress) > 0 {
-		chainAAddr = chainAAddress[0]
-	}
-	relayerId := utils.Md5(dto.ScChannel + dto.DcChannel + dto.ScChainId + dto.DcChainId + chainAAddr + dto.DcChainAddress)
+func (t *IbcRelayerCronTask) createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 	return entity.IBCRelayer{
-		RelayerId:        relayerId,
-		ChainA:           dto.ScChainId,
-		ChainB:           dto.DcChainId,
-		ChannelA:         dto.ScChannel,
-		ChannelB:         dto.DcChannel,
-		ChainAAddress:    chainAAddr,
-		ChainAAllAddress: chainAAddress,
-		ChainBAddress:    dto.DcChainAddress,
-		CreateAt:         time.Now().Unix(),
-		UpdateAt:         time.Now().Unix(),
+		ChainA:        dto.ScChainId,
+		ChainB:        dto.DcChainId,
+		ChannelA:      dto.ScChannel,
+		ChannelB:      dto.DcChannel,
+		ChainBAddress: dto.DcChainAddress,
+		CreateAt:      time.Now().Unix(),
+		UpdateAt:      time.Now().Unix(),
 	}
 }
 
