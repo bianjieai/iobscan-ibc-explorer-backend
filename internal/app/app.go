@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"os"
 	"path"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
@@ -32,6 +32,9 @@ func Serve(cfg *conf.Config) {
 	go monitor.Start(cfg.App.Prometheus)
 	if cfg.App.StartTask {
 		startTask()
+	}
+	if cfg.App.StartOneOffTask {
+		startOneOffTask()
 	}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
@@ -83,4 +86,11 @@ func startTask() {
 		&task.TokenPriceTask{},
 	)
 	task.Start()
+}
+
+func startOneOffTask() {
+	task.RegisterOneOffTasks(
+		&task.ChannelStatisticsTask{},
+	)
+	task.StartOneOffTask()
 }

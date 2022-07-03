@@ -255,11 +255,8 @@ func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(relayer *entity.IBCRela
 			}
 		}
 
-		ChannelId, MirrorChannelId := generateChannelId(relayer.ChainA, relayer.ChannelA, relayer.ChainB, relayer.ChannelB)
+		ChannelId := generateChannelId(relayer.ChainA, relayer.ChannelA, relayer.ChainB, relayer.ChannelB)
 		if err := channelRepo.UpdateOne(ChannelId, updateTime, relayerCnt); err != nil && err != mongo.ErrNoDocuments {
-			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
-		}
-		if err := channelRepo.UpdateOne(MirrorChannelId, updateTime, relayerCnt); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
 		}
 	}

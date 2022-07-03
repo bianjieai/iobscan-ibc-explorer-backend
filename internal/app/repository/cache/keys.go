@@ -22,4 +22,5 @@ const (
 	ibcInfo          = "ibc_info:%s"
 	ibcRelayerCfg    = "ibc_relayer_config"
 	chainUnbondTime  = "chain_unbond_time"
+	statisticsCheck  = "statistics_check:%s_%s"
 )
