@@ -19,7 +19,7 @@ func (repo *ChainCacheRepo) FindAll() ([]*entity.IBCChain, error) {
 			return nil, err
 		}
 		if len(chains) > 0 {
-			_ = rc.Set(ibcRelayer, utils.MarshalJsonIgnoreErr(chains), FiveMin)
+			_ = rc.Set(ibcChain, utils.MarshalJsonIgnoreErr(chains), FiveMin)
 			return chains, nil
 		}
 	}
