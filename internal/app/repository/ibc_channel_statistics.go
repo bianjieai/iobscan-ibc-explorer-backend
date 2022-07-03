@@ -2,11 +2,8 @@ package repository
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -98,7 +95,6 @@ func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, erro
 
 	var pipe []bson.M
 	pipe = append(pipe, group, project)
-	fmt.Println(utils.MustMarshalJsonToStr(pipe))
 	var res []*dto.ChannelStatisticsAggrDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err

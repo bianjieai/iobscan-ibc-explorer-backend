@@ -16,12 +16,12 @@ type IExIbcTxRepo interface {
 	FirstHistory() (*entity.ExIbcTx, error)
 	Latest() (*entity.ExIbcTx, error)
 	LatestHistory() (*entity.ExIbcTx, error)
-	CountBaseDenomTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
-	CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
-	CountIBCTokenRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
-	CountIBCTokenHistoryRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
-	GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
-	GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
+	CountBaseDenomTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
+	CountBaseDenomHistoryTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
+	CountIBCTokenRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
+	CountIBCTokenHistoryRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
+	GetRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error)
+	GetHistoryRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetLatestTxTime() (int64, error)
 	GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
@@ -84,9 +84,13 @@ func (repo *ExIbcTxRepo) LatestHistory() (*entity.ExIbcTx, error) {
 	return &res, err
 }
 
-func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe() []bson.M {
+func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
 			"status": bson.M{
 				"$in": entity.IbcTxUsefulStatus,
 			},
@@ -107,51 +111,68 @@ func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe() []bson.M {
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) CountBaseDenomTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error) {
-	pipe := repo.countBaseDenomTransferTxsPipe()
-	var res []*dto.CountBaseDenomTransferAmountDTO
+func (repo *ExIbcTxRepo) CountBaseDenomTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error) {
+	pipe := repo.countBaseDenomTransferTxsPipe(startTime, endTime)
+	var res []*dto.CountBaseDenomTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error) {
-	pipe := repo.countBaseDenomTransferTxsPipe()
-	var res []*dto.CountBaseDenomTransferAmountDTO
+func (repo *ExIbcTxRepo) CountBaseDenomHistoryTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error) {
+	pipe := repo.countBaseDenomTransferTxsPipe(startTime, endTime)
+	var res []*dto.CountBaseDenomTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(baseDenom string) []bson.M {
+func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
-			"base_denom": baseDenom,
-			"status":     entity.IbcTxStatusSuccess,
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
+			"status": entity.IbcTxStatusSuccess,
 		},
 	}
 
 	group := bson.M{
 		"$group": bson.M{
-			"_id": "$denoms.dc_denom",
+			"_id": bson.M{
+				"base_denom": "$base_denom",
+				"denom":      "$denoms.dc_denom",
+				"chain_id":   "$dc_chain_id",
+			},
 			"count": bson.M{
 				"$sum": 1,
 			},
 		},
 	}
 
+	project :=
+		bson.M{
+			"$project": bson.M{
+				"_id":        0,
+				"base_denom": "$_id.base_denom",
+				"denom":      "$_id.denom",
+				"chain_id":   "$_id.chain_id",
+				"count":      "$count",
+			}}
+
 	var pipe []bson.M
-	pipe = append(pipe, match, group)
+	pipe = append(pipe, match, group, project)
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) CountIBCTokenRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
-	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom)
+func (repo *ExIbcTxRepo) CountIBCTokenRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
+	pipe := repo.countIBCTokenRecvTxsPipe(startTime, endTime)
 	var res []*dto.CountIBCTokenRecvTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
-	pipe := repo.countIBCTokenRecvTxsPipe(baseDenom)
+func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error) {
+	pipe := repo.countIBCTokenRecvTxsPipe(startTime, endTime)
 	var res []*dto.CountIBCTokenRecvTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err

@@ -7,6 +7,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
@@ -27,6 +28,7 @@ type TokenTask struct {
 	escrowAddressMap map[string][]string       // chain ibc跨链托管地址
 	baseDenomList    entity.IBCBaseDenomList   // 所有的base denom
 	ibcChainDenomMap map[string][]string       // chain id 和其对应的跨链denom的映射关系
+	ibcReceiveTxsMap map[string]int64          // ibc hash token denom的recv txs
 }
 
 func (t *TokenTask) Name() string {
@@ -48,6 +50,10 @@ func (t *TokenTask) Run() int {
 		return -1
 	}
 
+	_ = t.todayStatistics()
+
+	_ = t.yesterdayStatistics()
+
 	existedTokenList, newTokenList, err := t.getAllToken()
 	if err != nil {
 		return -1
@@ -62,11 +68,14 @@ func (t *TokenTask) Run() int {
 
 	_ = t.setIbcTransferAmount(existedTokenList, newTokenList)
 
+	if err = t.ibcReceiveTxs(); err != nil {
+		return -1
+	}
+
 	t.caculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
 
 	// 更新数据到数据库
-	err = tokenRepo.InsertBatch(newTokenList)
-	if err != nil {
+	if err = tokenRepo.InsertBatch(newTokenList); err != nil {
 		logrus.Errorf("task %s insert new token error, %v", t.Name(), err)
 	}
 
@@ -316,19 +325,13 @@ func (t *TokenTask) getSupplyFromLcd(chainId string) {
 }
 
 func (t *TokenTask) setIbcTransferTxs(existedTokenList, newTokenList entity.IBCTokenList) error {
-	txsCount, err := ibcTxRepo.CountBaseDenomTransferTxs()
+	txsCount, err := tokenStatisticsRepo.Aggr()
 	if err != nil {
 		logrus.Errorf("task %s setIbcTransferTxs error, %v", t.Name(), err)
 		return err
 	}
 
-	historyTxsCount, err := ibcTxRepo.CountBaseDenomHistoryTransferTxs()
-	if err != nil {
-		logrus.Errorf("task %s setIbcTransferTxs error, %v", t.Name(), err)
-		return err
-	}
-
-	setTxs := func(tokenList entity.IBCTokenList, txsCount, historyTxsCount []*dto.CountBaseDenomTransferAmountDTO) {
+	setTxs := func(tokenList entity.IBCTokenList, txsCount []*dto.CountBaseDenomTxsDTO) {
 		for _, v := range tokenList {
 			var count int64
 			for _, tx := range txsCount {
@@ -337,17 +340,12 @@ func (t *TokenTask) setIbcTransferTxs(existedTokenList, newTokenList entity.IBCT
 				}
 			}
 
-			for _, tx := range historyTxsCount {
-				if tx.BaseDenom == v.BaseDenom {
-					count += tx.Count
-				}
-			}
 			v.TransferTxs = count
 		}
 	}
 
-	setTxs(existedTokenList, txsCount, historyTxsCount)
-	setTxs(newTokenList, txsCount, historyTxsCount)
+	setTxs(existedTokenList, txsCount)
+	setTxs(newTokenList, txsCount)
 	return nil
 }
 
@@ -507,20 +505,19 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 	for _, v := range ibcDenomCaculateList {
 		ibcDenomCaculateStrList = append(ibcDenomCaculateStrList, v.Denom)
 	}
-	ibcReceiveTxsMap := t.ibcReceiveTxs(ibcToken.BaseDenom)
-	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
 
-	allTokenStatisticsList := make([]*entity.IBCTokenStatistics, 0, len(denomList))
+	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
+	allTokenStatisticsList := make([]*entity.IBCTokenTrace, 0, len(denomList))
 	for _, v := range denomList {
 		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcDenomCaculateStrList)
 		var denomAmount string
-		if denomType == entity.TokenStatisticsTypeGenesis {
+		if denomType == entity.TokenTraceTypeGenesis {
 			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
 		} else {
 			denomAmount = t.ibcDenomAmount(v.ChainId, v.Denom)
 		}
 
-		allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenStatistics{
+		allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenTrace{
 			Denom:       v.Denom,
 			DenomPath:   v.DenomPath,
 			BaseDenom:   ibcToken.BaseDenom,
@@ -530,11 +527,11 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 			IBCHops:     t.ibcHops(v.DenomPath),
 			DenomAmount: denomAmount,
 			DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
-			ReceiveTxs:  ibcReceiveTxsMap[v.Denom],
+			ReceiveTxs:  t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.ChainId)],
 		})
 	}
 
-	err = tokenStatisticsRepo.BatchSwap(allTokenStatisticsList, ibcToken.BaseDenom, ibcToken.ChainId) // 删除旧数据，插入新数据
+	err = tokenTraceRepo.BatchSwap(allTokenStatisticsList, ibcToken.BaseDenom, ibcToken.ChainId) // 删除旧数据，插入新数据
 	if err != nil {
 		logrus.Errorf("task %s BatchSwap error,base denom:%s, %v", t.Name(), ibcToken.BaseDenom, err)
 		return 0, err
@@ -542,28 +539,21 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 	return int64(len(allTokenStatisticsList)), nil
 }
 
-func (t *TokenTask) ibcReceiveTxs(baseDenom string) map[string]int64 {
+func (t *TokenTask) ibcReceiveTxs() error {
 	var txsMap = make(map[string]int64)
 
-	txs, err := ibcTxRepo.CountIBCTokenRecvTxs(baseDenom)
+	aggr, err := tokenTraceStatisticsRepo.Aggr()
 	if err != nil {
 		logrus.Errorf("task %s ibcReceiveTxs error, %v", t.Name(), err)
-	} else {
-		for _, v := range txs {
-			txsMap[v.Denom] += v.Count
-		}
+		return err
 	}
 
-	historyTxs, err := ibcTxRepo.CountIBCTokenHistoryRecvTxs(baseDenom)
-	if err != nil {
-		logrus.Errorf("task %s ibcReceiveTxs error, %v", t.Name(), err)
-	} else {
-		for _, v := range historyTxs {
-			txsMap[v.Denom] += v.Count
-		}
+	for _, v := range aggr {
+		txsMap[fmt.Sprintf("%s%s", v.Denom, v.ChainId)] = v.ReceiveTxs
 	}
 
-	return txsMap
+	t.ibcReceiveTxsMap = txsMap
+	return nil
 }
 
 func (t *TokenTask) ibcDenomValue(amount string, price float64, scale int) decimal.Decimal {
@@ -609,15 +599,15 @@ func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
 	return sd.Sub(td).String()
 }
 
-func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom string, ibcHash []string) entity.TokenStatisticsType {
+func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom string, ibcHash []string) entity.TokenTraceType {
 	if baseDenom == denom {
-		return entity.TokenStatisticsTypeGenesis
+		return entity.TokenTraceTypeGenesis
 	}
 
 	if utils.InArray(ibcHash, denom) {
-		return entity.TokenStatisticsTypeAuthed
+		return entity.TokenTraceTypeAuthed
 	} else {
-		return entity.TokenStatisticsTypeOther
+		return entity.TokenTraceTypeOther
 	}
 }
 
@@ -631,7 +621,7 @@ func (t *TokenTask) ibcHops(denomPath string) int {
 // 以下主要是对于其他被依赖集合数据的更新
 
 func (t *TokenTask) updateIBCChain() {
-	ibcChainList, err := tokenStatisticsRepo.AggregateIBCChain()
+	ibcChainList, err := tokenTraceRepo.AggregateIBCChain()
 	if err != nil {
 		logrus.Errorf("task %s updateIBCChain error, %v", t.Name(), err)
 		return
@@ -647,4 +637,50 @@ func (t *TokenTask) updateIBCChain() {
 
 func (t *TokenTask) isConnectionErr(err error) bool {
 	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout")
+}
+
+// ==============================================================================================================
+// ==============================================================================================================
+// ==============================================================================================================
+// 以下主要是增量统计
+
+func (t *TokenTask) todayStatistics() error {
+	logrus.Infof("task %s exec today statistics", t.Name())
+	startTime, endTime := todayUnix()
+	segments := []*segment{
+		{
+			StartTime: startTime,
+			EndTime:   endTime,
+		},
+	}
+	if err := tokenStatisticsTask.deal(segments, opUpdate); err != nil {
+		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+		return err
+	}
+
+	return nil
+}
+
+func (t *TokenTask) yesterdayStatistics() error {
+	mmdd := time.Now().Format(constant.TimeFormatMMDD)
+	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
+	if incr > statisticsCheckTimes {
+		return nil
+	}
+
+	logrus.Infof("task %s check yeaterday statistics, times: %d", t.Name(), incr)
+	startTime, endTime := yesterdayUnix()
+	segments := []*segment{
+		{
+			StartTime: startTime,
+			EndTime:   endTime,
+		},
+	}
+	if err := tokenStatisticsTask.deal(segments, opUpdate); err != nil {
+		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+		return err
+	}
+
+	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
+	return nil
 }

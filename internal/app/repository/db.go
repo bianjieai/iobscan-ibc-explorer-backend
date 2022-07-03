@@ -88,7 +88,7 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 //		new(RelayerConfigRepo),
 //		new(RelayerStatisticsRepo),
 //		new(TokenRepo),
-//		new(TokenStatisticsRepo),
+//		new(TokenTraceRepo),
 //		new(ChannelRepo),
 //		new(ChannelStatisticsRepo),
 //	}

@@ -98,6 +98,10 @@ func OneOffTaskRun(task OneOffTask) {
 	}
 	startTime := time.Now().Unix()
 	res := task.Run()
-	_, _ = cache.GetRedisClient().Del(task.Name())
+
+	if res != 1 { // 为避免错误操作、重启、扩容等因素带来的风险，one-ff task 执行成功时不释放锁
+		_, _ = cache.GetRedisClient().Del(task.Name())
+	}
+
 	logrus.Infof("one-off task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, res)
 }

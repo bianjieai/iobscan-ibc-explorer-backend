@@ -2,7 +2,7 @@ package dto
 
 import "github.com/shopspring/decimal"
 
-type CountBaseDenomTransferAmountDTO struct {
+type CountBaseDenomTxsDTO struct {
 	BaseDenom string `bson:"_id"`
 	Count     int64  `bson:"count"`
 }
@@ -13,8 +13,10 @@ type GetDenomGroupByChainIdDTO struct {
 }
 
 type CountIBCTokenRecvTxsDTO struct {
-	Denom string `bson:"_id"`
-	Count int64  `bson:"count"`
+	BaseDenom string `bson:"base_denom"`
+	Denom     string `bson:"denom"`
+	ChainId   string `bson:"chain_id"`
+	Count     int64  `bson:"count"`
 }
 
 type AggregateIBCChainDTO struct {
@@ -95,4 +97,10 @@ type ChannelStatisticsAggrDTO struct {
 	BaseDenom string  `bson:"base_denom"`
 	TxsCount  int64   `bson:"count"`
 	TxsAmount float64 `bson:"amount"`
+}
+
+type TokenTraceStatisticsDTO struct {
+	Denom      string `bson:"denom"`
+	ChainId    string `bson:"chain_id"`
+	ReceiveTxs int64  `bson:"receive_txs"`
 }

@@ -29,9 +29,9 @@ type TokenItem struct {
 
 type IBCTokenListReq struct {
 	Page
-	Chain     string                     `json:"chain" form:"chain"`
-	TokenType entity.TokenStatisticsType `json:"token_type" form:"token_type"`
-	UseCount  bool                       `json:"use_count" form:"use_count"`
+	Chain     string                `json:"chain" form:"chain"`
+	TokenType entity.TokenTraceType `json:"token_type" form:"token_type"`
+	UseCount  bool                  `json:"use_count" form:"use_count"`
 }
 
 type IBCTokenListResp struct {
@@ -40,11 +40,11 @@ type IBCTokenListResp struct {
 }
 
 type IBCTokenItem struct {
-	Denom      string                     `json:"denom"`
-	DenomPath  string                     `json:"denom_path"`
-	ChainId    string                     `json:"chain_id"`
-	TokenType  entity.TokenStatisticsType `json:"token_type"`
-	IBCHops    int                        `json:"ibc_hops"`
-	Amount     string                     `json:"amount"`
-	ReceiveTxs int64                      `json:"receive_txs"`
+	Denom      string                `json:"denom"`
+	DenomPath  string                `json:"denom_path"`
+	ChainId    string                `json:"chain_id"`
+	TokenType  entity.TokenTraceType `json:"token_type"`
+	IBCHops    int                   `json:"ibc_hops"`
+	Amount     string                `json:"amount"`
+	ReceiveTxs int64                 `json:"receive_txs"`
 }

@@ -14,6 +14,11 @@ const (
 	statisticsCheckTimes = 5
 )
 
+const (
+	opInsert = 1
+	opUpdate = 2
+)
+
 var (
 	//cache
 	tokenPriceRepo      cache.TokenPriceCacheRepo
@@ -28,10 +33,12 @@ var (
 
 	// mongo
 	tokenRepo             repository.ITokenRepo             = new(repository.TokenRepo)
+	tokenTraceRepo           repository.ITokenTraceRepo           = new(repository.TokenTraceRepo)
+	tokenStatisticsRepo      repository.ITokenStatisticsRepo      = new(repository.TokenStatisticsRepo)
+	tokenTraceStatisticsRepo repository.ITokenTraceStatisticsRepo = new(repository.TokenTraceStatisticsRepo)
 	baseDenomRepo         repository.IBaseDenomRepo         = new(repository.BaseDenomRepo)
 	denomRepo             repository.IDenomRepo             = new(repository.DenomRepo)
 	denomCaculateRepo     repository.IDenomCaculateRepo     = new(repository.DenomCaculateRepo)
-	tokenStatisticsRepo   repository.ITokenStatisticsRepo   = new(repository.TokenStatisticsRepo)
 	chainConfigRepo       repository.IChainConfigRepo       = new(repository.ChainConfigRepo)
 	ibcTxRepo             repository.IExIbcTxRepo           = new(repository.ExIbcTxRepo)
 	chainRepo             repository.IChainRepo             = new(repository.IbcChainRepo)
@@ -41,6 +48,5 @@ var (
 	channelStatisticsRepo repository.IChannelStatisticsRepo = new(repository.ChannelStatisticsRepo)
 	channelConfigRepo     repository.IChannelConfigRepo     = new(repository.ChannelConfigRepo)
 	relayerStatisticsRepo repository.IRelayerStatisticsRepo = new(repository.RelayerStatisticsRepo)
-
 	relayerStatisticsTask RelayerStatisticsTask
 )
