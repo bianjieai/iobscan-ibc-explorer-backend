@@ -295,9 +295,10 @@ func getStakeParams(baseUrl, chainId string) {
 }
 func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
 	//Running=>Close: update_client 时间大于relayer基准周期
+	status := entity.RelayerStatus(0)
 	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
 		if relayer.Status == entity.RelayerRunning {
-			relayer.Status = entity.RelayerStop
+			status = entity.RelayerStop
 		}
 	}
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
@@ -306,13 +307,13 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 		for _, path := range paths {
 			if path.ChannelId == relayer.ChannelA {
 				if path.State != constant.ChannelStateOpen {
-					relayer.Status = entity.RelayerStop
+					status = entity.RelayerStop
 					break
 				}
 			}
 			if path.Counterparty.ChannelId == relayer.ChannelB {
 				if path.Counterparty.State != constant.ChannelStateOpen {
-					relayer.Status = entity.RelayerStop
+					status = entity.RelayerStop
 					break
 				}
 			}
@@ -331,15 +332,15 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 			}
 			if len(channelStatus) == 2 {
 				if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
-					relayer.Status = entity.RelayerRunning
+					status = entity.RelayerRunning
 				}
 			}
 		}
 	}
-	if relayer.Status != entity.RelayerRunning && relayer.Status != entity.RelayerStop {
-		relayer.Status = entity.RelayerStop
+	if status != entity.RelayerRunning && status != entity.RelayerStop {
+		status = entity.RelayerStop
 	}
-	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, int(relayer.Status), updateTime, timePeriod); err != nil {
+	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, int(status), updateTime, timePeriod); err != nil {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
 	}
 
