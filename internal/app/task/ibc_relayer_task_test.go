@@ -10,17 +10,8 @@ var (
 	task IbcRelayerCronTask
 )
 
-func TestIbcRelayerCronTask_handleIbcTxLatest(t *testing.T) {
-	tx := task.handleIbcTxLatest(0)
-	t.Log(string(utils.MarshalJsonIgnoreErr(tx)))
-}
-
 func TestIbcRelayerCronTask_Run(t *testing.T) {
 	task.Run()
-}
-
-func TestIbcRelayerCronTask_handleNewRelayer(t *testing.T) {
-	task.handleNewRelayer()
 }
 
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
@@ -43,7 +34,9 @@ func TestIbcRelayerCronTask_getChannelsStatus(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_CheckAndChangeStatus(t *testing.T) {
-	new(IbcRelayerCronTask).CheckAndChangeStatus()
+	task.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
+		task.saveOrUpdateRelayerTxsAndValue(relayer)
+	})
 }
 
 func TestIbcRelayerCronTask_cacheIbcChannelRelayer(t *testing.T) {
@@ -53,20 +46,8 @@ func TestIbcRelayerCronTask_cacheIbcChannelRelayer(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_CountRelayerPacketTxs(t *testing.T) {
-	task.CountRelayerPacketTxs()
-	task.saveOrUpdateRelayerTxs()
-	t.Log(task.relayerTxsMap)
-}
-
-func TestIbcRelayerCronTask_CountRelayerPacketTxsAmount(t *testing.T) {
-	task.CountRelayerPacketTxsAmount()
-	task.saveOrUpdateRelayerTxs()
-	//t.Log(task.relayerAmtsMap)
-}
-
-func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {
-	task.CountRelayerPacketTxsAmount()
-	task.caculateRelayerTotalValue()
+	task.AggrRelayerPacketTxs()
+	t.Log(task.relayerTxsDataMap)
 }
 
 func TestIbcRelayerCronTask_getChainUnbondTimeFromLcd(t *testing.T) {
@@ -78,7 +59,7 @@ func TestIbcRelayerCronTask_DistinctRelayer(t *testing.T) {
 		{ChainA: "irishub", ChainB: "cosmoshub", ChannelA: "channel-0", ChannelB: "channel-1", ChainAAddress: "iaaxxxxxxxxxx", ChainBAddress: "cosmosxxxxxxx"},
 		{ChainA: "cosmoshub", ChainB: "irishub", ChannelA: "channel-1", ChannelB: "channel-0", ChainAAddress: "cosmosxxxxxxx", ChainBAddress: "iaaxxxxxxxxxx"},
 	}
-	value := task.distinctRelayer(datas)
+	value := distinctRelayer(datas)
 	t.Log(value)
 }
 
@@ -87,6 +68,6 @@ func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa15uyg0usvkrppc0zqra0n6jmffmpf3f0hn64ul2", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
 		{ChainA: "cosmoshub", ChainB: "irishub", ChannelA: "channel-1", ChannelB: "channel-0", ChainAAddress: "cosmosxxxxxxx", ChainBAddress: "iaaxxxxxxxxxx"},
 	}
-	value := task.filterDbExist(datas)
+	value := filterDbExist(datas, false)
 	t.Log(value)
 }

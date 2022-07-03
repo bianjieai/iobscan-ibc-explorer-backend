@@ -32,11 +32,14 @@ func (repo *ChannelRepo) UpdateOne(channelId string, updateTime, relayerCnt int6
 	filter := bson.M{
 		"channel_id": channelId,
 	}
+	updateData := bson.M{
+		"relayers": relayerCnt,
+	}
+	if updateTime > 0 {
+		updateData["channel_update_at"] = updateTime
+	}
 	return repo.coll().UpdateOne(context.Background(), filter, bson.M{
-		"$set": bson.M{
-			"relayers":          relayerCnt,
-			"channel_update_at": updateTime,
-		},
+		"$set": updateData,
 	})
 }
 

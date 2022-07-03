@@ -6,7 +6,7 @@ import (
 )
 
 func TestRelayerStatisticsRepo_CountRelayerTotalValue(t *testing.T) {
-	data, err := new(RelayerStatisticsRepo).CountRelayerTotalValue()
+	data, err := new(RelayerStatisticsRepo).CountRelayerBaseDenomAmt()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

@@ -7,23 +7,23 @@ import (
 	v8 "github.com/go-redis/redis/v8"
 )
 
-type RelayerCacheRepo struct {
-	relayer repository.IbcRelayerRepo
+type BaseDenomCacheRepo struct {
+	baseDenom repository.BaseDenomRepo
 }
 
-func (repo *RelayerCacheRepo) FindAll() ([]*entity.IBCRelayer, error) {
-	value, err := rc.Get(ibcRelayer)
+func (repo *BaseDenomCacheRepo) FindAll() ([]*entity.IBCBaseDenom, error) {
+	value, err := rc.Get(baseDenom)
 	if err != nil && err == v8.Nil || len(value) == 0 {
-		relayers, err := repo.relayer.FindAll(0, 0)
+		baseDenoms, err := repo.baseDenom.FindAll()
 		if err != nil {
 			return nil, err
 		}
-		if len(relayers) > 0 {
-			_ = rc.Set(ibcRelayer, utils.MarshalJsonIgnoreErr(relayers), FiveMin)
-			return relayers, nil
+		if len(baseDenoms) > 0 {
+			_ = rc.Set(baseDenom, utils.MarshalJsonIgnoreErr(baseDenoms), oneDay)
+			return baseDenoms, nil
 		}
 	}
-	var data []*entity.IBCRelayer
+	var data []*entity.IBCBaseDenom
 	utils.UnmarshalJsonIgnoreErr([]byte(value), &data)
 	return data, nil
 }

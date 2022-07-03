@@ -23,6 +23,7 @@ const (
 	ibcInfo          = "ibc_info:%s"
 	ibcRelayerCfg    = "ibc_relayer_config"
 	ibcRelayer       = "ibc_relayer"
+	baseDenom        = "base_denom"
 	ibcChain         = "ibc_chain"
 	chainUnbondTime  = "chain_unbond_time"
 	statisticsCheck  = "statistics_check:%s_%s"

@@ -20,17 +20,17 @@ type IExIbcTxRepo interface {
 	CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
 	CountIBCTokenRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
 	CountIBCTokenHistoryRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
-	GetRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error)
-	GetHistoryRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error)
+	GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
+	GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetLatestTxTime() (int64, error)
 	GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
-	CountHistoryRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
-	CountRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
-	CountHistoryRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
-	CountRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
-	CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
-	CountRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
+	CountHistoryRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountHistoryRelayerPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountRelayerPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
+	CountHistoryRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error)
+	CountRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error)
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 }
@@ -157,27 +157,28 @@ func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(baseDenom string) ([]*dto.C
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) GetRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error) {
-	pipe := repo.relayerInfoPipe(latestTxTime)
+func (repo *ExIbcTxRepo) GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error) {
+	pipe := repo.relayerInfoPipe(startTime, endTime)
 	var res []*dto.GetRelayerInfoDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) GetHistoryRelayerInfo(latestTxTime int64) ([]*dto.GetRelayerInfoDTO, error) {
-	pipe := repo.relayerInfoPipe(latestTxTime)
+func (repo *ExIbcTxRepo) GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error) {
+	pipe := repo.relayerInfoPipe(startTime, endTime)
 	var res []*dto.GetRelayerInfoDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) relayerInfoPipe(txTime int64) []bson.M {
+func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
-			"dc_tx_info.status": 1,
-			"tx_time": bson.M{
-				"$gte": txTime,
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
 			},
+			"dc_tx_info.status": 1,
 		},
 	}
 	group := bson.M{
@@ -245,9 +246,13 @@ func (repo *ExIbcTxRepo) GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInf
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) relayerSuccessPacketCond() []bson.M {
+func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
 			"status": entity.IbcTxStatusSuccess,
 		},
 	}
@@ -277,9 +282,13 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond() []bson.M {
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) relayerPacketCond() []bson.M {
+func (repo *ExIbcTxRepo) relayerPacketCond(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
 			"status": bson.M{
 				"$in": entity.IbcTxUsefulStatus,
 			},
@@ -312,9 +321,13 @@ func (repo *ExIbcTxRepo) relayerPacketCond() []bson.M {
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) relayerPacketAmountCond() []bson.M {
+func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
 			"status": bson.M{
 				"$in": entity.IbcTxUsefulStatus,
 			},
@@ -349,43 +362,43 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond() []bson.M {
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) CountHistoryRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
-	pipe := repo.relayerSuccessPacketCond()
+func (repo *ExIbcTxRepo) CountHistoryRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerSuccessPacketCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketTxsCntDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountRelayerSuccessPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
-	pipe := repo.relayerSuccessPacketCond()
+func (repo *ExIbcTxRepo) CountRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerSuccessPacketCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketTxsCntDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountHistoryRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
-	pipe := repo.relayerPacketCond()
+func (repo *ExIbcTxRepo) CountHistoryRelayerPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerPacketCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketTxsCntDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error) {
-	pipe := repo.relayerPacketCond()
+func (repo *ExIbcTxRepo) CountRelayerPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error) {
+	pipe := repo.relayerPacketCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketTxsCntDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error) {
-	pipe := repo.relayerPacketAmountCond()
+func (repo *ExIbcTxRepo) CountRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error) {
+	pipe := repo.relayerPacketAmountCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketAmountDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error) {
-	pipe := repo.relayerPacketAmountCond()
+func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error) {
+	pipe := repo.relayerPacketAmountCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketAmountDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
