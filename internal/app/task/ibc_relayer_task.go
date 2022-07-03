@@ -269,31 +269,30 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	group.Add(len(configList))
 	for _, val := range configList {
 		baseUrl := strings.ReplaceAll(fmt.Sprintf("%s%s", val.Lcd, val.LcdApiPath.ParamsPath), entity.ParamsModulePathPlaceholder, entity.StakeModule)
-		value, err := unbondTimeCache.GetUnbondTime(val.ChainId)
-		if err == nil && len(value) > 0 {
-			continue
-		}
 		go func(baseUrl, chainId string) {
-			defer group.Done()
-			bz, err := utils.HttpGet(baseUrl)
-			if err != nil {
-				logrus.Errorf("task %s staking %s params error, %v", t.Name(), baseUrl, err)
-				return
-			}
-
-			var stakeparams vo.StakeParams
-			err = json.Unmarshal(bz, &stakeparams)
-			if err != nil {
-				logrus.Errorf("%s unmarshal staking params error, %v", t.Name(), err)
-				return
-			}
-			_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
+			getStakeParams(baseUrl, chainId)
+			group.Done()
 		}(baseUrl, val.ChainId)
 	}
 	group.Wait()
 	_ = statisticsCheckRepo.Incr("getUnbondtimeFromLcd", mmdd)
 }
 
+func getStakeParams(baseUrl, chainId string) {
+	bz, err := utils.HttpGet(baseUrl)
+	if err != nil {
+		logrus.Errorf(" staking %s params error, %v", baseUrl, err)
+		return
+	}
+
+	var stakeparams vo.StakeParams
+	err = json.Unmarshal(bz, &stakeparams)
+	if err != nil {
+		logrus.Errorf("unmarshal staking params error, %v", err)
+		return
+	}
+	_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
+}
 func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
 	//Running=>Close: update_client 时间大于relayer基准周期
 	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
