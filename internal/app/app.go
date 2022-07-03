@@ -91,6 +91,7 @@ func startTask() {
 func startOneOffTask() {
 	task.RegisterOneOffTasks(
 		&task.ChannelStatisticsTask{},
+		&task.RelayerStatisticsTask{},
 		&task.TokenStatisticsTask{},
 	)
 	task.StartOneOffTask()

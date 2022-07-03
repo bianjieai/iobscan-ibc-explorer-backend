@@ -16,7 +16,7 @@ db.ibc_relayer_config.createIndex({
     "relayer_channel_pair" : -1
 },{background:true,unique:true});
 
-db.ibc_relayer_statistic.createIndex({
+db.ibc_relayer_statistics.createIndex({
     "transfer_base_denom" : -1,
     "relayer_id" : -1,
     "chain_id" : -1,

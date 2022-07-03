@@ -27,6 +27,9 @@ var (
 	ibcInfoCache        cache.IbcInfoCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
+	relayerCache        cache.RelayerCacheRepo
+	chainCache          cache.ChainCacheRepo
+	baseDenomCache      cache.BaseDenomCacheRepo
 
 	// mongo
 	tokenRepo                repository.ITokenRepo                = new(repository.TokenRepo)
@@ -45,4 +48,5 @@ var (
 	channelStatisticsRepo    repository.IChannelStatisticsRepo    = new(repository.ChannelStatisticsRepo)
 	channelConfigRepo        repository.IChannelConfigRepo        = new(repository.ChannelConfigRepo)
 	relayerStatisticsRepo    repository.IRelayerStatisticsRepo    = new(repository.RelayerStatisticsRepo)
+	relayerStatisticsTask    RelayerStatisticsTask
 )
