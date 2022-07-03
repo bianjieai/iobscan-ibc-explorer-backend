@@ -4,6 +4,7 @@ addr = "0.0.0.0:8000"
 version = "0.4"
 env = "dev"
 start_task = false
+start_one_off_task = true
 api_cache_alive_seconds=3
 prometheus_port="9090"
 

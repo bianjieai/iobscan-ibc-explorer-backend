@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Task cron task
 type Task interface {
 	Name() string
 	Cron() int // CronExpression
@@ -64,6 +65,39 @@ func RunOnce(task Task) {
 		monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
 		//unlock redis mux
 		cache.GetRedisClient().Del(task.Name())
-		logrus.Infof("task %s end, time use %d(s)", task.Name(), time.Now().Unix()-startTime)
+		logrus.Infof("task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, metricValue)
 	})
+}
+
+// ============================================================================
+// ============================================================================
+
+// OneOffTask one-off task
+type OneOffTask interface {
+	Name() string
+	Run() int
+}
+
+var oneOffTasks []OneOffTask
+
+func RegisterOneOffTasks(task ...OneOffTask) {
+	oneOffTasks = append(oneOffTasks, task...)
+}
+
+func StartOneOffTask() {
+	for _, v := range oneOffTasks {
+		task := v
+		OneOffTaskRun(task)
+	}
+}
+
+func OneOffTaskRun(task OneOffTask) {
+	if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), OneOffTaskLockTime); err != nil {
+		logrus.Errorf("one-off task %s has been executed, err:%v", task.Name(), err.Error())
+		return
+	}
+	startTime := time.Now().Unix()
+	res := task.Run()
+	_, _ = cache.GetRedisClient().Del(task.Name())
+	logrus.Infof("one-off task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, res)
 }

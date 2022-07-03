@@ -12,6 +12,10 @@ import (
 type IExIbcTxRepo interface {
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
+	First() (*entity.ExIbcTx, error)
+	FirstHistory() (*entity.ExIbcTx, error)
+	Latest() (*entity.ExIbcTx, error)
+	LatestHistory() (*entity.ExIbcTx, error)
 	CountBaseDenomTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
 	CountBaseDenomHistoryTransferTxs() ([]*dto.CountBaseDenomTransferAmountDTO, error)
 	CountIBCTokenRecvTxs(baseDenom string) ([]*dto.CountIBCTokenRecvTxsDTO, error)
@@ -27,8 +31,8 @@ type IExIbcTxRepo interface {
 	CountRelayerPacketTxs() ([]*dto.CountRelayerPacketTxsCntDTO, error)
 	CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
 	CountRelayerPacketAmount() ([]*dto.CountRelayerPacketAmountDTO, error)
-	AggrIBCChannelTxs() ([]*dto.AggrIBCChannelTxsDTO, error)
-	AggrIBCChannelHistoryTxs() ([]*dto.AggrIBCChannelTxsDTO, error)
+	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
+	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -54,6 +58,30 @@ func (repo *ExIbcTxRepo) FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, e
 	var res []*entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) First() (*entity.ExIbcTx, error) {
+	var res entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{}).Sort("create_at").One(&res)
+	return &res, err
+}
+
+func (repo *ExIbcTxRepo) FirstHistory() (*entity.ExIbcTx, error) {
+	var res entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{}).Sort("create_at").One(&res)
+	return &res, err
+}
+
+func (repo *ExIbcTxRepo) Latest() (*entity.ExIbcTx, error) {
+	var res entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
+	return &res, err
+}
+
+func (repo *ExIbcTxRepo) LatestHistory() (*entity.ExIbcTx, error) {
+	var res entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
+	return &res, err
 }
 
 func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe() []bson.M {
@@ -363,9 +391,13 @@ func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount() ([]*dto.CountRelayerP
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe() []bson.M {
+func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
 			"status": bson.M{
 				"$in": entity.IbcTxUsefulStatus,
 			},
@@ -407,15 +439,15 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe() []bson.M {
 	return pipe
 }
 
-func (repo *ExIbcTxRepo) AggrIBCChannelTxs() ([]*dto.AggrIBCChannelTxsDTO, error) {
-	pipe := repo.AggrIBCChannelTxsPipe()
+func (repo *ExIbcTxRepo) AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error) {
+	pipe := repo.AggrIBCChannelTxsPipe(startTime, endTime)
 	var res []*dto.AggrIBCChannelTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) AggrIBCChannelHistoryTxs() ([]*dto.AggrIBCChannelTxsDTO, error) {
-	pipe := repo.AggrIBCChannelTxsPipe()
+func (repo *ExIbcTxRepo) AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error) {
+	pipe := repo.AggrIBCChannelTxsPipe(startTime, endTime)
 	var res []*dto.AggrIBCChannelTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err

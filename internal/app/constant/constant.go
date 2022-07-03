@@ -5,6 +5,7 @@ const (
 
 	DefaultTimezone       = "UTC"
 	DefaultTimeFormat     = "2006-01-02 15:04:05"
+	TimeFormatMMDD        = "0102"
 	DefaultCurrency       = "$"
 	UnknownTokenPrice     = -1
 	UnknownDenomAmount    = "-1"
@@ -17,4 +18,6 @@ const (
 	DefaultPageNum        = 1
 	OtherDenom            = "others"
 	AllChain              = "allchain"
+	Cosmos                = "cosmos"
+	Iris                  = "iris"
 )

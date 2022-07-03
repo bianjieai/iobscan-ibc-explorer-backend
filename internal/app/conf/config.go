@@ -37,6 +37,7 @@ type App struct {
 	Addr                 string
 	Env                  string
 	StartTask            bool `mapstructure:"start_task"`
+	StartOneOffTask      bool `mapstructure:"start_one_off_task"`
 	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
 	Version              string
 	Prometheus           string `mapstructure:"prometheus_port"`

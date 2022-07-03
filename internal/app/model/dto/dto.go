@@ -75,9 +75,15 @@ type AggrIBCChannelTxsDTO struct {
 }
 
 type ChannelStatisticsDTO struct {
-	ChannelId       string
-	MirrorChannelId string
-	BaseDenom       string
-	TxsCount        int64
-	TxsAmount       decimal.Decimal
+	ChannelId string          `bson:"channel_id"`
+	BaseDenom string          `bson:"base_denom"`
+	TxsCount  int64           `bson:"count"`
+	TxsAmount decimal.Decimal `bson:"amount"`
+}
+
+type ChannelStatisticsAggrDTO struct {
+	ChannelId string  `bson:"channel_id"`
+	BaseDenom string  `bson:"base_denom"`
+	TxsCount  int64   `bson:"count"`
+	TxsAmount float64 `bson:"amount"`
 }

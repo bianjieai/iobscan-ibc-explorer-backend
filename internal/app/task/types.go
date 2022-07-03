@@ -9,15 +9,19 @@ const (
 	EveryMinute         = 60
 	ThreeMinute         = 180
 	RedisLockExpireTime = 300
+	OneOffTaskLockTime  = 86400 * 30
+
+	statisticsCheckTimes = 5
 )
 
 var (
 	//cache
-	tokenPriceRepo   cache.TokenPriceCacheRepo
-	denomDataRepo    cache.DenomDataCacheRepo
-	ibcInfoHashCache cache.IbcInfoHashCacheRepo
-	ibcInfoCache     cache.IbcInfoCacheRepo
-	unbondTimeCache  cache.UnbondTimeCacheRepo
+	tokenPriceRepo      cache.TokenPriceCacheRepo
+	denomDataRepo       cache.DenomDataCacheRepo
+	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
+	ibcInfoCache        cache.IbcInfoCacheRepo
+	unbondTimeCache     cache.UnbondTimeCacheRepo
+	statisticsCheckRepo cache.StatisticsCheckCacheRepo
 
 	// mongo
 	tokenRepo             repository.ITokenRepo             = new(repository.TokenRepo)
