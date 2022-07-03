@@ -9,11 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	opInsert = 1
-	opUpdate = 2
-)
-
 type ChannelStatisticsTask struct {
 }
 
