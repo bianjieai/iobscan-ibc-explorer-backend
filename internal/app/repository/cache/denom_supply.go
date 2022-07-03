@@ -16,6 +16,10 @@ func (repo *DenomDataCacheRepo) GetSupply(chainId, denom string) (string, error)
 	return rc.HGet(fmt.Sprintf(denomSupply, chainId), denom)
 }
 
+func (repo *DenomDataCacheRepo) DelSupply(chainId string) (int64, error) {
+	return rc.Del(fmt.Sprintf(denomSupply, chainId))
+}
+
 func (repo *DenomDataCacheRepo) SetTransferAmount(chainId string, amount map[string]string) error {
 	_, err := rc.HSet(fmt.Sprintf(denomTransAmount, chainId), amount)
 	return err
@@ -23,4 +27,8 @@ func (repo *DenomDataCacheRepo) SetTransferAmount(chainId string, amount map[str
 
 func (repo *DenomDataCacheRepo) GetTransferAmount(chainId, denom string) (string, error) {
 	return rc.HGet(fmt.Sprintf(denomTransAmount, chainId), denom)
+}
+
+func (repo *DenomDataCacheRepo) DelTransferAmount(chainId string) (int64, error) {
+	return rc.Del(fmt.Sprintf(denomTransAmount, chainId))
 }

@@ -50,6 +50,10 @@ func (t *ChannelTask) Run() int {
 
 	t.setStatusAndOperatingPeriod(existedChannelList, newChannelList)
 
+	_ = t.todayStatistics()
+
+	_ = t.yesterdayStatistics()
+
 	baseDenomList, err := baseDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
@@ -57,12 +61,10 @@ func (t *ChannelTask) Run() int {
 	}
 	t.baseDenomMap = baseDenomList.ConvertToMap()
 
-	statistics, err := t.channelStatistics()
-	if err != nil {
+	if err = t.setTransferTxs(existedChannelList, newChannelList); err != nil { // 计算txs和交易价值，同时更新ibc_channel_statistics
+		logrus.Errorf("task %s setTransferTxs error, %v", t.Name(), err)
 		return -1
 	}
-
-	t.setTransferTxs(existedChannelList, newChannelList, statistics) // 计算txs和交易价值，同时更新ibc_channel_statistics
 
 	if err = channelRepo.InsertBatch(newChannelList); err != nil {
 		logrus.Errorf("task %s InsertBatch error, %v", t.Name(), err)
@@ -96,7 +98,7 @@ func (t *ChannelTask) analyzeChainConfig() error {
 		return err
 	}
 
-	var channelIds, channelMirrorIds []string
+	var channelIds []string
 	channelStatusMap := make(map[string]entity.ChannelStatus)
 
 	var chainA, channelA, chainB, channelB string
@@ -107,13 +109,12 @@ func (t *ChannelTask) analyzeChainConfig() error {
 			for _, p := range info.Paths {
 				channelA = p.ChannelId
 				channelB = p.Counterparty.ChannelId
-				channelId, mirrorChannelId := generateChannelId(chainA, channelA, chainB, channelB)
+				channelId := generateChannelId(chainA, channelA, chainB, channelB)
 
-				if utils.InArray(channelMirrorIds, channelId) || utils.InArray(channelMirrorIds, mirrorChannelId) { // 已经存在
+				if utils.InArray(channelIds, channelId) { // 已经存在
 					continue
 				}
 
-				channelMirrorIds = append(channelMirrorIds, channelId, mirrorChannelId)
 				channelIds = append(channelIds, channelId)
 				if p.State == constant.ChannelStateOpen || p.Counterparty.State == constant.ChannelStateOpen {
 					channelStatusMap[channelId] = entity.ChannelStatusOpened
@@ -129,8 +130,29 @@ func (t *ChannelTask) analyzeChainConfig() error {
 	return nil
 }
 
-func generateChannelId(chainA, channelA, chainB, channelB string) (string, string) {
-	return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB), fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
+func generateChannelId(chainA, channelA, chainB, channelB string) string {
+	if strings.Contains(strings.ToLower(chainA), constant.Cosmos) {
+		return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB)
+	}
+
+	if strings.Contains(strings.ToLower(chainB), constant.Cosmos) {
+		return fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
+	}
+
+	if strings.Contains(strings.ToLower(chainA), constant.Iris) {
+		return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB)
+	}
+
+	if strings.Contains(strings.ToLower(chainB), constant.Iris) {
+		return fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
+	}
+
+	compare := strings.Compare(strings.ToLower(chainA), strings.ToLower(chainB))
+	if compare < 0 {
+		return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB)
+	} else {
+		return fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
+	}
 }
 
 func (t *ChannelTask) parseChannelId(channelId string) (chainA, channelA, chainB, channelB string, err error) {
@@ -140,41 +162,6 @@ func (t *ChannelTask) parseChannelId(channelId string) (chainA, channelA, chainB
 		return "", "", "", "", fmt.Errorf("channel id format error")
 	}
 	return split[0], split[1], split[2], split[3], nil
-}
-
-func (t *ChannelTask) getChannelMirrorId(channelId string) string {
-	chainA, channelA, chainB, channelB, err := t.parseChannelId(channelId)
-	if err != nil {
-		return ""
-	}
-
-	return fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
-}
-
-func (t *ChannelTask) channelEqual(channelId1, channelId2 string) bool {
-	if channelId1 == channelId2 {
-		return true
-	}
-
-	chainA1, channelA1, chainB1, channelB1, err := t.parseChannelId(channelId1)
-	if err != nil {
-		return false
-	}
-
-	chainA2, channelA2, chainB2, channelB2, err := t.parseChannelId(channelId2)
-	if err != nil {
-		return false
-	}
-
-	if chainA1 == chainA2 && channelA1 == channelA2 && chainB1 == chainB2 && channelB1 == channelB2 {
-		return true
-	}
-
-	if chainA1 == chainB2 && channelA1 == channelB2 && chainB1 == chainA2 && channelB1 == channelA2 {
-		return true
-	}
-
-	return false
 }
 
 func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelList, error) {
@@ -189,7 +176,7 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 	for _, v := range t.allChannelIds {
 		isExist := false
 		for _, e := range existedIds {
-			if t.channelEqual(e, v) {
+			if v == e {
 				isExist = true
 				break
 			}
@@ -283,92 +270,35 @@ func (t *ChannelTask) setStatusAndOperatingPeriod(existedChannelList entity.IBCC
 	set(newChannelList)
 }
 
-func (t *ChannelTask) channelStatistics() ([]*dto.ChannelStatisticsDTO, error) {
-	channelTxs, err := ibcTxRepo.AggrIBCChannelTxs()
+func (t *ChannelTask) setTransferTxs(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) error {
+	statistics, err := channelStatisticsRepo.Aggr()
 	if err != nil {
-		logrus.Errorf("task %s channelStatistics error, %v", t.Name(), err)
-		return nil, err
+		logrus.Errorf("task %s channelStatisticsRepo.Aggr error, %v", t.Name(), err)
+		return err
 	}
 
-	historyChannelTxs, err := ibcTxRepo.AggrIBCChannelHistoryTxs()
-	if err != nil {
-		logrus.Errorf("task %s channelStatistics error, %v", t.Name(), err)
-		return nil, err
-	}
-
-	// channel 不区分交易方向，将属于一个channel的 A->B, B->A 的交易信息整合一下
-	integration := func(cl []*dto.ChannelStatisticsDTO, aggr []*dto.AggrIBCChannelTxsDTO) []*dto.ChannelStatisticsDTO {
-		for _, v := range aggr {
-			isExisted := false
-			ChannelId, MirrorChannelId := generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
-			for _, c := range cl {
-				if (t.channelEqual(ChannelId, c.ChannelId) || t.channelEqual(MirrorChannelId, c.ChannelId)) && v.BaseDenom == c.BaseDenom { // 同一个channel
-					c.TxsCount += v.Count
-					c.TxsAmount = c.TxsAmount.Add(decimal.NewFromFloat(v.Amount))
-					isExisted = true
-					break
-				}
-			}
-
-			if !isExisted {
-				cl = append(cl, &dto.ChannelStatisticsDTO{
-					ChannelId:       ChannelId,
-					MirrorChannelId: MirrorChannelId,
-					BaseDenom:       v.BaseDenom,
-					TxsCount:        v.Count,
-					TxsAmount:       decimal.NewFromFloat(v.Amount),
-				})
-			}
-		}
-		return cl
-	}
-
-	var cslist []*dto.ChannelStatisticsDTO
-	cslist = integration(cslist, channelTxs)
-	cslist = integration(cslist, historyChannelTxs)
-
-	return cslist, nil
-}
-
-func (t *ChannelTask) setTransferTxs(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList, statistics []*dto.ChannelStatisticsDTO) {
 	for _, v := range existedChannelList {
-		count, value, err := t.calculateChannelStatistics(v.ChannelId, statistics)
-		if err != nil {
-			continue
-		}
-
+		count, value := t.calculateChannelStatistics(v.ChannelId, statistics)
 		v.TransferTxs = count
 		v.TransferTxsValue = value.Round(constant.DefaultValuePrecision).String()
 	}
 
 	for _, v := range newChannelList {
-		count, value, err := t.calculateChannelStatistics(v.ChannelId, statistics)
-		if err != nil {
-			continue
-		}
-
+		count, value := t.calculateChannelStatistics(v.ChannelId, statistics)
 		v.TransferTxs = count
 		v.TransferTxsValue = value.Round(constant.DefaultValuePrecision).String()
 	}
+
+	return nil
 }
 
-func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []*dto.ChannelStatisticsDTO) (int64, decimal.Decimal, error) {
-	var ibcList []*entity.IBCChannelStatistics
+func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []*dto.ChannelStatisticsAggrDTO) (int64, decimal.Decimal) {
 	var txsCount int64 = 0
 	var txsValue = decimal.Zero
 
 	for _, v := range statistics {
-		if channelId == v.ChannelId || channelId == v.MirrorChannelId {
+		if channelId == v.ChannelId {
 			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom)
-			ibcList = append(ibcList, &entity.IBCChannelStatistics{
-				ChannelId:          channelId,
-				TransferBaseDenom:  v.BaseDenom,
-				TransferAmount:     v.TxsAmount.String(),
-				TransferTotalValue: valueDecimal.Round(constant.DefaultValuePrecision).String(),
-				CreateAt:           time.Now().Unix(),
-				UpdateAt:           time.Now().Unix(),
-			})
-
 			txsCount += v.TxsCount
 			txsValue = txsValue.Add(valueDecimal)
 
@@ -391,16 +321,10 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 		}
 	}
 
-	err := channelStatisticsRepo.BatchSwap(channelId, ibcList)
-	if err != nil {
-		logrus.Errorf("task %s calculateChannelStatistics error, %v", t.Name(), err)
-		return 0, decimal.Zero, err
-	}
-
-	return txsCount, txsValue, nil
+	return txsCount, txsValue
 }
 
-func (t *ChannelTask) calculateValue(amount decimal.Decimal, baseDenom string) decimal.Decimal {
+func (t *ChannelTask) calculateValue(amount float64, baseDenom string) decimal.Decimal {
 	denom, ok := t.baseDenomMap[baseDenom]
 	if !ok || denom.CoinId == "" {
 		return decimal.Zero
@@ -412,8 +336,49 @@ func (t *ChannelTask) calculateValue(amount decimal.Decimal, baseDenom string) d
 		return decimal.Zero
 	}
 
-	value := amount.Div(decimal.NewFromFloat(math.Pow10(denom.Scale))).
+	value := decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(math.Pow10(denom.Scale))).
 		Mul(decimal.NewFromFloat(price))
 
 	return value
+}
+
+func (t *ChannelTask) todayStatistics() error {
+	logrus.Infof("task %s exec today statistics", t.Name())
+	startTime, endTime := todayUnix()
+	segments := []*segment{
+		{
+			StartTime: startTime,
+			EndTime:   endTime,
+		},
+	}
+	if err := channelStatisticsTask.deal(segments, opUpdate); err != nil {
+		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+		return err
+	}
+
+	return nil
+}
+
+func (t *ChannelTask) yesterdayStatistics() error {
+	mmdd := time.Now().Format(constant.TimeFormatMMDD)
+	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
+	if incr > statisticsCheckTimes {
+		return nil
+	}
+
+	logrus.Infof("task %s check yeaterday statistics, time: %d", t.Name(), incr)
+	startTime, endTime := yesterdayUnix()
+	segments := []*segment{
+		{
+			StartTime: startTime,
+			EndTime:   endTime,
+		},
+	}
+	if err := channelStatisticsTask.deal(segments, opUpdate); err != nil {
+		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+		return err
+	}
+
+	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
+	return nil
 }
