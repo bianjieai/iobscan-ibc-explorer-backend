@@ -92,7 +92,7 @@ func StartOneOffTask() {
 }
 
 func OneOffTaskRun(task OneOffTask) {
-	if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), OneOffTaskLockTime); err != nil {
+	if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), OneOffTaskLockTime*time.Second); err != nil {
 		logrus.Errorf("one-off task %s has been executed, err:%v", task.Name(), err.Error())
 		return
 	}
