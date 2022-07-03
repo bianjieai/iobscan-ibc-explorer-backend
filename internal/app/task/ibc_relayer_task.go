@@ -62,10 +62,10 @@ func (t *IbcRelayerCronTask) Cron() int {
 }
 
 func (t *IbcRelayerCronTask) Run() int {
-	//t.getTokenPriceMap()
+	t.getTokenPriceMap()
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
-	//t.cacheChainUnbondTimeFromLcd()
+	t.cacheChainUnbondTimeFromLcd()
 	t.updateIbcChainsRelayer()
 	t.cacheIbcChannelRelayer()
 
