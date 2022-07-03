@@ -1,0 +1,160 @@
+package task
+
+import (
+	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/sirupsen/logrus"
+)
+
+type TokenStatisticsTask struct {
+}
+
+var tokenStatisticsTask TokenStatisticsTask
+
+func (t *TokenStatisticsTask) Name() string {
+	return "ibc_token_statistics"
+}
+
+func (t *TokenStatisticsTask) Run() int {
+	historySegments, err := getHistorySegment()
+	if err != nil {
+		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
+		return -1
+	}
+	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
+	if err = t.dealHistory(historySegments); err != nil {
+		logrus.Errorf("task %s dealHistory err, %v", t.Name(), err)
+		return -1
+	}
+
+	segments, err := getSegment()
+	if err != nil {
+		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
+		return -1
+	}
+	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
+	if err = t.deal(segments, opInsert); err != nil {
+		logrus.Errorf("task %s deal err, %v", t.Name(), err)
+		return -1
+	}
+
+	return 1
+}
+
+// dealHistory 处理历史记录，针对ex_ibc_tx
+func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
+	for _, v := range segments {
+		transferTxs, err := ibcTxRepo.CountBaseDenomHistoryTransferTxs(v.StartTime, v.EndTime)
+		if err != nil {
+			logrus.Errorf("task %s CountBaseDenomHistoryTransferTxs err, %v", t.Name(), err)
+			return err
+		}
+
+		if len(transferTxs) > 0 {
+			if err = t.saveTokenTransferData(transferTxs, v.StartTime, v.EndTime, opInsert); err != nil {
+				return err
+			}
+		}
+
+		traceReceiveTxs, err := ibcTxRepo.CountIBCTokenHistoryRecvTxs(v.StartTime, v.EndTime)
+		if err != nil {
+			logrus.Errorf("task %s CountIBCTokenHistoryRecvTxs err, %v", t.Name(), err)
+			return err
+		}
+
+		if len(traceReceiveTxs) > 0 {
+			if err = t.saveTraceReceiveData(traceReceiveTxs, v.StartTime, v.EndTime, opInsert); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// deal 处理最新的记录，针对ex_ibc_tx_latest
+func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
+	for _, v := range segments {
+		transferTxs, err := ibcTxRepo.CountBaseDenomTransferTxs(v.StartTime, v.EndTime)
+		if err != nil {
+			logrus.Errorf("task %s CountBaseDenomTransferTxs err, %v", t.Name(), err)
+			return err
+		}
+
+		if len(transferTxs) > 0 {
+			if err = t.saveTokenTransferData(transferTxs, v.StartTime, v.EndTime, op); err != nil {
+				return err
+			}
+		}
+
+		traceReceiveTxs, err := ibcTxRepo.CountIBCTokenRecvTxs(v.StartTime, v.EndTime)
+		if err != nil {
+			logrus.Errorf("task %s CountIBCTokenRecvTxs err, %v", t.Name(), err)
+			return err
+		}
+
+		if len(traceReceiveTxs) > 0 {
+			if err = t.saveTraceReceiveData(traceReceiveTxs, v.StartTime, v.EndTime, op); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (t *TokenStatisticsTask) saveTokenTransferData(dtoList []*dto.CountBaseDenomTxsDTO, segmentStart, segmentEnd int64, op int) error {
+	var statistics = make([]*entity.IBCTokenStatistics, 0, len(dtoList))
+	for _, v := range dtoList {
+		statistics = append(statistics, &entity.IBCTokenStatistics{
+			BaseDenom:        v.BaseDenom,
+			TransferTxs:      v.Count,
+			SegmentStartTime: segmentStart,
+			SegmentEndTime:   segmentEnd,
+			CreateAt:         time.Now().Unix(),
+			UpdateAt:         time.Now().Unix(),
+		})
+	}
+
+	var err error
+	if op == opInsert {
+		if err = tokenStatisticsRepo.BatchInsert(statistics); err != nil {
+			logrus.Errorf("task %s tokenStatisticsRepo.BatchInsert err, %v", t.Name(), err)
+		}
+	} else {
+		if err = tokenStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {
+			logrus.Errorf("task %stokenStatisticsRepo.BatchSwap err, %v", t.Name(), err)
+		}
+	}
+
+	return err
+}
+
+func (t *TokenStatisticsTask) saveTraceReceiveData(dtoList []*dto.CountIBCTokenRecvTxsDTO, segmentStart, segmentEnd int64, op int) error {
+	var statistics = make([]*entity.IBCTokenTraceStatistics, 0, len(dtoList))
+	for _, v := range dtoList {
+		statistics = append(statistics, &entity.IBCTokenTraceStatistics{
+			Denom:            v.Denom,
+			ChainId:          v.ChainId,
+			BaseDenom:        v.BaseDenom,
+			ReceiveTxs:       v.Count,
+			SegmentStartTime: segmentStart,
+			SegmentEndTime:   segmentEnd,
+			CreateAt:         time.Now().Unix(),
+			UpdateAt:         time.Now().Unix(),
+		})
+	}
+
+	var err error
+	if op == opInsert {
+		if err = tokenTraceStatisticsRepo.BatchInsert(statistics); err != nil {
+			logrus.Errorf("task %s tokenTraceStatisticsRepo.BatchInsert err, %v", t.Name(), err)
+		}
+	} else {
+		if err = tokenTraceStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {
+			logrus.Errorf("task %s tokenTraceStatisticsRepo.BatchSwap err, %v", t.Name(), err)
+		}
+	}
+
+	return err
+}

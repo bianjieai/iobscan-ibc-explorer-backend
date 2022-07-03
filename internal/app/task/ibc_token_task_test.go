@@ -11,3 +11,7 @@ func TestTokenTaskRun(t *testing.T) {
 func TestUpdateIBCChain(t *testing.T) {
 	tokenTask.updateIBCChain()
 }
+
+func TestTokenStatisticsTaskRun(t *testing.T) {
+	tokenStatisticsTask.Run()
+}
