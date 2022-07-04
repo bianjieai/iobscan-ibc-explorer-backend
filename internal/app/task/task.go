@@ -87,7 +87,7 @@ func RegisterOneOffTasks(task ...OneOffTask) {
 func StartOneOffTask() {
 	for _, v := range oneOffTasks {
 		task := v
-		OneOffTaskRun(task)
+		go OneOffTaskRun(task)
 	}
 }
 
