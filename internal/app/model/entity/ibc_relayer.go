@@ -5,6 +5,9 @@ type RelayerStatus int
 const (
 	RelayerRunning RelayerStatus = 1
 	RelayerStop    RelayerStatus = 2
+
+	RelayerStopStr    = "Unknown"
+	RelayerRunningStr = "Running"
 )
 
 type IBCRelayer struct {

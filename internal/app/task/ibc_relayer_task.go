@@ -7,6 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task/fsm"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
@@ -192,7 +193,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 		logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
 		return
 	}
-	if timePeriod == -1 {
+	if timePeriod == -1 && relayer.TimePeriod <= 0 {
 		//get unbonding time from cache
 		var chainAUnbondT, chainBUnbondT int64
 		chainAUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
@@ -293,57 +294,85 @@ func getStakeParams(baseUrl, chainId string) {
 	}
 	_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
 }
-func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
+
+func (t *IbcRelayerCronTask) handleRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
+	f := fsm.NewIbcRelayerFSM(entity.RelayerRunningStr)
 	//Running=>Close: update_client 时间大于relayer基准周期
-	status := entity.RelayerStatus(0)
 	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
-		if relayer.Status == entity.RelayerRunning {
-			status = entity.RelayerStop
+		relayer.Status = entity.RelayerStop
+		if err := f.Event(fsm.IbcRelayerEventUnknown, relayer); err == nil {
+			f.SetState(entity.RelayerStopStr)
+		} else {
+			logrus.Warn("machine status event to running->unknown failed, " + err.Error())
+		}
+		return
+	}
+	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
+	for _, path := range paths {
+		if path.ChannelId == relayer.ChannelA {
+			if path.State != constant.ChannelStateOpen {
+				relayer.Status = entity.RelayerStop
+				if err := f.Event(fsm.IbcRelayerEventUnknown, relayer); err == nil {
+					f.SetState(entity.RelayerStopStr)
+					break
+				} else {
+					logrus.Warn("machine status event to running->unknown failed, " + err.Error())
+				}
+
+			}
+		}
+		if path.Counterparty.ChannelId == relayer.ChannelB {
+			if path.Counterparty.State != constant.ChannelStateOpen {
+				relayer.Status = entity.RelayerStop
+				if err := f.Event(fsm.IbcRelayerEventUnknown, relayer); err == nil {
+					f.SetState(entity.RelayerStopStr)
+					break
+				} else {
+					logrus.Warn("machine status event to running->unknown failed, " + err.Error())
+				}
+			}
 		}
 	}
+}
+
+// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
+func (t *IbcRelayerCronTask) handleStop(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
+	f := fsm.NewIbcRelayerFSM(entity.RelayerStopStr)
+
+	if relayer.TimePeriod > updateTime-relayer.UpdateTime {
+		var channelStatus []string
+		for _, path := range paths {
+			if path.ChannelId == relayer.ChannelA {
+				channelStatus = append(channelStatus, path.State)
+			}
+			if path.Counterparty.ChannelId == relayer.ChannelB {
+				channelStatus = append(channelStatus, path.Counterparty.State)
+			}
+		}
+		if len(channelStatus) == 2 {
+			if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
+				relayer.Status = entity.RelayerRunning
+				if err := f.Event(fsm.IbcRelayerEventRunning, relayer); err == nil {
+					f.SetState(entity.RelayerRunningStr)
+				} else {
+					logrus.Error("machine status event to running->unknown failed, " + err.Error())
+				}
+			}
+		}
+	}
+}
+func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 	if relayer.Status == entity.RelayerRunning {
-		for _, path := range paths {
-			if path.ChannelId == relayer.ChannelA {
-				if path.State != constant.ChannelStateOpen {
-					status = entity.RelayerStop
-					break
-				}
-			}
-			if path.Counterparty.ChannelId == relayer.ChannelB {
-				if path.Counterparty.State != constant.ChannelStateOpen {
-					status = entity.RelayerStop
-					break
-				}
-			}
-		}
+		t.handleRunning(relayer, paths, updateTime)
 	} else {
 		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
-		if relayer.TimePeriod > updateTime-relayer.UpdateTime {
-			var channelStatus []string
-			for _, path := range paths {
-				if path.ChannelId == relayer.ChannelA {
-					channelStatus = append(channelStatus, path.State)
-				}
-				if path.Counterparty.ChannelId == relayer.ChannelB {
-					channelStatus = append(channelStatus, path.Counterparty.State)
-				}
-			}
-			if len(channelStatus) == 2 {
-				if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
-					status = entity.RelayerRunning
-				}
-			}
-		}
+		t.handleStop(relayer, paths, updateTime)
 	}
-	if status != entity.RelayerRunning && status != entity.RelayerStop {
-		status = entity.RelayerStop
-	}
-	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, int(status), updateTime, timePeriod); err != nil {
+	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, timePeriod); err != nil {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
 	}
-
 }
 
 // dependence: cacheIbcChannelRelayer
