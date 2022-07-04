@@ -30,7 +30,7 @@ func (t *IbcChainCronTask) Run() int {
 	for _, chainCfg := range chainCfgs {
 		hashVal, _ := ibcInfoHashCache.Get(chainCfg.ChainId)
 		//check hashValLcd if have change for reduce update or insert times
-		if hashVal == chainCfg.IbcInfoHashLcd {
+		if hashVal != "" && hashVal == chainCfg.IbcInfoHashLcd {
 			continue
 		}
 		_ = ibcInfoHashCache.Set(chainCfg.ChainId, chainCfg.IbcInfoHashLcd)

@@ -18,6 +18,7 @@ require (
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe
 	github.com/swaggo/gin-swagger v1.5.0
 	github.com/weichang-bianjie/metric-sdk v1.0.1
+	github.com/looplab/fsm v0.2.0
 	go.mongodb.org/mongo-driver v1.9.0
 	gorm.io/driver/mysql v1.3.4
 	gorm.io/gorm v1.23.6

@@ -54,6 +54,26 @@ func TestIbcRelayerCronTask_getChainUnbondTimeFromLcd(t *testing.T) {
 	task.cacheChainUnbondTimeFromLcd()
 }
 
+func TestIbcRelayerCronTask_handleOneRelayerStatusAndTime(t *testing.T) {
+	task.handleOneRelayerStatusAndTime(&entity.IBCRelayer{
+		RelayerId:  "cf0fb3209ec3323c539e0e24c44e576d",
+		ChainA:     "irishub_qa",
+		ChainB:     "bigbang",
+		Status:     2,
+		TimePeriod: -1,
+		UpdateTime: 0,
+	}, 1656558771, 146)
+}
+
+func TestIbcRelayerCronTask_updateRelayerStatus(t *testing.T) {
+	task.updateRelayerStatus(&entity.IBCRelayer{
+		RelayerId:  "cf0fb3209ec3323c539e0e24c44e576d",
+		Status:     2,
+		TimePeriod: 146,
+		UpdateTime: 1656558771,
+	})
+}
+
 func TestIbcRelayerCronTask_DistinctRelayer(t *testing.T) {
 	var datas = []entity.IBCRelayer{
 		{ChainA: "irishub", ChainB: "cosmoshub", ChannelA: "channel-0", ChannelB: "channel-1", ChainAAddress: "iaaxxxxxxxxxx", ChainBAddress: "cosmosxxxxxxx"},

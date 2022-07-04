@@ -153,8 +153,10 @@ func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int6
 }
 func (repo *IbcRelayerRepo) UpdateStatusAndTime(relayerId string, status int, updateTime, timePeriod int64) error {
 	update := bson.M{
-		RelayerFieldStatus:   status,
 		RelayerFieldUpdateAt: time.Now().Unix(),
+	}
+	if status > 0 {
+		update[RelayerFieldStatus] = status
 	}
 	if updateTime > 0 {
 		update[RelayerFieldUpdateTime] = updateTime
