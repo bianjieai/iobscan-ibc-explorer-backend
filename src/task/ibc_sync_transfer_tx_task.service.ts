@@ -1,7 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {TaskEnum} from "../constant";
 import {IbcTxHandler} from "../util/IbcTxHandler";
-import {dateNow} from "../helper/date.helper";
 import {TransferTaskStatusMetric} from "../monitor/metrics/ibc_transfer_task_status.metric";
 
 @Injectable()
@@ -12,6 +11,7 @@ export class IbcSyncTransferTxTaskService {
     async doTask(taskName?: TaskEnum): Promise<void> {
         this.transferTaskStatusMetric.collect(1)
         const ibcTxLatestModel = this.taskCommonService.getIbcTxLatestModel()
+        const dateNow = Math.floor(new Date().getTime() / 1000)
         await this.taskCommonService.parseIbcTx(ibcTxLatestModel,dateNow)
     }
 }
