@@ -21,7 +21,6 @@ import {
     RecordLimit,
     IbcTaskRecordStatus,
 } from '../constant';
-import {dateNow} from "../helper/date.helper";
 import {getTaskStatus} from "../helper/task.helper";
 import {SyncTaskSchema} from "../schema/sync.task.schema";
 import {Logger} from "../logger";
@@ -584,6 +583,7 @@ export class IbcTxHandler {
     }
 
     setNextTryTime(ibcTx, index) {
+        const dateNow = Math.floor(new Date().getTime() / 1000)
         ibcTx.retry_times = ibcTx.retry_times ? Number(ibcTx.retry_times) + 1 : 1
         const taskDiffTime = Math.floor(Number(ibcTx.retry_times) * TaskTime)
         ibcTx.next_try_time = Math.floor(Number(taskDiffTime) + Number(dateNow) + index)
@@ -793,6 +793,7 @@ export class IbcTxHandler {
 
 
                         if (ibcTx.status === IbcTxStatus.PROCESSING) {
+                            const dateNow = Math.floor(new Date().getTime() / 1000)
                             denoms.push({
                                 chain_id: sc_chain_id,
                                 denom: sc_denom,
