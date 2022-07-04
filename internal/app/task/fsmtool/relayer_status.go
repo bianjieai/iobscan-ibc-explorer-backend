@@ -1,4 +1,4 @@
-package fsm
+package fsmtool
 
 import (
 	"fmt"
@@ -23,13 +23,13 @@ func NewIbcRelayerFSM(initial string) *fsm.FSM {
 	events := []fsm.EventDesc{
 		{
 			Name: IbcRelayerEventUnknown,
-			Src:  []string{entity.RelayerStopStr},
-			Dst:  entity.RelayerRunningStr,
+			Src:  []string{entity.RelayerRunningStr},
+			Dst:  entity.RelayerStopStr,
 		},
 		{
 			Name: IbcRelayerEventRunning,
-			Src:  []string{entity.RelayerRunningStr},
-			Dst:  entity.RelayerStopStr,
+			Src:  []string{entity.RelayerStopStr},
+			Dst:  entity.RelayerRunningStr,
 		},
 	}
 
@@ -49,7 +49,7 @@ func (action *ibcRelayerStatsFSMAction) changeState(e *fsm.Event) {
 		e.Err = fmt.Errorf("num of args must be 1")
 		return
 	}
-	data, ok := args[0].(entity.IBCRelayer)
+	data, ok := args[0].(*entity.IBCRelayer)
 	if !ok {
 		e.Err = fmt.Errorf("convert arg[0] to db ibc_relayer fail: %s", utils.MarshalJsonIgnoreErr(args))
 		return

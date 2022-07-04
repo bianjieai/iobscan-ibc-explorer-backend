@@ -7,7 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task/fsm"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task/fsmtool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
@@ -193,24 +193,29 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 		logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
 		return
 	}
-	if timePeriod == -1 && relayer.TimePeriod <= 0 && relayer.UpdateTime <= 0 {
-		//get unbonding time from cache
-		var chainAUnbondT, chainBUnbondT int64
-		chainAUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
-		if chainAUnbondTime != "" {
-			chainAUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainAUnbondTime, "s", ""), 10, 64)
-		}
-		chainBUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainB)
-		if chainBUnbondTime != "" {
-			chainBUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainBUnbondTime, "s", ""), 10, 64)
-		}
-		if chainAUnbondT > 0 && chainBUnbondT > 0 {
-			if chainAUnbondT >= chainBUnbondT {
-				timePeriod = chainBUnbondT
-			} else {
-				timePeriod = chainAUnbondT
+	if timePeriod == -1 {
+		if relayer.TimePeriod <= 0 {
+			//get unbonding time from cache
+			var chainAUnbondT, chainBUnbondT int64
+			chainAUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
+			if chainAUnbondTime != "" {
+				chainAUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainAUnbondTime, "s", ""), 10, 64)
 			}
+			chainBUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainB)
+			if chainBUnbondTime != "" {
+				chainBUnbondT, _ = strconv.ParseInt(strings.ReplaceAll(chainBUnbondTime, "s", ""), 10, 64)
+			}
+			if chainAUnbondT > 0 && chainBUnbondT > 0 {
+				if chainAUnbondT >= chainBUnbondT {
+					timePeriod = chainBUnbondT
+				} else {
+					timePeriod = chainAUnbondT
+				}
+			}
+		} else {
+			timePeriod = relayer.TimePeriod
 		}
+
 	}
 	t.handleOneRelayerStatusAndTime(relayer, updateTime, timePeriod)
 	t.updateIbcChannelRelayerInfo(relayer, updateTime)
@@ -254,16 +259,17 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 
 func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr("getUnbondtimeFromLcd", mmdd)
-	if incr > 1 {
-		return
-	}
 	configList, err := chainConfigRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s cacheChainUnbondTimeFromLcd error, %v", t.Name(), err)
 		return
 	}
 	if len(configList) == 0 {
+		return
+	}
+	incr, _ := statisticsCheckRepo.GetIncr("getUnbondtimeFromLcd", mmdd)
+	value, _ := unbondTimeCache.GetUnbondTime(configList[0].ChainId)
+	if incr > 1 && len(value) > 0 {
 		return
 	}
 	group := sync.WaitGroup{}
@@ -295,13 +301,13 @@ func getStakeParams(baseUrl, chainId string) {
 	_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
 }
 
-func (t *IbcRelayerCronTask) handleRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
-	f := fsm.NewIbcRelayerFSM(entity.RelayerRunningStr)
+func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
+	f := fsmtool.NewIbcRelayerFSM(entity.RelayerRunningStr)
 	//Running=>Close: update_client 时间大于relayer基准周期
 	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
 		relayer.Status = entity.RelayerStop
-		if err := f.Event(fsm.IbcRelayerEventUnknown, relayer); err == nil {
-			f.SetState(entity.RelayerStopStr)
+		if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
+			f.SetState(entity.RelayerRunningStr)
 		} else {
 			logrus.Warn("machine status event to running->unknown failed, " + err.Error())
 		}
@@ -312,8 +318,8 @@ func (t *IbcRelayerCronTask) handleRunning(relayer *entity.IBCRelayer, paths []*
 		if path.ChannelId == relayer.ChannelA {
 			if path.State != constant.ChannelStateOpen {
 				relayer.Status = entity.RelayerStop
-				if err := f.Event(fsm.IbcRelayerEventUnknown, relayer); err == nil {
-					f.SetState(entity.RelayerStopStr)
+				if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
+					f.SetState(entity.RelayerRunningStr)
 					break
 				} else {
 					logrus.Warn("machine status event to running->unknown failed, " + err.Error())
@@ -324,8 +330,8 @@ func (t *IbcRelayerCronTask) handleRunning(relayer *entity.IBCRelayer, paths []*
 		if path.Counterparty.ChannelId == relayer.ChannelB {
 			if path.Counterparty.State != constant.ChannelStateOpen {
 				relayer.Status = entity.RelayerStop
-				if err := f.Event(fsm.IbcRelayerEventUnknown, relayer); err == nil {
-					f.SetState(entity.RelayerStopStr)
+				if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
+					f.SetState(entity.RelayerRunningStr)
 					break
 				} else {
 					logrus.Warn("machine status event to running->unknown failed, " + err.Error())
@@ -336,11 +342,13 @@ func (t *IbcRelayerCronTask) handleRunning(relayer *entity.IBCRelayer, paths []*
 }
 
 // Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
-func (t *IbcRelayerCronTask) handleStop(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
-	f := fsm.NewIbcRelayerFSM(entity.RelayerStopStr)
-
-	if updateTime > 0 && relayer.TimePeriod > updateTime-relayer.UpdateTime {
+func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
+	f := fsmtool.NewIbcRelayerFSM(entity.RelayerStopStr)
+	if updateTime > 0 && relayer.TimePeriod > 0 && relayer.TimePeriod > updateTime-relayer.UpdateTime {
 		var channelStatus []string
+		if len(paths) == 0 {
+			return
+		}
 		for _, path := range paths {
 			if path.ChannelId == relayer.ChannelA {
 				channelStatus = append(channelStatus, path.State)
@@ -352,12 +360,19 @@ func (t *IbcRelayerCronTask) handleStop(relayer *entity.IBCRelayer, paths []*ent
 		if len(channelStatus) == 2 {
 			if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
 				relayer.Status = entity.RelayerRunning
-				if err := f.Event(fsm.IbcRelayerEventRunning, relayer); err == nil {
-					f.SetState(entity.RelayerRunningStr)
+				if err := f.Event(fsmtool.IbcRelayerEventRunning, relayer); err == nil {
+					f.SetState(entity.RelayerStopStr)
 				} else {
 					logrus.Error("machine status event to running->unknown failed, " + err.Error())
 				}
 			}
+		}
+	} else if relayer.TimePeriod == -1 && relayer.UpdateTime >= 0 && updateTime > 0 {
+		relayer.Status = entity.RelayerRunning
+		if err := f.Event(fsmtool.IbcRelayerEventRunning, relayer); err == nil {
+			f.SetState(entity.RelayerStopStr)
+		} else {
+			logrus.Error("machine status event to running->unknown failed, " + err.Error())
 		}
 	}
 }
@@ -365,10 +380,10 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 	if relayer.Status == entity.RelayerRunning {
-		t.handleRunning(relayer, paths, updateTime)
+		t.handleToUnknow(relayer, paths, updateTime)
 	} else {
 		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
-		t.handleStop(relayer, paths, updateTime)
+		t.handleToRunning(relayer, paths, updateTime)
 	}
 	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, timePeriod); err != nil {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
@@ -587,6 +602,9 @@ func createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 		ChannelA:      dto.ScChannel,
 		ChannelB:      dto.DcChannel,
 		ChainBAddress: dto.DcChainAddress,
+		Status:        entity.ChannelStatusClosed,
+		UpdateTime:    0,
+		TimePeriod:    -1,
 		CreateAt:      time.Now().Unix(),
 		UpdateAt:      time.Now().Unix(),
 	}
