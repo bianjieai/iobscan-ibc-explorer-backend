@@ -36,7 +36,7 @@ func (t *RelayerStatisticsTask) Run() int {
 		return -1
 	}
 	//insert relayer data
-	handleNewRelayerOnce(historySegments, true)
+	t.handleNewRelayerOnce(historySegments, true)
 
 	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
 	if err = t.dealHistory(historySegments); err != nil {
@@ -50,7 +50,7 @@ func (t *RelayerStatisticsTask) Run() int {
 		return -1
 	}
 	//insert relayer data
-	handleNewRelayerOnce(historySegments, false)
+	t.handleNewRelayerOnce(segments, false)
 
 	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
 	if err = t.deal(segments, opInsert); err != nil {
@@ -105,6 +105,7 @@ func (t *RelayerStatisticsTask) dealHistory(segments []*segment) error {
 		if err = t.saveData(aggr, v.StartTime, v.EndTime, opInsert); err != nil {
 			return err
 		}
+		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }
@@ -124,6 +125,7 @@ func (t *RelayerStatisticsTask) deal(segments []*segment, op int) error {
 		if err := t.saveData(aggr, v.StartTime, v.EndTime, op); err != nil {
 			return err
 		}
+		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }
@@ -187,7 +189,7 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 	return relayerStaticsMap
 }
 
-func handleNewRelayerOnce(segments []*segment, historyData bool) {
+func (t *RelayerStatisticsTask) handleNewRelayerOnce(segments []*segment, historyData bool) {
 	for _, v := range segments {
 		var relayersData []entity.IBCRelayer
 		if historyData {
@@ -205,6 +207,7 @@ func handleNewRelayerOnce(segments []*segment, historyData bool) {
 				logrus.Error("insert  relayer data fail, ", err.Error())
 			}
 		}
+		logrus.Debugf("task %s find relayer finish segment [%v:%v], relayers:%v", t.Name(), v.StartTime, v.EndTime, len(relayersData))
 	}
 }
 
