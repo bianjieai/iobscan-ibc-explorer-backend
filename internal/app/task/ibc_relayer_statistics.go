@@ -35,10 +35,11 @@ func (t *RelayerStatisticsTask) Run() int {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
 	}
+	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
+
 	//insert relayer data
 	t.handleNewRelayerOnce(historySegments, true)
 
-	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
 	if err = t.dealHistory(historySegments); err != nil {
 		logrus.Errorf("task %s dealHistory err, %v", t.Name(), err)
 		return -1
@@ -49,6 +50,7 @@ func (t *RelayerStatisticsTask) Run() int {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1
 	}
+	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
 	//insert relayer data
 	t.handleNewRelayerOnce(segments, false)
 
