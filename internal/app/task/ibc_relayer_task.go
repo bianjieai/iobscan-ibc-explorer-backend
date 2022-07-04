@@ -330,8 +330,8 @@ func getStakeParams(baseUrl, chainId string) {
 
 func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerRunningStr)
-	//Running=>Close: update_client 时间大于relayer基准周期
-	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < updateTime-relayer.UpdateTime {
+	//Running=>Close: update_client时间与当前时间差大于relayer基准周期
+	if relayer.TimePeriod > 0 && relayer.UpdateTime > 0 && relayer.TimePeriod < time.Now().Unix()-updateTime {
 		relayer.Status = entity.RelayerStop
 		if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
 			f.SetState(entity.RelayerRunningStr)
@@ -368,10 +368,10 @@ func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []
 	}
 }
 
-// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
+// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
 func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerStopStr)
-	if updateTime > 0 && relayer.TimePeriod > 0 && relayer.TimePeriod > updateTime-relayer.UpdateTime {
+	if updateTime > 0 && relayer.TimePeriod > 0 && relayer.TimePeriod > time.Now().Unix()-updateTime {
 		var channelStatus []string
 		if len(paths) == 0 {
 			return
@@ -409,7 +409,7 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 	if relayer.Status == entity.RelayerRunning {
 		t.handleToUnknow(relayer, paths, updateTime)
 	} else {
-		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
+		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
 		t.handleToRunning(relayer, paths, updateTime)
 	}
 	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, timePeriod); err != nil {
@@ -645,7 +645,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	group := sync.WaitGroup{}
 	group.Add(2)
 	go func() {
-		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, relayer.UpdateTime)
+		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
@@ -653,7 +653,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	}()
 
 	go func() {
-		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, relayer.UpdateTime)
+		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
