@@ -288,7 +288,6 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 }
 
 func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
 	configList, err := chainConfigRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s cacheChainUnbondTimeFromLcd error, %v", t.Name(), err)
@@ -297,9 +296,8 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	if len(configList) == 0 {
 		return
 	}
-	incr, _ := statisticsCheckRepo.GetIncr("getUnbondtimeFromLcd", mmdd)
 	value, _ := unbondTimeCache.GetUnbondTime(configList[0].ChainId)
-	if incr > 1 && len(value) > 0 {
+	if len(value) > 0 {
 		return
 	}
 	group := sync.WaitGroup{}
@@ -312,7 +310,6 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 		}(baseUrl, val.ChainId)
 	}
 	group.Wait()
-	_ = statisticsCheckRepo.Incr("getUnbondtimeFromLcd", mmdd)
 }
 
 func getStakeParams(baseUrl, chainId string) {
