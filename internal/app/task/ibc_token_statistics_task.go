@@ -69,6 +69,7 @@ func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
 				return err
 			}
 		}
+		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }
@@ -99,6 +100,7 @@ func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
 				return err
 			}
 		}
+		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }

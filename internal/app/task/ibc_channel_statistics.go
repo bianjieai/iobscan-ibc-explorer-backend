@@ -61,6 +61,7 @@ func (t *ChannelStatisticsTask) dealHistory(segments []*segment) error {
 		if err = t.saveData(aggr, v.StartTime, v.EndTime, opInsert); err != nil {
 			return err
 		}
+		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }
@@ -82,6 +83,7 @@ func (t *ChannelStatisticsTask) deal(segments []*segment, op int) error {
 		if err = t.saveData(aggr, v.StartTime, v.EndTime, op); err != nil {
 			return err
 		}
+		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }
