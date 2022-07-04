@@ -5,6 +5,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,11 @@ var _ IRelayerService = new(RelayerService)
 func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error) {
 	var resp vo.RelayerListResp
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	chains := strings.Split(req.Chain, ",")
+	//unsupport more than two chains
+	if len(chains) > 2 {
+		return resp, nil
+	}
 	rets, total, err := relayerRepo.FindAllBycond(req.Chain, req.Status, skip, limit, req.UseCount)
 	if err != nil {
 		return resp, errors.Wrap(err)
