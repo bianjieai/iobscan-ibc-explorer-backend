@@ -14,7 +14,7 @@ type TokenStatisticsTask struct {
 var tokenStatisticsTask TokenStatisticsTask
 
 func (t *TokenStatisticsTask) Name() string {
-	return "ibc_token_statistics"
+	return "ibc_token_statistics_task"
 }
 
 func (t *TokenStatisticsTask) Run() int {

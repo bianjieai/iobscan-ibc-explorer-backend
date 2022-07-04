@@ -15,7 +15,7 @@ type ChannelStatisticsTask struct {
 var channelStatisticsTask ChannelStatisticsTask
 
 func (t *ChannelStatisticsTask) Name() string {
-	return "ibc_channel_statistics"
+	return "ibc_channel_statistics_task"
 }
 
 func (t *ChannelStatisticsTask) Run() int {
