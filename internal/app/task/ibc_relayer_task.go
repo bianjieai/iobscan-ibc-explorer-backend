@@ -78,8 +78,17 @@ func (t *IbcRelayerCronTask) Run() int {
 	t.caculateRelayerTotalValue()
 	t.AggrRelayerPacketTxs()
 	t.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
-		t.updateRelayerStatus(relayer)
-		t.saveOrUpdateRelayerTxsAndValue(relayer)
+		group := sync.WaitGroup{}
+		group.Add(2)
+		go func(relayer *entity.IBCRelayer) {
+			t.updateRelayerStatus(relayer)
+			group.Done()
+		}(relayer)
+		go func(relayer *entity.IBCRelayer) {
+			t.saveOrUpdateRelayerTxsAndValue(relayer)
+			group.Done()
+		}(relayer)
+		group.Wait()
 	})
 
 	return 1
