@@ -79,7 +79,7 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
     //   };
     //   $or.push(sc_or, dc_or);
     // }
-      if (token[0] && typeof token[0] === 'string') {
+      if (token[0] && token[0].startsWith("ibc/")) {
           //search by ibc/hash
           const $or = [];
           $or.push({ 'denoms.sc_denom': token[0]});
