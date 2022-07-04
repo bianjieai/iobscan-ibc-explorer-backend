@@ -162,6 +162,12 @@ export class IbcTxService {
             //todo this value get by setting data
             return await this.getStartTxTime();
         }
+        if (queryData?.chain_id) {
+            const chains:string[] = queryData.chain_id.split(",")
+            if (chains.length > 2) {
+                return new ListStruct(null, page_num, page_size);
+            }
+        }
         if (use_count) {
             if (query.symbol || query.chain_id || query.denom || (!queryData.date_range.includes(0)) || (queryData.status?.length !== 4)) {
                 return await this.getTxCount(queryData, token)
