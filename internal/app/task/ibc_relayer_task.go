@@ -27,6 +27,7 @@ type IbcRelayerCronTask struct {
 	relayerValueMap map[string]decimal.Decimal
 	//key: ChainA+ChainB+ChannelA+ChannelB
 	channelRelayerCnt map[string]int64
+	relayerInfo       map[string]Info
 	//key: BaseDenom
 	denomPriceMap map[string]CoinItem
 }
@@ -39,6 +40,10 @@ type (
 	CoinItem struct {
 		Price float64
 		Scale int
+	}
+	Info struct {
+		TimePeriod int64
+		UpdateTime int64
 	}
 )
 
@@ -71,9 +76,19 @@ func (t *IbcRelayerCronTask) Run() int {
 	t.cacheIbcChannelRelayer()
 
 	t.caculateRelayerTotalValue()
+	t.AggrRelayerPacketTxs()
 	t.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
-		t.updateRelayerStatus(relayer)
-		t.saveOrUpdateRelayerTxsAndValue(relayer)
+		group := sync.WaitGroup{}
+		group.Add(2)
+		go func(relayer *entity.IBCRelayer) {
+			t.updateRelayerStatus(relayer)
+			group.Done()
+		}(relayer)
+		go func(relayer *entity.IBCRelayer) {
+			t.saveOrUpdateRelayerTxsAndValue(relayer)
+			group.Done()
+		}(relayer)
+		group.Wait()
 	})
 
 	return 1
@@ -148,6 +163,19 @@ func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string 
 	}
 	return chainAAddress
 }
+
+func (t *IbcRelayerCronTask) handleUpdateTimeAndTimePeriod(relayers []*entity.IBCRelayer) {
+	t.relayerInfo = make(map[string]Info, len(relayers))
+	for _, val := range relayers {
+		timePeriod, updateTime := t.getTimePeriodAndupdateTime(val)
+		t.relayerInfo[val.RelayerId] = Info{
+			TimePeriod: timePeriod,
+			UpdateTime: updateTime,
+		}
+	}
+
+}
+
 func distinctRelayer(relayers []entity.IBCRelayer) []entity.IBCRelayer {
 	distRelayerMap := make(map[string]bool, len(relayers))
 	var distinctArr []entity.IBCRelayer
@@ -188,12 +216,13 @@ func distinctRelayer(relayers []entity.IBCRelayer) []entity.IBCRelayer {
 
 //dependence: cacheChainUnbondTimeFromLcd
 func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
-	timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer)
-	if err != nil {
-		logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
-		return
-	}
-	if timePeriod == -1 {
+	//timePeriod, updateTime, err := t.getTimePeriodAndupdateTime(relayer)
+	//if err != nil {
+	//	logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
+	//	return
+	//}
+	value, _ := t.relayerInfo[relayer.RelayerId]
+	if value.TimePeriod == -1 {
 		if relayer.TimePeriod <= 0 {
 			//get unbonding time from cache
 			var chainAUnbondT, chainBUnbondT int64
@@ -207,18 +236,18 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 			}
 			if chainAUnbondT > 0 && chainBUnbondT > 0 {
 				if chainAUnbondT >= chainBUnbondT {
-					timePeriod = chainBUnbondT
+					value.TimePeriod = chainBUnbondT
 				} else {
-					timePeriod = chainAUnbondT
+					value.TimePeriod = chainAUnbondT
 				}
 			}
 		} else {
-			timePeriod = relayer.TimePeriod
+			value.TimePeriod = relayer.TimePeriod
 		}
 
 	}
-	t.handleOneRelayerStatusAndTime(relayer, updateTime, timePeriod)
-	t.updateIbcChannelRelayerInfo(relayer, updateTime)
+	t.handleOneRelayerStatusAndTime(relayer, value.UpdateTime, value.TimePeriod)
+	t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.IBCRelayer)) {
 	skip := int64(0)
@@ -229,6 +258,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.I
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
+		t.handleUpdateTimeAndTimePeriod(relayers)
 		for _, relayer := range relayers {
 			handle(relayer)
 		}
@@ -258,7 +288,6 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 }
 
 func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
 	configList, err := chainConfigRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s cacheChainUnbondTimeFromLcd error, %v", t.Name(), err)
@@ -267,9 +296,8 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 	if len(configList) == 0 {
 		return
 	}
-	incr, _ := statisticsCheckRepo.GetIncr("getUnbondtimeFromLcd", mmdd)
 	value, _ := unbondTimeCache.GetUnbondTime(configList[0].ChainId)
-	if incr > 1 && len(value) > 0 {
+	if len(value) > 0 {
 		return
 	}
 	group := sync.WaitGroup{}
@@ -282,7 +310,6 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 		}(baseUrl, val.ChainId)
 	}
 	group.Wait()
-	_ = statisticsCheckRepo.Incr("getUnbondtimeFromLcd", mmdd)
 }
 
 func getStakeParams(baseUrl, chainId string) {
@@ -523,7 +550,6 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 
 //dependence: caculateRelayerTotalValue, AggregateRelayerPacketTxs
 func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxsAndValue(val *entity.IBCRelayer) {
-	t.AggrRelayerPacketTxs()
 	getRelayerValue := func(data *entity.IBCRelayer) string {
 		keyA := relayerAmtValueMapKey(data.RelayerId, data.ChainA, data.ChannelA)
 		keyB := relayerAmtValueMapKey(data.RelayerId, data.ChainB, data.ChannelB)
@@ -613,15 +639,28 @@ func createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 //1: timePeriod
 //2: updateTime
 //3: error
-func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64, error) {
-	updateTimeA, timePeriodA, err := txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, relayer.UpdateTime)
-	if err != nil {
-		return 0, 0, err
-	}
-	updateTimeB, timePeriodB, err := txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, relayer.UpdateTime)
-	if err != nil {
-		return 0, 0, err
-	}
+func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64) {
+	var updateTimeA, timePeriodA, updateTimeB, timePeriodB int64
+	var err error
+	group := sync.WaitGroup{}
+	group.Add(2)
+	go func() {
+		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, relayer.UpdateTime)
+		if err != nil {
+			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
+		}
+		group.Done()
+	}()
+
+	go func() {
+		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, relayer.UpdateTime)
+		if err != nil {
+			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
+		}
+		group.Done()
+	}()
+	group.Wait()
+
 	timePeriod := timePeriodB
 	updateTime := updateTimeB
 	if timePeriodA >= timePeriodB && timePeriodB > 0 {
@@ -645,7 +684,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	if updateTime < relayer.UpdateTime {
 		updateTime = relayer.UpdateTime
 	}
-	return timePeriod, updateTime, nil
+	return timePeriod, updateTime
 }
 
 func (t *IbcRelayerCronTask) todayStatistics() error {
