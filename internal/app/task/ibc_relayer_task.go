@@ -368,7 +368,7 @@ func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []
 	}
 }
 
-// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
+// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
 func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerStopStr)
 	if updateTime > 0 && relayer.TimePeriod > 0 && relayer.TimePeriod > time.Now().Unix()-updateTime {
@@ -409,7 +409,7 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 	if relayer.Status == entity.RelayerRunning {
 		t.handleToUnknow(relayer, paths, updateTime)
 	} else {
-		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间小于relayer基准周期
+		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
 		t.handleToRunning(relayer, paths, updateTime)
 	}
 	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, timePeriod); err != nil {
