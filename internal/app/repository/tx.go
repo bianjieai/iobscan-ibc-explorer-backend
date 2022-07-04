@@ -69,7 +69,7 @@ func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string) (int64,
 		query["msgs.msg.signer"] = address
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1}).Sort("-height").Limit(2).All(&res)
+		Select(bson.M{"time": 1}).Sort("-time").Limit(2).All(&res)
 	if err != nil {
 		return 0, 0, err
 	}
