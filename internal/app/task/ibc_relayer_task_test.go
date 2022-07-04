@@ -91,3 +91,7 @@ func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 	value := filterDbExist(datas, false)
 	t.Log(value)
 }
+
+func TestRelayerStatisticsTask_Run(t *testing.T) {
+	new(RelayerStatisticsTask).Run()
+}

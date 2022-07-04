@@ -94,18 +94,18 @@ func filterDbExist(relayers []entity.IBCRelayer, historyData bool) []entity.IBCR
 	}
 	var distinctArr []entity.IBCRelayer
 	for _, val := range relayers {
-		if val.ChainAAddress == "" {
-			val.ChainAAllAddress = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-				ScChainId:      val.ChainA,
-				ScChannel:      val.ChannelA,
-				DcChainId:      val.ChainB,
-				DcChannel:      val.ChannelB,
-				DcChainAddress: val.ChainBAddress,
-			}, historyData)
-			if len(val.ChainAAllAddress) > 0 {
-				val.ChainAAddress = val.ChainAAllAddress[0]
-			}
-		}
+		//if val.ChainAAddress == "" {
+		//	val.ChainAAllAddress = getSrcChainAddress(&dto.GetRelayerInfoDTO{
+		//		ScChainId:      val.ChainA,
+		//		ScChannel:      val.ChannelA,
+		//		DcChainId:      val.ChainB,
+		//		DcChannel:      val.ChannelB,
+		//		DcChainAddress: val.ChainBAddress,
+		//	}, historyData)
+		//	if len(val.ChainAAllAddress) > 0 {
+		//		val.ChainAAddress = val.ChainAAllAddress[0]
+		//	}
+		//}
 		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
 		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
 		_, exist := relayerMap[key]
