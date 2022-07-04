@@ -20,12 +20,12 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
   if (date_range && date_range[1] > 0) {
     queryParams.tx_time.$lte = date_range[1];
   }
-  if (chain_id || token.length) {
+  if (chain_id || token?.length) {
     queryParams.$and = [];
   }
   if (chain_id) {
     const chains:string[] = chain_id.split(",")
-    switch (chains.length) {
+    switch (chains?.length) {
       case 1:// transfer_chain or recv_chain
           if (!chain_id?.includes(AllChain)) {
             const $or = [];

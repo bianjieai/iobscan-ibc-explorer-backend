@@ -162,9 +162,9 @@ export class IbcTxService {
             //todo this value get by setting data
             return await this.getStartTxTime();
         }
-        if (queryData?.chain_id) {
-            const chains:string[] = queryData.chain_id.split(",")
-            if (chains.length > 2) {
+        if (query?.chain_id) {
+            const chains:string[] = query?.chain_id?.split(",")
+            if (chains?.length > 2) {
                 return new ListStruct(null, page_num, page_size);
             }
         }
