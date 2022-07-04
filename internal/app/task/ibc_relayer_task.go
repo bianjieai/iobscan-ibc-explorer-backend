@@ -193,7 +193,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 		logrus.Error("get relayer timePeriod and updateTime fail, ", err.Error())
 		return
 	}
-	if timePeriod == -1 && relayer.TimePeriod <= 0 {
+	if timePeriod == -1 && relayer.TimePeriod <= 0 && relayer.UpdateTime <= 0 {
 		//get unbonding time from cache
 		var chainAUnbondT, chainBUnbondT int64
 		chainAUnbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
@@ -339,7 +339,7 @@ func (t *IbcRelayerCronTask) handleRunning(relayer *entity.IBCRelayer, paths []*
 func (t *IbcRelayerCronTask) handleStop(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
 	f := fsm.NewIbcRelayerFSM(entity.RelayerStopStr)
 
-	if relayer.TimePeriod > updateTime-relayer.UpdateTime {
+	if updateTime > 0 && relayer.TimePeriod > updateTime-relayer.UpdateTime {
 		var channelStatus []string
 		for _, path := range paths {
 			if path.ChannelId == relayer.ChannelA {
