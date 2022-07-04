@@ -68,9 +68,9 @@ func (t *RelayerStatisticsTask) Run() int {
 	return 1
 }
 
-func (t *RelayerStatisticsTask) saveData(startTime, endTime int64, op int) error {
+func (t *RelayerStatisticsTask) saveData(relayerStaticsMap map[string]Statistic, startTime, endTime int64, op int) error {
 	var relayerStatics []entity.IBCRelayerStatistics
-	for key, value := range t.relayersMap {
+	for key, value := range relayerStaticsMap {
 		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
 			chainId, baseDenom, _, channel := arrs[0], arrs[1], arrs[2], arrs[3]
 			item := createIBCRelayerStatistics(channel, chainId, value.RelayerId, baseDenom, value.Amounts,
@@ -108,8 +108,8 @@ func (t *RelayerStatisticsTask) dealHistory(segments []*segment) error {
 		if err != nil {
 			logrus.Error(err.Error())
 		}
-		t.aggr(relayerTxs, relayerSuccessTxs, relayerAmounts)
-		if err = t.saveData(v.StartTime, v.EndTime, opInsert); err != nil {
+		aggr := t.aggr(relayerTxs, relayerSuccessTxs, relayerAmounts)
+		if err = t.saveData(aggr, v.StartTime, v.EndTime, opInsert); err != nil {
 			return err
 		}
 		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
@@ -128,8 +128,8 @@ func (t *RelayerStatisticsTask) deal(segments []*segment, op int) error {
 		if err != nil {
 			logrus.Error(err.Error())
 		}
-		t.aggr(relayerTxs, relayerSuccessTxs, relayerAmounts)
-		if err := t.saveData(v.StartTime, v.EndTime, op); err != nil {
+		aggr := t.aggr(relayerTxs, relayerSuccessTxs, relayerAmounts)
+		if err := t.saveData(aggr, v.StartTime, v.EndTime, op); err != nil {
 			return err
 		}
 		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
@@ -137,7 +137,7 @@ func (t *RelayerStatisticsTask) deal(segments []*segment, op int) error {
 	return nil
 }
 
-func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountRelayerPacketTxsCntDTO, relayerAmounts []*dto.CountRelayerPacketAmountDTO) {
+func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountRelayerPacketTxsCntDTO, relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]Statistic {
 	relayerTxsMap := make(map[string]TxsItem, 20)
 	for _, tx := range relayerTxs {
 		key := t.relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
@@ -172,6 +172,7 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 	}
 
 	relayerAmtsMap := createAmounts(relayerAmounts)
+	relayerStaticsMap := make(map[string]Statistic, 20)
 	for key, val := range relayerAmtsMap {
 		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
 			chainId, _, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
@@ -189,11 +190,18 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 				value.TxsSuccess = txsSuccess
 				value.Txs = txs
 				value.Amounts = val
+				relayerStaticsMap[key] = Statistic{
+					Amounts:    val,
+					IBCRelayer: value.IBCRelayer,
+					Txs:        txs,
+					TxsSuccess: txsSuccess,
+				}
 			}
 
 		}
 	}
-	return
+
+	return relayerStaticsMap
 }
 
 func (t *RelayerStatisticsTask) handleNewRelayerOnce(segments []*segment, historyData bool) {
