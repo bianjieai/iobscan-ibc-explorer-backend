@@ -1,7 +1,6 @@
 import {Injectable, Logger} from '@nestjs/common';
 import {RecordLimit, SubState, TaskEnum} from "../constant";
 import {IbcTxHandler} from "../util/IbcTxHandler";
-import {dateNow} from "../helper/date.helper";
 import {cfg} from "../config/config";
 
 @Injectable()
@@ -36,6 +35,7 @@ export class IbcTxDataUpdateTaskService {
                 }
                 pageNum++
             }
+            const dateNow = Math.floor(new Date().getTime() / 1000)
             await this.taskCommonService.changeIbcTxState(ibcTxModel, dateNow, substate, true, handIbcTxs)
             Logger.log("finish update chain "+chainCfg.chain_id+ " ibc_tx processing data")
         }

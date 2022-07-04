@@ -1,7 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {SubState, TaskEnum} from "../constant";
 import {IbcTxHandler} from "../util/IbcTxHandler";
-import {dateNow} from "../helper/date.helper";
 
 @Injectable()
 export class IbcUpdateSubStateTxTaskService {
@@ -11,6 +10,7 @@ export class IbcUpdateSubStateTxTaskService {
     async doTask(taskName?: TaskEnum): Promise<void> {
         const substate = [SubState.SuccessRecvPacketNotFound,SubState.RecvPacketAckFailed,SubState.SuccessTimeoutPacketNotFound]
         const ibcTxLatestModel = this.taskCommonService.getIbcTxLatestModel()
+        const dateNow = Math.floor(new Date().getTime() / 1000)
         await this.taskCommonService.changeIbcTxState(ibcTxLatestModel,dateNow,substate,false,[])
     }
 }
