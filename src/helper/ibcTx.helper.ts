@@ -20,7 +20,7 @@ const parseQuery = (query: IbcTxQueryType): IbcTxQueryParamsType => {
   if (date_range && date_range[1] > 0) {
     queryParams.tx_time.$lte = date_range[1];
   }
-  if (chain_id || token) {
+  if (chain_id || token.length) {
     queryParams.$and = [];
   }
   if (chain_id) {
