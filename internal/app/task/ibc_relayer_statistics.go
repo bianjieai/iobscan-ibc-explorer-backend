@@ -187,9 +187,6 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 			//}
 			if ok {
 				txs, txsSuccess := getRelayerTxs(value.IBCRelayer, relayerTxsMap)
-				value.TxsSuccess = txsSuccess
-				value.Txs = txs
-				value.Amounts = val
 				relayerStaticsMap[key] = Statistic{
 					Amounts:    val,
 					IBCRelayer: value.IBCRelayer,
