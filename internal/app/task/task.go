@@ -96,6 +96,7 @@ func OneOffTaskRun(task OneOffTask) {
 		logrus.Errorf("one-off task %s has been executed, err:%v", task.Name(), err.Error())
 		return
 	}
+	logrus.Infof("one-off task %s start", task.Name())
 	startTime := time.Now().Unix()
 	res := task.Run()
 
