@@ -48,7 +48,7 @@ type CountRelayerPacketAmountDTO struct {
 	Amount         float64 `bson:"amount"`
 }
 type CountRelayerBaseDenomAmtDTO struct {
-	RelayerId string  `bson:"relayer_id"`
+	Address   string  `bson:"address"`
 	ChainId   string  `bson:"chain_id"`
 	Channel   string  `bson:"channel"`
 	Amount    float64 `bson:"amount"`
@@ -56,7 +56,7 @@ type CountRelayerBaseDenomAmtDTO struct {
 }
 
 type AggRelayerTxsDTO struct {
-	RelayerId       string `bson:"relayer_id"`
+	Address         string `bson:"address"`
 	ChainId         string `bson:"chain_id"`
 	Channel         string `bson:"channel"`
 	SuccessTotalTxs int64  `bson:"success_total_txs"`

@@ -1,9 +1,9 @@
 package entity
 
 type IBCRelayerStatistics struct {
-	RelayerId         string `bson:"relayer_id"`
 	ChainId           string `bson:"chain_id"`
 	Channel           string `bson:"channel"`
+	Address           string `bson:"address"`
 	TransferBaseDenom string `bson:"transfer_base_denom"`
 	TransferAmount    string `bson:"transfer_amount"`
 	SuccessTotalTxs   int64  `bson:"success_total_txs"`
