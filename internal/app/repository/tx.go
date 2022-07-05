@@ -10,7 +10,7 @@ import (
 
 type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetRelayerScChainAddreeDTO, error)
-	GetTimePeriodByUpdateClient(chainId, address string) (int64, int64, error)
+	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -62,14 +62,17 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetR
 //1: latest update_client tx_time
 //2: time_period
 //3: error
-func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string) (int64, int64, error) {
+func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error) {
 	var res []*entity.Tx
-	query := bson.M{"msgs.type": "update_client"}
-	if address != "" {
-		query["msgs.msg.signer"] = address
+	query := bson.M{
+		"msgs.type":       "update_client",
+		"msgs.msg.signer": address,
+		"time": bson.M{
+			"$gte": startTime,
+		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1}).Sort("-time").Limit(2).All(&res)
+		Select(bson.M{"time": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
 	if err != nil {
 		return 0, 0, err
 	}

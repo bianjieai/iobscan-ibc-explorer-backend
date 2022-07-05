@@ -640,12 +640,16 @@ func createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 //2: updateTime
 //3: error
 func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64) {
-	var updateTimeA, timePeriodA, updateTimeB, timePeriodB int64
+	var updateTimeA, timePeriodA, updateTimeB, timePeriodB, startTime int64
 	var err error
+	startTime = time.Now().Add(-12 * time.Hour).Unix()
+	if relayer.UpdateTime <= startTime {
+		startTime = relayer.UpdateTime
+	}
 	group := sync.WaitGroup{}
 	group.Add(2)
 	go func() {
-		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress)
+		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, startTime)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
@@ -653,7 +657,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	}()
 
 	go func() {
-		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress)
+		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, startTime)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
@@ -677,8 +681,13 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		}
 	} else if timePeriodA == -1 || timePeriodB == -1 {
 		//如果有一条链update_client没有查到，就不更新updateTime
-		updateTime = relayer.UpdateTime
-		timePeriod = relayer.TimePeriod
+		if relayer.UpdateTime > 0 && relayer.UpdateTime < updateTime {
+			updateTime = relayer.UpdateTime
+		}
+		//如果最新基准周期为0，就不更新
+		if timePeriod <= 0 {
+			timePeriod = relayer.TimePeriod
+		}
 	}
 	//判断更新时间如果小于历史更新时间，就不更新
 	if updateTime < relayer.UpdateTime {
