@@ -73,26 +73,26 @@ func (t *IbcRelayerCronTask) Cron() int {
 
 func (t *IbcRelayerCronTask) Run() int {
 	t.getTokenPriceMap()
-	//_ = t.todayStatistics()
-	//_ = t.yesterdayStatistics()
-	//t.cacheChainUnbondTimeFromLcd()
-	//t.updateIbcChainsRelayer()
+	_ = t.todayStatistics()
+	_ = t.yesterdayStatistics()
+	t.cacheChainUnbondTimeFromLcd()
+	t.updateIbcChainsRelayer()
 	t.cacheIbcChannelRelayer()
 
 	t.caculateRelayerTotalValue()
 	t.AggrRelayerPacketTxs()
 	t.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
-		//group := sync.WaitGroup{}
-		//group.Add(2)
-		//go func(relayer *entity.IBCRelayer) {
-		//	t.updateRelayerStatus(relayer)
-		//	group.Done()
-		//}(relayer)
-		//go func(relayer *entity.IBCRelayer) {
-		t.saveOrUpdateRelayerTxsAndValue(relayer)
-		//	group.Done()
-		//}(relayer)
-		//group.Wait()
+		group := sync.WaitGroup{}
+		group.Add(2)
+		go func(relayer *entity.IBCRelayer) {
+			t.updateRelayerStatus(relayer)
+			group.Done()
+		}(relayer)
+		go func(relayer *entity.IBCRelayer) {
+			t.saveOrUpdateRelayerTxsAndValue(relayer)
+			group.Done()
+		}(relayer)
+		group.Wait()
 	})
 
 	return 1
@@ -262,7 +262,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.I
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		//t.handleUpdateTimeAndTimePeriod(relayers)
+		t.handleUpdateTimeAndTimePeriod(relayers)
 		for _, relayer := range relayers {
 			handle(relayer)
 		}
