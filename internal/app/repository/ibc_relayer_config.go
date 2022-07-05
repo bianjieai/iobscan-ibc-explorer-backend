@@ -17,8 +17,9 @@ var _ IRelayerConfigRepo = new(RelayerConfigRepo)
 type RelayerConfigRepo struct {
 }
 
-func CreateRelayerChannelPair(chainA, chainB, channelA, channelB string) string {
-	return fmt.Sprintf("%s:%s:%s:%s", chainA, chainB, channelA, channelB)
+func CreateRelayerChannelPair(chainA, chainB, channelA, channelB, addressA, AddressB string) (string, string) {
+	return fmt.Sprintf("%s:%s:%s:%s:%s:%s", chainA, channelA, addressA, chainB, channelB, AddressB),
+		fmt.Sprintf("%s:%s:%s:%s:%s:%s", chainB, channelB, AddressB, chainA, channelA, addressA)
 }
 
 //func (repo *RelayerConfigRepo) EnsureIndexes() {
