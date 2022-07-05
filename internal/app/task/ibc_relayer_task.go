@@ -649,7 +649,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	var updateTimeA, timePeriodA, updateTimeB, timePeriodB, startTime int64
 	var err error
 	startTime = time.Now().Add(-12 * time.Hour).Unix()
-	if relayer.UpdateTime <= startTime {
+	if relayer.UpdateTime > 0 && relayer.UpdateTime <= startTime {
 		startTime = relayer.UpdateTime
 	}
 	group := sync.WaitGroup{}
