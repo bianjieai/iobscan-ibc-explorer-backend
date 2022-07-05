@@ -141,12 +141,17 @@ func (repo *IbcRelayerRepo) Insert(relayer []entity.IBCRelayer) error {
 
 func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue string) error {
 	updateData := bson.M{
-		RelayerFieldTransferTotalTxs:   txs,
-		RelayerFieldTransferSuccessTxs: txsSuccess,
-		RelayerFieldUpdateAt:           time.Now().Unix(),
+		RelayerFieldUpdateAt: time.Now().Unix(),
 	}
 	if totalValue != "" {
 		updateData[RelayerFieldTransferTotalTxsValue] = totalValue
+	}
+	if txs > 0 {
+		updateData[RelayerFieldTransferTotalTxs] = txs
+	}
+
+	if txsSuccess > 0 {
+		updateData[RelayerFieldTransferSuccessTxs] = txsSuccess
 	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, bson.M{
 		"$set": updateData})

@@ -642,10 +642,14 @@ func createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64) {
 	var updateTimeA, timePeriodA, updateTimeB, timePeriodB int64
 	var err error
+	startTime := time.Now().Add(-12 * time.Hour).Unix()
+	if relayer.UpdateTime <= startTime {
+		relayer.UpdateTime = startTime
+	}
 	group := sync.WaitGroup{}
 	group.Add(2)
 	go func() {
-		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress)
+		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, relayer.UpdateTime)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
@@ -653,7 +657,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	}()
 
 	go func() {
-		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress)
+		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, relayer.UpdateTime)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
