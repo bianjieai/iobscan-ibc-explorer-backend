@@ -684,8 +684,8 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		if relayer.UpdateTime > 0 && relayer.UpdateTime < updateTime {
 			updateTime = relayer.UpdateTime
 		}
-		//如果历史基准周期比最新基准周期大
-		if relayer.TimePeriod > timePeriod {
+		//如果最新基准周期为0，就不更新
+		if timePeriod <= 0 {
 			timePeriod = relayer.TimePeriod
 		}
 	}
