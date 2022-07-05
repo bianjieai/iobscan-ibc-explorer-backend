@@ -72,8 +72,8 @@ func (t *RelayerStatisticsTask) saveData(relayerStaticsMap map[string]Statistic,
 	var relayerStatics []entity.IBCRelayerStatistics
 	for key, value := range relayerStaticsMap {
 		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
-			chainId, baseDenom, _, channel := arrs[0], arrs[1], arrs[2], arrs[3]
-			item := createIBCRelayerStatistics(channel, chainId, value.RelayerId, baseDenom, value.Amounts,
+			chainId, baseDenom, address, channel := arrs[0], arrs[1], arrs[2], arrs[3]
+			item := createIBCRelayerStatistics(channel, chainId, address, baseDenom, value.Amounts,
 				value.TxsSuccess, value.Txs, startTime, endTime)
 			relayerStatics = append(relayerStatics, item)
 		}

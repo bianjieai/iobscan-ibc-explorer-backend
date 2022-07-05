@@ -21,9 +21,9 @@ import (
 )
 
 type IbcRelayerCronTask struct {
-	//key: relayerId
+	//key:address+Chain+Channel
 	relayerTxsDataMap map[string]TxsItem
-	//key: relayerId+Chain+Channel
+	//key:address+Chain+Channel
 	relayerValueMap map[string]decimal.Decimal
 	//key: ChainA+ChainB+ChannelA+ChannelB
 	channelRelayerCnt map[string]int64
@@ -53,8 +53,12 @@ func relayerAmtsMapKey(chainId, baseDenom, dcChainAddr, dcChannel string) string
 	return fmt.Sprintf("%s:%s:%s:%s", chainId, baseDenom, dcChainAddr, dcChannel)
 }
 
-func relayerAmtValueMapKey(relayerId, chainId, channel string) string {
-	return fmt.Sprintf("%s:%s:%s", relayerId, chainId, channel)
+func relayerAmtValueMapKey(address, chainId, channel string) string {
+	return fmt.Sprintf("%s:%s:%s", address, chainId, channel)
+}
+
+func (t *IbcRelayerCronTask) relayerTxsDataMapKey(chainId, dcChainAddr, dcChannel string) string {
+	return fmt.Sprintf("%s:%s:%s", chainId, dcChannel, dcChainAddr)
 }
 
 func (t *IbcRelayerCronTask) Name() string {
@@ -471,7 +475,7 @@ func (t *IbcRelayerCronTask) AggrRelayerPacketTxs() {
 	}
 	t.relayerTxsDataMap = make(map[string]TxsItem, 20)
 	for _, item := range res {
-		key := item.RelayerId
+		key := t.relayerTxsDataMapKey(item.ChainId, item.Address, item.Channel)
 		value, exist := t.relayerTxsDataMap[key]
 		if exist {
 			value.Txs += item.TotalTxs
@@ -501,10 +505,10 @@ func createAmounts(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string
 	return relayerAmtsMap
 }
 
-func createIBCRelayerStatistics(channel, chainId, relayerId, baseDenom string, amount decimal.Decimal, successTxs, txs,
+func createIBCRelayerStatistics(channel, chainId, address, baseDenom string, amount decimal.Decimal, successTxs, txs,
 	startTime, endTime int64) entity.IBCRelayerStatistics {
 	return entity.IBCRelayerStatistics{
-		RelayerId:         relayerId,
+		Address:           address,
 		ChainId:           chainId,
 		Channel:           channel,
 		TransferBaseDenom: baseDenom,
@@ -527,7 +531,7 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 	createAmtValue := func(baseDenomAmtDtos []*dto.CountRelayerBaseDenomAmtDTO) map[string]decimal.Decimal {
 		relayerAmtValueMap := make(map[string]decimal.Decimal, 20)
 		for _, amt := range baseDenomAmtDtos {
-			key := relayerAmtValueMapKey(amt.RelayerId, amt.ChainId, amt.Channel)
+			key := relayerAmtValueMapKey(amt.Address, amt.ChainId, amt.Channel)
 			decAmt := decimal.NewFromFloat(amt.Amount)
 			baseDenomValue := decimal.NewFromFloat(0)
 			if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
@@ -561,8 +565,10 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxsAndValue(val *entity.IBCRelay
 	}
 
 	getRelayerTxs := func(data *entity.IBCRelayer) (int64, int64) {
-		totalTxsAValue, _ := t.relayerTxsDataMap[data.RelayerId]
-		totalTxsBValue, _ := t.relayerTxsDataMap[data.RelayerId]
+		keyA := t.relayerTxsDataMapKey(data.ChainA, data.ChainAAddress, data.ChannelA)
+		keyB := t.relayerTxsDataMapKey(data.ChainB, data.ChainBAddress, data.ChannelB)
+		totalTxsAValue, _ := t.relayerTxsDataMap[keyA]
+		totalTxsBValue, _ := t.relayerTxsDataMap[keyB]
 		txsSuccess := totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess
 		txs := totalTxsAValue.Txs + totalTxsBValue.Txs
 		return txs, txsSuccess

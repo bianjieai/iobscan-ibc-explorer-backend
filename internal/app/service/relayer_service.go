@@ -41,8 +41,11 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
-		relayerChannelPair := repository.CreateRelayerChannelPair(val.ChainA, val.ChainB, val.ChannelA, val.ChannelB)
-		if cfg, ok := relayerCfgMap[relayerChannelPair]; ok {
+		relayerChannelPairA, relayerChannelPairB := repository.CreateRelayerChannelPair(val.ChainA, val.ChainB, val.ChannelA, val.ChannelB, val.ChainAAddress, val.ChainBAddress)
+		if cfg, ok := relayerCfgMap[relayerChannelPairA]; ok {
+			item.RelayerName = cfg.RelayerName
+			item.RelayerIcon = cfg.Icon
+		} else if cfg, ok = relayerCfgMap[relayerChannelPairB]; ok {
 			item.RelayerName = cfg.RelayerName
 			item.RelayerIcon = cfg.Icon
 		}
