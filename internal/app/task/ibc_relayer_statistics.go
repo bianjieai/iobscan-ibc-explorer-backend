@@ -149,7 +149,10 @@ func (t *RelayerStatisticsTask) deal(segments []*segment, op int) error {
 func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountRelayerPacketTxsCntDTO, relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]Statistic {
 	relayerTxsMap := make(map[string]TxsItem, 20)
 	for _, tx := range relayerTxs {
-		key := t.relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
+		if !tx.Valid() {
+			continue
+		}
+		key := t.relayerTxsMapKey(tx.DcChainId, tx.Address(), tx.DcChannel)
 		value, exist := relayerTxsMap[key]
 		if exist {
 			value.Txs += tx.Count
@@ -160,7 +163,10 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 	}
 
 	for _, tx := range relayerSuccessTxs {
-		key := t.relayerTxsMapKey(tx.DcChainId, tx.DcChainAddress, tx.DcChannel)
+		if !tx.Valid() {
+			continue
+		}
+		key := t.relayerTxsMapKey(tx.DcChainId, tx.Address(), tx.DcChannel)
 		value, exist := relayerTxsMap[key]
 		if exist {
 			value.TxsSuccess += tx.Count
@@ -173,14 +179,10 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 	getRelayerTxs := func(data *entity.IBCRelayer, relayerTxsMap map[string]TxsItem) (int64, int64) {
 		keyA := t.relayerTxsMapKey(data.ChainA, data.ChainAAddress, data.ChannelA)
 		keyB := t.relayerTxsMapKey(data.ChainB, data.ChainBAddress, data.ChannelB)
-		keyA1 := t.relayerTxsMapKey(data.ChainA, "", data.ChannelA)
-		keyB1 := t.relayerTxsMapKey(data.ChainB, "", data.ChannelB)
 		totalTxsAValue, _ := relayerTxsMap[keyA]
-		totalTxsAValue1, _ := relayerTxsMap[keyA1]
 		totalTxsBValue, _ := relayerTxsMap[keyB]
-		totalTxsBValue1, _ := relayerTxsMap[keyB1]
-		txsSuccess := totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess + totalTxsAValue1.TxsSuccess + totalTxsBValue1.TxsSuccess
-		txs := totalTxsAValue.Txs + totalTxsBValue.Txs + totalTxsAValue1.Txs + totalTxsBValue1.Txs
+		txsSuccess := totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess
+		txs := totalTxsAValue.Txs + totalTxsBValue.Txs
 		return txs, txsSuccess
 	}
 

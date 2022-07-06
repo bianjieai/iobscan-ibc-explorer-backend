@@ -311,7 +311,7 @@ func (repo *ExIbcTxRepo) relayerPacketCond(startTime, endTime int64) []bson.M {
 				"$lte": endTime,
 			},
 			"status": bson.M{
-				"$in": entity.IbcTxUsefulStatus,
+				"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded},
 			},
 			"sc_tx_info.status": entity.TxStatusSuccess,
 		},
@@ -322,6 +322,7 @@ func (repo *ExIbcTxRepo) relayerPacketCond(startTime, endTime int64) []bson.M {
 				"dc_chain_id": "$dc_chain_id",
 				"dc_channel":  "$dc_channel",
 				"relayer":     "$dc_tx_info.msg.msg.signer",
+				"sc_relayer":  "$refunded_tx_info.msg.msg.signer",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -332,6 +333,7 @@ func (repo *ExIbcTxRepo) relayerPacketCond(startTime, endTime int64) []bson.M {
 		"$project": bson.M{
 			"_id":              0,
 			"dc_chain_address": "$_id.relayer",
+			"sc_chain_address": "$_id.sc_relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
 			"dc_channel":       "$_id.dc_channel",
 			"count":            "$count",
@@ -350,7 +352,7 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 				"$lte": endTime,
 			},
 			"status": bson.M{
-				"$in": entity.IbcTxUsefulStatus,
+				"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded},
 			},
 			"sc_tx_info.status": entity.TxStatusSuccess,
 		},
@@ -361,6 +363,7 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 				"dc_chain_id": "$dc_chain_id",
 				"dc_channel":  "$dc_channel",
 				"relayer":     "$dc_tx_info.msg.msg.signer",
+				"sc_relayer":  "$refunded_tx_info.msg.msg.signer",
 				"base_denom":  "$base_denom",
 			},
 			"amount": bson.M{
@@ -372,6 +375,7 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 		"$project": bson.M{
 			"_id":              0,
 			"dc_chain_address": "$_id.relayer",
+			"sc_chain_address": "$_id.sc_relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
 			"dc_channel":       "$_id.dc_channel",
 			"base_denom":       "$_id.base_denom",

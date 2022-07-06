@@ -486,7 +486,10 @@ func (t *IbcRelayerCronTask) AggrRelayerPacketTxs() {
 func createAmounts(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]decimal.Decimal {
 	relayerAmtsMap := make(map[string]decimal.Decimal, 20)
 	for _, amt := range relayerAmounts {
-		key := relayerAmtsMapKey(amt.DcChainId, amt.BaseDenom, amt.DcChainAddress, amt.DcChannel)
+		if !amt.Valid() {
+			continue
+		}
+		key := relayerAmtsMapKey(amt.DcChainId, amt.BaseDenom, amt.Address(), amt.DcChannel)
 		decAmt := decimal.NewFromFloat(amt.Amount)
 		value, exist := relayerAmtsMap[key]
 		if exist {
@@ -525,6 +528,9 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 	createAmtValue := func(baseDenomAmtDtos []*dto.CountRelayerBaseDenomAmtDTO) map[string]decimal.Decimal {
 		relayerAmtValueMap := make(map[string]decimal.Decimal, 20)
 		for _, amt := range baseDenomAmtDtos {
+			if !amt.Valid() {
+				continue
+			}
 			key := relayerAmtValueMapKey(amt.Address, amt.ChainId, amt.Channel)
 			decAmt := decimal.NewFromFloat(amt.Amount)
 			baseDenomValue := decimal.NewFromFloat(0)

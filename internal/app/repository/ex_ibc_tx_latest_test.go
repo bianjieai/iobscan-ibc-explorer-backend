@@ -24,7 +24,7 @@ func TestExIbcTxRepo_FindAllHistory(t *testing.T) {
 }
 
 func TestExIbcTxRepo_GetRelayerInfo(t *testing.T) {
-	data, err := new(ExIbcTxRepo).GetRelayerInfo(0)
+	data, err := new(ExIbcTxRepo).GetRelayerInfo(1638979200, 16390655990)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -33,7 +33,7 @@ func TestExIbcTxRepo_GetRelayerInfo(t *testing.T) {
 }
 
 func TestExIbcTxRepo_GetOneRelayerScTxPacketId(t *testing.T) {
-	data, err := new(ExIbcTxRepo).GetRelayerInfo(0)
+	data, err := new(ExIbcTxRepo).GetRelayerInfo(1638979200, 1639065599)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -47,13 +47,13 @@ func TestExIbcTxRepo_GetOneRelayerScTxPacketId(t *testing.T) {
 }
 
 func TestExIbcTxRepo_GetHistoryRelayerSuccessPacketTxs(t *testing.T) {
-	data, err := new(ExIbcTxRepo).CountHistoryRelayerSuccessPacketTxs()
+	data, err := new(ExIbcTxRepo).CountHistoryRelayerSuccessPacketTxs(1638979200, 1639065599)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	ret, _ := json.Marshal(data)
 	t.Log(string(ret))
-	data1, err1 := new(ExIbcTxRepo).CountRelayerSuccessPacketTxs()
+	data1, err1 := new(ExIbcTxRepo).CountRelayerSuccessPacketTxs(1638979200, 1639065599)
 	if err1 != nil {
 		t.Fatal(err1.Error())
 	}
@@ -62,13 +62,13 @@ func TestExIbcTxRepo_GetHistoryRelayerSuccessPacketTxs(t *testing.T) {
 }
 
 func TestExIbcTxRepo_GetRelayerPacketTxs(t *testing.T) {
-	data, err := new(ExIbcTxRepo).CountRelayerPacketTxs()
+	data, err := new(ExIbcTxRepo).CountRelayerPacketTxs(1638979200, 1639065599)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	ret, _ := json.Marshal(data)
 	t.Log(string(ret))
-	data1, err1 := new(ExIbcTxRepo).CountHistoryRelayerPacketTxs()
+	data1, err1 := new(ExIbcTxRepo).CountHistoryRelayerPacketTxs(1638979200, 1639065599)
 	if err1 != nil {
 		t.Fatal(err1.Error())
 	}
@@ -77,13 +77,13 @@ func TestExIbcTxRepo_GetRelayerPacketTxs(t *testing.T) {
 }
 
 func TestExIbcTxRepo_GetRelayerPacketAmount(t *testing.T) {
-	data, err := new(ExIbcTxRepo).CountRelayerPacketAmount()
+	data, err := new(ExIbcTxRepo).CountRelayerPacketAmount(1638979200, 1639065599)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	ret, _ := json.Marshal(data)
 	t.Log(string(ret))
-	data1, err1 := new(ExIbcTxRepo).CountHistoryRelayerPacketAmount()
+	data1, err1 := new(ExIbcTxRepo).CountHistoryRelayerPacketAmount(1638979200, 1639065599)
 	if err1 != nil {
 		t.Fatal(err1.Error())
 	}
