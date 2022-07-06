@@ -177,15 +177,21 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
 			chainId, _, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
 			relayerKey := t.relayerTxsMapKey(chainId, relayerAddr, channel)
-			value, ok := t.relayersMap[relayerKey]
-
-			if ok {
+			if value, ok := t.relayersMap[relayerKey]; ok {
 				txs, txsSuccess := getRelayerTxs(value.IBCRelayer, relayerTxsMap)
-				relayerStaticsMap[key] = Statistic{
-					Amounts:    val,
-					IBCRelayer: value.IBCRelayer,
-					Txs:        txs,
-					TxsSuccess: txsSuccess,
+				statisticData, exist := relayerStaticsMap[key]
+				if exist {
+					statisticData.Amounts = statisticData.Amounts.Add(val)
+					statisticData.Txs += txs
+					statisticData.TxsSuccess += txsSuccess
+					relayerStaticsMap[key] = statisticData
+				} else {
+					relayerStaticsMap[key] = Statistic{
+						Amounts:    val,
+						IBCRelayer: value.IBCRelayer,
+						Txs:        txs,
+						TxsSuccess: txsSuccess,
+					}
 				}
 			}
 
