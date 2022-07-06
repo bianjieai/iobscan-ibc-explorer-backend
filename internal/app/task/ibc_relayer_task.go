@@ -680,13 +680,12 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 			updateTime = updateTimeA
 		}
 	} else if timePeriodA == timePeriodB && timePeriodB == -1 {
-		// 两条链对应timePeriodB均为-1，表示均正常取最大基准周期
-		timePeriod = -1
-		if updateTimeA >= updateTimeB {
+		// 两条链对应timePeriodB均为-1，表示均超过12h取update_client交易时间最小的做为relayer的更新时间
+		if updateTimeA > 0 && updateTimeA < updateTimeB {
 			updateTime = updateTimeA
 		}
 	} else if timePeriodA == -1 || timePeriodB == -1 {
-		//如果有一条链update_client没有查到，就不更新updateTime
+		//如果有一条链update_client没有查到(超过12h)，就不更新updateTime
 		if relayer.UpdateTime > 0 && relayer.UpdateTime < updateTime {
 			updateTime = relayer.UpdateTime
 		}
