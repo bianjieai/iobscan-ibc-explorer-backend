@@ -72,7 +72,7 @@ func (t *TokenTask) Run() int {
 		return -1
 	}
 
-	t.caculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
+	t.calculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
 
 	// 更新数据到数据库
 	if err = tokenRepo.InsertBatch(newTokenList); err != nil {
@@ -466,7 +466,7 @@ func (t *TokenTask) getTokenScale(baseDenom, chainId string) int {
 	return scale
 }
 
-func (t *TokenTask) caculateTokenStatistics(existedTokenList, newTokenList entity.IBCTokenList) {
+func (t *TokenTask) calculateTokenStatistics(existedTokenList, newTokenList entity.IBCTokenList) {
 	for _, v := range existedTokenList {
 		chainNum, err := t.ibcTokenStatistics(v)
 		if err != nil {
@@ -490,7 +490,7 @@ func (t *TokenTask) caculateTokenStatistics(existedTokenList, newTokenList entit
 // 以下主要是对于ibc_token_statistics 集合数据的处理与计算
 
 func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error) {
-	ibcDenomCaculateList, err := denomCaculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
+	ibcDenomCalculateList, err := denomCaculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
 	if err != nil {
 		logrus.Errorf("task %s denomCaculateRepo.FindByBaseDenom error, %v", t.Name(), err)
 		return 0, nil
@@ -502,20 +502,23 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 		return 0, nil
 	}
 
-	ibcDenomCaculateStrList := make([]string, 0, len(ibcDenomCaculateList))
-	for _, v := range ibcDenomCaculateList {
-		ibcDenomCaculateStrList = append(ibcDenomCaculateStrList, v.Denom)
+	ibcDenomCalculateStrList := make([]string, 0, len(ibcDenomCalculateList))
+	for _, v := range ibcDenomCalculateList {
+		ibcDenomCalculateStrList = append(ibcDenomCalculateStrList, v.Denom)
 	}
 
 	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
 	allTokenStatisticsList := make([]*entity.IBCTokenTrace, 0, len(denomList))
 	for _, v := range denomList {
-		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcDenomCaculateStrList)
+		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcDenomCalculateStrList)
 		var denomAmount string
 		if denomType == entity.TokenTraceTypeGenesis {
 			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
 		} else {
 			denomAmount = t.ibcDenomAmount(v.ChainId, v.Denom)
+			if denomAmount == constant.ZeroDenomAmount { // 为0说明此链已经没有这个ibc denom
+				continue
+			}
 		}
 
 		allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenTrace{
@@ -577,6 +580,9 @@ func (t *TokenTask) ibcDenomValue(amount string, price float64, scale int) decim
 func (t *TokenTask) ibcDenomAmount(chainId, denom string) string {
 	amount, err := denomDataRepo.GetSupply(chainId, denom)
 	if err != nil {
+		if err == v8.Nil {
+			return constant.ZeroDenomAmount
+		}
 		return constant.UnknownDenomAmount
 	}
 	return amount
