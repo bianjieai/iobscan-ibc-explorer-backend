@@ -612,10 +612,8 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 			logrus.Error("count relayers of chain fail, ", err.Error())
 			continue
 		}
-		if relayerCnt > 0 {
-			if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
-				logrus.Error("update ibc_chain relayers fail, ", err.Error())
-			}
+		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
+			logrus.Error("update ibc_chain relayers fail, ", err.Error())
 		}
 	}
 	return
