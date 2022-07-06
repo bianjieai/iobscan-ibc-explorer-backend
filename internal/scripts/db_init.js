@@ -18,7 +18,7 @@ db.ibc_relayer_config.createIndex({
 
 db.ibc_relayer_statistics.createIndex({
     "transfer_base_denom": 1,
-    "relayer_id": 1,
+    "address": 1,
     "chain_id": 1,
     "channel": 1,
     "segment_start_time": -1,

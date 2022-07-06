@@ -125,7 +125,7 @@ func (t *TokenStatisticsTask) saveTokenTransferData(dtoList []*dto.CountBaseDeno
 		}
 	} else {
 		if err = tokenStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {
-			logrus.Errorf("task %stokenStatisticsRepo.BatchSwap err, %v", t.Name(), err)
+			logrus.Errorf("task %s tokenStatisticsRepo.BatchSwap err, %v", t.Name(), err)
 		}
 	}
 

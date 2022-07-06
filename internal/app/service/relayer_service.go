@@ -5,6 +5,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,11 @@ var _ IRelayerService = new(RelayerService)
 func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error) {
 	var resp vo.RelayerListResp
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	chains := strings.Split(req.Chain, ",")
+	//unsupport more than two chains
+	if len(chains) > 2 {
+		return resp, nil
+	}
 	rets, total, err := relayerRepo.FindAllBycond(req.Chain, req.Status, skip, limit, req.UseCount)
 	if err != nil {
 		return resp, errors.Wrap(err)
@@ -35,8 +41,11 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
-		relayerChannelPair := repository.CreateRelayerChannelPair(val.ChainA, val.ChainB, val.ChannelA, val.ChannelB)
-		if cfg, ok := relayerCfgMap[relayerChannelPair]; ok {
+		relayerChannelPairA, relayerChannelPairB := repository.CreateRelayerChannelPair(val.ChainA, val.ChainB, val.ChannelA, val.ChannelB, val.ChainAAddress, val.ChainBAddress)
+		if cfg, ok := relayerCfgMap[relayerChannelPairA]; ok {
+			item.RelayerName = cfg.RelayerName
+			item.RelayerIcon = cfg.Icon
+		} else if cfg, ok = relayerCfgMap[relayerChannelPairB]; ok {
 			item.RelayerName = cfg.RelayerName
 			item.RelayerIcon = cfg.Icon
 		}

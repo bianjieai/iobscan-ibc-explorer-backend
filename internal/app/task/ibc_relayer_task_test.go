@@ -15,16 +15,13 @@ func TestIbcRelayerCronTask_Run(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
-	data, data1, err := task.getTimePeriodAndupdateTime(&entity.IBCRelayer{
+	data, data1 := task.getTimePeriodAndupdateTime(&entity.IBCRelayer{
 		ChainA:        "bigbang",
 		ChainB:        "irishub_qa",
 		ChainAAddress: "cosmos16mrml9n668a6ywxsxvtkdymy9kh5m595ygr6g7",
 		ChainBAddress: "iaa1u3tpcx5088rx3lzzt0gg73lt9zugrjp730apj8",
 		UpdateTime:    1623218166,
 	})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 	t.Log("timePeriod:", data, "updateTime:", data1)
 }
 
@@ -90,4 +87,8 @@ func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 	}
 	value := filterDbExist(datas, false)
 	t.Log(value)
+}
+
+func TestRelayerStatisticsTask_Run(t *testing.T) {
+	new(RelayerStatisticsTask).Run()
 }
