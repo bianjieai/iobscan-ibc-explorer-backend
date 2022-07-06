@@ -181,6 +181,7 @@ func (repo *IbcRelayerRepo) FindLatestOne() (*entity.IBCRelayer, error) {
 
 func (repo *IbcRelayerRepo) FindRelayersCnt(chainId string) (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{
+		RelayerFieldStatus: entity.RelayerRunning,
 		"$or": []bson.M{
 			{RelayerFieldChainA: chainId},
 			{RelayerFieldChainB: chainId},
@@ -201,7 +202,9 @@ func (repo *IbcRelayerRepo) FindRelayer(chainId, relayerAddr, channel string) (*
 
 func (repo *IbcRelayerRepo) CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error) {
 	match := bson.M{
-		"$match": bson.M{},
+		"$match": bson.M{
+			RelayerFieldStatus: entity.RelayerRunning,
+		},
 	}
 	group := bson.M{
 		"$group": bson.M{
