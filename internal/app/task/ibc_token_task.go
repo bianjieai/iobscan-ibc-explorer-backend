@@ -126,7 +126,6 @@ func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, err
 		return nil, nil, err
 	}
 
-	baseDenomMap := t.baseDenomList.ConvertToMap()
 	existedTokenMap := existedTokenList.ConvertToMap()
 	var newTokenList entity.IBCTokenList
 
@@ -136,19 +135,11 @@ func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, err
 			continue
 		}
 
-		var tokenType entity.TokenType
-		_, ok = baseDenomMap[v.BaseDenom]
-		if ok {
-			tokenType = entity.TokenTypeAuthed
-		} else {
-			tokenType = entity.TokenTypeOther
-		}
-
 		// 新增的token
 		newTokenList = append(newTokenList, &entity.IBCToken{
 			BaseDenom:      v.BaseDenom,
 			ChainId:        v.ChainId,
-			Type:           tokenType,
+			Type:           t.tokenType(v.BaseDenom, v.ChainId),
 			Price:          constant.UnknownTokenPrice,
 			Currency:       constant.DefaultCurrency,
 			Supply:         constant.UnknownDenomAmount,
@@ -159,6 +150,16 @@ func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, err
 	}
 
 	return existedTokenList, newTokenList, nil
+}
+
+func (t *TokenTask) tokenType(baseDenom, chainId string) entity.TokenType {
+	for _, v := range t.baseDenomList {
+		if v.ChainId == chainId && v.Denom == baseDenom {
+			return entity.TokenTypeAuthed
+		}
+	}
+
+	return entity.TokenTypeOther
 }
 
 func (t *TokenTask) setTokenPrice(existedTokenList, newTokenList entity.IBCTokenList) error {
