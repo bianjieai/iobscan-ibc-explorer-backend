@@ -53,6 +53,13 @@ func relayerAmtsMapKey(chainId, baseDenom, dcChainAddr, dcChannel string) string
 	return fmt.Sprintf("%s:%s:%s:%s", chainId, baseDenom, dcChainAddr, dcChannel)
 }
 
+func relayerAmtsMapKeyByDto(dto *dto.CountRelayerPacketAmountDTO) string {
+	if dto.DcChainAddress != "" {
+		return fmt.Sprintf("%s:%s:%s:%s", dto.DcChainId, dto.BaseDenom, dto.DcChainAddress, dto.DcChannel)
+	}
+	return fmt.Sprintf("%s:%s:%s:%s", dto.ScChainId, dto.BaseDenom, dto.ScChainAddress, dto.ScChannel)
+}
+
 func relayerAmtValueMapKey(address, chainId, channel string) string {
 	return fmt.Sprintf("%s:%s:%s", address, chainId, channel)
 }
@@ -489,7 +496,7 @@ func createAmounts(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string
 		if !amt.Valid() {
 			continue
 		}
-		key := relayerAmtsMapKey(amt.DcChainId, amt.BaseDenom, amt.Address(), amt.DcChannel)
+		key := relayerAmtsMapKeyByDto(amt)
 		decAmt := decimal.NewFromFloat(amt.Amount)
 		value, exist := relayerAmtsMap[key]
 		if exist {

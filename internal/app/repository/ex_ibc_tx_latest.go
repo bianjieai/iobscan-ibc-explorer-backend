@@ -321,6 +321,8 @@ func (repo *ExIbcTxRepo) relayerPacketCond(startTime, endTime int64) []bson.M {
 			"_id": bson.M{
 				"dc_chain_id": "$dc_chain_id",
 				"dc_channel":  "$dc_channel",
+				"sc_chain_id": "$sc_chain_id",
+				"sc_channel":  "$sc_channel",
 				"relayer":     "$dc_tx_info.msg.msg.signer",
 				"sc_relayer":  "$refunded_tx_info.msg.msg.signer",
 			},
@@ -336,6 +338,8 @@ func (repo *ExIbcTxRepo) relayerPacketCond(startTime, endTime int64) []bson.M {
 			"sc_chain_address": "$_id.sc_relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
 			"dc_channel":       "$_id.dc_channel",
+			"sc_chain_id":      "$_id.sc_chain_id",
+			"sc_channel":       "$_id.sc_channel",
 			"count":            "$count",
 		},
 	}
@@ -362,6 +366,8 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 			"_id": bson.M{
 				"dc_chain_id": "$dc_chain_id",
 				"dc_channel":  "$dc_channel",
+				"sc_chain_id": "$sc_chain_id",
+				"sc_channel":  "$sc_channel",
 				"relayer":     "$dc_tx_info.msg.msg.signer",
 				"sc_relayer":  "$refunded_tx_info.msg.msg.signer",
 				"base_denom":  "$base_denom",
@@ -378,6 +384,8 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 			"sc_chain_address": "$_id.sc_relayer",
 			"dc_chain_id":      "$_id.dc_chain_id",
 			"dc_channel":       "$_id.dc_channel",
+			"sc_chain_id":      "$_id.sc_chain_id",
+			"sc_channel":       "$_id.sc_channel",
 			"base_denom":       "$_id.base_denom",
 			"amount":           "$amount",
 		},

@@ -31,6 +31,13 @@ func (t *RelayerStatisticsTask) relayerTxsMapKey(chainId, dcChainAddr, dcChannel
 	return fmt.Sprintf("%s:%s:%s", chainId, dcChannel, dcChainAddr)
 }
 
+func (t *RelayerStatisticsTask) relayerTxsMapKeyByDto(dto *dto.CountRelayerPacketTxsCntDTO) string {
+	if dto.DcChainAddress != "" {
+		return fmt.Sprintf("%s:%s:%s", dto.DcChainId, dto.DcChannel, dto.DcChainAddress)
+	}
+	return fmt.Sprintf("%s:%s:%s", dto.ScChainId, dto.ScChannel, dto.ScChainAddress)
+}
+
 func (t *RelayerStatisticsTask) Run() int {
 	historySegments, err := getHistorySegment()
 	if err != nil {
@@ -143,7 +150,7 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 		if !tx.Valid() {
 			continue
 		}
-		key := t.relayerTxsMapKey(tx.DcChainId, tx.Address(), tx.DcChannel)
+		key := t.relayerTxsMapKeyByDto(tx)
 		value, exist := relayerTxsMap[key]
 		if exist {
 			value.Txs += tx.Count
@@ -157,7 +164,7 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 		if !tx.Valid() {
 			continue
 		}
-		key := t.relayerTxsMapKey(tx.DcChainId, tx.Address(), tx.DcChannel)
+		key := t.relayerTxsMapKeyByDto(tx)
 		value, exist := relayerTxsMap[key]
 		if exist {
 			value.TxsSuccess += tx.Count
