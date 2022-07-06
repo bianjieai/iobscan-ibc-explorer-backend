@@ -17,8 +17,6 @@ type (
 	}
 	Statistic struct {
 		*entity.IBCRelayer
-		Address    string
-		BaseDenom  string
 		Amounts    decimal.Decimal
 		Txs        int64
 		TxsSuccess int64
@@ -31,10 +29,6 @@ func (t *RelayerStatisticsTask) Name() string {
 
 func (t *RelayerStatisticsTask) relayerTxsMapKey(chainId, dcChainAddr, dcChannel string) string {
 	return fmt.Sprintf("%s:%s:%s", chainId, dcChannel, dcChainAddr)
-}
-
-func (t *RelayerStatisticsTask) relayerStatisticMapKey(chainId, dcChannel, baseDenom string) string {
-	return fmt.Sprintf("%s:%s:%s", chainId, dcChannel, baseDenom)
 }
 
 func (t *RelayerStatisticsTask) Run() int {
@@ -77,12 +71,9 @@ func (t *RelayerStatisticsTask) Run() int {
 func (t *RelayerStatisticsTask) saveData(relayerStaticsMap map[string]Statistic, startTime, endTime int64, op int) error {
 	var relayerStatics []entity.IBCRelayerStatistics
 	for key, value := range relayerStaticsMap {
-		if arrs := strings.Split(key, ":"); len(arrs) == 3 {
-			chainId, channel, _ := arrs[0], arrs[1], arrs[2]
-			if chainId == "" {
-				continue
-			}
-			item := createIBCRelayerStatistics(channel, chainId, value.Address, value.BaseDenom, value.Amounts,
+		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
+			chainId, baseDenom, address, channel := arrs[0], arrs[1], arrs[2], arrs[3]
+			item := createIBCRelayerStatistics(channel, chainId, address, baseDenom, value.Amounts,
 				value.TxsSuccess, value.Txs, startTime, endTime)
 			relayerStatics = append(relayerStatics, item)
 		}
@@ -190,21 +181,18 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 	relayerStaticsMap := make(map[string]Statistic, 20)
 	for key, val := range relayerAmtsMap {
 		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
-			chainId, baseDenom, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
+			chainId, _, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
 			relayerKey := t.relayerTxsMapKey(chainId, relayerAddr, channel)
-			statistickey := t.relayerStatisticMapKey(chainId, channel, baseDenom)
 			if value, ok := t.relayersMap[relayerKey]; ok {
 				txs, txsSuccess := getRelayerTxs(value.IBCRelayer, relayerTxsMap)
-				statisticData, exist := relayerStaticsMap[statistickey]
+				statisticData, exist := relayerStaticsMap[key]
 				if exist {
 					statisticData.Amounts = statisticData.Amounts.Add(val)
 					statisticData.Txs += txs
 					statisticData.TxsSuccess += txsSuccess
-					relayerStaticsMap[statistickey] = statisticData
+					relayerStaticsMap[key] = statisticData
 				} else {
 					relayerStaticsMap[key] = Statistic{
-						BaseDenom:  baseDenom,
-						Address:    relayerAddr,
 						Amounts:    val,
 						IBCRelayer: value.IBCRelayer,
 						Txs:        txs,
@@ -217,11 +205,9 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 					ChannelB:      channel,
 					ChainBAddress: relayerAddr,
 				}, relayerTxsMap)
-				statisticData, exist := relayerStaticsMap[statistickey]
+				statisticData, exist := relayerStaticsMap[key]
 				if !exist {
-					relayerStaticsMap[statistickey] = Statistic{
-						Address:    relayerAddr,
-						BaseDenom:  baseDenom,
+					relayerStaticsMap[key] = Statistic{
 						Amounts:    val,
 						IBCRelayer: value.IBCRelayer,
 						Txs:        txs,
@@ -231,7 +217,7 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 					statisticData.Amounts = statisticData.Amounts.Add(val)
 					statisticData.Txs += txs
 					statisticData.TxsSuccess += txsSuccess
-					relayerStaticsMap[statistickey] = statisticData
+					relayerStaticsMap[key] = statisticData
 				}
 			}
 
