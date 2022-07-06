@@ -36,7 +36,7 @@ type IRelayerRepo interface {
 	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue string) error
 	FindAll(skip, limit int64) ([]*entity.IBCRelayer, error)
 	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
-	FindRelayersCnt(chainId string) (int64, error)
+	CountChainRelayersCnt(chainId string) (int64, error)
 	CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error)
 	FindRelayer(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error)
 }
@@ -179,7 +179,7 @@ func (repo *IbcRelayerRepo) FindLatestOne() (*entity.IBCRelayer, error) {
 	return res, err
 }
 
-func (repo *IbcRelayerRepo) FindRelayersCnt(chainId string) (int64, error) {
+func (repo *IbcRelayerRepo) CountChainRelayersCnt(chainId string) (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{
 		RelayerFieldStatus: entity.RelayerRunning,
 		"$or": []bson.M{
