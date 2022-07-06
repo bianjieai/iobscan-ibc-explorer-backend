@@ -20,4 +20,9 @@ const (
 	AllChain              = "allchain"
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
+
+	MsgTypeRecvPacket      = "recv_packet"
+	MsgTypeTimeoutPacket   = "timeout_packet"
+	MsgTypeAcknowledgement = "acknowledge_packet"
+	MsgTypeUpdateClient    = "update_client"
 )
