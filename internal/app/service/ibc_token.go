@@ -29,6 +29,12 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 			}
 
 			baseDenomList = others
+		} else if strings.HasPrefix(req.BaseDenom, constant.IBCTokenPreFix) {
+			var err error
+			baseDenomList, err = svc.getBaseOfIBCToken(req.BaseDenom)
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
 		} else {
 			baseDenomList = []string{req.BaseDenom}
 		}
@@ -68,6 +74,20 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 		Items:    items,
 		PageInfo: page,
 	}, nil
+}
+
+func (svc *TokenService) getBaseOfIBCToken(denom string) ([]string, error) {
+	denomList, err := denomRepo.FindByDenom(denom)
+	if err != nil {
+		return nil, err
+	}
+
+	set := utils.NewStringSet()
+	for _, v := range denomList {
+		set.Add(v.BaseDenom)
+	}
+
+	return set.ToSlice(), nil
 }
 
 func (svc *TokenService) IBCTokenList(baseDenom string, req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error) {
