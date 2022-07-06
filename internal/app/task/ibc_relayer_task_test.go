@@ -89,6 +89,14 @@ func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 	t.Log(value)
 }
 
+func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {
+	task.getTokenPriceMap()
+	task.caculateRelayerTotalValue()
+	for key, val := range task.relayerValueMap {
+		t.Log(key, val.String())
+	}
+}
+
 func TestRelayerStatisticsTask_Run(t *testing.T) {
 	new(RelayerStatisticsTask).Run()
 }

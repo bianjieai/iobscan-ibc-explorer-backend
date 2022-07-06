@@ -555,8 +555,8 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 //dependence: caculateRelayerTotalValue, AggregateRelayerPacketTxs
 func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxsAndValue(val *entity.IBCRelayer) {
 	getRelayerValue := func(data *entity.IBCRelayer) string {
-		keyA := relayerAmtValueMapKey(data.RelayerId, data.ChainA, data.ChannelA)
-		keyB := relayerAmtValueMapKey(data.RelayerId, data.ChainB, data.ChannelB)
+		keyA := relayerAmtValueMapKey(data.ChainAAddress, data.ChainA, data.ChannelA)
+		keyB := relayerAmtValueMapKey(data.ChainBAddress, data.ChainB, data.ChannelB)
 		totalAValue, _ := t.relayerValueMap[keyA]
 		totalBValue, _ := t.relayerValueMap[keyB]
 		totalValue := decimal.NewFromFloat(0).Add(totalAValue).Add(totalBValue).
