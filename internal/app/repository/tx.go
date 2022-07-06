@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -11,6 +12,7 @@ import (
 type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetRelayerScChainAddreeDTO, error)
 	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
+	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -27,7 +29,7 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetR
 		"$match": bson.M{
 			"msgs.msg.packet_id": packetId,
 			"msgs.type": bson.M{
-				"$in": []string{"acknowledge_packet", "timeout_packet"},
+				"$in": []string{constant.MsgTypeAcknowledgement, constant.MsgTypeTimeoutPacket},
 			},
 		},
 	}
@@ -65,7 +67,7 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetR
 func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error) {
 	var res []*entity.Tx
 	query := bson.M{
-		"msgs.type":       "update_client",
+		"msgs.type":       constant.MsgTypeUpdateClient,
 		"msgs.msg.signer": address,
 		"time": bson.M{
 			"$gte": startTime,
@@ -83,4 +85,25 @@ func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTi
 		return res[0].Time, -1, nil
 	}
 	return 0, -1, nil
+}
+
+func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"msgs.type":       constant.MsgTypeRecvPacket,
+		"msgs.msg.signer": address,
+		"time": bson.M{
+			"$gte": startTime,
+		},
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).
+		Select(bson.M{"time": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(1).All(&res)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(res) == 1 {
+		return res[0].Time, nil
+	}
+	return 0, nil
 }

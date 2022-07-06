@@ -178,13 +178,7 @@ func (t *RelayerStatisticsTask) aggr(relayerTxs, relayerSuccessTxs []*dto.CountR
 			chainId, _, relayerAddr, channel := arrs[0], arrs[1], arrs[2], arrs[3]
 			relayerKey := t.relayerTxsMapKey(chainId, relayerAddr, channel)
 			value, ok := t.relayersMap[relayerKey]
-			//relayerData, err := relayerRepo.FindRelayer(chainId, relayerAddr, channel)
-			//if err != nil {
-			//	if err != qmgo.ErrNoSuchDocuments {
-			//		logrus.Warn(chainId, relayerAddr, channel, "find relayer id fail, ", err.Error())
-			//	}
-			//	continue
-			//}
+
 			if ok {
 				txs, txsSuccess := getRelayerTxs(value.IBCRelayer, relayerTxsMap)
 				relayerStaticsMap[key] = Statistic{
