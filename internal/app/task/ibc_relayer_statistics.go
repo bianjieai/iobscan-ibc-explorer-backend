@@ -99,9 +99,12 @@ func (t *RelayerStatisticsTask) saveData(relayerStaticsMap map[string]Statistic,
 
 // dealHistory 处理历史记录，针对ex_ibc_tx
 func (t *RelayerStatisticsTask) dealHistory(segments []*segment) error {
-	relayerSuccessTxs := make([]*dto.CountRelayerPacketTxsCntDTO, 0, 20)
 	for _, v := range segments {
-		relayerSuccessTxs = collectTxs(relayerSuccessTxs, v.StartTime, v.EndTime, ibcTxRepo.CountHistoryRelayerSuccessPacketTxs)
+		relayerSuccessTxs, err := ibcTxRepo.CountHistoryRelayerSuccessPacketTxs(v.StartTime, v.EndTime)
+		if err != nil {
+			logrus.Error("collectTx  have fail, ", err.Error())
+			continue
+		}
 		relayerAmounts, err := ibcTxRepo.CountHistoryRelayerPacketAmount(v.StartTime, v.EndTime)
 		if err != nil {
 			logrus.Error(err.Error())
@@ -117,9 +120,12 @@ func (t *RelayerStatisticsTask) dealHistory(segments []*segment) error {
 
 // deal 处理最新的记录，针对ex_ibc_tx_latest
 func (t *RelayerStatisticsTask) deal(segments []*segment, op int) error {
-	relayerSuccessTxs := make([]*dto.CountRelayerPacketTxsCntDTO, 0, 20)
 	for _, v := range segments {
-		relayerSuccessTxs = collectTxs(relayerSuccessTxs, v.StartTime, v.EndTime, ibcTxRepo.CountRelayerSuccessPacketTxs)
+		relayerSuccessTxs, err := ibcTxRepo.CountRelayerSuccessPacketTxs(v.StartTime, v.EndTime)
+		if err != nil {
+			logrus.Error("collectTx  have fail, ", err.Error())
+			continue
+		}
 		relayerAmounts, err := ibcTxRepo.CountRelayerPacketTxsAndAmount(v.StartTime, v.EndTime)
 		if err != nil {
 			logrus.Error(err.Error())
