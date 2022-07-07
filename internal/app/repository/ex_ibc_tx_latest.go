@@ -380,7 +380,7 @@ func (repo *ExIbcTxRepo) CountRelayerPacketTxsAndAmount(startTime, endTime int64
 func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error) {
 	pipe := repo.relayerPacketAmountCond(startTime, endTime)
 	var res []*dto.CountRelayerPacketAmountDTO
-	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
