@@ -131,19 +131,19 @@ func (t *ChannelTask) analyzeChainConfig() error {
 }
 
 func generateChannelId(chainA, channelA, chainB, channelB string) string {
-	if strings.Contains(strings.ToLower(chainA), constant.Cosmos) {
+	if strings.HasPrefix(strings.ToLower(chainA), constant.Cosmos) {
 		return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB)
 	}
 
-	if strings.Contains(strings.ToLower(chainB), constant.Cosmos) {
+	if strings.HasPrefix(strings.ToLower(chainB), constant.Cosmos) {
 		return fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
 	}
 
-	if strings.Contains(strings.ToLower(chainA), constant.Iris) {
+	if strings.HasPrefix(strings.ToLower(chainA), constant.Iris) {
 		return fmt.Sprintf("%s|%s|%s|%s", chainA, channelA, chainB, channelB)
 	}
 
-	if strings.Contains(strings.ToLower(chainB), constant.Iris) {
+	if strings.HasPrefix(strings.ToLower(chainB), constant.Iris) {
 		return fmt.Sprintf("%s|%s|%s|%s", chainB, channelB, chainA, channelA)
 	}
 
