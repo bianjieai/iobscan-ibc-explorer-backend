@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -14,11 +15,16 @@ type IRelayerStatisticsRepo interface {
 	CountRelayerBaseDenomAmt() ([]*dto.CountRelayerBaseDenomAmtDTO, error)
 	Insert(relayerStatistics []entity.IBCRelayerStatistics) error
 	AggregateRelayerTxs() ([]*dto.AggRelayerTxsDTO, error)
+	CreateStatisticId(scChain, dcChain, scChannel, dcChannel string) (string, string)
 }
 
 var _ IRelayerStatisticsRepo = new(RelayerStatisticsRepo)
 
 type RelayerStatisticsRepo struct {
+}
+
+func (repo *RelayerStatisticsRepo) CreateStatisticId(scChain, dcChain, scChannel, dcChannel string) (string, string) {
+	return fmt.Sprintf("%s|%s|%s|%s", scChain, scChannel, dcChain, dcChannel), fmt.Sprintf("%s|%s|%s|%s", dcChain, dcChannel, scChain, scChannel)
 }
 
 //func (repo *RelayerStatisticsRepo) EnsureIndexes() {
@@ -49,8 +55,7 @@ func (repo *RelayerStatisticsRepo) InserOrUpdate(data entity.IBCRelayerStatistic
 	var res *entity.IBCRelayerStatistics
 	filter := bson.M{
 		"transfer_base_denom": data.TransferBaseDenom,
-		"chain_id":            data.ChainId,
-		"channel":             data.Channel,
+		"statistic_id":        data.StatisticId,
 		"address":             data.Address,
 		"segment_start_time":  data.SegmentStartTime,
 		"segment_end_time":    data.SegmentEndTime,
@@ -83,10 +88,9 @@ func (repo *RelayerStatisticsRepo) CountRelayerBaseDenomAmt() ([]*dto.CountRelay
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"address":    "$address",
-				"chain_id":   "$chain_id",
-				"channel":    "$channel",
-				"base_denom": "$transfer_base_denom",
+				"address":      "$address",
+				"statistic_id": "$statistic_id",
+				"base_denom":   "$transfer_base_denom",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$transfer_amount"},
@@ -95,12 +99,11 @@ func (repo *RelayerStatisticsRepo) CountRelayerBaseDenomAmt() ([]*dto.CountRelay
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":        0,
-			"address":    "$_id.address",
-			"chain_id":   "$_id.chain_id",
-			"channel":    "$_id.channel",
-			"base_denom": "$_id.base_denom",
-			"amount":     "$amount",
+			"_id":          0,
+			"address":      "$_id.address",
+			"statistic_id": "$_id.statistic_id",
+			"base_denom":   "$_id.base_denom",
+			"amount":       "$amount",
 		},
 	}
 	var pipe []bson.M
@@ -117,9 +120,8 @@ func (repo *RelayerStatisticsRepo) AggregateRelayerTxs() ([]*dto.AggRelayerTxsDT
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"address":  "$address",
-				"chain_id": "$chain_id",
-				"channel":  "$channel",
+				"address":      "$address",
+				"statistic_id": "$statistic_id",
 			},
 			"total_txs": bson.M{
 				"$sum": "$total_txs",
@@ -133,8 +135,7 @@ func (repo *RelayerStatisticsRepo) AggregateRelayerTxs() ([]*dto.AggRelayerTxsDT
 		"$project": bson.M{
 			"_id":               0,
 			"address":           "$_id.address",
-			"chain_id":          "$_id.chain_id",
-			"channel":           "$_id.channel",
+			"statistic_id":      "$_id.statistic_id",
 			"total_txs":         "$total_txs",
 			"success_total_txs": "$success_total_txs",
 		},
