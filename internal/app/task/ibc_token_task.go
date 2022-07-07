@@ -516,9 +516,10 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
 		} else {
 			denomAmount = t.ibcDenomAmount(v.ChainId, v.Denom)
-			if denomAmount == constant.ZeroDenomAmount { // 为0说明此链已经没有这个ibc denom
-				continue
-			}
+		}
+
+		if denomAmount == constant.ZeroDenomAmount { // 为0说明此链已经没有这个ibc denom
+			continue
 		}
 
 		allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenTrace{
