@@ -629,15 +629,13 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 	}
 
 	for _, val := range res {
-		relayerCnt, err := relayerRepo.FindRelayersCnt(val.ChainId)
+		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
 		if err != nil {
 			logrus.Error("count relayers of chain fail, ", err.Error())
 			continue
 		}
-		if relayerCnt > 0 {
-			if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
-				logrus.Error("update ibc_chain relayers fail, ", err.Error())
-			}
+		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
+			logrus.Error("update ibc_chain relayers fail, ", err.Error())
 		}
 	}
 	return
@@ -735,7 +733,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	if updateTime < relayer.UpdateTime {
 		updateTime = relayer.UpdateTime
 	}
-	if updateTime == 0 {
+	if updateTime == 0 && timePeriod == -1 {
 		updateTime = t.findLatestRecvPacketTime(relayer, startTime)
 	}
 	return timePeriod, updateTime
