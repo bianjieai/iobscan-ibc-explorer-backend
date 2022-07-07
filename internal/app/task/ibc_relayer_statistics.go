@@ -102,12 +102,13 @@ func (t *RelayerStatisticsTask) dealHistory(segments []*segment) error {
 	for _, v := range segments {
 		relayerSuccessTxs, err := ibcTxRepo.CountHistoryRelayerSuccessPacketTxs(v.StartTime, v.EndTime)
 		if err != nil {
-			logrus.Error("collectTx  have fail, ", err.Error())
+			logrus.Error("Count History RelayerSuccessPacketTxs  have fail, ", err.Error())
 			continue
 		}
 		relayerAmounts, err := ibcTxRepo.CountHistoryRelayerPacketAmount(v.StartTime, v.EndTime)
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Error("Count History RelayerPacketAmount  have fail, ", err.Error())
+			continue
 		}
 		aggr := t.aggr(relayerSuccessTxs, relayerAmounts)
 		if err = t.saveData(aggr, v.StartTime, v.EndTime, opInsert); err != nil {
