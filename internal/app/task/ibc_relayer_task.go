@@ -728,7 +728,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	if updateTime < relayer.UpdateTime {
 		updateTime = relayer.UpdateTime
 	}
-	if updateTime == 0 && timePeriod == -1 {
+	if updateTime == 0 && timePeriod == -1 && relayer.UpdateTime == 0 {
 		updateTime = t.findLatestRecvPacketTime(relayer, startTime)
 	}
 	return timePeriod, updateTime
