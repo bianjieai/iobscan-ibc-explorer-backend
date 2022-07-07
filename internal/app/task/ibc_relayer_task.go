@@ -494,18 +494,13 @@ func createAmounts(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string
 		if !amt.Valid() {
 			continue
 		}
-		statisticId, statisticId1 := relayerStatisticsRepo.CreateStatisticId(amt.ScChainId, amt.DcChainId, amt.ScChannel, amt.DcChannel)
+		statisticId, _ := relayerStatisticsRepo.CreateStatisticId(amt.ScChainId, amt.DcChainId, amt.ScChannel, amt.DcChannel)
 		key := relayerAmtsMapKey(statisticId, amt.BaseDenom, amt.DcChainAddress)
-		key1 := relayerAmtsMapKey(statisticId1, amt.BaseDenom, amt.DcChainAddress)
 		decAmt := decimal.NewFromFloat(amt.Amount)
 		if value, exist := relayerAmtsMap[key]; exist {
 			value.Amt = value.Amt.Add(decAmt)
 			value.Txs += amt.Count
 			relayerAmtsMap[key] = value
-		} else if value, exist = relayerAmtsMap[key1]; exist {
-			value.Amt = value.Amt.Add(decAmt)
-			value.Txs += amt.Count
-			relayerAmtsMap[key1] = value
 		} else {
 			relayerAmtsMap[key] = TxsAmtItem{
 				Amt: decAmt,
