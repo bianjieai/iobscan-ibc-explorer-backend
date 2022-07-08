@@ -152,6 +152,10 @@ export class IbcTxService {
 
         } else if (symbol) {
             token = await this.getTokenBySymbol(symbol)
+            //no found the symbol
+            if (!token) {
+                return new ListStruct(null, page_num, page_size);
+            }
         }
         if (denom) {
             token = [denom];
