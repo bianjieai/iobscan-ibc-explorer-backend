@@ -41,7 +41,6 @@ func (t *RelayerStatisticsTask) Run() int {
 	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
 	startTime := time.Now().Unix()
 	//insert relayer data
-	t.initdistRelayerMap()
 	t.handleNewRelayerOnce(historySegments, true)
 
 	if err = t.dealHistory(historySegments); err != nil {
@@ -211,6 +210,7 @@ func (t *RelayerStatisticsTask) initdistRelayerMap() {
 }
 
 func (t *RelayerStatisticsTask) handleNewRelayerOnce(segments []*segment, historyData bool) {
+	t.initdistRelayerMap()
 	for _, v := range segments {
 		var relayersData []entity.IBCRelayer
 		if historyData {
