@@ -26,6 +26,7 @@ const (
 	RelayerFieldChannelA              = "channel_a"
 	RelayerFieldChannelB              = "channel_b"
 	RelayerFieldChainAAddress         = "chain_a_address"
+	RelayerFieldChainAALLAddress      = "chain_a_all_address"
 	RelayerFieldChainBAddress         = "chain_b_address"
 	RelayerFieldUpdateAt              = "update_at"
 )
@@ -39,8 +40,11 @@ type IRelayerRepo interface {
 	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
 	CountBycond(chainId string, status int) (int64, error)
 	FindRelayersCnt(chainId string) (int64, error)
+	CountChainRelayers(chainId string) (int64, error)
 	CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error)
 	FindRelayer(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error)
+	FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRelayer, error)
+	UpdateSrcAddress(relayerId string, addrs []string) error
 }
 
 var _ IRelayerRepo = new(IbcRelayerRepo)
@@ -75,6 +79,12 @@ func (repo *IbcRelayerRepo) coll() *qmgo.Collection {
 func (repo *IbcRelayerRepo) FindAll(skip, limit int64) ([]*entity.IBCRelayer, error) {
 	var res []*entity.IBCRelayer
 	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).Sort("+" + RelayerFieldUpdateTime).All(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRelayer, error) {
+	var res []*entity.IBCRelayer
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainAAddress: ""}).Skip(skip).Limit(limit).Sort("+" + RelayerFieldUpdateTime).All(&res)
 	return res, err
 }
 
@@ -185,14 +195,32 @@ func (repo *IbcRelayerRepo) UpdateStatusAndTime(relayerId string, status int, up
 		"$set": update})
 }
 
+func (repo *IbcRelayerRepo) UpdateSrcAddress(relayerId string, addrs []string) error {
+
+	if len(addrs) == 0 {
+		return nil
+	}
+	update := bson.M{
+		RelayerFieldUpdateAt:         time.Now().Unix(),
+		RelayerFieldChainAAddress:    addrs[0],
+		RelayerFieldChainAALLAddress: addrs,
+	}
+	return repo.coll().UpdateOne(context.Background(), bson.M{
+		RelayerFieldelayerId:      relayerId,
+		RelayerFieldChainAAddress: "",
+	}, bson.M{
+		"$set": update})
+}
+
 func (repo *IbcRelayerRepo) FindLatestOne() (*entity.IBCRelayer, error) {
 	var res *entity.IBCRelayer
 	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-" + RelayerFieldLatestTxTime).One(&res)
 	return res, err
 }
 
-func (repo *IbcRelayerRepo) FindRelayersCnt(chainId string) (int64, error) {
+func (repo *IbcRelayerRepo) CountChainRelayers(chainId string) (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{
+		RelayerFieldStatus: entity.RelayerRunning,
 		"$or": []bson.M{
 			{RelayerFieldChainA: chainId},
 			{RelayerFieldChainB: chainId},
@@ -213,7 +241,9 @@ func (repo *IbcRelayerRepo) FindRelayer(chainId, relayerAddr, channel string) (*
 
 func (repo *IbcRelayerRepo) CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error) {
 	match := bson.M{
-		"$match": bson.M{},
+		"$match": bson.M{
+			RelayerFieldStatus: entity.RelayerRunning,
+		},
 	}
 	group := bson.M{
 		"$group": bson.M{

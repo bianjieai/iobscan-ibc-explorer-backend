@@ -1,8 +1,7 @@
 package entity
 
 type IBCRelayerStatistics struct {
-	ChainId           string `bson:"chain_id"`
-	Channel           string `bson:"channel"`
+	StatisticId       string `bson:"statistic_id"` // scChain|scChannel|dcChain|dcChannel
 	Address           string `bson:"address"`
 	TransferBaseDenom string `bson:"transfer_base_denom"`
 	TransferAmount    string `bson:"transfer_amount"`
