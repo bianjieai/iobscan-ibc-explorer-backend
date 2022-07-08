@@ -810,13 +810,13 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
 	skip := int64(0)
 	limit := int64(50)
+	startTimeA := time.Now().Unix()
 	for {
 		relayers, err := relayerRepo.FindEmptyAddrAll(skip, limit)
 		if err != nil {
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		startTimeA := time.Now().Unix()
 		for _, relayer := range relayers {
 			addrs := getSrcChainAddress(&dto.GetRelayerInfoDTO{
 				ScChainId:      relayer.ChainA,
@@ -841,10 +841,10 @@ func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
 			}
 
 		}
-		logrus.Infof("Update Src Address relayer end, time use %d(s)", time.Now().Unix()-startTimeA)
 		if len(relayers) < int(limit) {
 			break
 		}
 		skip += limit
 	}
+	logrus.Infof("task %s checkAndUpdateRelayerSrcChainAddr end, time use %d(s)", t.Name(), time.Now().Unix()-startTimeA)
 }
