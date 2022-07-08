@@ -2,10 +2,12 @@ package task
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
-	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -23,6 +25,8 @@ func TestMain(m *testing.M) {
 
 		Database: "iobscan-ibc",
 	}, context.Background())
+
+	time.Local = time.UTC
 	m.Run()
 }
 
