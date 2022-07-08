@@ -100,3 +100,7 @@ func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {
 func TestRelayerStatisticsTask_Run(t *testing.T) {
 	new(RelayerStatisticsTask).Run()
 }
+
+func TestIbcRelayerCronTask_checkAndUpdateEmptyAddr(t *testing.T) {
+	task.checkAndUpdateRelayerSrcChainAddr()
+}
