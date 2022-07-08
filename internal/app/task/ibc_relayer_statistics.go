@@ -192,7 +192,7 @@ func (t *RelayerStatisticsTask) handleNewRelayerOnce(segments []*segment, histor
 		}
 		if len(relayersData) > 0 {
 			relayersData = distinctRelayer(relayersData)
-			relayersData = filterDbExist(relayersData, historyData)
+			relayersData = filterDbExist(relayersData)
 			if len(relayersData) == 0 {
 				continue
 			}

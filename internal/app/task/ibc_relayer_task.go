@@ -99,12 +99,13 @@ func (t *IbcRelayerCronTask) Run() int {
 		}(relayer)
 		group.Wait()
 	})
+	t.checkAndUpdateRelayerSrcChainAddr()
 
 	return 1
 }
 
 //use cache map check relayer if exist
-func filterDbExist(relayers []entity.IBCRelayer, historyData bool) []entity.IBCRelayer {
+func filterDbExist(relayers []entity.IBCRelayer) []entity.IBCRelayer {
 	dbRelayers, err := relayerCache.FindAll()
 	if err != nil {
 		return relayers
@@ -118,23 +119,11 @@ func filterDbExist(relayers []entity.IBCRelayer, historyData bool) []entity.IBCR
 	}
 	var distinctArr []entity.IBCRelayer
 	for _, val := range relayers {
-		//if val.ChainAAddress == "" {
-		//	val.ChainAAllAddress = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-		//		ScChainId:      val.ChainA,
-		//		ScChannel:      val.ChannelA,
-		//		DcChainId:      val.ChainB,
-		//		DcChannel:      val.ChannelB,
-		//		DcChainAddress: val.ChainBAddress,
-		//	}, historyData)
-		//	if len(val.ChainAAllAddress) > 0 {
-		//		val.ChainAAddress = val.ChainAAllAddress[0]
-		//	}
-		//}
 		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
 		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
 		_, exist := relayerMap[key]
 		_, exist1 := relayerMap[key1]
-		if !exist && !exist1 {
+		if !exist && !exist1 && val.Valid() {
 			val.RelayerId = utils.Md5(val.ChannelA + val.ChannelB + val.ChainA + val.ChainB + val.ChainAAddress + val.ChainBAddress)
 			distinctArr = append(distinctArr, val)
 		}
@@ -804,4 +793,46 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 
 	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
+}
+
+func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
+	skip := int64(0)
+	limit := int64(50)
+	startTimeA := time.Now().Unix()
+	for {
+		relayers, err := relayerRepo.FindEmptyAddrAll(skip, limit)
+		if err != nil {
+			logrus.Error("find relayer by page fail, ", err.Error())
+			return
+		}
+		for _, relayer := range relayers {
+			addrs := getSrcChainAddress(&dto.GetRelayerInfoDTO{
+				ScChainId:      relayer.ChainA,
+				ScChannel:      relayer.ChannelA,
+				DcChainId:      relayer.ChainB,
+				DcChannel:      relayer.ChannelB,
+				DcChainAddress: relayer.ChainBAddress,
+			}, false)
+			historyAddrs := getSrcChainAddress(&dto.GetRelayerInfoDTO{
+				ScChainId:      relayer.ChainA,
+				ScChannel:      relayer.ChannelA,
+				DcChainId:      relayer.ChainB,
+				DcChannel:      relayer.ChannelB,
+				DcChainAddress: relayer.ChainBAddress,
+			}, true)
+			addrs = append(addrs, historyAddrs...)
+			if len(addrs) > 0 {
+				addrs = utils.DistinctSliceStr(addrs)
+				if err := relayerRepo.UpdateSrcAddress(relayer.RelayerId, addrs); err != nil && !qmgo.IsDup(err) {
+					logrus.Error("Update Src Address failed, " + err.Error())
+				}
+			}
+
+		}
+		if len(relayers) < int(limit) {
+			break
+		}
+		skip += limit
+	}
+	logrus.Infof("task %s checkAndUpdateRelayerSrcChainAddr end, time use %d(s)", t.Name(), time.Now().Unix()-startTimeA)
 }

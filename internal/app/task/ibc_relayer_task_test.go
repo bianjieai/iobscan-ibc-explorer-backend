@@ -85,7 +85,7 @@ func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa15uyg0usvkrppc0zqra0n6jmffmpf3f0hn64ul2", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
 		{ChainA: "cosmoshub", ChainB: "irishub", ChannelA: "channel-1", ChannelB: "channel-0", ChainAAddress: "cosmosxxxxxxx", ChainBAddress: "iaaxxxxxxxxxx"},
 	}
-	value := filterDbExist(datas, false)
+	value := filterDbExist(datas)
 	t.Log(value)
 }
 
@@ -99,4 +99,8 @@ func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {
 
 func TestRelayerStatisticsTask_Run(t *testing.T) {
 	new(RelayerStatisticsTask).Run()
+}
+
+func TestIbcRelayerCronTask_checkAndUpdateEmptyAddr(t *testing.T) {
+	task.checkAndUpdateRelayerSrcChainAddr()
 }

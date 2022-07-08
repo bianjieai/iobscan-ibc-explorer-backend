@@ -32,3 +32,7 @@ type IBCRelayer struct {
 func (i IBCRelayer) CollectionName() string {
 	return "ibc_relayer"
 }
+
+func (i IBCRelayer) Valid() bool {
+	return i.ChainA != "" && i.ChainB != "" && i.ChannelA != "" && i.ChannelB != "" && (i.ChainBAddress != "" || i.ChainAAddress != "")
+}
