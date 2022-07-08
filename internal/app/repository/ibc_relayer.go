@@ -39,7 +39,6 @@ type IRelayerRepo interface {
 	FindAll(skip, limit int64) ([]*entity.IBCRelayer, error)
 	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
 	CountBycond(chainId string, status int) (int64, error)
-	FindRelayersCnt(chainId string) (int64, error)
 	CountChainRelayers(chainId string) (int64, error)
 	CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error)
 	FindRelayer(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error)
