@@ -121,7 +121,7 @@ func (repo *TokenTraceRepo) analyzeListParam(baseDenom, chainId string, tokenTyp
 func (repo *TokenTraceRepo) List(baseDenom, chainId string, tokenType entity.TokenTraceType, skip, limit int64) ([]*entity.IBCTokenTrace, error) {
 	param := repo.analyzeListParam(baseDenom, chainId, tokenType)
 	var res []*entity.IBCTokenTrace
-	err := repo.coll().Find(context.Background(), param).Limit(limit).Skip(skip).Sort("-denom_amount").All(&res)
+	err := repo.coll().Find(context.Background(), param).Limit(limit).Skip(skip).All(&res)
 	return res, err
 }
 

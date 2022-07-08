@@ -1,15 +1,17 @@
 package service
 
 import (
+	"strings"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
-	"strings"
-	"time"
 )
 
 type IRelayerService interface {
 	List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error)
+	ListCount(req *vo.RelayerListReq) (int64, errors.Error)
 }
 
 type RelayerService struct {
@@ -62,4 +64,13 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
+}
+
+func (svc *RelayerService) ListCount(req *vo.RelayerListReq) (int64, errors.Error) {
+	total, err := relayerRepo.CountBycond(req.Chain, req.Status)
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+
+	return total, nil
 }

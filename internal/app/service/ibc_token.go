@@ -11,7 +11,9 @@ import (
 
 type ITokenService interface {
 	List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error)
+	ListCount(req *vo.TokenListReq) (int64, errors.Error)
 	IBCTokenList(baseDenom string, req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error)
+	IBCTokenListCount(baseDenom string, req *vo.IBCTokenListReq) (int64, errors.Error)
 }
 
 type TokenService struct {
@@ -20,24 +22,9 @@ type TokenService struct {
 var _ ITokenService = new(TokenService)
 
 func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error) {
-	var baseDenomList []string
-	if req.BaseDenom != "" {
-		if strings.ToLower(req.BaseDenom) == constant.OtherDenom {
-			others, err := getTokenOthers()
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-
-			baseDenomList = others
-		} else if strings.HasPrefix(req.BaseDenom, constant.IBCTokenPreFix) {
-			var err error
-			baseDenomList, err = svc.getBaseOfIBCToken(req.BaseDenom)
-			if err != nil {
-				return nil, errors.Wrap(err)
-			}
-		} else {
-			baseDenomList = []string{req.BaseDenom}
-		}
+	baseDenomList, err := svc.analyzeBaseDenom(req.BaseDenom)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
 
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
@@ -74,6 +61,46 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 		Items:    items,
 		PageInfo: page,
 	}, nil
+}
+
+func (svc *TokenService) ListCount(req *vo.TokenListReq) (int64, errors.Error) {
+	baseDenomList, err := svc.analyzeBaseDenom(req.BaseDenom)
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+
+	totalItem, err := tokenRepo.CountList(baseDenomList, req.Chain, req.TokenType)
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+
+	return totalItem, nil
+}
+
+func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
+	if baseDenom == "" {
+		return nil, nil
+	}
+
+	var baseDenomList []string
+	if strings.ToLower(baseDenom) == constant.OtherDenom {
+		others, err := getTokenOthers()
+		if err != nil {
+			return nil, err
+		}
+
+		baseDenomList = others
+	} else if strings.HasPrefix(baseDenom, constant.IBCTokenPreFix) {
+		var err error
+		baseDenomList, err = svc.getBaseOfIBCToken(baseDenom)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		baseDenomList = []string{baseDenom}
+	}
+
+	return baseDenomList, nil
 }
 
 func (svc *TokenService) getBaseOfIBCToken(denom string) ([]string, error) {
@@ -123,6 +150,15 @@ func (svc *TokenService) IBCTokenList(baseDenom string, req *vo.IBCTokenListReq)
 		Items:    items,
 		PageInfo: page,
 	}, nil
+}
+
+func (svc *TokenService) IBCTokenListCount(baseDenom string, req *vo.IBCTokenListReq) (int64, errors.Error) {
+	totalItem, err := tokenStatisticsRepo.CountList(baseDenom, req.Chain, req.TokenType)
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+
+	return totalItem, nil
 }
 
 func getTokenOthers() ([]string, error) {

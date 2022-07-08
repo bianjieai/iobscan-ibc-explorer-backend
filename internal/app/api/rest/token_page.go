@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/gin-gonic/gin"
 )
@@ -19,9 +20,16 @@ func (ctl *TokenController) List(c *gin.Context) {
 		return
 	}
 
-	res, e := tokenService.List(&req)
-	if e != nil {
-		c.JSON(http.StatusOK, response.FailError(e))
+	var res interface{}
+	var err errors.Error
+	if req.UseCount {
+		res, err = tokenService.ListCount(&req)
+	} else {
+		res, err = tokenService.List(&req)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(res))
@@ -36,9 +44,16 @@ func (ctl *TokenController) IBCTokenList(c *gin.Context) {
 		return
 	}
 
-	res, e := tokenService.IBCTokenList(baseDenom, &req)
-	if e != nil {
-		c.JSON(http.StatusOK, response.FailError(e))
+	var res interface{}
+	var err errors.Error
+	if req.UseCount {
+		res, err = tokenService.IBCTokenListCount(baseDenom, &req)
+	} else {
+		res, err = tokenService.IBCTokenList(baseDenom, &req)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(res))

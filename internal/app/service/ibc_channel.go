@@ -11,6 +11,7 @@ import (
 
 type IChannelService interface {
 	List(req *vo.ChannelListReq) (*vo.ChannelListResp, errors.Error)
+	ListCount(req *vo.ChannelListReq) (int64, errors.Error)
 }
 
 var _ IChannelService = new(ChannelService)
@@ -19,18 +20,9 @@ type ChannelService struct {
 }
 
 func (svc *ChannelService) List(req *vo.ChannelListReq) (*vo.ChannelListResp, errors.Error) {
-	var chainA, chainB string
-	if req.Chain == "" {
-		chainA = constant.AllChain
-		chainB = constant.AllChain
-	} else {
-		split := strings.Split(req.Chain, ",")
-		if len(split) != 2 {
-			return nil, errors.WrapBadRequest(fmt.Errorf("chain parameter format error"))
-		} else {
-			chainA = split[0]
-			chainB = split[1]
-		}
+	chainA, chainB, err := svc.analyzeChain(req.Chain)
+	if err != nil {
+		return nil, errors.Wrap(err)
 	}
 
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
@@ -69,4 +61,31 @@ func (svc *ChannelService) List(req *vo.ChannelListReq) (*vo.ChannelListResp, er
 		Items:    items,
 		PageInfo: page,
 	}, nil
+}
+
+func (svc *ChannelService) analyzeChain(chain string) (string, string, error) {
+	if chain == "" {
+		return constant.AllChain, constant.AllChain, nil
+	} else {
+		split := strings.Split(chain, ",")
+		if len(split) != 2 {
+			return "", "", fmt.Errorf("chain parameter format error")
+		} else {
+			return split[0], split[1], nil
+		}
+	}
+}
+
+func (svc *ChannelService) ListCount(req *vo.ChannelListReq) (int64, errors.Error) {
+	chainA, chainB, err := svc.analyzeChain(req.Chain)
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+
+	totalItem, err := channelRepo.CountList(chainA, chainB, req.Status)
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+
+	return totalItem, nil
 }

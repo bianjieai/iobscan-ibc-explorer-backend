@@ -59,10 +59,18 @@ db.ibc_token_statistics.createIndex({
     background: true
 });
 
+db.ibc_token_trace.createIndex({
+    "denom": 1,
+    "chain_id": 1,
+}, {
+    background: true,
+    unique: true
+});
 
 db.ibc_token_trace_statistics.createIndex({
     "chain_id": 1,
     "denom": 1,
+    "base_denom": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
