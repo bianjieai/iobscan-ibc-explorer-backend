@@ -105,7 +105,7 @@ func (t *IbcRelayerCronTask) Run() int {
 }
 
 //use cache map check relayer if exist
-func filterDbExist(relayers []entity.IBCRelayer, historyData bool) []entity.IBCRelayer {
+func filterDbExist(relayers []entity.IBCRelayer) []entity.IBCRelayer {
 	dbRelayers, err := relayerCache.FindAll()
 	if err != nil {
 		return relayers
@@ -119,23 +119,11 @@ func filterDbExist(relayers []entity.IBCRelayer, historyData bool) []entity.IBCR
 	}
 	var distinctArr []entity.IBCRelayer
 	for _, val := range relayers {
-		//if val.ChainAAddress == "" {
-		//	val.ChainAAllAddress = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-		//		ScChainId:      val.ChainA,
-		//		ScChannel:      val.ChannelA,
-		//		DcChainId:      val.ChainB,
-		//		DcChannel:      val.ChannelB,
-		//		DcChainAddress: val.ChainBAddress,
-		//	}, historyData)
-		//	if len(val.ChainAAllAddress) > 0 {
-		//		val.ChainAAddress = val.ChainAAllAddress[0]
-		//	}
-		//}
 		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
 		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
 		_, exist := relayerMap[key]
 		_, exist1 := relayerMap[key1]
-		if !exist && !exist1 {
+		if !exist && !exist1 && val.Valid() {
 			val.RelayerId = utils.Md5(val.ChannelA + val.ChannelB + val.ChainA + val.ChainB + val.ChainAAddress + val.ChainBAddress)
 			distinctArr = append(distinctArr, val)
 		}
