@@ -566,7 +566,8 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxsAndValue(val *entity.IBCRelay
 			totalAValue, _ := t.relayerValueMap[keyA]
 			totalBValue, _ := t.relayerValueMap[keyB]
 			totalValue = totalValue.Add(totalAValue).Add(totalBValue).Round(constant.DefaultValuePrecision)
-		} else if data.ChainBAddress != "" {
+		}
+		if data.ChainBAddress != "" {
 			keyA := relayerAmtValueMapKey(key1, data.ChainBAddress)
 			keyB := relayerAmtValueMapKey(key2, data.ChainBAddress)
 			totalAValue, _ := t.relayerValueMap[keyA]
@@ -584,15 +585,16 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxsAndValue(val *entity.IBCRelay
 			keyB := t.relayerTxsDataMapKey(key2, data.ChainAAddress)
 			totalTxsAValue, _ := t.relayerTxsDataMap[keyA]
 			totalTxsBValue, _ := t.relayerTxsDataMap[keyB]
-			txsSuccess = totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess
-			txs = totalTxsAValue.Txs + totalTxsBValue.Txs
-		} else if data.ChainBAddress != "" {
+			txsSuccess += totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess
+			txs += totalTxsAValue.Txs + totalTxsBValue.Txs
+		}
+		if data.ChainBAddress != "" {
 			keyA := t.relayerTxsDataMapKey(key1, data.ChainBAddress)
 			keyB := t.relayerTxsDataMapKey(key2, data.ChainBAddress)
 			totalTxsAValue, _ := t.relayerTxsDataMap[keyA]
 			totalTxsBValue, _ := t.relayerTxsDataMap[keyB]
-			txsSuccess = totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess
-			txs = totalTxsAValue.Txs + totalTxsBValue.Txs
+			txsSuccess += totalTxsAValue.TxsSuccess + totalTxsBValue.TxsSuccess
+			txs += totalTxsAValue.Txs + totalTxsBValue.Txs
 		}
 
 		return txs, txsSuccess
