@@ -12,8 +12,10 @@ import (
 )
 
 type (
-	RelayerStatisticsTask struct{}
-	Statistic             struct {
+	RelayerStatisticsTask struct {
+		distRelayerMap map[string]bool
+	}
+	Statistic struct {
 		*entity.IBCRelayer
 		Amounts    decimal.Decimal
 		Txs        int64
@@ -181,8 +183,34 @@ func (t *RelayerStatisticsTask) aggr(relayerSuccessTxs []*dto.CountRelayerPacket
 
 	return relayerStaticsMap
 }
+func (t *RelayerStatisticsTask) initdistRelayerMap() {
+	t.distRelayerMap = make(map[string]bool, 20)
+	skip := int64(0)
+	limit := int64(50)
+	for {
+		dbRelayers, err := relayerRepo.FindAll(skip, limit)
+		if err != nil {
+			logrus.Error("find relayer by page fail, ", err.Error())
+			return
+		}
+
+		for _, val := range dbRelayers {
+			key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
+			key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
+			t.distRelayerMap[key] = true
+			t.distRelayerMap[key1] = true
+		}
+		if len(dbRelayers) < int(limit) {
+			break
+		}
+		skip += limit
+	}
+
+	return
+}
 
 func (t *RelayerStatisticsTask) handleNewRelayerOnce(segments []*segment, historyData bool) {
+	t.initdistRelayerMap()
 	for _, v := range segments {
 		var relayersData []entity.IBCRelayer
 		if historyData {
@@ -191,8 +219,8 @@ func (t *RelayerStatisticsTask) handleNewRelayerOnce(segments []*segment, histor
 			relayersData = handleIbcTxLatest(v.StartTime, v.EndTime)
 		}
 		if len(relayersData) > 0 {
-			relayersData = distinctRelayer(relayersData)
-			relayersData = filterDbExist(relayersData)
+			relayersData = distinctRelayer(relayersData, t.distRelayerMap)
+			relayersData = filterDbExist(relayersData, t.distRelayerMap)
 			if len(relayersData) == 0 {
 				continue
 			}

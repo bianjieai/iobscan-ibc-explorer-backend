@@ -73,19 +73,21 @@ func TestIbcRelayerCronTask_updateRelayerStatus(t *testing.T) {
 
 func TestIbcRelayerCronTask_DistinctRelayer(t *testing.T) {
 	var datas = []entity.IBCRelayer{
-		{ChainA: "irishub", ChainB: "cosmoshub", ChannelA: "channel-0", ChannelB: "channel-1", ChainAAddress: "iaaxxxxxxxxxx", ChainBAddress: "cosmosxxxxxxx"},
-		{ChainA: "cosmoshub", ChainB: "irishub", ChannelA: "channel-1", ChannelB: "channel-0", ChainAAddress: "cosmosxxxxxxx", ChainBAddress: "iaaxxxxxxxxxx"},
+		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
+		{ChainA: "cosmoshub", ChainB: "irishub_1", ChannelA: "channel-182", ChannelB: "channel-12", ChainAAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3", ChainBAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq"},
 	}
-	value := distinctRelayer(datas)
+	relayerStatisticsTask.initdistRelayerMap()
+	value := distinctRelayer(datas, relayerStatisticsTask.distRelayerMap)
 	t.Log(value)
 }
 
 func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 	var datas = []entity.IBCRelayer{
-		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa15uyg0usvkrppc0zqra0n6jmffmpf3f0hn64ul2", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
-		{ChainA: "cosmoshub", ChainB: "irishub", ChannelA: "channel-1", ChannelB: "channel-0", ChainAAddress: "cosmosxxxxxxx", ChainBAddress: "iaaxxxxxxxxxx"},
+		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
+		{ChainA: "cosmoshub", ChainB: "irishub_1", ChannelA: "channel-182", ChannelB: "channel-12", ChainAAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3", ChainBAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq"},
 	}
-	value := filterDbExist(datas)
+	relayerStatisticsTask.initdistRelayerMap()
+	value := filterDbExist(datas, relayerStatisticsTask.distRelayerMap)
 	t.Log(value)
 }
 
