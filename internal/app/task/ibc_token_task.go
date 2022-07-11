@@ -509,6 +509,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 
 	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
 	allTokenStatisticsList := make([]*entity.IBCTokenTrace, 0, len(denomList))
+	chainsSet := utils.NewStringSet()
 	for _, v := range denomList {
 		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcDenomCalculateStrList)
 		var denomAmount string
@@ -534,6 +535,8 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 			DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
 			ReceiveTxs:  t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.ChainId)],
 		})
+
+		chainsSet.Add(v.ChainId)
 	}
 
 	err = tokenTraceRepo.BatchSwap(allTokenStatisticsList, ibcToken.BaseDenom, ibcToken.ChainId) // 删除旧数据，插入新数据
@@ -541,7 +544,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 		logrus.Errorf("task %s BatchSwap error,base denom:%s, %v", t.Name(), ibcToken.BaseDenom, err)
 		return 0, err
 	}
-	return int64(len(allTokenStatisticsList)), nil
+	return int64(len(chainsSet)), nil
 }
 
 func (t *TokenTask) ibcReceiveTxs() error {
