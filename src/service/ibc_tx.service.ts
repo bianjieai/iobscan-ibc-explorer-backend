@@ -85,11 +85,12 @@ export class IbcTxService {
     async getTokenBySymbol(symbol): Promise<any> {
         const result = await this.ibcDenomModel.findRecordBySymbol(symbol);
         return result.map(item => {
-            return {
-                denom: item.denom,
-                base_denom: item.base_denom,
-                chain_id: item.chain_id
-            };
+            return item.base_denom;
+            // return {
+            //     denom: item.denom,
+            //     base_denom: item.base_denom,
+            //     chain_id: item.chain_id
+            // };
         });
     }
 
@@ -109,7 +110,7 @@ export class IbcTxService {
         query: IbcTxListReqDto,
     ): Promise<ListStruct<IbcTxResDto[]> | number> {
         const {use_count, page_num, page_size, symbol, denom, start_time} = query;
-        const date_range = query?.date_range?.split(",") || [0, new Date().getTime() / 1000],
+        const date_range = query?.date_range?.split(","),
             status = query?.status?.split(",") || [1, 2, 3, 4]
         let queryData: IbcTxQueryType = {
             useCount: query.use_count,
@@ -120,8 +121,10 @@ export class IbcTxService {
             page_num: page_num,
             page_size: page_size > cfg.serverCfg.maxPageSize ? cfg.serverCfg.maxPageSize : page_size,
         }
-        for (const one of date_range) {
-            queryData?.date_range.push(Number(one))
+        if (date_range?.length && !date_range.includes("0")) {
+            for (const one of date_range) {
+                queryData?.date_range.push(Number(one))
+            }
         }
         for (const one of status) {
             queryData?.status.push(Number(one))
@@ -136,7 +139,8 @@ export class IbcTxService {
                 let  tokensFilter = []
                 for  (const one of token) {
                     //only push token which base_denom not in ibc_base_denom
-                    if (baseDenomMap && !baseDenomMap?.has(`${one?.base_denom}`)) {
+                    // if (baseDenomMap && !baseDenomMap?.has(`${one?.base_denom}`)) {
+                    if (baseDenomMap && !baseDenomMap?.has(one)) {
                         tokensFilter.push(one)
                     }
                 }
@@ -148,6 +152,10 @@ export class IbcTxService {
 
         } else if (symbol) {
             token = await this.getTokenBySymbol(symbol)
+            //no found the symbol
+            if (!token) {
+                return new ListStruct(null, page_num, page_size);
+            }
         }
         if (denom) {
             token = [denom];
@@ -157,6 +165,12 @@ export class IbcTxService {
             // return startTx?.tx_time;
             //todo this value get by setting data
             return await this.getStartTxTime();
+        }
+        if (query?.chain_id) {
+            const chains:string[] = query?.chain_id?.split(",")
+            if (chains?.length > 2) {
+                return new ListStruct(null, page_num, page_size);
+            }
         }
         if (use_count) {
             if (query.symbol || query.chain_id || query.denom || (!queryData.date_range.includes(0)) || (queryData.status?.length !== 4)) {

@@ -17,9 +17,9 @@ export interface IbcTxType {
   log: object;
   denoms: object;
   base_denom: string;
-  create_at: string;
-  update_at: string;
-  tx_time: string;
+  create_at: number;
+  update_at: number;
+  tx_time: number;
   retry_times?: number;
   next_try_time?: number;
 }
@@ -29,7 +29,7 @@ export interface IbcTxQueryType {
   date_range?: number[];
   chain_id?: string;
   status?: number[];
-  token?: { denom: string; chain_id: string }[];
+  token?: string[];
   page_num?: number;
   page_size?: number;
 }
