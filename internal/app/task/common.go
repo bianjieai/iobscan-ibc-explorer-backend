@@ -23,7 +23,7 @@ func getHistorySegment() ([]*segment, error) {
 	end := time.Unix(latest.CreateAt, 0)
 	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
 
-	var step int64 = 2 * 24 * 3600
+	var step int64 = 12 * 3600
 	var segments []*segment
 	for temp := startUnix; temp < endUnix; temp += step {
 		segments = append(segments, &segment{
