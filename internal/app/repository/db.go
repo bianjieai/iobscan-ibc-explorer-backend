@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -63,14 +64,16 @@ func CreateTable(db *gorm.DB) {
 
 func InitMgo(cfg conf.Mongo, ctx context.Context) {
 	var maxPoolSize uint64 = 4096
+	var timeout = int64(600 * time.Second)
 	client, err := qmgo.NewClient(ctx, &qmgo.Config{
 		Uri: cfg.Url,
 		ReadPreference: &qmgo.ReadPref{
 			MaxStalenessMS: 90000,
 			Mode:           readpref.SecondaryPreferredMode,
 		},
-		Database:    cfg.Database,
-		MaxPoolSize: &maxPoolSize,
+		Database:        cfg.Database,
+		MaxPoolSize:     &maxPoolSize,
+		SocketTimeoutMS: &timeout,
 	})
 	if err != nil {
 		logrus.Fatalf("connect mongo failed, uri: %s, err:%s", cfg.Url, err.Error())
