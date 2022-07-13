@@ -31,9 +31,7 @@ func TestIbcRelayerCronTask_getChannelsStatus(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_CheckAndChangeStatus(t *testing.T) {
-	task.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
-		task.saveOrUpdateRelayerTxsAndValue(relayer)
-	})
+	task.CheckAndChangeRelayer()
 }
 
 func TestIbcRelayerCronTask_cacheIbcChannelRelayer(t *testing.T) {

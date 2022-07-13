@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
@@ -87,20 +88,10 @@ func (t *IbcRelayerCronTask) Run() int {
 
 	t.caculateRelayerTotalValue()
 	t.AggrRelayerPacketTxs()
-	t.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
-		group := sync.WaitGroup{}
-		group.Add(2)
-		go func(relayer *entity.IBCRelayer) {
-			t.updateRelayerStatus(relayer)
-			group.Done()
-		}(relayer)
-		go func(relayer *entity.IBCRelayer) {
-			t.saveOrUpdateRelayerTxsAndValue(relayer)
-			group.Done()
-		}(relayer)
-		group.Wait()
-	})
-	t.checkAndUpdateRelayerSrcChainAddr()
+	t.CheckAndChangeRelayer()
+	if global.Config.App.RepairRelayerEmptyAddr {
+		t.checkAndUpdateRelayerSrcChainAddr()
+	}
 
 	return 1
 }
@@ -232,7 +223,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 	t.handleOneRelayerStatusAndTime(relayer, value.UpdateTime, value.TimePeriod)
 	t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
 }
-func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.IBCRelayer)) {
+func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
 	limit := int64(50)
 	for {
@@ -242,9 +233,16 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.I
 			return
 		}
 		t.handleUpdateTimeAndTimePeriod(relayers)
+		group := sync.WaitGroup{}
+		group.Add(len(relayers))
 		for _, relayer := range relayers {
-			handle(relayer)
+			go func(relayer *entity.IBCRelayer) {
+				t.updateRelayerStatus(relayer)
+				t.saveOrUpdateRelayerTxsAndValue(relayer)
+				group.Done()
+			}(relayer)
 		}
+		group.Wait()
 		if len(relayers) < int(limit) {
 			break
 		}
@@ -602,17 +600,22 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
 		return
 	}
-
+	group := sync.WaitGroup{}
+	group.Add(len(res))
 	for _, val := range res {
-		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
-		if err != nil {
-			logrus.Error("count relayers of chain fail, ", err.Error())
-			continue
-		}
-		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
-			logrus.Error("update ibc_chain relayers fail, ", err.Error())
-		}
+		go func(chain *entity.IBCChain) {
+			defer group.Done()
+			relayerCnt, err := relayerRepo.CountChainRelayers(chain.ChainId)
+			if err != nil {
+				logrus.Error("count relayers of chain fail, ", err.Error())
+				return
+			}
+			if err := chainRepo.UpdateRelayers(chain.ChainId, relayerCnt); err != nil {
+				logrus.Error("update ibc_chain relayers fail, ", err.Error())
+			}
+		}(val)
 	}
+	group.Wait()
 	return
 }
 

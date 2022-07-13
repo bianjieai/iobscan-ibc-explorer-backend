@@ -33,14 +33,15 @@ type Mongo struct {
 }
 
 type App struct {
-	Name                 string
-	Addr                 string
-	Env                  string
-	StartTask            bool `mapstructure:"start_task"`
-	StartOneOffTask      bool `mapstructure:"start_one_off_task"`
-	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
-	Version              string
-	Prometheus           string `mapstructure:"prometheus_port"`
+	Name                   string
+	Addr                   string
+	Env                    string
+	StartTask              bool `mapstructure:"start_task"`
+	StartOneOffTask        bool `mapstructure:"start_one_off_task"`
+	ApiCacheAliveSeconds   int  `mapstructure:"api_cache_alive_seconds"`
+	RepairRelayerEmptyAddr bool `mapstructure:"repair_relayer_empty_addr"`
+	Version                string
+	Prometheus             string `mapstructure:"prometheus_port"`
 }
 
 type Redis struct {
