@@ -13,6 +13,7 @@ type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) ([]*dto.GetRelayerScChainAddreeDTO, error)
 	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
+	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -106,4 +107,19 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime i
 		return res[0].Time, nil
 	}
 	return 0, nil
+}
+
+func (repo *TxRepo) GetChannelOpenConfirmTime(chainId, channelId string) (int64, error) {
+	var res entity.Tx
+	query := bson.M{
+		"msgs.type":           constant.MsgTypeChannelOpenConfirm,
+		"msgs.msg.channel_id": channelId,
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).
+		Select(bson.M{"time": 1}).Sort("-time").Limit(1).One(&res)
+
+	if err != nil {
+		return 0, err
+	}
+	return res.Time, nil
 }

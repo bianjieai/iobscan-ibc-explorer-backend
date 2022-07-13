@@ -213,32 +213,46 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 }
 
 func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) error {
-	// todo
 	for _, v := range newChannelList {
-		// 查询,初始的LatestSettlementTime 为channel的 open confirm 时间
-		// channel open confirm 时间的获取当前从配置读取
-		chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB)
-		if err != nil {
-			continue
+		if openTime, err := t.getChannelLatestOpenTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+			v.LatestOpenTime = openTime
 		}
-		v.LatestOpenTime = chanConf.ChannelOpenAt
 	}
 
 	for _, v := range existedChannelList {
 		// 之前没有设置open 时间且是open状态的
 		if v.LatestOpenTime == 0 && v.Status == entity.ChannelStatusOpened {
-			if chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
-				v.LatestOpenTime = chanConf.ChannelOpenAt
+			if openTime, err := t.getChannelLatestOpenTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+				v.LatestOpenTime = openTime
 			}
 		}
 
 		// 之前关闭了,现在重新打开channel
 		if v.Status == entity.ChannelStatusClosed && t.channelStatusMap[v.ChannelId] == entity.ChannelStatusOpened {
-			// 查询
-
+			if openTime, err := t.queryChannelOpenConfirmTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+				v.LatestOpenTime = openTime
+			}
 		}
 	}
 	return nil
+}
+
+// getChannelLatestOpenTime 查询,初始的LatestOpenTime 为channel的 open confirm 时间
+// channel open confirm 时间的优先从配置读取，没有配置时，从tx表查询
+func (t *ChannelTask) getChannelLatestOpenTime(chainA, channelA, chainB, channelB string) (int64, error) {
+	if chanConf, err := channelConfigRepo.Find(chainA, channelA, chainB, channelB); err != nil {
+		return t.queryChannelOpenConfirmTime(chainA, channelA, chainB, channelB)
+	} else {
+		return chanConf.ChannelOpenAt, nil
+	}
+}
+
+func (t *ChannelTask) queryChannelOpenConfirmTime(chainA, channelA, chainB, channelB string) (int64, error) {
+	if confirmTime, err := txRepo.GetChannelOpenConfirmTime(chainA, channelA); err != nil {
+		return txRepo.GetChannelOpenConfirmTime(chainB, channelB)
+	} else {
+		return confirmTime, err
+	}
 }
 
 func (t *ChannelTask) setStatusAndOperatingPeriod(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) {
