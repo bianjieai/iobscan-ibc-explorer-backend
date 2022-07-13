@@ -78,6 +78,7 @@ func (t *IbcRelayerCronTask) Cron() int {
 
 func (t *IbcRelayerCronTask) Run() int {
 	t.getTokenPriceMap()
+	relayerStatisticsTask.initdistRelayerMap()
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
 	t.cacheChainUnbondTimeFromLcd()
@@ -105,24 +106,13 @@ func (t *IbcRelayerCronTask) Run() int {
 }
 
 //use cache map check relayer if exist
-func filterDbExist(relayers []entity.IBCRelayer) []entity.IBCRelayer {
-	dbRelayers, err := relayerCache.FindAll()
-	if err != nil {
-		return relayers
-	}
-	relayerMap := make(map[string]string, len(dbRelayers))
-	for _, val := range dbRelayers {
-		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
-		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
-		relayerMap[key] = ""
-		relayerMap[key1] = ""
-	}
+func filterDbExist(relayers []entity.IBCRelayer, distRelayerMap map[string]bool) []entity.IBCRelayer {
 	var distinctArr []entity.IBCRelayer
 	for _, val := range relayers {
 		key := fmt.Sprintf("%s:%s:%s", val.ChainA, val.ChainAAddress, val.ChannelA)
 		key1 := fmt.Sprintf("%s:%s:%s", val.ChainB, val.ChainBAddress, val.ChannelB)
-		_, exist := relayerMap[key]
-		_, exist1 := relayerMap[key1]
+		_, exist := distRelayerMap[key]
+		_, exist1 := distRelayerMap[key1]
 		if !exist && !exist1 && val.Valid() {
 			val.RelayerId = utils.Md5(val.ChannelA + val.ChannelB + val.ChainA + val.ChainB + val.ChainAAddress + val.ChainBAddress)
 			distinctArr = append(distinctArr, val)
@@ -175,8 +165,7 @@ func (t *IbcRelayerCronTask) handleUpdateTimeAndTimePeriod(relayers []*entity.IB
 	logrus.Debugf("handleUpdateTimeAndTimePeriod page(relayers: %d) end, time use %d(s)d", len(relayers), time.Now().Unix()-startTime)
 }
 
-func distinctRelayer(relayers []entity.IBCRelayer) []entity.IBCRelayer {
-	distRelayerMap := make(map[string]bool, len(relayers))
+func distinctRelayer(relayers []entity.IBCRelayer, distRelayerMap map[string]bool) []entity.IBCRelayer {
 	var distinctArr []entity.IBCRelayer
 	checkSameMap := make(map[string]string, 20)
 	//收集relayer双向链的地址
