@@ -6,7 +6,6 @@ env = "dev"
 start_task = true
 start_one_off_task = false
 api_cache_alive_seconds=3
-repair_relayer_empty_addr=false
 prometheus_port="9090"
 
 [log]

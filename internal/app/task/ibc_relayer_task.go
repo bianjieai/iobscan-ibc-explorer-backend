@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
@@ -89,10 +88,7 @@ func (t *IbcRelayerCronTask) Run() int {
 	t.caculateRelayerTotalValue()
 	t.AggrRelayerPacketTxs()
 	t.CheckAndChangeRelayer()
-	if global.Config.App.RepairRelayerEmptyAddr {
-		t.checkAndUpdateRelayerSrcChainAddr()
-	}
-
+	//t.checkAndUpdateRelayerSrcChainAddr()
 	return 1
 }
 
