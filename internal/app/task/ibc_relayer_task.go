@@ -82,13 +82,14 @@ func (t *IbcRelayerCronTask) Run() int {
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
 	t.cacheChainUnbondTimeFromLcd()
-	t.updateIbcChainsRelayer()
 	t.cacheIbcChannelRelayer()
 
 	t.caculateRelayerTotalValue()
 	t.AggrRelayerPacketTxs()
 	t.CheckAndChangeRelayer()
-	//t.checkAndUpdateRelayerSrcChainAddr()
+	//最后更新chains
+	t.updateIbcChainsRelayer()
+
 	return 1
 }
 
@@ -126,14 +127,12 @@ func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string 
 		}
 	}
 	if msgPacketId != "" {
-		scAddrs, err := txRepo.GetRelayerScChainAddr(msgPacketId, info.ScChainId)
+		scAddr, err := txRepo.GetRelayerScChainAddr(msgPacketId, info.ScChainId)
 		if err != nil {
 			logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
 		}
-		for _, val := range scAddrs {
-			if val.ScChainAddress != "" {
-				chainAAddress = append(chainAAddress, val.ScChainAddress)
-			}
+		if scAddr != "" {
+			chainAAddress = append(chainAAddress, scAddr)
 		}
 	}
 	return chainAAddress
@@ -596,22 +595,16 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
 		return
 	}
-	group := sync.WaitGroup{}
-	group.Add(len(res))
 	for _, val := range res {
-		go func(chain *entity.IBCChain) {
-			defer group.Done()
-			relayerCnt, err := relayerRepo.CountChainRelayers(chain.ChainId)
-			if err != nil {
-				logrus.Error("count relayers of chain fail, ", err.Error())
-				return
-			}
-			if err := chainRepo.UpdateRelayers(chain.ChainId, relayerCnt); err != nil {
-				logrus.Error("update ibc_chain relayers fail, ", err.Error())
-			}
-		}(val)
+		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
+		if err != nil {
+			logrus.Error("count relayers of chain fail, ", err.Error())
+			continue
+		}
+		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
+			logrus.Error("update ibc_chain relayers fail, ", err.Error())
+		}
 	}
-	group.Wait()
 	return
 }
 
@@ -783,7 +776,7 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 	return nil
 }
 
-func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
+func checkAndUpdateRelayerSrcChainAddr() {
 	skip := int64(0)
 	limit := int64(50)
 	startTimeA := time.Now().Unix()
@@ -822,5 +815,5 @@ func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
 		}
 		skip += limit
 	}
-	logrus.Infof("task %s checkAndUpdateRelayerSrcChainAddr end, time use %d(s)", t.Name(), time.Now().Unix()-startTimeA)
+	logrus.Infof("cronjob execute checkAndUpdateRelayerSrcChainAddr finished, time use %d(s)", time.Now().Unix()-startTimeA)
 }
