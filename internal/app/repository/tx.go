@@ -25,7 +25,13 @@ func (repo *TxRepo) coll(chainId string) *qmgo.Collection {
 
 func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, error) {
 	var res entity.Tx
-	err := repo.coll(chainId).Find(context.Background(), bson.M{"msgs.msg.packet_id": packetId}).One(&res)
+	//get relayer address by packet_id and acknowledge_packet or timeout_packet
+	err := repo.coll(chainId).Find(context.Background(), bson.M{
+		"msgs.msg.packet_id": packetId,
+		"msgs.type": bson.M{ //filter ibc transfer
+			"$in": []string{constant.MsgTypeAcknowledgement, constant.MsgTypeTimeoutPacket},
+		},
+	}).Sort("-time").Limit(1).One(&res)
 	if len(res.DocTxMsgs) > 0 {
 		for _, msg := range res.DocTxMsgs {
 			if msg.Msg.PacketId == packetId {
