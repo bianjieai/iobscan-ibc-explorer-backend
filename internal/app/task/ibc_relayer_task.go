@@ -220,7 +220,8 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
-	limit := int64(10)
+	limit := int64(50)
+	threadNum := 3
 	for {
 		relayers, err := relayerRepo.FindAll(skip, limit)
 		if err != nil {
@@ -228,18 +229,14 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 			return
 		}
 		t.handleUpdateTimeAndTimePeriod(relayers)
-		threadNum := len(relayers)
-		if threadNum > 0 && threadNum <= int(limit) {
-			group := sync.WaitGroup{}
-			group.Add(threadNum)
-			for _, relayer := range relayers {
-				go func(relayer *entity.IBCRelayer) {
-					t.updateRelayerStatus(relayer)
-					t.saveOrUpdateRelayerTxsAndValue(relayer)
-					group.Done()
-				}(relayer)
-			}
-			group.Wait()
+		chanLimit := make(chan bool, threadNum)
+		for _, relayer := range relayers {
+			chanLimit <- true
+			go func(relayer *entity.IBCRelayer, chanLimit chan bool) {
+				t.updateRelayerStatus(relayer)
+				t.saveOrUpdateRelayerTxsAndValue(relayer)
+				<-chanLimit
+			}(relayer, chanLimit)
 		}
 
 		if len(relayers) < int(limit) {
