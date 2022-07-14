@@ -221,7 +221,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
-	limit := int64(50)
+	limit := int64(10)
 	for {
 		relayers, err := relayerRepo.FindAll(skip, limit)
 		if err != nil {
