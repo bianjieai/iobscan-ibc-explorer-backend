@@ -31,7 +31,7 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 		"msgs.type": bson.M{ //filter ibc transfer
 			"$in": []string{constant.MsgTypeAcknowledgement, constant.MsgTypeTimeoutPacket},
 		},
-	}).Sort("-time").Limit(1).One(&res)
+	}).Sort("-height").Limit(1).One(&res)
 	if len(res.DocTxMsgs) > 0 {
 		for _, msg := range res.DocTxMsgs {
 			if msg.Msg.PacketId == packetId {
