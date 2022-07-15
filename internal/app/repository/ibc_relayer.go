@@ -77,13 +77,13 @@ func (repo *IbcRelayerRepo) coll() *qmgo.Collection {
 
 func (repo *IbcRelayerRepo) FindAll(skip, limit int64) ([]*entity.IBCRelayer, error) {
 	var res []*entity.IBCRelayer
-	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).Sort("+" + RelayerFieldUpdateTime).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
 
 func (repo *IbcRelayerRepo) FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRelayer, error) {
 	var res []*entity.IBCRelayer
-	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainAAddress: ""}).Skip(skip).Limit(limit).Sort("+" + RelayerFieldUpdateTime).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainAAddress: ""}).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
 
