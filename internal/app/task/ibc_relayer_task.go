@@ -221,7 +221,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
 	limit := int64(50)
-	threadNum := 3
+	threadNum := 10
 	for {
 		relayers, err := relayerRepo.FindAll(skip, limit)
 		if err != nil {
@@ -233,9 +233,15 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 		for _, relayer := range relayers {
 			chanLimit <- true
 			go func(relayer *entity.IBCRelayer, chanLimit chan bool) {
+				defer func() {
+					if r := recover(); r != nil {
+						logrus.Error("recover serious error in updateRelayerStatus or saveOrUpdateRelayerTxsAndValue ", r)
+					}
+					<-chanLimit
+				}()
 				t.updateRelayerStatus(relayer)
 				t.saveOrUpdateRelayerTxsAndValue(relayer)
-				<-chanLimit
+
 			}(relayer, chanLimit)
 		}
 
