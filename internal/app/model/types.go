@@ -15,6 +15,7 @@ type (
 		Type string `bson:"type"`
 		Msg  struct {
 			PacketId string `bson:"packet_id"`
+			Signer   string `bson:"signer"`
 		} `bson:"msg"`
 	}
 )

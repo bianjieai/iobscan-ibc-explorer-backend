@@ -254,14 +254,14 @@ func (repo *ExIbcTxRepo) oneRelayerPacketCond(relayer *dto.GetRelayerInfoDTO) bs
 func (repo *ExIbcTxRepo) GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error) {
 	var res entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), repo.oneRelayerPacketCond(dto)).
-		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").One(&res)
+		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").Limit(1).One(&res)
 	return res, err
 }
 
 func (repo *ExIbcTxRepo) GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error) {
 	var res entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), repo.oneRelayerPacketCond(dto)).
-		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").One(&res)
+		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").Limit(1).One(&res)
 	return res, err
 }
 
