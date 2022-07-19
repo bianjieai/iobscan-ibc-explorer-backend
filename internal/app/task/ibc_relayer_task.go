@@ -82,25 +82,13 @@ func (t *IbcRelayerCronTask) Run() int {
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
 	t.cacheChainUnbondTimeFromLcd()
-	t.updateIbcChainsRelayer()
 	t.cacheIbcChannelRelayer()
 
 	t.caculateRelayerTotalValue()
 	t.AggrRelayerPacketTxs()
-	t.CheckAndChangeRelayer(func(relayer *entity.IBCRelayer) {
-		group := sync.WaitGroup{}
-		group.Add(2)
-		go func(relayer *entity.IBCRelayer) {
-			t.updateRelayerStatus(relayer)
-			group.Done()
-		}(relayer)
-		go func(relayer *entity.IBCRelayer) {
-			t.saveOrUpdateRelayerTxsAndValue(relayer)
-			group.Done()
-		}(relayer)
-		group.Wait()
-	})
-	t.checkAndUpdateRelayerSrcChainAddr()
+	t.CheckAndChangeRelayer()
+	//最后更新chains
+	t.updateIbcChainsRelayer()
 
 	return 1
 }
@@ -139,14 +127,12 @@ func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string 
 		}
 	}
 	if msgPacketId != "" {
-		scAddrs, err := txRepo.GetRelayerScChainAddr(msgPacketId, info.ScChainId)
-		if err != nil {
+		scAddr, err := txRepo.GetRelayerScChainAddr(msgPacketId, info.ScChainId)
+		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
 		}
-		for _, val := range scAddrs {
-			if val.ScChainAddress != "" {
-				chainAAddress = append(chainAAddress, val.ScChainAddress)
-			}
+		if scAddr != "" {
+			chainAAddress = append(chainAAddress, scAddr)
 		}
 	}
 	return chainAAddress
@@ -232,9 +218,10 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 	t.handleOneRelayerStatusAndTime(relayer, value.UpdateTime, value.TimePeriod)
 	t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
 }
-func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.IBCRelayer)) {
+func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
 	limit := int64(50)
+	threadNum := 10
 	for {
 		relayers, err := relayerRepo.FindAll(skip, limit)
 		if err != nil {
@@ -242,9 +229,22 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer(handle func(relayer *entity.I
 			return
 		}
 		t.handleUpdateTimeAndTimePeriod(relayers)
+		chanLimit := make(chan bool, threadNum)
 		for _, relayer := range relayers {
-			handle(relayer)
+			chanLimit <- true
+			go func(relayer *entity.IBCRelayer, chanLimit chan bool) {
+				defer func() {
+					if r := recover(); r != nil {
+						logrus.Error("recover serious error in updateRelayerStatus or saveOrUpdateRelayerTxsAndValue ", r)
+					}
+					<-chanLimit
+				}()
+				t.updateRelayerStatus(relayer)
+				t.saveOrUpdateRelayerTxsAndValue(relayer)
+
+			}(relayer, chanLimit)
 		}
+
 		if len(relayers) < int(limit) {
 			break
 		}
@@ -602,7 +602,6 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		logrus.Error("find ibc_chains data fail, ", err.Error())
 		return
 	}
-
 	for _, val := range res {
 		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
 		if err != nil {
@@ -784,7 +783,7 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 	return nil
 }
 
-func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
+func checkAndUpdateRelayerSrcChainAddr() {
 	skip := int64(0)
 	limit := int64(50)
 	startTimeA := time.Now().Unix()
@@ -823,5 +822,5 @@ func (t *IbcRelayerCronTask) checkAndUpdateRelayerSrcChainAddr() {
 		}
 		skip += limit
 	}
-	logrus.Infof("task %s checkAndUpdateRelayerSrcChainAddr end, time use %d(s)", t.Name(), time.Now().Unix()-startTimeA)
+	logrus.Infof("cronjob execute checkAndUpdateRelayerSrcChainAddr finished, time use %d(s)", time.Now().Unix()-startTimeA)
 }
