@@ -116,8 +116,9 @@ export class IbcTxResDto extends BaseResDto {
     dc_tx_info?: object;
     base_denom: string;
     denoms: string[];
-    create_at: string;
-    tx_time: string;
+    create_at: number;
+    tx_time: number;
+    end_time: number;
 
     constructor(value: any) {
         super();
@@ -137,6 +138,7 @@ export class IbcTxResDto extends BaseResDto {
             denoms,
             create_at,
             tx_time,
+            end_time,
         } = value;
         this.record_id = record_id || '';
         this.sc_addr = sc_addr || '';
@@ -153,6 +155,7 @@ export class IbcTxResDto extends BaseResDto {
         this.denoms = denoms || [];
         this.create_at = create_at || '';
         this.tx_time = tx_time || '';
+        this.end_time = end_time || '';
     }
 
     static bundleData(value: any): IbcTxResDto[] {

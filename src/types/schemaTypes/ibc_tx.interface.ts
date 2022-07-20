@@ -10,9 +10,9 @@ export interface IbcTxType {
   dc_chain_id: string;
   sequence: string;
   status: number;
-  sc_tx_info: object;
-  dc_tx_info: object;
-  refunded_tx_info?: object;
+  sc_tx_info: { time?:number; status?:number; hash?:string;height?:number;fee?:object;msg_amount?:object;msg?:object };
+  dc_tx_info: { time?:number; hash?:string };
+  refunded_tx_info?: { time?:number };
   substate: number;
   log: object;
   denoms: object;
@@ -20,6 +20,7 @@ export interface IbcTxType {
   create_at: number;
   update_at: number;
   tx_time: number;
+  end_time?: number;
   retry_times?: number;
   next_try_time?: number;
 }
