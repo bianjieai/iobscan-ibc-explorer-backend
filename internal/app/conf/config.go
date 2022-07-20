@@ -65,6 +65,7 @@ type Task struct {
 	CronTimeChainTask      int    `mapstructure:"cron_time_chain_task"`
 	CronTimeChannelTask    int    `mapstructure:"cron_time_channel_task"`
 	CronTimeRelayerTask    int    `mapstructure:"cron_time_relayer_task"`
+	CronTimeStatisticTask  int    `mapstructure:"cron_time_statistic_task"`
 	CronTimeTokenTask      int    `mapstructure:"cron_time_token_task"`
 	CronTimeTokenPriceTask int    `mapstructure:"cron_time_token_price_task"`
 	RedisLockExpireTime    int    `mapstructure:"redis_lock_expire_time"`

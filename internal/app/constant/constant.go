@@ -25,4 +25,9 @@ const (
 	MsgTypeTimeoutPacket   = "timeout_packet"
 	MsgTypeAcknowledgement = "acknowledge_packet"
 	MsgTypeUpdateClient    = "update_client"
+
+	ChannelOpenStatisticName  = "channel_opened"
+	ChannelCloseStatisticName = "channel_closed"
+	ChannelAllStatisticName   = "channel_all"
+	Channel24hStatisticName   = "channels_24hr"
 )
