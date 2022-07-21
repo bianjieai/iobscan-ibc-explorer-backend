@@ -31,6 +31,7 @@ type IExIbcTxRepo interface {
 	CountRelayerPacketTxsAndAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error)
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
+	Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24hActiveChannelTxsDTO, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -443,5 +444,47 @@ func (repo *ExIbcTxRepo) AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*
 	pipe := repo.AggrIBCChannelTxsPipe(startTime, endTime)
 	var res []*dto.AggrIBCChannelTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxsPipe(startTime int64) []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"tx_time": bson.M{
+				"$gte": startTime,
+			},
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"sc_chain_id": "$sc_chain_id",
+				"dc_chain_id": "$dc_chain_id",
+				"sc_channel":  "$sc_channel",
+				"dc_channel":  "$dc_channel",
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":         0,
+			"sc_chain_id": "$_id.sc_chain_id",
+			"dc_chain_id": "$_id.dc_chain_id",
+			"sc_channel":  "$_id.sc_channel",
+			"dc_channel":  "$_id.dc_channel",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	return pipe
+}
+
+func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24hActiveChannelTxsDTO, error) {
+	pipe := repo.Aggr24hActiveChannelTxsPipe(startTime)
+	var res []*dto.Aggr24hActiveChannelTxsDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

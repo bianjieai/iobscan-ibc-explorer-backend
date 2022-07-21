@@ -28,7 +28,6 @@ type IbcRelayerCronTask struct {
 	relayerTxsAmtMap map[string]TxsAmtItem
 	//key: ChainA+ChainB+ChannelA+ChannelB
 	channelRelayerCnt map[string]int64
-	relayerInfo       map[string]Info
 	//key: BaseDenom
 	denomPriceMap map[string]CoinItem
 }
@@ -138,19 +137,6 @@ func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string 
 	return chainAAddress
 }
 
-func (t *IbcRelayerCronTask) handleUpdateTimeAndTimePeriod(relayers []*entity.IBCRelayer) {
-	t.relayerInfo = make(map[string]Info, len(relayers))
-	startTime := time.Now().Unix()
-	for _, val := range relayers {
-		timePeriod, updateTime := t.getTimePeriodAndupdateTime(val)
-		t.relayerInfo[val.RelayerId] = Info{
-			TimePeriod: timePeriod,
-			UpdateTime: updateTime,
-		}
-	}
-	logrus.Debugf("handleUpdateTimeAndTimePeriod page(relayers: %d) end, time use %d(s)d", len(relayers), time.Now().Unix()-startTime)
-}
-
 func distinctRelayer(relayers []entity.IBCRelayer, distRelayerMap map[string]bool) []entity.IBCRelayer {
 	var distinctArr []entity.IBCRelayer
 	checkSameMap := make(map[string]string, 20)
@@ -190,7 +176,9 @@ func distinctRelayer(relayers []entity.IBCRelayer, distRelayerMap map[string]boo
 
 //dependence: cacheChainUnbondTimeFromLcd
 func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
-	value, _ := t.relayerInfo[relayer.RelayerId]
+	var value Info
+	//get latest update_client time
+	value.TimePeriod, value.UpdateTime = t.getTimePeriodAndupdateTime(relayer)
 	if value.TimePeriod == -1 {
 		if relayer.TimePeriod <= 0 {
 			//get unbonding time from cache
@@ -228,7 +216,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		t.handleUpdateTimeAndTimePeriod(relayers)
+		startTime := time.Now().Unix()
 		chanLimit := make(chan bool, threadNum)
 		for _, relayer := range relayers {
 			chanLimit <- true
@@ -244,7 +232,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 
 			}(relayer, chanLimit)
 		}
-
+		logrus.Debugf("checkAndChangeRelayer page(relayers: %d) end, time use %d(s)d", len(relayers), time.Now().Unix()-startTime)
 		if len(relayers) < int(limit) {
 			break
 		}
