@@ -84,6 +84,7 @@ func startTask() {
 		&task.IbcChainCronTask{},
 		&task.IbcRelayerCronTask{},
 		&task.TokenPriceTask{},
+		&task.IbcStatisticCronTask{},
 		//&task.IbcChainConfigTask{},
 	)
 	task.Start()

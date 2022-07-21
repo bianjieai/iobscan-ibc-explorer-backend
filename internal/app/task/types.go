@@ -53,5 +53,6 @@ var (
 	channelStatisticsRepo    repository.IChannelStatisticsRepo    = new(repository.ChannelStatisticsRepo)
 	channelConfigRepo        repository.IChannelConfigRepo        = new(repository.ChannelConfigRepo)
 	relayerStatisticsRepo    repository.IRelayerStatisticsRepo    = new(repository.RelayerStatisticsRepo)
+	statisticsRepo           repository.IStatisticRepo            = new(repository.IbcStatisticRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )

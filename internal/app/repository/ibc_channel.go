@@ -17,6 +17,7 @@ type IChannelRepo interface {
 	UpdateChannel(channel *entity.IBCChannel) error
 	List(chainA, chainB string, status entity.ChannelStatus, skip, limit int64) (entity.IBCChannelList, error)
 	CountList(chainA, chainB string, status entity.ChannelStatus) (int64, error)
+	CountStatus(status entity.ChannelStatus) (int64, error)
 }
 
 var _ IChannelRepo = new(ChannelRepo)
@@ -84,6 +85,14 @@ func (repo *ChannelRepo) List(chainA, chainB string, status entity.ChannelStatus
 
 func (repo *ChannelRepo) CountList(chainA, chainB string, status entity.ChannelStatus) (int64, error) {
 	param := repo.analyzeListParam(chainA, chainB, status)
+	count, err := repo.coll().Find(context.Background(), param).Count()
+	return count, err
+}
+
+func (repo *ChannelRepo) CountStatus(status entity.ChannelStatus) (int64, error) {
+	param := bson.M{
+		"status": status,
+	}
 	count, err := repo.coll().Find(context.Background(), param).Count()
 	return count, err
 }

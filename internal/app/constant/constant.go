@@ -26,4 +26,9 @@ const (
 	MsgTypeAcknowledgement    = "acknowledge_packet"
 	MsgTypeUpdateClient       = "update_client"
 	MsgTypeChannelOpenConfirm = "channel_open_confirm"
+
+	ChannelOpenStatisticName  = "channel_opened"
+	ChannelCloseStatisticName = "channel_closed"
+	ChannelAllStatisticName   = "channel_all"
+	Channel24hStatisticName   = "channels_24hr"
 )
