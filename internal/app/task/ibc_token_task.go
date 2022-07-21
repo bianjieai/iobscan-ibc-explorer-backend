@@ -490,7 +490,7 @@ func (t *TokenTask) calculateTokenStatistics(existedTokenList, newTokenList enti
 // 以下主要是对于ibc_token_statistics 集合数据的处理与计算
 
 func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error) {
-	ibcDenomCalculateList, err := denomCaculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
+	ibcDenomCalculateList, err := denomCalculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
 	if err != nil {
 		logrus.Errorf("task %s denomCaculateRepo.FindByBaseDenom error, %v", t.Name(), err)
 		return 0, nil
@@ -504,14 +504,14 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 
 	ibcDenomCalculateStrList := make([]string, 0, len(ibcDenomCalculateList))
 	for _, v := range ibcDenomCalculateList {
-		ibcDenomCalculateStrList = append(ibcDenomCalculateStrList, v.Denom)
+		ibcDenomCalculateStrList = append(ibcDenomCalculateStrList, fmt.Sprintf("%s%s", v.ChainId, v.Denom))
 	}
 
 	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.ChainId)
 	allTokenStatisticsList := make([]*entity.IBCTokenTrace, 0, len(denomList))
 	chainsSet := utils.NewStringSet()
 	for _, v := range denomList {
-		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, ibcDenomCalculateStrList)
+		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, v.ChainId, ibcDenomCalculateStrList)
 		var denomAmount string
 		if denomType == entity.TokenTraceTypeGenesis {
 			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
@@ -610,12 +610,12 @@ func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
 	return sd.Sub(td).String()
 }
 
-func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom string, ibcHash []string) entity.TokenTraceType {
+func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom, chainId string, ibcHash []string) entity.TokenTraceType {
 	if baseDenom == denom {
 		return entity.TokenTraceTypeGenesis
 	}
 
-	if utils.InArray(ibcHash, denom) {
+	if utils.InArray(ibcHash, fmt.Sprintf("%s%s", chainId, denom)) {
 		return entity.TokenTraceTypeAuthed
 	} else {
 		return entity.TokenTraceTypeOther
