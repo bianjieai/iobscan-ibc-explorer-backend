@@ -118,17 +118,17 @@ export class IbcStatisticsTaskService {
         const chain_all = await this.chainConfigModel.findCount();
 
         const chain_all_record = await this.chainConfigModel.findAll();
-        const channels_all_record = [], chains = [];
+        const chains = [];
         chain_all_record.forEach(chain => {
             chains.push(chain.chain_id)
-            chain.ibc_info && chain.ibc_info.forEach(ibc_info_item => {
-                ibc_info_item.paths.forEach(channel => {
-                    channels_all_record.push({
-                        channel_id: channel.channel_id,
-                        state: channel.state,
-                    });
-                });
-            });
+            // chain.ibc_info && chain.ibc_info.forEach(ibc_info_item => {
+            //     ibc_info_item.paths.forEach(channel => {
+            //         channels_all_record.push({
+            //             channel_id: channel.channel_id,
+            //             state: channel.state,
+            //         });
+            //     });
+            // });
         });
 
         // tx_24hr_all
@@ -157,23 +157,23 @@ export class IbcStatisticsTaskService {
         // chains_24hr_all
         const chains_24hr = chainMap.size;
 
-        // channels_24hr
-        const channels_24hr = srcinfo_24hr.length + desinfo_24hr.length;
+        // // channels_24hr
+        // const channels_24hr = srcinfo_24hr.length + desinfo_24hr.length;
 
 
         // channel_all
-        const channel_all = channels_all_record.length;
+        // const channel_all = channels_all_record.length;
 
         // channel_opened
-        const channel_opened = channels_all_record.filter(channel => {
-            return channel.state === 'STATE_OPEN';
-        }).length;
-
-        // channel_closed
-        const channel_closed = channels_all_record.filter(channel => {
-            // return channel.state === 'STATE_CLOSED';
-            return channel.state !== 'STATE_OPEN';
-        }).length;
+        // const channel_opened = channels_all_record.filter(channel => {
+        //     return channel.state === 'STATE_OPEN';
+        // }).length;
+        //
+        // // channel_closed
+        // const channel_closed = channels_all_record.filter(channel => {
+        //     // return channel.state === 'STATE_CLOSED';
+        //     return channel.state !== 'STATE_OPEN';
+        // }).length;
 
         const {tx_all_new,tx_all,tx_success,tx_failed} = await this.getCountinfo()
 
@@ -197,11 +197,11 @@ export class IbcStatisticsTaskService {
         const parseCount = {
             tx_24hr_all,
             chains_24hr,
-            channels_24hr,
+            // channels_24hr,
             chain_all,
-            channel_all,
-            channel_opened,
-            channel_closed,
+            // channel_all,
+            // channel_opened,
+            // channel_closed,
             tx_all,
             tx_success,
             tx_failed,
