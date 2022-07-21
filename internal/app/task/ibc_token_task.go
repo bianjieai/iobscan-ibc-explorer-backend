@@ -401,7 +401,7 @@ func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 
 			bz, err := utils.HttpGet(url)
 			if err != nil {
-				if t.isConnectionErr(err) {
+				if isConnectionErr(err) {
 					earlyTermination = true
 				}
 				logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
@@ -644,10 +644,6 @@ func (t *TokenTask) updateIBCChain() {
 			logrus.Errorf("task %s updateIBCChain error, %v", t.Name(), err)
 		}
 	}
-}
-
-func (t *TokenTask) isConnectionErr(err error) bool {
-	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout")
 }
 
 // ==============================================================================================================

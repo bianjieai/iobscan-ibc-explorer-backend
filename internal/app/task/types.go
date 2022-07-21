@@ -17,6 +17,11 @@ const (
 const (
 	opInsert = 1
 	opUpdate = 2
+
+	replaceHolderOffset  = "OFFSET"
+	replaceHolderLimit   = "LIMIT"
+	replaceHolderChannel = "CHANNEL"
+	replaceHolderPort    = "PORT"
 )
 
 var (
