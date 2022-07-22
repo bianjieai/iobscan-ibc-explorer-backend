@@ -200,7 +200,6 @@ export class IbcTxService {
             // get statistic data
             return await this.findStatisticTxsCount()
         } else {
-            console.log("=======================")
             const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
                 await this.getIbcTxs(queryData, token),
             );
