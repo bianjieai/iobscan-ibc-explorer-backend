@@ -76,13 +76,16 @@ export class IbcTxService {
                     case IbcTxStatus.SUCCESS:
                         item.end_time = item.dc_tx_info.time
                         break;
-                    case IbcTxStatus.FAILED,IbcTxStatus.REFUNDED:
+                    case IbcTxStatus.FAILED:
                         if (item.sc_tx_info?.status === TxStatus.FAILED) {
                             item.end_time = item.sc_tx_info.time
                         }else{
                             item.end_time = item.refunded_tx_info.time
                         }
                         break;
+                    case IbcTxStatus.REFUNDED:
+                            item.end_time = item.refunded_tx_info.time
+                        break
                 }
                 return item;
             })
