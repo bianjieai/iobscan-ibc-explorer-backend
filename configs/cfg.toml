@@ -42,3 +42,4 @@ cron_time_token_task = 5
 redis_lock_expire_time= 300
 cron_time_chain_config_task = 120
 cron_time_denom_calculate_task = 120
+cron_time_denom_update_task = 120
