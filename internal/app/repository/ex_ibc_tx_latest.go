@@ -453,8 +453,9 @@ func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxsPipe(startTime int64) []bson.M {
 			"tx_time": bson.M{
 				"$gte": startTime,
 			},
-			"status": bson.M{
-				"$in": entity.IbcTxUsefulStatus,
+			"$or": []bson.M{ //只统计成功、已退还状态、和第一段成功状态的但失败状态的
+				{"status": bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded}}},
+				{"status": entity.IbcTxStatusFailed, "sc_tx_info.status": entity.TxStatusSuccess},
 			},
 		},
 	}

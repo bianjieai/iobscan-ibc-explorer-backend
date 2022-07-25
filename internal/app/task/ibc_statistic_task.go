@@ -61,6 +61,7 @@ func (t *IbcStatisticCronTask) updateChannel24h() error {
 		return err
 	}
 	setMap := make(map[string]struct{}, len(channelDtos))
+	count := int64(0)
 	for _, val := range channelDtos {
 		channelIdPrefix := fmt.Sprintf("%s|%s", val.ScChainId, val.ScChannel)
 		channelIdEndwith := fmt.Sprintf("%s|%s", val.DcChainId, val.DcChannel)
@@ -69,9 +70,9 @@ func (t *IbcStatisticCronTask) updateChannel24h() error {
 		if !existEndWith && !existPrefix {
 			setMap[channelIdPrefix] = struct{}{}
 			setMap[channelIdEndwith] = struct{}{}
+			count++
 		}
 	}
-	count := int64(len(setMap))
 	if err := statisticsRepo.UpdateOne(constant.Channel24hStatisticName, count); err != nil {
 		return err
 	}
