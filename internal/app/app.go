@@ -87,6 +87,8 @@ func startTask() {
 		&task.IbcStatisticCronTask{},
 		//&task.IbcChainConfigTask{},
 		//&task.IbcDenomCalculateTask{},
+		//&task.IbcDenomUpdateTask{},
+		//&task.IbcSyncTransferTxTask{}
 	)
 	task.Start()
 }
