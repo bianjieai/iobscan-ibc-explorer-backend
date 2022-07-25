@@ -9,7 +9,8 @@ type IBCBaseDenom struct {
 	IsMainToken bool   `bson:"is_main_token"`
 	//CreateAt    int64  `bson:"create_at"`
 	//UpdateAt    int64  `bson:"update_at"`
-	CoinId string `bson:"coin_id"`
+	CoinId              string `bson:"coin_id"`
+	IbcInfoHashCaculate string `bson:"ibc_info_hash_caculate"`
 }
 
 func (i IBCBaseDenom) CollectionName() string {

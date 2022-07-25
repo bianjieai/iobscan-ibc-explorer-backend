@@ -85,15 +85,18 @@ func startTask() {
 		&task.IbcRelayerCronTask{},
 		&task.TokenPriceTask{},
 		&task.IbcStatisticCronTask{},
+		//&task.IbcChainConfigTask{},
+		//&task.IbcDenomCalculateTask{},
 	)
 	task.Start()
 }
 
 func startOneOffTask() {
 	task.RegisterOneOffTasks(
-		&task.ChannelStatisticsTask{},
-		&task.RelayerStatisticsTask{},
-		&task.TokenStatisticsTask{},
+	// 一次性任务需要时再打开
+	//&task.ChannelStatisticsTask{},
+	//&task.RelayerStatisticsTask{},
+	//&task.TokenStatisticsTask{},
 	)
 	task.StartOneOffTask()
 }

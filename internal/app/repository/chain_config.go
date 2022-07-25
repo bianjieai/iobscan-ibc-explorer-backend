@@ -10,6 +10,7 @@ import (
 type IChainConfigRepo interface {
 	FindAll() ([]*entity.ChainConfig, error)
 	FindOne(chainId string) (*entity.ChainConfig, error)
+	UpdateIbcInfo(config *entity.ChainConfig) error
 }
 
 var _ IChainConfigRepo = new(ChainConfigRepo)
@@ -31,4 +32,12 @@ func (repo *ChainConfigRepo) FindOne(chainId string) (*entity.ChainConfig, error
 	var res *entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{"chain_id": chainId}).One(&res)
 	return res, err
+}
+
+func (repo *ChainConfigRepo) UpdateIbcInfo(config *entity.ChainConfig) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": config.ChainId}, bson.M{
+		"$set": bson.M{
+			"ibc_info":          config.IbcInfo,
+			"ibc_info_hash_lcd": config.IbcInfoHashLcd,
+		}})
 }

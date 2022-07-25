@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -120,4 +121,11 @@ func Md5(s string) string {
 	h.Write([]byte(s)) // 需要加密的字符串为 123456
 	cipherStr := h.Sum(nil)
 	return hex.EncodeToString(cipherStr) // 输出加密结果
+}
+
+func Sha256(s string) string {
+	h := sha256.New()
+	h.Write([]byte(s))
+	cipherStr := h.Sum(nil)
+	return hex.EncodeToString(cipherStr)
 }
