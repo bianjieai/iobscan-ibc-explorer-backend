@@ -74,17 +74,17 @@ export class IbcTxService {
             ibcTxs.forEach(item => {
                 switch (item.status) {
                     case IbcTxStatus.SUCCESS:
-                        item.end_time = item.dc_tx_info.time
+                        item.end_time = item.dc_tx_info?.time || 0;
                         break;
                     case IbcTxStatus.FAILED:
                         if (item.sc_tx_info?.status === TxStatus.FAILED) {
-                            item.end_time = item.sc_tx_info.time
+                            item.end_time = item.sc_tx_info?.time || 0;
                         }else{
-                            item.end_time = item.refunded_tx_info.time
+                            item.end_time = item.refunded_tx_info?.time || 0;
                         }
                         break;
                     case IbcTxStatus.REFUNDED:
-                            item.end_time = item.refunded_tx_info.time
+                            item.end_time = item.refunded_tx_info?.time || 0;
                         break
                 }
                 return item;
