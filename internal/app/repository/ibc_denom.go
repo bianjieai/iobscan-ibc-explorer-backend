@@ -15,6 +15,7 @@ type IDenomRepo interface {
 	FindByDenom(denom string) (entity.IBCDenomList, error)
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
+	UpdateSymbol(chainId, denom, symbol string) error
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -65,4 +66,11 @@ func (repo *DenomRepo) FindNoSymbolDenoms() (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
 	err := repo.coll().Find(context.Background(), bson.M{"symbol": ""}).All(&res)
 	return res, err
+}
+
+func (repo *DenomRepo) UpdateSymbol(chainId, denom, symbol string) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": chainId, "denom": denom}, bson.M{
+		"$set": bson.M{
+			"symbol": symbol,
+		}})
 }

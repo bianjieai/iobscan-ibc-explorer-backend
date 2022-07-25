@@ -12,6 +12,7 @@ type IDenomCalculateRepo interface {
 	InsertTransaction(denomList []*entity.IBCDenomCalculate, baseDenom, scChainId, ibcInfoHashCalculate string) error
 	FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCalculate, error)
 	FindByScChainId(ScChainId string) ([]*entity.IBCDenomCalculate, error)
+	FindByDenoms(chainId string, denoms []string) ([]*entity.IBCDenomCalculate, error)
 }
 
 var _ IDenomCalculateRepo = new(DenomCalculateRepo)
@@ -49,4 +50,15 @@ func (repo *DenomCalculateRepo) InsertTransaction(denomList []*entity.IBCDenomCa
 	}
 	_, err := mgo.DoTransaction(context.Background(), callback)
 	return err
+}
+
+func (repo *DenomCalculateRepo) FindByDenoms(chainId string, denoms []string) ([]*entity.IBCDenomCalculate, error) {
+	var res []*entity.IBCDenomCalculate
+	query := bson.M{
+		"chain_id": chainId,
+		"denom": bson.M{
+			"$in": denoms,
+		}}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
 }
