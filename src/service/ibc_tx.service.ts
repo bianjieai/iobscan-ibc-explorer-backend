@@ -154,7 +154,7 @@ export class IbcTxService {
             token = await this.getTokenBySymbol(symbol)
             //no found the symbol
             if (!token || !token.length) {
-                return new ListStruct(null, page_num, page_size);
+                return new ListStruct([], page_num, page_size);
             }
         }
         if (denom) {
@@ -169,7 +169,7 @@ export class IbcTxService {
         if (query?.chain_id) {
             const chains:string[] = query?.chain_id?.split(",")
             if (chains?.length > 2) {
-                return new ListStruct(null, page_num, page_size);
+                return new ListStruct([], page_num, page_size);
             }
         }
         if (use_count) {
