@@ -124,7 +124,9 @@ func (t *ChannelTask) analyzeChainConfig() error {
 				}
 
 				channelIds = append(channelIds, channelId)
-				if p.State == constant.ChannelStateOpen && p.Counterparty.State == constant.ChannelStateOpen {
+				// todo use &&
+				// 为了避免nodejs定时任务bug导致的channel状态判断不准确，暂时用 ||
+				if p.State == constant.ChannelStateOpen || p.Counterparty.State == constant.ChannelStateOpen {
 					channelStatusMap[channelId] = entity.ChannelStatusOpened
 				} else {
 					channelStatusMap[channelId] = entity.ChannelStatusClosed
