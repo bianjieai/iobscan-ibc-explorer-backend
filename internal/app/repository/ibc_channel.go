@@ -14,6 +14,7 @@ type IChannelRepo interface {
 	UpdateOne(channelId string, updateTime, relayerCnt int64) error
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
+	DeleteByChannelIds(channelIds []string) error
 	UpdateChannel(channel *entity.IBCChannel) error
 	List(chainA, chainB string, status entity.ChannelStatus, skip, limit int64) (entity.IBCChannelList, error)
 	CountList(chainA, chainB string, status entity.ChannelStatus) (int64, error)
@@ -123,6 +124,15 @@ func (repo *ChannelRepo) InsertBatch(batch []*entity.IBCChannel) error {
 		v.CreateAt = now
 	}
 	_, err := repo.coll().InsertMany(context.Background(), batch)
+	return err
+}
+
+func (repo *ChannelRepo) DeleteByChannelIds(channelIds []string) error {
+	if len(channelIds) == 0 {
+		return nil
+	}
+
+	_, err := repo.coll().RemoveAll(context.Background(), bson.M{"channel_id": bson.M{"$in": channelIds}})
 	return err
 }
 
