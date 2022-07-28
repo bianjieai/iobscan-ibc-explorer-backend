@@ -7,7 +7,7 @@ import {IbcTxDetailsResDto, IbcTxListReqDto, IbcTxResDto, TxWithHashReqDto} from
 import {IbcDenomSchema} from '../schema/ibc_denom.schema';
 import {IbcBaseDenomSchema} from '../schema/ibc_base_denom.schema';
 import {IbcTxSchema} from '../schema/ibc_tx.schema';
-import {unAuth, TaskEnum, IbcTxTable, TxType,} from '../constant';
+import {unAuth, TaskEnum, IbcTxTable, TxType, IbcTxStatus, TxStatus} from '../constant';
 import {cfg} from '../config/config';
 import {IbcTxQueryType, IbcTxType} from "../types/schemaTypes/ibc_tx.interface";
 import {IbcStatisticsSchema} from "../schema/ibc_statistics.schema";
@@ -68,8 +68,29 @@ export class IbcTxService {
         return count
     }
 
-    async getIbcTxs(query: IbcTxQueryType, token): Promise<IbcTxType[]> {
-        return await this.ibcTxLatestModel.findTxList({...query, token})
+    async getIbcTxs(query: IbcTxQueryType, token): Promise<any> {
+        const ibcTxs:IbcTxType[] =  await this.ibcTxLatestModel.findTxList({...query, token})
+        if (ibcTxs) {
+            ibcTxs.forEach(item => {
+                switch (item.status) {
+                    case IbcTxStatus.SUCCESS:
+                        item.end_time = item.dc_tx_info?.time || 0;
+                        break;
+                    case IbcTxStatus.FAILED:
+                        if (item.sc_tx_info?.status === TxStatus.FAILED) {
+                            item.end_time = item.sc_tx_info?.time || 0;
+                        }else{
+                            item.end_time = item.refunded_tx_info?.time || 0;
+                        }
+                        break;
+                    case IbcTxStatus.REFUNDED:
+                            item.end_time = item.refunded_tx_info?.time || 0;
+                        break
+                }
+                return item;
+            })
+        }
+        return ibcTxs
     }
 
     async findStatisticTxsCount(): Promise<number> {
@@ -153,8 +174,8 @@ export class IbcTxService {
         } else if (symbol) {
             token = await this.getTokenBySymbol(symbol)
             //no found the symbol
-            if (!token) {
-                return new ListStruct(null, page_num, page_size);
+            if (!token || !token.length) {
+                return new ListStruct([], page_num, page_size);
             }
         }
         if (denom) {
@@ -169,7 +190,7 @@ export class IbcTxService {
         if (query?.chain_id) {
             const chains:string[] = query?.chain_id?.split(",")
             if (chains?.length > 2) {
-                return new ListStruct(null, page_num, page_size);
+                return new ListStruct([], page_num, page_size);
             }
         }
         if (use_count) {
@@ -178,10 +199,8 @@ export class IbcTxService {
             }
             // get statistic data
             return await this.findStatisticTxsCount()
-            // return await this.ibcTxModel.countTxList({...query, token});
         } else {
             const ibcTxDatas: IbcTxResDto[] = IbcTxResDto.bundleData(
-                // await this.ibcTxModel.findTxList({...query, token}),
                 await this.getIbcTxs(queryData, token),
             );
             return new ListStruct(ibcTxDatas, page_num, page_size);

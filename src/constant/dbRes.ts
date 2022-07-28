@@ -15,5 +15,9 @@ export const dbRes = {
         tx_time:1,
         status:1,
         'sc_tx_info.msg_amount':1,
+        'sc_tx_info.time':1,
+        'sc_tx_info.status':1,
+        'dc_tx_info.time':1,
+        'refunded_tx_info.time':1,
     }
 }
