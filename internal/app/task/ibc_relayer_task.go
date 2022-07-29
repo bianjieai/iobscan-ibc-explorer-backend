@@ -419,6 +419,10 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 	//处理新基准时间波动情况误差10秒
 	newTimePeriod := time.Now().Unix() - updateTime
 	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) {
+		//最新基准时间波动情况误差在10秒内，不改变基准周期和relayer状态，只更新updateTime
+		if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, 0); err != nil {
+			logrus.Error("update relayer update_time fail, ", err.Error())
+		}
 		return
 	}
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
