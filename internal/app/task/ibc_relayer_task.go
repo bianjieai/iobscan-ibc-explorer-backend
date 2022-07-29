@@ -410,12 +410,8 @@ func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths [
 		}
 	}
 }
-func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64, isChannel int) {
+func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64, mathChannelRet int) {
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
-	if isChannel == channelMatchFail {
-		//不是当前relayer通道，通过updateTime来更新relayer为close
-		updateTime = 0
-	}
 	//处理新基准时间波动情况误差10秒
 	newTimePeriod := time.Now().Unix() - updateTime
 	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) {
@@ -432,7 +428,7 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
 		t.handleToRunning(relayer, paths, updateTime)
 	}
-	if isChannel == channelMatchFail {
+	if mathChannelRet == channelMatchFail || mathChannelRet == channelNotFound {
 		//不是当前relayer通道，不更新updateTime和timePeriod
 		return
 	}
