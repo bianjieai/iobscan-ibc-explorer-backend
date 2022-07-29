@@ -416,6 +416,11 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 		//不是当前relayer通道，通过updateTime来更新relayer为close
 		updateTime = 0
 	}
+	//处理新基准时间波动情况误差10秒
+	newTimePeriod := time.Now().Unix() - updateTime
+	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) {
+		return
+	}
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 	if relayer.Status == entity.RelayerRunning {
 		t.handleToUnknow(relayer, paths, updateTime)
