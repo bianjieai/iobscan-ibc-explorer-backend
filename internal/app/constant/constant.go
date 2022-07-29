@@ -30,4 +30,6 @@ const (
 	ChannelCloseStatisticName = "channel_closed"
 	ChannelAllStatisticName   = "channel_all"
 	Channel24hStatisticName   = "channels_24hr"
+	TxALlStatisticName        = "tx_all"
+	TxFailedStatisticName     = "tx_failed"
 )

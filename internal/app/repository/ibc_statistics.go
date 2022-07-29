@@ -11,6 +11,7 @@ import (
 type IStatisticRepo interface {
 	FindOne(statisticName string) (*entity.IbcStatistic, error)
 	UpdateOne(statisticName string, count int64) error
+	FindBatchName(statisticNames []string) ([]*entity.IbcStatistic, error)
 }
 
 var _ IStatisticRepo = new(IbcStatisticRepo)
@@ -43,6 +44,14 @@ func (repo *IbcStatisticRepo) UpdateOne(statisticName string, count int64) error
 func (repo *IbcStatisticRepo) FindOne(statisticName string) (*entity.IbcStatistic, error) {
 	var res *entity.IbcStatistic
 	err := repo.coll().Find(context.Background(), bson.M{"statistics_name": statisticName}).One(&res)
+	return res, err
+}
+
+func (repo *IbcStatisticRepo) FindBatchName(statisticNames []string) ([]*entity.IbcStatistic, error) {
+	var res []*entity.IbcStatistic
+	err := repo.coll().Find(context.Background(), bson.M{"statistics_name": bson.M{
+		"$in": statisticNames,
+	}}).All(&res)
 	return res, err
 }
 
