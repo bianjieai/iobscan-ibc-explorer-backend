@@ -24,6 +24,26 @@ type BalancesResp struct {
 
 type StakeParams struct {
 	Params struct {
-		UnbondingTime     string `json:"unbonding_time"`
+		UnbondingTime string `json:"unbonding_time"`
 	} `json:"params"`
 }
+
+type Connections struct {
+	ConnectionPaths []string `json:"connection_paths"`
+}
+
+type (
+	ConnectionChannels struct {
+		Channels []LcdChannel `json:"channels"`
+	}
+	LcdChannel struct {
+		State        string `json:"state"`
+		Counterparty struct {
+			PortId    string `json:"port_id"`
+			ChannelId string `json:"channel_id"`
+		} `json:"counterparty"`
+		ConnectionHops []string `json:"connection_hops"`
+		PortId         string   `json:"port_id"`
+		ChannelId      string   `json:"channel_id"`
+	}
+)
