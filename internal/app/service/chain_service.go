@@ -8,6 +8,7 @@ import (
 
 type IChainService interface {
 	List(req *vo.ChainListReq) (vo.ChainListResp, errors.Error)
+	Count() (int64, errors.Error)
 }
 
 type ChainService struct {
@@ -30,4 +31,12 @@ func (svc *ChainService) List(req *vo.ChainListReq) (vo.ChainListResp, errors.Er
 	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
+}
+
+func (svc *ChainService) Count() (int64, errors.Error) {
+	cnt, err := chainRepo.Count()
+	if err != nil {
+		return 0, errors.Wrap(err)
+	}
+	return cnt, nil
 }

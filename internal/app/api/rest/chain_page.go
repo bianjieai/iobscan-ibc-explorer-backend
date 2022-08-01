@@ -18,6 +18,15 @@ func (ctl *ChainController) List(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailError(errors.Wrap(err)))
 		return
 	}
+	if req.UseCount {
+		total, err := chainService.Count()
+		if err != nil {
+			c.JSON(http.StatusOK, response.FailError(err))
+			return
+		}
+		c.JSON(http.StatusOK, response.Success(total))
+		return
+	}
 	resp, err := chainService.List(&req)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailError(err))
