@@ -13,5 +13,6 @@ var (
 	denomRepo           repository.IDenomRepo         = new(repository.DenomRepo)
 	chainRepo           repository.IChainRepo         = new(repository.IbcChainRepo)
 	relayerRepo         repository.IRelayerRepo       = new(repository.IbcRelayerRepo)
+	statisticRepo       repository.IStatisticRepo     = new(repository.IbcStatisticRepo)
 	relayerCfgRepo      repository.IRelayerConfigRepo = new(cache.RelayerConfigCacheRepo)
 )

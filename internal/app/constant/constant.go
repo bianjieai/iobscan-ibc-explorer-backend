@@ -30,6 +30,8 @@ const (
 	ChannelCloseStatisticName = "channel_closed"
 	ChannelAllStatisticName   = "channel_all"
 	Channel24hStatisticName   = "channels_24hr"
+	TxALlStatisticName        = "tx_all"
+	TxFailedStatisticName     = "tx_failed"
 	IbcCoreConnectionUri      = "%s/ibc/core/connection/%s/client_connections/%s"
 	IbcCoreChannelsUri        = "%s/ibc/core/channel/%s/connections/%s/channels"
 )

@@ -36,6 +36,10 @@ func Routers(Router *gin.Engine) {
 	chainPage(ibcRouter)
 	relayerPage(ibcRouter)
 	cacheTools(ibcRouter)
+
+	//api_support
+	statisticApiSupport(ibcRouter)
+	chainListApiSupport(ibcRouter)
 }
 
 func tokenPage(r *gin.RouterGroup) {
@@ -62,4 +66,14 @@ func relayerPage(r *gin.RouterGroup) {
 func cacheTools(r *gin.RouterGroup) {
 	ctl := rest.CacheController{}
 	r.DELETE("/:key", ctl.Del)
+}
+
+func statisticApiSupport(r *gin.RouterGroup) {
+	ctl := rest.ApiSupportController{}
+	r.GET("/statistics/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.StatisticInfo))
+}
+
+func chainListApiSupport(r *gin.RouterGroup) {
+	ctl := rest.ChainController{}
+	r.GET("/chainList/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
 }
