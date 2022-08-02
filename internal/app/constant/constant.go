@@ -21,6 +21,7 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 
+	MsgTypeTransfer           = "transfer"
 	MsgTypeRecvPacket         = "recv_packet"
 	MsgTypeTimeoutPacket      = "timeout_packet"
 	MsgTypeAcknowledgement    = "acknowledge_packet"

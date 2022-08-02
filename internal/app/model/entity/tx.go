@@ -5,29 +5,31 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 )
 
+type TxStatus int
+
 const (
-	TxStatusSuccess IbcTxStatus = 1
-	TxStatusFailed  IbcTxStatus = 0
+	TxStatusSuccess TxStatus = 1
+	TxStatusFailed  TxStatus = 0
 )
 
 type (
 	Tx struct {
-		Time      int64         `bson:"time"`
-		Height    int64         `bson:"height"`
-		TxHash    string        `bson:"tx_hash"`
-		Type      string        `bson:"type"` // parse from first msg
-		Memo      string        `bson:"memo"`
-		Status    uint32        `bson:"status"`
-		Log       string        `bson:"log"`
-		Fee       model.Fee     `bson:"fee"`
-		GasUsed   int64         `bson:"gas_used"`
-		Types     []string      `bson:"types"`
-		EventsNew []EventNew    `bson:"events_new"`
-		Signers   []string      `bson:"signers"`
-		DocTxMsgs []model.TxMsg `bson:"msgs"`
-		Addrs     []string      `bson:"addrs"`
-		TxIndex   uint32        `bson:"tx_index"`
-		Ext       interface{}   `bson:"ext"`
+		Time      int64          `bson:"time"`
+		Height    int64          `bson:"height"`
+		TxHash    string         `bson:"tx_hash"`
+		Type      string         `bson:"type"` // parse from first msg
+		Memo      string         `bson:"memo"`
+		Status    TxStatus       `bson:"status"`
+		Log       string         `bson:"log"`
+		Fee       *model.Fee     `bson:"fee"`
+		GasUsed   int64          `bson:"gas_used"`
+		Types     []string       `bson:"types"`
+		EventsNew []EventNew     `bson:"events_new"`
+		Signers   []string       `bson:"signers"`
+		DocTxMsgs []*model.TxMsg `bson:"msgs"`
+		Addrs     []string       `bson:"addrs"`
+		TxIndex   uint32         `bson:"tx_index"`
+		Ext       interface{}    `bson:"ext"`
 	}
 
 	Event struct {

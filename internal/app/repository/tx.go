@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -13,6 +14,8 @@ type ITxRepo interface {
 	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
+	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
+	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -35,8 +38,9 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 	}).Sort("-height").Limit(1).One(&res)
 	if len(res.DocTxMsgs) > 0 {
 		for _, msg := range res.DocTxMsgs {
-			if msg.Msg.PacketId == packetId {
-				return msg.Msg.Signer, nil
+			cmsg := msg.CommonMsg()
+			if cmsg.PacketId == packetId {
+				return cmsg.Signer, nil
 			}
 		}
 	}
@@ -104,4 +108,28 @@ func (repo *TxRepo) GetChannelOpenConfirmTime(chainId, channelId string) (int64,
 		return 0, err
 	}
 	return res.Time, nil
+}
+
+func (repo *TxRepo) GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"types": constant.MsgTypeTransfer,
+		"height": bson.M{
+			"$gt": height,
+		},
+	}
+
+	err := repo.coll(chainId).Find(context.Background(), query).Sort("height").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *TxRepo) FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"types":  txType,
+		"height": height,
+	}
+
+	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
+	return res, err
 }

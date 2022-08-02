@@ -7,15 +7,18 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IDenomRepo interface {
 	FindBaseDenom() (entity.IBCDenomList, error)
 	FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error)
+	FindByChainId(chainId string) (entity.IBCDenomList, error)
 	FindByDenom(denom string) (entity.IBCDenomList, error)
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
 	UpdateSymbol(chainId, denom, symbol string) error
+	InsertBatch(denoms entity.IBCDenomList) error
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -36,6 +39,12 @@ func (repo *DenomRepo) FindBaseDenom() (entity.IBCDenomList, error) {
 func (repo *DenomRepo) FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
 	err := repo.coll().Find(context.Background(), bson.M{"base_denom": baseDenom}).All(&res)
+	return res, err
+}
+
+func (repo *DenomRepo) FindByChainId(chainId string) (entity.IBCDenomList, error) {
+	var res entity.IBCDenomList
+	err := repo.coll().Find(context.Background(), bson.M{"chain_id": chainId}).All(&res)
 	return res, err
 }
 
@@ -73,4 +82,13 @@ func (repo *DenomRepo) UpdateSymbol(chainId, denom, symbol string) error {
 		"$set": bson.M{
 			"symbol": symbol,
 		}})
+}
+
+func (repo *DenomRepo) InsertBatch(denoms entity.IBCDenomList) error {
+	_, err := repo.coll().InsertMany(context.Background(), denoms, insertIgnoreErrOpt)
+	if mongo.IsDuplicateKeyError(err) {
+		return nil
+	}
+
+	return err
 }

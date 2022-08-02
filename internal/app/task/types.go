@@ -22,6 +22,8 @@ const (
 	replaceHolderLimit   = "LIMIT"
 	replaceHolderChannel = "CHANNEL"
 	replaceHolderPort    = "PORT"
+
+	syncTransferTxTaskWorkerQuantity = 5
 )
 
 var (
@@ -54,5 +56,7 @@ var (
 	channelConfigRepo        repository.IChannelConfigRepo        = new(repository.ChannelConfigRepo)
 	relayerStatisticsRepo    repository.IRelayerStatisticsRepo    = new(repository.RelayerStatisticsRepo)
 	statisticsRepo           repository.IStatisticRepo            = new(repository.IbcStatisticRepo)
+	taskRecordRepo           repository.ITaskRecordRepo           = new(repository.TaskRecordRepo)
+	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )
