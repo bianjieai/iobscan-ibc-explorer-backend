@@ -812,3 +812,51 @@ func checkAndUpdateRelayerSrcChainAddr() {
 	}
 	logrus.Infof("cronjob execute checkAndUpdateRelayerSrcChainAddr finished, time use %d(s)", time.Now().Unix()-startTimeA)
 }
+
+//==========active accounts======
+func caculateActiveAddrsOfChains() {
+	configList, err := chainConfigRepo.FindAllChainIds()
+	if err != nil {
+		logrus.Errorf("find chain_config error, %v", err)
+		return
+	}
+	//获取relayer地址
+	relayers, err := relayerCache.FindAll()
+	if err != nil {
+		logrus.Errorf("find cache relayer error, %v", err)
+		return
+	}
+	relayerMap := make(map[string]struct{}, len(relayers))
+	for _, val := range relayers {
+		if val.ChainAAddress != "" {
+			relayerMap[val.ChainAAddress] = struct{}{}
+		}
+		if val.ChainBAddress != "" {
+			relayerMap[val.ChainBAddress] = struct{}{}
+		}
+	}
+
+	//获取昨天的时间
+	startTime, endTime := yesterdayUnix()
+	mapChainAddrs := make(map[string][]string, len(configList))
+	for _, chainCfg := range configList {
+		res, err := txRepo.GetActiveAccountsOfDay(chainCfg.ChainId, startTime, endTime+1)
+		if err != nil {
+			logrus.Error("faild get active accounts of day ,err " + err.Error())
+			continue
+		}
+		for _, val := range res {
+			//过滤掉relayer地址
+			if _, exist := relayerMap[val.Address]; exist {
+				continue
+			}
+			if strings.HasPrefix(val.Address, chainCfg.AddrPrefix) {
+				mapChainAddrs[chainCfg.ChainId] = append(mapChainAddrs[chainCfg.ChainId], val.Address)
+			}
+		}
+	}
+
+	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil {
+		logrus.Errorf("update statistic data error, %v", err)
+	}
+}

@@ -21,15 +21,17 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 
+	MsgTypeTransfer        = "transfer"
 	MsgTypeRecvPacket      = "recv_packet"
 	MsgTypeTimeoutPacket   = "timeout_packet"
 	MsgTypeAcknowledgement = "acknowledge_packet"
 	MsgTypeUpdateClient    = "update_client"
 
-	ChannelOpenStatisticName  = "channel_opened"
-	ChannelCloseStatisticName = "channel_closed"
-	ChannelAllStatisticName   = "channel_all"
-	Channel24hStatisticName   = "channels_24hr"
-	TxALlStatisticName        = "tx_all"
-	TxFailedStatisticName     = "tx_failed"
+	ChannelOpenStatisticName   = "channel_opened"
+	ChannelCloseStatisticName  = "channel_closed"
+	ChannelAllStatisticName    = "channel_all"
+	Channel24hStatisticName    = "channels_24hr"
+	AccountsDailyStatisticName = "accounts_daily"
+	TxALlStatisticName         = "tx_all"
+	TxFailedStatisticName      = "tx_failed"
 )

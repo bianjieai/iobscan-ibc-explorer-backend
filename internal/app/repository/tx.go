@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,6 +14,7 @@ type ITxRepo interface {
 	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
 	GetLogByHash(chainId, txHash string) (string, error)
+	GetActiveAccountsOfDay(chainId string, startTime, endTime int64) ([]*dto.Aggr24hActiveAddrOfDayDto, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -90,6 +92,8 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime i
 	}
 	return 0, nil
 }
+
+//========api support=========
 func (repo *TxRepo) GetLogByHash(chainId, txHash string) (string, error) {
 	var res entity.Tx
 	query := bson.M{
@@ -101,4 +105,43 @@ func (repo *TxRepo) GetLogByHash(chainId, txHash string) (string, error) {
 		return "", err
 	}
 	return res.Log, nil
+}
+
+//need index: time_-1_msgs.type_-1
+func (repo *TxRepo) GetActiveAccountsOfDay(chainId string, startTime, endTime int64) ([]*dto.Aggr24hActiveAddrOfDayDto, error) {
+	pipe := repo.AggrActiveAddrsOfDayPipe(startTime, endTime)
+	var res []*dto.Aggr24hActiveAddrOfDayDto
+	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *TxRepo) AggrActiveAddrsOfDayPipe(startTime int64, endTime int64) []bson.M {
+	match := bson.M{
+		"$match": bson.M{
+			"time": bson.M{
+				"$gte": startTime,
+				"$lt":  endTime,
+			},
+			"msgs.type": bson.M{
+				"$in": []string{constant.MsgTypeTransfer, constant.MsgTypeRecvPacket, constant.MsgTypeTimeoutPacket, constant.MsgTypeAcknowledgement},
+			},
+		},
+	}
+	unwind := bson.M{
+		"$unwind": "$addrs",
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": "$addrs",
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":     0,
+			"address": "$_id",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, unwind, group, project)
+	return pipe
 }

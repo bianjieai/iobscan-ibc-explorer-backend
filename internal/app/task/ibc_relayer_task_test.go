@@ -104,3 +104,7 @@ func TestRelayerStatisticsTask_Run(t *testing.T) {
 func TestIbcRelayerCronTask_checkAndUpdateEmptyAddr(t *testing.T) {
 	checkAndUpdateRelayerSrcChainAddr()
 }
+
+func TestIbcRelayerCronTask_caculateActiveAddrsOfChains(t *testing.T) {
+	caculateActiveAddrsOfChains()
+}

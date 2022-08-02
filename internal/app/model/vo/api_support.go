@@ -48,6 +48,15 @@ type (
 		Fee         *model.Fee `json:"fee"`
 		RelayerAddr string     `json:"relayer_addr"`
 	}
+
+	AccountsDailyResp struct {
+		Items     []AccountsDailyDto `json:"items"`
+		TimeStamp int64              `json:"time_stamp"`
+	}
+	AccountsDailyDto struct {
+		ChainName string   `json:"chain_name"`
+		Address   []string `json:"address"`
+	}
 )
 
 func (dto IbcStatisticDto) LoadDto(data *entity.IbcStatistic) IbcStatisticDto {

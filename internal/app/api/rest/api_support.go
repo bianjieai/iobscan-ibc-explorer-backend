@@ -47,3 +47,12 @@ func (ctl *ApiSupportController) RelayerTxsFee(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(resp))
 }
+
+func (ctl *ApiSupportController) AccountsDaily(c *gin.Context) {
+	resp, err := staticInfoService.AccountsDailyStatistic()
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(resp))
+}

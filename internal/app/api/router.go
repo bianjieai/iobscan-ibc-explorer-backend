@@ -73,6 +73,7 @@ func statisticApiSupport(r *gin.RouterGroup) {
 	r.GET("/statistics/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.StatisticInfo))
 	r.GET("/fail_txs/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.FailTxsList))
 	r.GET("/relayers_fee/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTxsFee))
+	r.GET("/accounts_daily/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AccountsDaily))
 }
 
 func chainListApiSupport(r *gin.RouterGroup) {
