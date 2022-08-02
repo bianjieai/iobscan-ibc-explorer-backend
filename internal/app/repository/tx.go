@@ -12,6 +12,7 @@ type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
 	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
+	GetLogByHash(chainId, txHash string) (string, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -88,4 +89,16 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime i
 		return res[0].Time, nil
 	}
 	return 0, nil
+}
+func (repo *TxRepo) GetLogByHash(chainId, txHash string) (string, error) {
+	var res entity.Tx
+	query := bson.M{
+		"tx_hash": txHash,
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).
+		Select(bson.M{"log": 1}).One(&res)
+	if err != nil {
+		return "", err
+	}
+	return res.Log, nil
 }

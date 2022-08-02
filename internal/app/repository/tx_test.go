@@ -9,3 +9,11 @@ func TestTxRepo_GetTimePeriodByUpdateClient(t *testing.T) {
 	}
 	t.Log(val, val1)
 }
+
+func TestTxRepo_GetLogByHash(t *testing.T) {
+	val, err := new(TxRepo).GetLogByHash("irishub_qa", "1CE38597D5C4CA3E88E2DD59B7A639EF3BDCCCA9377E65C63051B994A2E8B22C")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(val)
+}

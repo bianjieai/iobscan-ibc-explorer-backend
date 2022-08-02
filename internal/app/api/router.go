@@ -71,6 +71,8 @@ func cacheTools(r *gin.RouterGroup) {
 func statisticApiSupport(r *gin.RouterGroup) {
 	ctl := rest.ApiSupportController{}
 	r.GET("/statistics/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.StatisticInfo))
+	r.GET("/fail_txs/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.FailTxsList))
+	r.GET("/relayers_fee/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTxsFee))
 }
 
 func chainListApiSupport(r *gin.RouterGroup) {

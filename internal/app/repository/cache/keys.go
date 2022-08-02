@@ -21,6 +21,7 @@ const (
 	denomTransAmount = "denom_trans_amount:%s"
 	ibcInfoHash      = "ibc_info_hash"
 	ibcInfo          = "ibc_info:%s"
+	ibcTxLog         = "ibc_tx_log:%s"
 	ibcRelayerCfg    = "ibc_relayer_config"
 	ibcRelayer       = "ibc_relayer"
 	baseDenom        = "base_denom"

@@ -2,8 +2,8 @@ package model
 
 type (
 	Fee struct {
-		Amount []*Coin `bson:"amount"`
-		Gas    int64   `bson:"gas"`
+		Amount []*Coin `bson:"amount" json:"amount"`
+		Gas    int64   `bson:"gas" json:"gas"`
 	}
 
 	Coin struct {

@@ -8,5 +8,6 @@ var (
 	chainService      service.IChainService         = new(service.ChainService)
 	relayerService    service.IRelayerService       = new(service.RelayerService)
 	staticInfoService service.IStatisticInfoService = new(service.StatisticInfoService)
+	ibcTxService      service.IbcTxServerI          = new(service.IbcTxService)
 	cacheService      service.CacheService
 )

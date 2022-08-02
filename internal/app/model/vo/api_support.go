@@ -1,6 +1,7 @@
 package vo
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 )
 
@@ -13,6 +14,39 @@ type (
 	IbcStatisticDto struct {
 		StatisticsName string `json:"statistics_name"`
 		Count          int64  `json:"count"`
+	}
+
+	FailTxsListReq struct {
+		Page
+	}
+
+	FailTxsListResp struct {
+		Items     []FailTxsListDto `json:"items"`
+		PageInfo  PageInfo         `json:"page_info"`
+		TimeStamp int64            `json:"time_stamp"`
+	}
+	FailTxsListDto struct {
+		TxHash     string `json:"tx_hash"`
+		ChainId    string `json:"chain_id"`
+		TxErrorLog string `json:"tx_error_log"`
+		SendChain  string `json:"send_chain"`
+		RecvChain  string `json:"recv_chain"`
+	}
+
+	RelayerTxFeesReq struct {
+		Page
+	}
+
+	RelayerTxFeesResp struct {
+		Items     []RelayerTxFeeDto `json:"items"`
+		PageInfo  PageInfo          `json:"page_info"`
+		TimeStamp int64             `json:"time_stamp"`
+	}
+	RelayerTxFeeDto struct {
+		TxHash      string     `json:"tx_hash"`
+		ChainId     string     `json:"chain_id"`
+		Fee         *model.Fee `json:"fee"`
+		RelayerAddr string     `json:"relayer_addr"`
 	}
 )
 
