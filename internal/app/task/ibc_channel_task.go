@@ -40,7 +40,7 @@ func (t *ChannelTask) Run() int {
 		return -1
 	}
 
-	existedChannelList, newChannelList, err := t.getAllChannel()
+	existedChannelList, newChannelList, removedChannelIds, err := t.getAllChannel()
 	if err != nil {
 		return -1
 	}
@@ -66,8 +66,16 @@ func (t *ChannelTask) Run() int {
 		return -1
 	}
 
-	if err = channelRepo.InsertBatch(newChannelList); err != nil {
-		logrus.Errorf("task %s InsertBatch error, %v", t.Name(), err)
+	if len(newChannelList) > 0 { // 插入新增的channel
+		if err = channelRepo.InsertBatch(newChannelList); err != nil {
+			logrus.Errorf("task %s InsertBatch error, %v", t.Name(), err)
+		}
+	}
+
+	if len(removedChannelIds) > 0 { // 删除已经不存在的channel
+		if err = channelRepo.DeleteByChannelIds(removedChannelIds); err != nil {
+			logrus.Errorf("task %s DeleteByChannelIds error, %v", t.Name(), err)
+		}
 	}
 
 	for _, v := range existedChannelList {
@@ -116,6 +124,8 @@ func (t *ChannelTask) analyzeChainConfig() error {
 				}
 
 				channelIds = append(channelIds, channelId)
+				// todo use &&
+				// 为了避免nodejs定时任务bug导致的channel状态判断不准确，暂时用 ||
 				if p.State == constant.ChannelStateOpen || p.Counterparty.State == constant.ChannelStateOpen {
 					channelStatusMap[channelId] = entity.ChannelStatusOpened
 				} else {
@@ -164,19 +174,19 @@ func (t *ChannelTask) parseChannelId(channelId string) (chainA, channelA, chainB
 	return split[0], split[1], split[2], split[3], nil
 }
 
-func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelList, error) {
+func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelList, []string, error) {
 	existedChannelList, err := channelRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s getAllChannel error, %v", t.Name(), err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	existedIds := existedChannelList.GetChannelIds()
-	var newChannelList entity.IBCChannelList
+	var newChannelList, stillExistChannelList entity.IBCChannelList
 	for _, v := range t.allChannelIds {
 		isExist := false
-		for _, e := range existedIds {
-			if v == e {
+		for _, e := range existedChannelList {
+			if v == e.ChannelId {
+				stillExistChannelList = append(stillExistChannelList, e)
 				isExist = true
 				break
 			}
@@ -189,7 +199,7 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 		newChannelList = append(newChannelList)
 		chainA, channelA, chainB, channelB, err := t.parseChannelId(v)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		newChannelList = append(newChannelList, &entity.IBCChannel{
@@ -209,7 +219,14 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 		})
 	}
 
-	return existedChannelList, newChannelList, nil
+	var removedChannelIds []string
+	for _, v := range existedChannelList {
+		if !utils.InArray(t.allChannelIds, v.ChannelId) {
+			removedChannelIds = append(removedChannelIds, v.ChannelId)
+		}
+	}
+
+	return stillExistChannelList, newChannelList, removedChannelIds, nil
 }
 
 func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) error {
