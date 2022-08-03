@@ -18,6 +18,18 @@ const (
 const (
 	opInsert = 1
 	opUpdate = 2
+
+	replaceHolderOffset  = "OFFSET"
+	replaceHolderLimit   = "LIMIT"
+	replaceHolderChannel = "CHANNEL"
+	replaceHolderPort    = "PORT"
+
+	syncTransferTxTaskWorkerQuantity = 5
+)
+const (
+	channelMatchSuccess = 1
+	channelNotFound     = 0
+	channelMatchFail    = -1
 )
 
 var (
@@ -26,6 +38,8 @@ var (
 	denomDataRepo       cache.DenomDataCacheRepo
 	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
 	ibcInfoCache        cache.IbcInfoCacheRepo
+	lcdInfoCache        cache.LcdInfoCacheRepo
+	clientIdnfoCache    cache.ClientIdChannelCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
 	relayerCache        cache.RelayerCacheRepo
@@ -39,7 +53,7 @@ var (
 	tokenTraceStatisticsRepo repository.ITokenTraceStatisticsRepo = new(repository.TokenTraceStatisticsRepo)
 	baseDenomRepo            repository.IBaseDenomRepo            = new(repository.BaseDenomRepo)
 	denomRepo                repository.IDenomRepo                = new(repository.DenomRepo)
-	denomCaculateRepo        repository.IDenomCaculateRepo        = new(repository.DenomCaculateRepo)
+	denomCalculateRepo       repository.IDenomCalculateRepo       = new(repository.DenomCalculateRepo)
 	chainConfigRepo          repository.IChainConfigRepo          = new(repository.ChainConfigRepo)
 	ibcTxRepo                repository.IExIbcTxRepo              = new(repository.ExIbcTxRepo)
 	chainRepo                repository.IChainRepo                = new(repository.IbcChainRepo)
@@ -50,5 +64,7 @@ var (
 	channelConfigRepo        repository.IChannelConfigRepo        = new(repository.ChannelConfigRepo)
 	relayerStatisticsRepo    repository.IRelayerStatisticsRepo    = new(repository.RelayerStatisticsRepo)
 	statisticsRepo           repository.IStatisticRepo            = new(repository.IbcStatisticRepo)
+	taskRecordRepo           repository.ITaskRecordRepo           = new(repository.TaskRecordRepo)
+	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )

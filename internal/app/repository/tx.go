@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -11,10 +12,13 @@ import (
 
 type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
-	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
+	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
 	GetLogByHash(chainId, txHash string) (string, error)
 	GetActiveAccountsOfDay(chainId string, startTime, endTime int64) ([]*dto.Aggr24hActiveAddrOfDayDto, error)
+	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
+	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
+	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -37,8 +41,9 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 	}).Sort("-height").Limit(1).One(&res)
 	if len(res.DocTxMsgs) > 0 {
 		for _, msg := range res.DocTxMsgs {
-			if msg.Msg.PacketId == packetId {
-				return msg.Msg.Signer, nil
+			cmsg := msg.CommonMsg()
+			if cmsg.PacketId == packetId {
+				return cmsg.Signer, nil
 			}
 		}
 	}
@@ -49,8 +54,11 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 //1: latest update_client tx_time
 //2: time_period
 //3: error
-func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error) {
-	var res []*entity.Tx
+func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error) {
+	var (
+		res      []*entity.Tx
+		clientId string
+	)
 	query := bson.M{
 		"msgs.type":       constant.MsgTypeUpdateClient,
 		"msgs.msg.signer": address,
@@ -59,17 +67,24 @@ func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTi
 		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
+		Select(bson.M{"time": 1, "msgs.type": 1, "msgs.msg.client_id": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, clientId, err
+	}
+	if len(res) > 0 && len(res[0].DocTxMsgs) > 0 {
+		for _, msg := range res[0].DocTxMsgs {
+			if msg.Type == constant.MsgTypeUpdateClient {
+				clientId = msg.CommonMsg().ClientId
+			}
+		}
 	}
 	if len(res) == 2 {
-		return res[0].Time, res[0].Time - res[1].Time, nil
+		return res[0].Time, res[0].Time - res[1].Time, clientId, nil
 	}
 	if len(res) == 1 {
-		return res[0].Time, -1, nil
+		return res[0].Time, -1, clientId, nil
 	}
-	return 0, -1, nil
+	return 0, -1, clientId, nil
 }
 
 func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error) {
@@ -91,6 +106,45 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime i
 		return res[0].Time, nil
 	}
 	return 0, nil
+}
+
+func (repo *TxRepo) GetChannelOpenConfirmTime(chainId, channelId string) (int64, error) {
+	var res entity.Tx
+	query := bson.M{
+		"msgs.type":           constant.MsgTypeChannelOpenConfirm,
+		"msgs.msg.channel_id": channelId,
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).
+		Select(bson.M{"time": 1}).Sort("-time").Limit(1).One(&res)
+
+	if err != nil {
+		return 0, err
+	}
+	return res.Time, nil
+}
+
+func (repo *TxRepo) GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"types": constant.MsgTypeTransfer,
+		"height": bson.M{
+			"$gt": height,
+		},
+	}
+
+	err := repo.coll(chainId).Find(context.Background(), query).Sort("height").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *TxRepo) FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"types":  txType,
+		"height": height,
+	}
+
+	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
+	return res, err
 }
 
 //========api support=========

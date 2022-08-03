@@ -3,6 +3,12 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -14,11 +20,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
-	"math"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 type IbcRelayerCronTask struct {
@@ -118,12 +119,12 @@ func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string 
 	if historyData {
 		ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(info)
 		if err == nil {
-			msgPacketId = ibcTx.ScTxInfo.Msg.Msg.PacketId
+			msgPacketId = ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
 		}
 	} else {
 		ibcTx, err := ibcTxRepo.GetOneRelayerScTxPacketId(info)
 		if err == nil {
-			msgPacketId = ibcTx.ScTxInfo.Msg.Msg.PacketId
+			msgPacketId = ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
 		}
 	}
 	if msgPacketId != "" {
@@ -178,8 +179,9 @@ func distinctRelayer(relayers []entity.IBCRelayer, distRelayerMap map[string]boo
 //dependence: cacheChainUnbondTimeFromLcd
 func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 	var value Info
+	var channelMatchRet int
 	//get latest update_client time
-	value.TimePeriod, value.UpdateTime = t.getTimePeriodAndupdateTime(relayer)
+	value.TimePeriod, value.UpdateTime, channelMatchRet = t.getTimePeriodAndupdateTime(relayer)
 	if value.TimePeriod == -1 {
 		if relayer.TimePeriod <= 0 {
 			//get unbonding time from cache
@@ -204,8 +206,11 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 		}
 
 	}
-	t.handleOneRelayerStatusAndTime(relayer, value.UpdateTime, value.TimePeriod)
-	t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
+	t.handleOneRelayerStatusAndTime(relayer, value.UpdateTime, value.TimePeriod, channelMatchRet)
+	//如果update_client是该relayer对应的通道，更新channel页channel更新时间
+	if channelMatchRet == channelMatchSuccess {
+		t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
+	}
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
@@ -300,6 +305,38 @@ func getStakeParams(baseUrl, chainId string) {
 	_ = unbondTimeCache.SetUnbondTime(chainId, stakeparams.Params.UnbondingTime)
 }
 
+func getConnectionFromLcd(baseUrl string) []string {
+	bz, err := utils.HttpGet(baseUrl)
+	if err != nil {
+		logrus.Error(err)
+		return nil
+	}
+
+	var connections vo.Connections
+	err = json.Unmarshal(bz, &connections)
+	if err != nil {
+		logrus.Error(err)
+		return nil
+	}
+	return connections.ConnectionPaths
+}
+
+func getChannelFromLcd(baseUrl string) []vo.LcdChannel {
+	bz, err := utils.HttpGet(baseUrl)
+	if err != nil {
+		logrus.Error(err)
+		return nil
+	}
+
+	var connections vo.ConnectionChannels
+	err = json.Unmarshal(bz, &connections)
+	if err != nil {
+		logrus.Error(err)
+		return nil
+	}
+	return connections.Channels
+}
+
 func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerRunningStr)
 	//Running=>Close: update_client时间与当前时间差大于relayer基准周期
@@ -375,14 +412,27 @@ func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths [
 		}
 	}
 }
-func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64) {
+func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64, mathChannelRet int) {
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
+	//处理新基准时间波动情况误差10秒
+	newTimePeriod := time.Now().Unix() - updateTime
+	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) {
+		//最新基准时间波动情况误差在10秒内，不改变基准周期和relayer状态，只更新updateTime
+		if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, 0); err != nil {
+			logrus.Error("update relayer update_time fail, ", err.Error())
+		}
+		return
+	}
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 	if relayer.Status == entity.RelayerRunning {
 		t.handleToUnknow(relayer, paths, updateTime)
 	} else {
 		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
 		t.handleToRunning(relayer, paths, updateTime)
+	}
+	if mathChannelRet == channelMatchFail || mathChannelRet == channelNotFound {
+		//不是当前relayer通道，不更新updateTime和timePeriod
+		return
 	}
 	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, timePeriod); err != nil {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
@@ -635,8 +685,9 @@ func createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 //1: timePeriod
 //2: updateTime
 //3: error
-func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64) {
+func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelayer) (int64, int64, int) {
 	var updateTimeA, timePeriodA, updateTimeB, timePeriodB, startTime int64
+	var clientIdA, clientIdB string
 	var err error
 	//use unbonding_time
 	startTime = time.Now().Add(-24 * 21 * time.Hour).Unix()
@@ -653,7 +704,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	group := sync.WaitGroup{}
 	group.Add(2)
 	go func() {
-		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, startTime)
+		updateTimeA, timePeriodA, clientIdA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, startTime)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
@@ -661,7 +712,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	}()
 
 	go func() {
-		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, startTime)
+		updateTimeB, timePeriodB, clientIdB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, startTime)
 		if err != nil {
 			logrus.Warn("get relayer timePeriod and updateTime fail" + err.Error())
 		}
@@ -699,7 +750,95 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	if updateTime == 0 && timePeriod == -1 && relayer.UpdateTime == 0 {
 		updateTime = t.findLatestRecvPacketTime(relayer, startTime)
 	}
-	return timePeriod, updateTime
+	logrus.Debug("clientIdA: ", clientIdA, " clientIdB: ", clientIdB)
+	return timePeriod, updateTime, matchChannels(clientIdA, clientIdB, relayer)
+}
+
+//根据clientId通过lcd或者redis获取对应的channels信息
+func matchChannels(clientIdA, clientIdB string, relayer *entity.IBCRelayer) int {
+	var channels []vo.LcdChannel
+	if len(clientIdA) > 0 {
+		//从缓存获取chainA，clientId对应的channels
+		channelVal, _ := clientIdnfoCache.Get(relayer.ChainA, clientIdA)
+		if len(channelVal) > 0 {
+			utils.UnmarshalJsonIgnoreErr([]byte(channelVal), &channels)
+			if len(channels) > 0 {
+				channelObj := channels[0]
+				//匹配发起链channel与接收链channel
+				if relayer.ChannelA == channelObj.ChannelId && relayer.ChannelB == channelObj.Counterparty.ChannelId {
+					return channelMatchSuccess
+				}
+				return channelMatchFail
+			}
+		}
+
+		var chainCfg entity.ChainConfig
+		value, _ := lcdInfoCache.Get(relayer.ChainA)
+		if len(value) > 0 {
+			utils.UnmarshalJsonIgnoreErr([]byte(value), &chainCfg)
+		}
+		arrs := strings.Split(chainCfg.LcdApiPath.ChannelsPath, "/")
+		if len(arrs) == 6 {
+			connections := getConnectionFromLcd(fmt.Sprintf(constant.IbcCoreConnectionUri,
+				chainCfg.Lcd, arrs[4], clientIdA))
+			if len(connections) > 0 {
+				channels = getChannelFromLcd(fmt.Sprintf(constant.IbcCoreChannelsUri,
+					chainCfg.Lcd, arrs[4], connections[0]))
+				//缓存client_id与channels之前关系
+				_ = clientIdnfoCache.Set(relayer.ChainA, clientIdA, string(utils.MarshalJsonIgnoreErr(channels)))
+			}
+		}
+
+		if len(channels) > 0 {
+			channelObj := channels[0]
+			//匹配发起链channel与接收链channel
+			if relayer.ChannelA == channelObj.ChannelId && relayer.ChannelB == channelObj.Counterparty.ChannelId {
+				return channelMatchSuccess
+			}
+			return channelMatchFail
+		}
+	} else if len(clientIdB) > 0 {
+		//从缓存获取chainB，clientId对应的channels
+		channelVal, _ := clientIdnfoCache.Get(relayer.ChainB, clientIdB)
+		if len(channelVal) > 0 {
+			utils.UnmarshalJsonIgnoreErr([]byte(channelVal), &channels)
+			if len(channels) > 0 {
+				channelObj := channels[0]
+				//匹配发起链channel与接收链channel
+				if relayer.ChannelB == channelObj.ChannelId && relayer.ChannelA == channelObj.Counterparty.ChannelId {
+					return channelMatchSuccess
+				}
+				return channelMatchFail
+			}
+		}
+
+		var chainCfg entity.ChainConfig
+		value, _ := lcdInfoCache.Get(relayer.ChainB)
+		if len(value) > 0 {
+			utils.UnmarshalJsonIgnoreErr([]byte(value), &chainCfg)
+		}
+		arrs := strings.Split(chainCfg.LcdApiPath.ChannelsPath, "/")
+		if len(arrs) == 6 {
+			connections := getConnectionFromLcd(fmt.Sprintf("%s/ibc/core/connection/%s/client_connections/%s",
+				chainCfg.Lcd, arrs[4], clientIdB))
+			if len(connections) > 0 {
+				channels = getChannelFromLcd(fmt.Sprintf("%s/ibc/core/channel/%s/connections/%s/channels",
+					chainCfg.Lcd, arrs[4], connections[0]))
+				//缓存client_id与channels之前关系
+				_ = clientIdnfoCache.Set(relayer.ChainB, clientIdB, string(utils.MarshalJsonIgnoreErr(channels)))
+			}
+		}
+		if len(channels) > 0 {
+			channelObj := channels[0]
+			//匹配发起链channel与接收链channel
+			if relayer.ChannelB == channelObj.ChannelId && relayer.ChannelA == channelObj.Counterparty.ChannelId {
+				return channelMatchSuccess
+			}
+			return channelMatchFail
+		}
+	}
+
+	return channelNotFound
 }
 func (t *IbcRelayerCronTask) findLatestRecvPacketTime(relayer *entity.IBCRelayer, startTime int64) int64 {
 	var (

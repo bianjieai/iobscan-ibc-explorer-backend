@@ -70,6 +70,11 @@ type Task struct {
 	CronTimeTokenTask      int    `mapstructure:"cron_time_token_task"`
 	CronTimeTokenPriceTask int    `mapstructure:"cron_time_token_price_task"`
 	RedisLockExpireTime    int    `mapstructure:"redis_lock_expire_time"`
+	CronTimeChainConfigTask      int    `mapstructure:"cron_time_chain_config_task"`
+	CronTimeDenomCalculateTask   int    `mapstructure:"cron_time_denom_calculate_task"`
+	CronTimeDenomUpdateTask      int    `mapstructure:"cron_time_denom_update_task"`
+	CronTimeSyncTransferTxTask   int    `mapstructure:"cron_time_sync_transfer_tx_task"`
+	SingleChainSyncTransferTxMax int    `mapstructure:"single_chain_sync_transfer_tx_max"`
 }
 
 type Spi struct {

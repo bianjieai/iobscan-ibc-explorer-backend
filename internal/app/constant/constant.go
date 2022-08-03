@@ -21,11 +21,12 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 
-	MsgTypeTransfer        = "transfer"
-	MsgTypeRecvPacket      = "recv_packet"
-	MsgTypeTimeoutPacket   = "timeout_packet"
-	MsgTypeAcknowledgement = "acknowledge_packet"
-	MsgTypeUpdateClient    = "update_client"
+	MsgTypeTransfer           = "transfer"
+	MsgTypeRecvPacket         = "recv_packet"
+	MsgTypeTimeoutPacket      = "timeout_packet"
+	MsgTypeAcknowledgement    = "acknowledge_packet"
+	MsgTypeUpdateClient       = "update_client"
+	MsgTypeChannelOpenConfirm = "channel_open_confirm"
 
 	ChannelOpenStatisticName   = "channel_opened"
 	ChannelCloseStatisticName  = "channel_closed"
@@ -34,4 +35,6 @@ const (
 	AccountsDailyStatisticName = "accounts_daily"
 	TxALlStatisticName         = "tx_all"
 	TxFailedStatisticName      = "tx_failed"
+	IbcCoreConnectionUri      = "%s/ibc/core/connection/%s/client_connections/%s"
+	IbcCoreChannelsUri        = "%s/ibc/core/channel/%s/connections/%s/channels"
 )
