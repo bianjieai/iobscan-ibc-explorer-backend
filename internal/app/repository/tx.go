@@ -71,7 +71,7 @@ func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTi
 	if len(res) > 0 && len(res[0].DocTxMsgs) > 0 {
 		for _, msg := range res[0].DocTxMsgs {
 			if msg.Type == constant.MsgTypeUpdateClient {
-				clientId = msg.Msg.ClientId
+				clientId = msg.CommonMsg().ClientId
 			}
 		}
 	}
