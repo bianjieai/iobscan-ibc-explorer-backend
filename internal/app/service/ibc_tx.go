@@ -40,11 +40,11 @@ func (svc *IbcTxService) ListFailTxs(req *vo.FailTxsListReq) (*vo.FailTxsListRes
 			RecvChain: ibcTx.DcChainId,
 		}
 		switch ibcTx.Status {
-		case int(entity.IbcTxStatusFailed):
-			if ibcTx.ScTxInfo.Status == int(entity.TxStatusSuccess) {
+		case entity.IbcTxStatusFailed:
+			if ibcTx.ScTxInfo.Status == entity.TxStatusSuccess {
 				item.ChainId = ibcTx.DcChainId
 				item.TxHash = ibcTx.DcTxInfo.Hash
-				if ibcTx.DcTxInfo.Status == int(entity.TxStatusSuccess) {
+				if ibcTx.DcTxInfo.Status == entity.TxStatusSuccess {
 					item.TxErrorLog = "ack error"
 				} else if ibcTx.DcTxInfo.Hash != "" {
 					//find dc_chain_id sync_tx for log
@@ -60,7 +60,7 @@ func (svc *IbcTxService) ListFailTxs(req *vo.FailTxsListReq) (*vo.FailTxsListRes
 				item.TxErrorLog = ibcTx.Log.ScLog
 			}
 			break
-		case int(entity.IbcTxStatusRefunded):
+		case entity.IbcTxStatusRefunded:
 			item.ChainId = ibcTx.ScChainId
 			item.TxHash = ibcTx.RefundedTxInfo.Hash
 			break
@@ -94,21 +94,21 @@ func (svc *IbcTxService) ListRelayerTxFees(req *vo.RelayerTxFeesReq) (*vo.Relaye
 	for _, ibcTx := range ibcTxs {
 
 		switch ibcTx.Status {
-		case int(entity.IbcTxStatusFailed), int(entity.TxStatusSuccess):
+		case entity.IbcTxStatusFailed, entity.IbcTxStatusSuccess:
 			item := vo.RelayerTxFeeDto{
 				ChainId:     ibcTx.DcChainId,
 				Fee:         ibcTx.DcTxInfo.Fee,
 				TxHash:      ibcTx.DcTxInfo.Hash,
-				RelayerAddr: ibcTx.DcTxInfo.Msg.Msg.Signer,
+				RelayerAddr: ibcTx.DcTxInfo.Msg.CommonMsg().Signer,
 			}
 			items = append(items, item)
 			break
-		case int(entity.IbcTxStatusRefunded):
+		case entity.IbcTxStatusRefunded:
 			item := vo.RelayerTxFeeDto{
 				ChainId:     ibcTx.ScChainId,
 				Fee:         ibcTx.RefundedTxInfo.Fee,
 				TxHash:      ibcTx.RefundedTxInfo.Hash,
-				RelayerAddr: ibcTx.RefundedTxInfo.Msg.Msg.Signer,
+				RelayerAddr: ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer,
 			}
 			items = append(items, item)
 			break
