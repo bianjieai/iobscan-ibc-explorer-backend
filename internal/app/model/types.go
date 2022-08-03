@@ -22,6 +22,7 @@ type (
 	}
 
 	CommonMsg struct {
+		ClientId string `bson:"client_id"`
 		PacketId string `bson:"packet_id" json:"packet_id"`
 		Signer   string `bson:"signer" json:"signer"`
 	}

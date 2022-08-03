@@ -11,7 +11,7 @@ import (
 
 type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
-	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error)
+	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
 	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
@@ -51,8 +51,11 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 //1: latest update_client tx_time
 //2: time_period
 //3: error
-func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, error) {
-	var res []*entity.Tx
+func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error) {
+	var (
+		res      []*entity.Tx
+		clientId string
+	)
 	query := bson.M{
 		"msgs.type":       constant.MsgTypeUpdateClient,
 		"msgs.msg.signer": address,
@@ -61,17 +64,24 @@ func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTi
 		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
+		Select(bson.M{"time": 1, "msgs.type": 1, "msgs.msg.client_id": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, clientId, err
+	}
+	if len(res) > 0 && len(res[0].DocTxMsgs) > 0 {
+		for _, msg := range res[0].DocTxMsgs {
+			if msg.Type == constant.MsgTypeUpdateClient {
+				clientId = msg.CommonMsg().ClientId
+			}
+		}
 	}
 	if len(res) == 2 {
-		return res[0].Time, res[0].Time - res[1].Time, nil
+		return res[0].Time, res[0].Time - res[1].Time, clientId, nil
 	}
 	if len(res) == 1 {
-		return res[0].Time, -1, nil
+		return res[0].Time, -1, clientId, nil
 	}
-	return 0, -1, nil
+	return 0, -1, clientId, nil
 }
 
 func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error) {

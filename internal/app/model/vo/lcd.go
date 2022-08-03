@@ -102,3 +102,23 @@ type ClientStateResp struct {
 		RevisionHeight string `json:"revision_height"`
 	} `json:"proof_height"`
 }
+
+type Connections struct {
+	ConnectionPaths []string `json:"connection_paths"`
+}
+
+type (
+	ConnectionChannels struct {
+		Channels []LcdChannel `json:"channels"`
+	}
+	LcdChannel struct {
+		State        string `json:"state"`
+		Counterparty struct {
+			PortId    string `json:"port_id"`
+			ChannelId string `json:"channel_id"`
+		} `json:"counterparty"`
+		ConnectionHops []string `json:"connection_hops"`
+		PortId         string   `json:"port_id"`
+		ChannelId      string   `json:"channel_id"`
+	}
+)
