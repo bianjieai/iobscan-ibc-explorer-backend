@@ -11,7 +11,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
@@ -29,13 +28,13 @@ func Serve(cfg *conf.Config) {
 
 	r := gin.Default()
 	api.Routers(r)
-	go monitor.Start(cfg.App.Prometheus)
-	if cfg.App.StartTask {
-		startTask()
-	}
-	if cfg.App.StartOneOffTask {
-		startOneOffTask()
-	}
+	//go monitor.Start(cfg.App.Prometheus)
+	//if cfg.App.StartTask {
+	//	startTask()
+	//}
+	//if cfg.App.StartOneOffTask {
+	//	startOneOffTask()
+	//}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
 
@@ -77,23 +76,23 @@ func initLogger(logCfg *conf.Log) {
 	}
 }
 
-func startTask() {
-	task.RegisterTasks(
-		&task.TokenTask{},
-		&task.ChannelTask{},
-		&task.IbcChainCronTask{},
-		&task.IbcRelayerCronTask{},
-		&task.TokenPriceTask{},
-		&task.IbcStatisticCronTask{},
-	)
-	task.Start()
-}
+//func startTask() {
+//	task.RegisterTasks(
+//		&task.TokenTask{},
+//		&task.ChannelTask{},
+//		&task.IbcChainCronTask{},
+//		&task.IbcRelayerCronTask{},
+//		&task.TokenPriceTask{},
+//		&task.IbcStatisticCronTask{},
+//	)
+//	task.Start()
+//}
 
-func startOneOffTask() {
-	task.RegisterOneOffTasks(
-		&task.ChannelStatisticsTask{},
-		&task.RelayerStatisticsTask{},
-		&task.TokenStatisticsTask{},
-	)
-	task.StartOneOffTask()
-}
+//func startOneOffTask() {
+//	task.RegisterOneOffTasks(
+//		&task.ChannelStatisticsTask{},
+//		&task.RelayerStatisticsTask{},
+//		&task.TokenStatisticsTask{},
+//	)
+//	task.StartOneOffTask()
+//}

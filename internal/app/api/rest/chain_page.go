@@ -12,6 +12,17 @@ import (
 type ChainController struct {
 }
 
+// @Summary list
+// @Description get IBC BUSD of chains
+// @ID list
+// @Tags app_version
+// @Accept  json
+// @Produce  json
+// @Param   page_num    query   int true    "page num" Default(1)
+// @Param   page_size   query   int true    "page size" Default(10)
+// @Param   use_count   query   bool false    "if used count" Enums(true, false)
+// @Success 200 {object} vo.ChainListResp	"success"
+// @Router /ibc/chainList/api_support [get]
 func (ctl *ChainController) List(c *gin.Context) {
 	var req vo.ChainListReq
 	if err := c.ShouldBind(&req); err != nil {
