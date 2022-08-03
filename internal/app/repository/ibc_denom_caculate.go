@@ -8,22 +8,57 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type IDenomCaculateRepo interface {
-	FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCaculate, error)
+type IDenomCalculateRepo interface {
+	InsertTransaction(denomList []*entity.IBCDenomCalculate, baseDenom, scChainId, ibcInfoHashCalculate string) error
+	FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCalculate, error)
+	FindByScChainId(ScChainId string) ([]*entity.IBCDenomCalculate, error)
+	FindByDenoms(chainId string, denoms []string) ([]*entity.IBCDenomCalculate, error)
 }
 
-var _ IDenomCaculateRepo = new(DenomCaculateRepo)
+var _ IDenomCalculateRepo = new(DenomCalculateRepo)
 
-type DenomCaculateRepo struct {
+type DenomCalculateRepo struct {
 }
 
-func (repo *DenomCaculateRepo) coll() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCDenomCaculate{}.CollectionName())
+func (repo *DenomCalculateRepo) coll() *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.IBCDenomCalculate{}.CollectionName())
 }
 
-func (repo *DenomCaculateRepo) FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCaculate, error) {
-	var res []*entity.IBCDenomCaculate
-	qurey := bson.M{"base_denom": baseDenom}
-	err := repo.coll().Find(context.Background(), qurey).All(&res)
+func (repo *DenomCalculateRepo) FindByBaseDenom(baseDenom string) ([]*entity.IBCDenomCalculate, error) {
+	var res []*entity.IBCDenomCalculate
+	query := bson.M{"base_denom": baseDenom}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
+}
+
+func (repo *DenomCalculateRepo) FindByScChainId(ScChainId string) ([]*entity.IBCDenomCalculate, error) {
+	var res []*entity.IBCDenomCalculate
+	query := bson.M{"sc_chain_id": ScChainId}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
+}
+
+func (repo *DenomCalculateRepo) InsertTransaction(denomList []*entity.IBCDenomCalculate, baseDenom, scChainId, ibcInfoHashCalculate string) error {
+	callback := func(sessCtx context.Context) (interface{}, error) {
+		if len(denomList) > 0 {
+			if _, err := repo.coll().InsertMany(sessCtx, denomList); err != nil {
+				return nil, err
+			}
+		}
+
+		return nil, new(BaseDenomRepo).UpdateIbcInfoHashCalculate(baseDenom, scChainId, ibcInfoHashCalculate)
+	}
+	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
+}
+
+func (repo *DenomCalculateRepo) FindByDenoms(chainId string, denoms []string) ([]*entity.IBCDenomCalculate, error) {
+	var res []*entity.IBCDenomCalculate
+	query := bson.M{
+		"chain_id": chainId,
+		"denom": bson.M{
+			"$in": denoms,
+		}}
+	err := repo.coll().Find(context.Background(), query).All(&res)
 	return res, err
 }

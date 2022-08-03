@@ -1,6 +1,9 @@
 package task
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type segment struct {
 	StartTime int64 `json:"start_time"`
@@ -71,4 +74,8 @@ func yesterdayUnix() (int64, int64) {
 	startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
 	endUnix := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 59, time.Local).Unix()
 	return startUnix, endUnix
+}
+
+func isConnectionErr(err error) bool {
+	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout")
 }

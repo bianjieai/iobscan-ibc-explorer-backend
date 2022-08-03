@@ -1,17 +1,18 @@
 package entity
 
 type IBCDenom struct {
-	Symbol        string `bson:"symbol"`
-	CreateAt      int64  `bson:"create_at"`
-	UpdateAt      int64  `bson:"update_at"`
-	TxTime        int64  `bson:"tx_time"`
-	RealDenom     bool   `bson:"real_denom"`
-	ChainId       string `bson:"chain_id"`
-	Denom         string `bson:"denom"`
-	BaseDenom     string `bson:"base_denom"`
-	DenomPath     string `bson:"denom_path"`
-	IsSourceChain bool   `bson:"is_source_chain"`
-	IsBaseDenom   bool   `bson:"is_base_denom"`
+	Symbol           string `bson:"symbol"`
+	ChainId          string `bson:"chain_id"`
+	Denom            string `bson:"denom"`
+	PrevDenom        string `bson:"prev_denom"`
+	PrevChainId      string `bson:"prev_chain_id"`
+	BaseDenom        string `bson:"base_denom"`
+	BaseDenomChainId string `bson:"base_denom_chain_id"`
+	DenomPath        string `bson:"denom_path"`
+	IsSourceChain    bool   `bson:"is_source_chain"` // todo remove this
+	IsBaseDenom      bool   `bson:"is_base_denom"`
+	CreateAt         int64  `bson:"create_at"`
+	UpdateAt         int64  `bson:"update_at"`
 }
 
 func (i IBCDenom) CollectionName() string {

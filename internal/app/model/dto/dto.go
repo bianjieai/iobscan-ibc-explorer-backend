@@ -124,3 +124,8 @@ type Aggr24hActiveChannelTxsDTO struct {
 	ScChannel string `bson:"sc_channel"`
 	DcChannel string `bson:"dc_channel"`
 }
+
+type DenomSimpleDTO struct {
+	Denom   string
+	ChainId string
+}

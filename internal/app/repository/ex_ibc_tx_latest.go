@@ -7,9 +7,12 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IExIbcTxRepo interface {
+	InsertBatch(txs []*entity.ExIbcTx) error
+	InsertBatchHistory(txs []*entity.ExIbcTx) error
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
@@ -45,6 +48,22 @@ func (repo *ExIbcTxRepo) coll() *qmgo.Collection {
 
 func (repo *ExIbcTxRepo) collHistory() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.ExIbcTx{}.CollectionName(true))
+}
+
+func (repo *ExIbcTxRepo) InsertBatch(txs []*entity.ExIbcTx) error {
+	_, err := repo.coll().InsertMany(context.Background(), txs, insertIgnoreErrOpt)
+	if mongo.IsDuplicateKeyError(err) {
+		return nil
+	}
+	return err
+}
+
+func (repo *ExIbcTxRepo) InsertBatchHistory(txs []*entity.ExIbcTx) error {
+	_, err := repo.collHistory().InsertMany(context.Background(), txs, insertIgnoreErrOpt)
+	if mongo.IsDuplicateKeyError(err) {
+		return nil
+	}
+	return err
 }
 
 func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {

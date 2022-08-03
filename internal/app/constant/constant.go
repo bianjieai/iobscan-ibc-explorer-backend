@@ -21,10 +21,12 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 
-	MsgTypeRecvPacket      = "recv_packet"
-	MsgTypeTimeoutPacket   = "timeout_packet"
-	MsgTypeAcknowledgement = "acknowledge_packet"
-	MsgTypeUpdateClient    = "update_client"
+	MsgTypeTransfer           = "transfer"
+	MsgTypeRecvPacket         = "recv_packet"
+	MsgTypeTimeoutPacket      = "timeout_packet"
+	MsgTypeAcknowledgement    = "acknowledge_packet"
+	MsgTypeUpdateClient       = "update_client"
+	MsgTypeChannelOpenConfirm = "channel_open_confirm"
 
 	ChannelOpenStatisticName  = "channel_opened"
 	ChannelCloseStatisticName = "channel_closed"
