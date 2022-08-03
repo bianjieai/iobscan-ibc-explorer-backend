@@ -61,6 +61,7 @@ type Log struct {
 }
 
 type Task struct {
+	CronJobDailyChainAddr  string `mapstructure:"cron_job_daily_chain_addr"`
 	CronJobRelayerAddr     string `mapstructure:"cron_job_relayer_addr"`
 	CronTimeChainTask      int    `mapstructure:"cron_time_chain_task"`
 	CronTimeChannelTask    int    `mapstructure:"cron_time_channel_task"`

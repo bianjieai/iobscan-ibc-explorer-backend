@@ -33,6 +33,7 @@ coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
 
 [task]
 cron_job_relayer_addr="0 0 */6 * * ?"
+cron_job_daily_chain_addr="0 0 8 * * ?"
 cron_time_statistic_task=5
 cron_time_chain_task = 5
 cron_time_channel_task = 5

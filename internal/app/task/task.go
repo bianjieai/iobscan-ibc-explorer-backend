@@ -55,7 +55,10 @@ func Start() {
 		logrus.Fatal("cron job checkAndUpdateRelayerSrcChainAddr err", err)
 	}
 	//每天8点统计前一天的活跃账户
-	if _, err := c.AddFunc("0 0 8 * * ?", caculateActiveAddrsOfChains); err != nil {
+	if taskConf.CronJobRelayerAddr == "" {
+		taskConf.CronJobRelayerAddr = DailyAccountsCronJobTime
+	}
+	if _, err := c.AddFunc(taskConf.CronJobDailyChainAddr, caculateActiveAddrsOfChains); err != nil {
 		logrus.Fatal("cron job caculateActiveAddrsOfChains err", err)
 	}
 	c.Start()
