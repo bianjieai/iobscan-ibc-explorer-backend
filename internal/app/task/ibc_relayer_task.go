@@ -3,6 +3,12 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -13,11 +19,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
-	"math"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 type IbcRelayerCronTask struct {
@@ -117,12 +118,12 @@ func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string 
 	if historyData {
 		ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(info)
 		if err == nil {
-			msgPacketId = ibcTx.ScTxInfo.Msg.Msg.PacketId
+			msgPacketId = ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
 		}
 	} else {
 		ibcTx, err := ibcTxRepo.GetOneRelayerScTxPacketId(info)
 		if err == nil {
-			msgPacketId = ibcTx.ScTxInfo.Msg.Msg.PacketId
+			msgPacketId = ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
 		}
 	}
 	if msgPacketId != "" {

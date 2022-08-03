@@ -9,3 +9,11 @@ func TestTxRepo_GetTimePeriodByUpdateClient(t *testing.T) {
 	}
 	t.Log(val, val1, clientId)
 }
+
+func TestTxRepo_GetChannelOpenConfirmTime(t *testing.T) {
+	val, err := new(TxRepo).GetChannelOpenConfirmTime("bigbang", "channel-182")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(val)
+}
