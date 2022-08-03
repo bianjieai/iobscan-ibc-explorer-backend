@@ -3,10 +3,7 @@ name = "iobscan-ibc-explorer-backend"
 addr = "0.0.0.0:8000"
 version = "0.4"
 env = "dev"
-start_task = false
-start_one_off_task = false
 api_cache_alive_seconds=3
-prometheus_port="9090"
 
 [log]
 log_level = "debug"
@@ -28,16 +25,6 @@ password = ""
 mode = "single"
 db = 0
 
-[spi]
-coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
 
 [task]
-cron_job_relayer_addr="0 0 */6 * * ?"
 cron_job_daily_chain_addr="0 0 8 * * ?"
-cron_time_statistic_task=5
-cron_time_chain_task = 5
-cron_time_channel_task = 5
-cron_time_relayer_task = 5
-cron_time_token_price_task = 5
-cron_time_token_task = 5
-redis_lock_expire_time= 300

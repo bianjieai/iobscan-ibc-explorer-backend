@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,25 +36,25 @@ func LoadTaskConf(taskCfg conf.Task) {
 }
 
 func Start() {
-	if len(GetTasks()) == 0 {
-		return
-	}
-
-	for _, v := range GetTasks() {
-		task := v
-		go RunOnce(task)
-	}
+	//if len(GetTasks()) == 0 {
+	//	return
+	//}
+	//
+	//for _, v := range GetTasks() {
+	//	task := v
+	//	go RunOnce(task)
+	//}
 	c := cron.New(cron.WithSeconds())
-	if taskConf.CronJobRelayerAddr == "" {
-		taskConf.CronJobRelayerAddr = ThreeHourCronJobTime
-	}
-	_, err := c.AddFunc(taskConf.CronJobRelayerAddr, checkAndUpdateRelayerSrcChainAddr)
-	if err != nil {
-		logrus.Fatal("cron job checkAndUpdateRelayerSrcChainAddr err", err)
-	}
+	//if taskConf.CronJobRelayerAddr == "" {
+	//	taskConf.CronJobRelayerAddr = ThreeHourCronJobTime
+	//}
+	//_, err := c.AddFunc(taskConf.CronJobRelayerAddr, checkAndUpdateRelayerSrcChainAddr)
+	//if err != nil {
+	//	logrus.Fatal("cron job checkAndUpdateRelayerSrcChainAddr err", err)
+	//}
 	//每天8点统计前一天的活跃账户
-	if taskConf.CronJobRelayerAddr == "" {
-		taskConf.CronJobRelayerAddr = DailyAccountsCronJobTime
+	if taskConf.CronJobDailyChainAddr == "" {
+		taskConf.CronJobDailyChainAddr = DailyAccountsCronJobTime
 	}
 	if _, err := c.AddFunc(taskConf.CronJobDailyChainAddr, caculateActiveAddrsOfChains); err != nil {
 		logrus.Fatal("cron job caculateActiveAddrsOfChains err", err)
@@ -64,27 +62,27 @@ func Start() {
 	c.Start()
 }
 
-func RunOnce(task Task) {
-	redisLockExpireTime := time.Duration(RedisLockExpireTime) * time.Second
-	if taskConf.RedisLockExpireTime > 0 {
-		redisLockExpireTime = time.Duration(taskConf.RedisLockExpireTime) * time.Second
-	}
-
-	utils.RunTimer(task.Cron(), utils.Sec, func() {
-		//lock redis mux
-		if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), redisLockExpireTime); err != nil {
-			logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
-			return
-		}
-		startTime := time.Now().Unix()
-		logrus.Infof("task %s start", task.Name())
-		metricValue := task.Run()
-		monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
-		//unlock redis mux
-		cache.GetRedisClient().Del(task.Name())
-		logrus.Infof("task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, metricValue)
-	})
-}
+//func RunOnce(task Task) {
+//	redisLockExpireTime := time.Duration(RedisLockExpireTime) * time.Second
+//	if taskConf.RedisLockExpireTime > 0 {
+//		redisLockExpireTime = time.Duration(taskConf.RedisLockExpireTime) * time.Second
+//	}
+//
+//	utils.RunTimer(task.Cron(), utils.Sec, func() {
+//		//lock redis mux
+//		if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), redisLockExpireTime); err != nil {
+//			logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
+//			return
+//		}
+//		startTime := time.Now().Unix()
+//		logrus.Infof("task %s start", task.Name())
+//		metricValue := task.Run()
+//		monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
+//		//unlock redis mux
+//		cache.GetRedisClient().Del(task.Name())
+//		logrus.Infof("task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, metricValue)
+//	})
+//}
 
 // ============================================================================
 // ============================================================================
