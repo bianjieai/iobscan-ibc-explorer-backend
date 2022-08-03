@@ -52,6 +52,7 @@ type (
 	AccountsDailyResp struct {
 		Items     []AccountsDailyDto `json:"items"`
 		TimeStamp int64              `json:"time_stamp"`
+		DateTime  string             `json:"date_time"`
 	}
 	AccountsDailyDto struct {
 		ChainName string   `json:"chain_name"`

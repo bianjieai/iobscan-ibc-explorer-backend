@@ -7,6 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task/fsmtool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
@@ -856,6 +857,8 @@ func caculateActiveAddrsOfChains() {
 		}
 	}
 
+	dailyDate := time.Now().AddDate(0, 0, -1)
+	cache.GetRedisClient().Set(cache.DailyAccountsDate, utils.FmtTime(dailyDate, utils.DateFmtYYYYMMDD), -1)
 	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil {
 		logrus.Errorf("update statistic data error, %v", err)
 	}

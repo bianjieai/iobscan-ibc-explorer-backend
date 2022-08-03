@@ -4,6 +4,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"time"
 )
@@ -57,6 +58,7 @@ func (svc *StatisticInfoService) AccountsDailyStatistic() (vo.AccountsDailyResp,
 		}
 		resp.Items = append(resp.Items, item)
 	}
+	resp.DateTime, _ = cache.GetRedisClient().Get(cache.DailyAccountsDate)
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
