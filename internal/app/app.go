@@ -90,7 +90,7 @@ func startTask() {
 		//&task.IbcDenomUpdateTask{},
 		//&task.IbcSyncTransferTxTask{}
 		//&task.IbcTxRelateTask{},
-		//task.IbcTxRelateHistoryTask{},
+		//&task.IbcTxRelateHistoryTask{},
 	)
 	task.Start()
 }
