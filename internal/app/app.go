@@ -89,6 +89,8 @@ func startTask() {
 		//&task.IbcDenomCalculateTask{},
 		//&task.IbcDenomUpdateTask{},
 		//&task.IbcSyncTransferTxTask{}
+		//&task.IbcTxRelateTask{},
+		//task.IbcTxRelateHistoryTask{},
 	)
 	task.Start()
 }

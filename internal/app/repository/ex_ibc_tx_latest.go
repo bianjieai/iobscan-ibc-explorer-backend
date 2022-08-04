@@ -19,6 +19,10 @@ type IExIbcTxRepo interface {
 	FirstHistory() (*entity.ExIbcTx, error)
 	Latest() (*entity.ExIbcTx, error)
 	LatestHistory() (*entity.ExIbcTx, error)
+	FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
+	FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
+	UpdateIbcTx(ibcTx *entity.ExIbcTx) error
+	UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error
 	CountBaseDenomTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountBaseDenomHistoryTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountIBCTokenRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
@@ -100,6 +104,46 @@ func (repo *ExIbcTxRepo) LatestHistory() (*entity.ExIbcTx, error) {
 	var res entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
 	return &res, err
+}
+
+func (repo *ExIbcTxRepo) FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_retry_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_retry_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"status":           ibcTx.Status,
+			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
+			"dc_tx_info":       ibcTx.DcTxInfo,
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+			"retry_times":      ibcTx.RetryTimes,
+			"next_try_time":    ibcTx.NextTryTime,
+			"update_at":        ibcTx.UpdateAt,
+		},
+	})
+}
+
+func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error {
+	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"status":           ibcTx.Status,
+			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
+			"dc_tx_info":       ibcTx.DcTxInfo,
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+			"retry_times":      ibcTx.RetryTimes,
+			"next_try_time":    ibcTx.NextTryTime,
+			"update_at":        ibcTx.UpdateAt,
+		},
+	})
 }
 
 func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64) []bson.M {

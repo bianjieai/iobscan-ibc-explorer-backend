@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 )
@@ -27,6 +28,10 @@ func TestMain(m *testing.M) {
 	}, context.Background())
 
 	time.Local = time.UTC
+	global.Config = &conf.Config{Task: conf.Task{
+		SingleChainSyncTransferTxMax: 1000,
+		SingleChainIbcTxRelateMax:    1000,
+	}}
 	m.Run()
 }
 

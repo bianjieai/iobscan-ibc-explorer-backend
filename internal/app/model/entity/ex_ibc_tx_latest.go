@@ -24,6 +24,7 @@ const (
 type (
 	ExIbcTx struct {
 		RecordId         string      `bson:"record_id"`
+		TxTime           int64       `bson:"tx_time"`
 		ScAddr           string      `bson:"sc_addr"`
 		DcAddr           string      `bson:"dc_addr"`
 		ScPort           string      `bson:"sc_port"`
@@ -41,7 +42,8 @@ type (
 		Denoms           *Denoms     `bson:"denoms"`
 		BaseDenom        string      `bson:"base_denom"`
 		BaseDenomChainId string      `bson:"base_denom_chain_id"`
-		TxTime           int64       `bson:"tx_time"`
+		RetryTimes       int64       `bson:"retry_times"`
+		NextTryTime      int64       `bson:"next_try_time"`
 		CreateAt         int64       `bson:"create_at"`
 		UpdateAt         int64       `bson:"update_at"`
 	}

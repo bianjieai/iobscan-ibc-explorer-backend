@@ -45,3 +45,5 @@ cron_time_denom_calculate_task = 120
 cron_time_denom_update_task = 120
 cron_time_sync_transfer_tx_task = 120
 single_chain_sync_transfer_tx_max = 5000
+cron_time_ibc_tx_relate_task = 120
+single_chain_ibc_tx_relate_max = 5000

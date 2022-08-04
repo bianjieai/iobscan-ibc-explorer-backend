@@ -1,8 +1,11 @@
 package task
 
 import (
+	"fmt"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
 const (
@@ -24,6 +27,10 @@ const (
 	replaceHolderPort    = "PORT"
 
 	syncTransferTxTaskWorkerQuantity = 5
+	ibcTxRelateTaskWorkerQuantity    = 5
+	defaultMaxHandlerTx              = 2000
+	ibcTxTargetLatest                = "latest"
+	ibcTxTargetHistory               = "history"
 )
 
 var (
@@ -58,5 +65,18 @@ var (
 	statisticsRepo           repository.IStatisticRepo            = new(repository.IbcStatisticRepo)
 	taskRecordRepo           repository.ITaskRecordRepo           = new(repository.TaskRecordRepo)
 	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
+	syncBlockRepo            repository.ISyncBlockRepo            = new(repository.SyncBlockRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )
+
+type chainQueueCoordinator struct {
+	chainQueue *utils.QueueString
+}
+
+func (coordinator *chainQueueCoordinator) getChain() (string, error) {
+	if coordinator.chainQueue == nil {
+		return "", fmt.Errorf("coordinator or chain queue is nil")
+	}
+
+	return coordinator.chainQueue.Pop()
+}

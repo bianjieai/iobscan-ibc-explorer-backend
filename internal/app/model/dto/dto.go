@@ -129,3 +129,15 @@ type DenomSimpleDTO struct {
 	Denom   string
 	ChainId string
 }
+
+type PacketIdDTO struct {
+	DcChainId     string
+	TimeoutHeight int64
+	PacketId      string
+	TimeOutTime   int64
+}
+
+type HeightTimeDTO struct {
+	Height int64
+	Time   int64
+}
