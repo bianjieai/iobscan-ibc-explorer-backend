@@ -258,7 +258,7 @@ func (w *ibcTxRelateWorker) calculateNextDenomPath(packet model.Packet) string {
 func (w *ibcTxRelateWorker) loadAckPacketTx(ibcTx *entity.ExIbcTx, tx *entity.Tx) {
 	for _, msg := range tx.DocTxMsgs {
 		if msg.Type == constant.MsgTypeAcknowledgement && msg.CommonMsg().PacketId == ibcTx.ScTxInfo.Msg.CommonMsg().PacketId {
-			if strings.Contains(msg.AckPacketMsg().Acknowledgement, "error") { // todo 确认不是含有error
+			if strings.Contains(msg.AckPacketMsg().Acknowledgement, "error") { // ack error
 				ibcTx.Status = entity.IbcTxStatusRefunded
 				ibcTx.RefundedTxInfo = &entity.TxInfo{
 					Hash:      tx.TxHash,

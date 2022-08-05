@@ -11,6 +11,7 @@ import (
 const (
 	EveryMinute          = 60
 	ThreeMinute          = 180
+	EveryHour            = 3600
 	RedisLockExpireTime  = 300
 	OneOffTaskLockTime   = 86400 * 30
 	ThreeHourCronJobTime = "0 0 */6 * * ?"
@@ -20,6 +21,8 @@ const (
 const (
 	opInsert = 1
 	opUpdate = 2
+
+	ibcTxCount = 500000
 
 	replaceHolderOffset  = "OFFSET"
 	replaceHolderLimit   = "LIMIT"

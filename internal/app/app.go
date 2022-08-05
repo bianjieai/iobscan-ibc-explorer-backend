@@ -91,6 +91,7 @@ func startTask() {
 		//&task.IbcSyncTransferTxTask{}
 		//&task.IbcTxRelateTask{},
 		//&task.IbcTxRelateHistoryTask{},
+		//&task.IbcTxMigrateTask{}
 	)
 	task.Start()
 }

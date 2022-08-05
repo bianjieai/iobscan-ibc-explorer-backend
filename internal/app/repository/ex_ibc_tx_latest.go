@@ -13,7 +13,10 @@ import (
 type IExIbcTxRepo interface {
 	InsertBatch(txs []*entity.ExIbcTx) error
 	InsertBatchHistory(txs []*entity.ExIbcTx) error
+	DeleteByRecordIds(recordIds []string) error
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
+	CountByStatus(status []entity.IbcTxStatus) (int64, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
 	FirstHistory() (*entity.ExIbcTx, error)
@@ -39,6 +42,7 @@ type IExIbcTxRepo interface {
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24hActiveChannelTxsDTO, error)
+	Migrate(txs []*entity.ExIbcTx) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -70,6 +74,11 @@ func (repo *ExIbcTxRepo) InsertBatchHistory(txs []*entity.ExIbcTx) error {
 	return err
 }
 
+func (repo *ExIbcTxRepo) DeleteByRecordIds(recordIds []string) error {
+	_, err := repo.coll().RemoveAll(context.Background(), bson.M{"record_id": bson.M{"$in": recordIds}})
+	return err
+}
+
 func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
@@ -79,6 +88,18 @@ func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {
 func (repo *ExIbcTxRepo) FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{"$in": status}}).Sort("tx_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountByStatus(status []entity.IbcTxStatus) (int64, error) {
+	var res int64
+	res, err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{"$in": status}}).Count()
 	return res, err
 }
 
@@ -551,4 +572,29 @@ func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24
 	var res []*dto.Aggr24hActiveChannelTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
+	if len(txs) == 0 {
+		return nil
+	}
+
+	var recordIds []string
+	for _, v := range txs {
+		recordIds = append(recordIds, v.RecordId)
+	}
+
+	callback := func(sessCtx context.Context) (interface{}, error) {
+		if err := repo.InsertBatchHistory(txs); err != nil {
+			return nil, err
+		}
+
+		if err := repo.DeleteByRecordIds(recordIds); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
 }
