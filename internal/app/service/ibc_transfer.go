@@ -116,10 +116,9 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 		item := t.dto.LoadDto(val)
 		items = append(items, item)
 	}
-	resp.Items = items
-	total := int64(len(items))
-	page := vo.BuildPageInfo(total, req.PageNum, req.PageSize)
-	resp.PageInfo = page
+	resp.Data = items
+	resp.PageNum = req.PageNum
+	resp.PageSize = req.PageSize
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
@@ -146,10 +145,10 @@ func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp,
 
 		item := t.detailDto.LoadDto(val)
 		if val.ScChainId != "" && val.ScTxInfo != nil && val.ScTxInfo.Hash != "" {
-			item.ScConnection, item.TimeoutTimestamp, item.ScSigners = getScTxInfo(val.ScChainId, val.ScTxInfo.Hash, packetId)
+			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChainId, val.ScTxInfo.Hash, packetId)
 		}
 		if val.DcChainId != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
-			item.DcConnection, item.Ack, item.DcSigners = getDcTxInfo(val.DcChainId, val.DcTxInfo.Hash, packetId)
+			item.DcConnect, item.DcTxInfo.Ack, item.DcSigners = getDcTxInfo(val.DcChainId, val.DcTxInfo.Hash, packetId)
 		}
 		resp.Items = append(resp.Items, item)
 	}
@@ -165,14 +164,14 @@ func getMsgIndex(tx entity.Tx, msgType string, packetId string) int {
 	return -1
 }
 
-func getScTxInfo(chainId string, txHash string, packetId string) (scConnect string, timeOutTimestamp string, signers []string) {
+func getScTxInfo(chainId string, txHash string, packetId string) (scConnect string, signers []string) {
 	tx, err := txRepo.GetTxByHash(chainId, txHash)
 	if err != nil {
 		logrus.Error(err.Error())
 		return
 	}
 	signers = tx.Signers
-	scConnect, timeOutTimestamp = getConnectByTransferEventNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeTransfer, packetId))
+	scConnect = getConnectByTransferEventNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeTransfer, packetId))
 	return
 }
 
@@ -187,8 +186,8 @@ func getDcTxInfo(chainId string, txHash string, packetId string) (dcConnect stri
 	return
 }
 
-func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) (string, string) {
-	var connect, timeoutTimestamp string
+func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) string {
+	var connect string
 	for _, item := range eventNews {
 		if item.MsgIndex == uint32(msgIndex) {
 			for _, val := range item.Events {
@@ -197,15 +196,13 @@ func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) (s
 						switch attribute.Key {
 						case "packet_connection":
 							connect = attribute.Value
-						case "packet_timeout_timestamp":
-							timeoutTimestamp = attribute.Value
 						}
 					}
 				}
 			}
 		}
 	}
-	return connect, timeoutTimestamp
+	return connect
 }
 
 func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) (string, string) {

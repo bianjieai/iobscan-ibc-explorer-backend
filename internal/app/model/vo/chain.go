@@ -44,8 +44,8 @@ func (dto ChainDto) LoadDto(chain *entity.IBCChain) ChainDto {
 
 type (
 	DailyChainsResp struct {
-		Items     []DailyChainDto `json:"items"`
-		TimeStamp int64           `json:"time_stamp"`
+		Items     DailyChainDto `json:"items"`
+		TimeStamp int64         `json:"time_stamp"`
 	}
 	DailyChainDto struct {
 		All      []DailyData `json:"all"`
@@ -101,8 +101,9 @@ type (
 		Denom     string `json:"denom" form:"denom"`
 	}
 	TranaferTxsResp struct {
-		Items     []IbcTxDto `json:"items"`
-		PageInfo  PageInfo   `json:"page_info"`
+		Data      []IbcTxDto `json:"data"`
+		PageNum   int64      `json:"pageNum"`
+		PageSize  int64      `json:"pageSize"`
 		TimeStamp int64      `json:"time_stamp"`
 	}
 
@@ -132,27 +133,25 @@ type (
 	}
 
 	IbcTxDetailDto struct {
-		ScSigners        []string  `json:"sc_signers"`
-		DcSigners        []string  `json:"dc_signers"`
-		ScAddr           string    `json:"sc_addr"`
-		DcAddr           string    `json:"dc_addr"`
-		Status           int       `json:"status"`
-		ScChainId        string    `json:"sc_chain_id"`
-		ScChannel        string    `json:"sc_channel"`
-		ScPort           string    `json:"sc_port"`
-		ScConnection     string    `json:"sc_connection"`
-		DcChainId        string    `json:"dc_chain_id"`
-		DcChannel        string    `json:"dc_channel"`
-		DcPort           string    `json:"dc_port"`
-		DcConnection     string    `json:"dc_connection"`
-		Sequence         string    `json:"sequence"`
-		ScTxInfo         TxInfoDto `json:"sc_tx_info"`
-		DcTxInfo         TxInfoDto `json:"dc_tx_info"`
-		BaseDenom        string    `json:"base_denom"`
-		Denoms           Denoms    `json:"denoms"`
-		TxTime           int64     `json:"tx_time"`
-		Ack              string    `json:"ack"`
-		TimeoutTimestamp string    `json:"timeout_timestamp"`
+		ScSigners []string  `json:"sc_signers"`
+		DcSigners []string  `json:"dc_signers"`
+		ScAddr    string    `json:"sc_addr"`
+		DcAddr    string    `json:"dc_addr"`
+		Status    int       `json:"status"`
+		ScChainId string    `json:"sc_chain_id"`
+		ScChannel string    `json:"sc_channel"`
+		ScPort    string    `json:"sc_port"`
+		ScConnect string    `json:"sc_connect"`
+		DcChainId string    `json:"dc_chain_id"`
+		DcChannel string    `json:"dc_channel"`
+		DcPort    string    `json:"dc_port"`
+		DcConnect string    `json:"dc_connect"`
+		Sequence  string    `json:"sequence"`
+		ScTxInfo  TxInfoDto `json:"sc_tx_info"`
+		DcTxInfo  TxInfoDto `json:"dc_tx_info"`
+		BaseDenom string    `json:"base_denom"`
+		Denoms    Denoms    `json:"denoms"`
+		TxTime    int64     `json:"tx_time"`
 	}
 	TxInfoDto struct {
 		Hash      string       `json:"hash,omitempty"`
@@ -162,6 +161,7 @@ type (
 		Fee       *model.Fee   `json:"fee,omitempty"`
 		MsgAmount *model.Coin  `json:"msg_amount,omitempty"`
 		Msg       *model.TxMsg `json:"msg,omitempty"`
+		Ack       string       `json:"ack,omitempty"`
 	}
 )
 

@@ -60,9 +60,8 @@ func (service HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 			inActiveChains = append(inActiveChains, item)
 		}
 	}
-	resp.Items = []vo.DailyChainDto{
-		{All: allChains, Active: activeChains, Inactive: inActiveChains},
-	}
+	resp.Items = vo.DailyChainDto{All: allChains, Active: activeChains, Inactive: inActiveChains}
+
 	return resp, nil
 }
 
