@@ -51,3 +51,8 @@ var HomeStatistics = []string{
 	Tx24hAllStatisticName, TxAllStatisticName, TxSuccessStatisticName, TxFailedStatisticName,
 	BaseDenomAllStatisticName, DenomAllStatisticName,
 }
+
+const (
+	UnAuth = "Others"
+	//AllChain = "allchain"
+)

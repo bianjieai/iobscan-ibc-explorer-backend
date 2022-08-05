@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"strings"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -41,6 +43,10 @@ type IExIbcTxRepo interface {
 	HistoryCountSuccessAll(createAt int64, record bool) (int64, error)
 	ActiveTxs24h(startTime int64) (int64, error)
 	CountAll(stats []entity.IbcTxStatus) (int64, error)
+	CountTransferTxs(query dto.IbcTxQuery) (int64, error)
+	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
+	TxDetail(hash string) ([]*entity.ExIbcTx, error)
+	HistoryTxDetail(hash string) ([]*entity.ExIbcTx, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -598,4 +604,122 @@ func (repo *ExIbcTxRepo) CountAll(stats []entity.IbcTxStatus) (int64, error) {
 		},
 	}
 	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func parseQuery(queryCond dto.IbcTxQuery) bson.M {
+	query := bson.M{}
+
+	//time
+	if queryCond.StartTime > 0 && queryCond.EndTime > 0 {
+		query["tx_time"] = bson.M{
+			"$gte": queryCond.StartTime,
+			"$lte": queryCond.EndTime,
+		}
+	} else if queryCond.StartTime > 0 {
+		query["tx_time"] = bson.M{
+			"$gte": queryCond.StartTime,
+		}
+	} else if queryCond.EndTime > 0 {
+		query["tx_time"] = bson.M{
+			"$lte": queryCond.EndTime,
+		}
+	}
+	//chain
+	if length := len(queryCond.ChainId); length > 0 {
+		switch length {
+		case 1:
+			// transfer_chain or recv_chain
+			if queryCond.ChainId[0] != constant.AllChain {
+				query["$or"] = []bson.M{
+					{"sc_chain_id": queryCond.ChainId[0]},
+					{"dc_chain_id": queryCond.ChainId[0]},
+				}
+			}
+		case 2:
+			//transfer_chain and recv_chain
+			if queryCond.ChainId[0] == queryCond.ChainId[1] && queryCond.ChainId[0] == constant.AllChain {
+				// nothing to do
+			} else {
+				value := strings.Join(queryCond.ChainId, ",")
+				if strings.Contains(value, constant.AllChain) {
+					index := strings.Index(value, constant.AllChain)
+					if index > 0 { //chain-id,allchain
+						query["sc_chain_id"] = queryCond.ChainId[0]
+					} else { //allchain,chain-id
+						query["dc_chain_id"] = queryCond.ChainId[1]
+					}
+
+				} else {
+					query["$and"] = []bson.M{
+						{"sc_chain_id": queryCond.ChainId[0]},
+						{"dc_chain_id": queryCond.ChainId[1]},
+					}
+				}
+			}
+
+		}
+	}
+	//token
+	if len(queryCond.Token) > 0 {
+		if strings.HasPrefix(queryCond.Token[0], "ibc/") {
+			query["$or"] = []bson.M{
+				{"denoms.sc_denom": queryCond.Token[0]},
+				{"denoms.dc_denom": queryCond.Token[0]},
+			}
+		} else {
+			query["base_denom"] = bson.M{
+				"$in": queryCond.Token,
+			}
+		}
+	}
+
+	//status
+	if len(queryCond.Status) == 0 {
+		query["status"] = bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		}
+	} else {
+		query["status"] = bson.M{
+			"$in": queryCond.Status,
+		}
+	}
+	return query
+}
+
+func (repo *ExIbcTxRepo) CountTransferTxs(query dto.IbcTxQuery) (int64, error) {
+	return repo.coll().Find(context.Background(), parseQuery(query)).Count()
+}
+
+func (repo *ExIbcTxRepo) FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), parseQuery(query)).Skip(skip).Limit(limit).Sort("-tx_time").All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) TxDetail(hash string) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+		"$or": []bson.M{
+			{"sc_tx_info.hash": hash},
+			{"dc_tx_info.hash": hash},
+		},
+	}).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) HistoryTxDetail(hash string) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+		"$or": []bson.M{
+			{"sc_tx_info.hash": hash},
+			{"dc_tx_info.hash": hash},
+		},
+	}).All(&res)
+	return res, err
 }

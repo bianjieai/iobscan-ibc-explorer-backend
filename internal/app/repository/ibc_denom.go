@@ -18,6 +18,7 @@ type IDenomRepo interface {
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
 	FindSymbolDenoms() (entity.IBCDenomList, error)
+	GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error)
 	Count(createAt int64, record bool) (int64, error)
 	BasedDenomCount(createAt int64, record bool) (int64, error)
 	LatestCreateAt() (int64, error)
@@ -140,4 +141,23 @@ func (repo *DenomRepo) BasedDenomCount(createAt int64, record bool) (int64, erro
 		}
 	}
 	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func (repo *DenomRepo) GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"symbol": "",
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": "$base_denom",
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, group)
+	var res []*dto.GetBaseDenomFromIbcDenomDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
 }

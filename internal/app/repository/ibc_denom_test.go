@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"testing"
 	"time"
 
@@ -42,4 +43,12 @@ func TestDenomRepo_InsertBatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestDenomRepo_GetBaseDenomNoSymbol(t *testing.T) {
+	res, err := new(DenomRepo).GetBaseDenomNoSymbol()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
 }
