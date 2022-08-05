@@ -32,8 +32,22 @@ const (
 	ChannelCloseStatisticName = "channel_closed"
 	ChannelAllStatisticName   = "channel_all"
 	Channel24hStatisticName   = "channels_24hr"
-	TxALlStatisticName        = "tx_all"
+	Chains24hStatisticName    = "chains_24hr"
+	ChainsAllStatisticName    = "chain_all"
+	Tx24hAllStatisticName     = "tx_24hr_all"
+	TxAllStatisticName        = "tx_all"
+	TxSuccessStatisticName    = "tx_success"
 	TxFailedStatisticName     = "tx_failed"
-	IbcCoreConnectionUri      = "%s/ibc/core/connection/%s/client_connections/%s"
-	IbcCoreChannelsUri        = "%s/ibc/core/channel/%s/connections/%s/channels"
+	BaseDenomAllStatisticName = "base_denom_all"
+	DenomAllStatisticName     = "denom_all"
+
+	IbcCoreConnectionUri = "%s/ibc/core/connection/%s/client_connections/%s"
+	IbcCoreChannelsUri   = "%s/ibc/core/channel/%s/connections/%s/channels"
 )
+
+var HomeStatistics = []string{
+	ChannelOpenStatisticName, ChannelCloseStatisticName, ChannelAllStatisticName, Channel24hStatisticName,
+	Chains24hStatisticName, ChainsAllStatisticName,
+	Tx24hAllStatisticName, TxAllStatisticName, TxSuccessStatisticName, TxFailedStatisticName,
+	BaseDenomAllStatisticName, DenomAllStatisticName,
+}

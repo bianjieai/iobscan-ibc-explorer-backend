@@ -7,5 +7,6 @@ var (
 	channelService service.IChannelService = new(service.ChannelService)
 	chainService   service.IChainService   = new(service.ChainService)
 	relayerService service.IRelayerService = new(service.RelayerService)
+	homeService    service.IHomeService    = new(service.HomeService)
 	cacheService   service.CacheService
 )
