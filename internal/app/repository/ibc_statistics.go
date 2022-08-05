@@ -13,6 +13,7 @@ type IStatisticRepo interface {
 	UpdateOne(statisticName string, count int64) error
 	UpdateOneIncre(statistic entity.IbcStatistic) error
 	FindBatchName(statisticNames []string) ([]*entity.IbcStatistic, error)
+	Save(data entity.IbcStatistic) error
 }
 
 var _ IStatisticRepo = new(IbcStatisticRepo)

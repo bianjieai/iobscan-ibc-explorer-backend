@@ -30,22 +30,76 @@ func (t *IbcStatisticCronTask) Run() int {
 		return -1
 	}
 
-	if err := t.handleDenomIncre(constant.BaseDenomAllStatisticName, denomRepo.BasedDenomCount); err != nil {
+	if err := t.updateDenomIncre(); err != nil {
 		return -1
+	}
+
+	if err := t.updateChains(); err != nil {
+		return -1
+	}
+
+	if err := t.updateTxsIncre(); err != nil {
+		return -1
+	}
+
+	return 1
+}
+func (t *IbcStatisticCronTask) updateChains() error {
+	chainsAll, err := chainConfigRepo.Count()
+	if err != nil {
+		return err
+	}
+	return statisticsRepo.UpdateOne(constant.ChainsAllStatisticName, chainsAll)
+}
+func (t *IbcStatisticCronTask) updateDenomIncre() error {
+	if err := t.handleDenomIncre(constant.BaseDenomAllStatisticName, denomRepo.BasedDenomCount); err != nil {
+		return err
 	}
 
 	if err := t.handleDenomIncre(constant.DenomAllStatisticName, denomRepo.Count); err != nil {
-		return -1
+		return err
+	}
+	return nil
+}
+
+func (t *IbcStatisticCronTask) updateTxsIncre() error {
+	//统计最新表数据
+	txAll, err := ibcTxRepo.CountAll(entity.IbcTxUsefulStatus)
+	if err != nil {
+		return err
+	}
+	txSuccessAll, err := ibcTxRepo.CountAll([]entity.IbcTxStatus{entity.IbcTxStatusSuccess})
+	if err != nil {
+		return err
+	}
+	txFailAll, err := ibcTxRepo.CountAll([]entity.IbcTxStatus{entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded})
+	if err != nil {
+		return err
+	}
+	//增量统计历史表数据
+	if err := t.handleHistoryTxsIncre(constant.TxAllStatisticName, txAll, ibcTxRepo.HistoryCountAll); err != nil {
+		return err
 	}
 
-	chainsAll, err := chainConfigRepo.Count()
-	if err != nil {
-		return -1
+	if err := t.handleHistoryTxsIncre(constant.TxFailedStatisticName, txFailAll, ibcTxRepo.HistoryCountFailAll); err != nil {
+		return err
 	}
-	if err := statisticsRepo.UpdateOne(constant.ChainsAllStatisticName, chainsAll); err != nil {
-		return -1
+
+	if err := t.handleHistoryTxsIncre(constant.TxSuccessStatisticName, txSuccessAll, ibcTxRepo.HistoryCountSuccessAll); err != nil {
+		return err
 	}
-	return 1
+
+	startTime := time.Now().Add(-24 * time.Hour)
+	tx24hrAll, err := ibcTxRepo.ActiveTxs24h(startTime.Unix())
+	if err != nil && err != qmgo.ErrNoSuchDocuments {
+		return err
+	}
+
+	if err := statisticsRepo.UpdateOne(constant.Tx24hAllStatisticName, tx24hrAll); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *IbcStatisticCronTask) updateChannelInfo() error {
@@ -112,7 +166,6 @@ func (t *IbcStatisticCronTask) handleDenomIncre(statisticName string, call func(
 	if statisticData.StatisticsName == "" {
 		statisticData = entity.IbcStatistic{
 			StatisticsName: statisticName,
-			StatisticsInfo: "",
 			Count:          0,
 		}
 		denomAllCnt, err := call(0, false)
@@ -131,7 +184,8 @@ func (t *IbcStatisticCronTask) handleDenomIncre(statisticName string, call func(
 		}
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentDenomCnt, CreateAt: latestCreateAt}))
 		statisticData.CreateAt = time.Now().Unix()
-		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
+		statisticData.UpdateAt = time.Now().Unix()
+		if err := statisticsRepo.Save(statisticData); err != nil {
 			return err
 		}
 		return nil
@@ -150,7 +204,7 @@ func (t *IbcStatisticCronTask) handleDenomIncre(statisticName string, call func(
 			return err
 		}
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentDenomCnt, CreateAt: latestCreateAt}))
-		statisticData.CreateAt = time.Now().Unix()
+		statisticData.UpdateAt = time.Now().Unix()
 		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
@@ -176,12 +230,96 @@ func (t *IbcStatisticCronTask) handleDenomIncre(statisticName string, call func(
 			return err
 		}
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentDenomCnt, CreateAt: latestCreateAt}))
-		statisticData.CreateAt = time.Now().Unix()
+		statisticData.UpdateAt = time.Now().Unix()
 		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+/***
+说明: 增量统计ex_ibc_tx表数据，根据call不同传参来实现统计不同条件的数据
+参数：latestData: 最新表统计的数据
+*/
+func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, latestData int64, call func(createAt int64, record bool) (int64, error)) error {
+	statisticData, err := statisticsRepo.FindOne(statisticName)
+	if err != nil && err != qmgo.ErrNoSuchDocuments {
+		return err
+	}
+	if statisticData.StatisticsName == "" {
+		statisticData = entity.IbcStatistic{
+			StatisticsName: statisticName,
+			Count:          0,
+		}
+		txsCnt, err := call(0, false)
+		if err != nil {
+			return err
+		}
+		statisticData.Count = txsCnt
+
+		latestCreateAt, err := ibcTxRepo.HistoryLatestCreateAt()
+		if err != nil {
+			return err
+		}
+		currentTxsCnt, err := call(latestCreateAt, true)
+		if err != nil {
+			return err
+		}
+		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
+		statisticData.CreateAt = time.Now().Unix()
+		statisticData.UpdateAt = time.Now().Unix()
+		if err := statisticsRepo.Save(statisticData); err != nil {
+			return err
+		}
+	} else if statisticData.StatisticsInfo == "" {
+		txsCnt, err := call(0, false)
+		if err != nil {
+			return err
+		}
+		statisticData.Count = txsCnt
+		latestCreateAt, err := ibcTxRepo.HistoryLatestCreateAt()
+		if err != nil {
+			return err
+		}
+		currentTxsCnt, err := call(latestCreateAt, true)
+		if err != nil {
+			return err
+		}
+		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
+		statisticData.UpdateAt = time.Now().Unix()
+		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
+			return err
+		}
+	} else {
+		var increData IncreInfo
+		utils.UnmarshalJsonIgnoreErr([]byte(statisticData.StatisticsInfo), &increData)
+
+		txsCnt, err := call(increData.CreateAt, false)
+		if err != nil {
+			return err
+		}
+		if txsCnt > increData.Count {
+			increValue := txsCnt - increData.Count
+			statisticData.Count = statisticData.Count + increValue
+			latestCreateAt, err := ibcTxRepo.HistoryLatestCreateAt()
+			if err != nil {
+				return err
+			}
+			currentTxsCnt, err := call(latestCreateAt, true)
+			if err != nil {
+				return err
+			}
+			statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
+			statisticData.UpdateAt = time.Now().Unix()
+			if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
+				return err
+			}
+		}
+	}
+	//加上最新表数据
+	statisticData.Count += latestData
+	return statisticsRepo.UpdateOne(statisticName, statisticData.Count)
 }
 
 type IncreInfo struct {

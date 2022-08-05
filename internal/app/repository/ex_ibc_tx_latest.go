@@ -35,6 +35,12 @@ type IExIbcTxRepo interface {
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24hActiveChannelTxsDTO, error)
+	HistoryLatestCreateAt() (int64, error)
+	HistoryCountAll(createAt int64, record bool) (int64, error)
+	HistoryCountFailAll(createAt int64, record bool) (int64, error)
+	HistoryCountSuccessAll(createAt int64, record bool) (int64, error)
+	ActiveTxs24h(startTime int64) (int64, error)
+	CountAll(stats []entity.IbcTxStatus) (int64, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -507,4 +513,89 @@ func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24
 	var res []*dto.Aggr24hActiveChannelTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) HistoryLatestCreateAt() (int64, error) {
+	var res entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
+	if err != nil {
+		return 0, err
+	}
+	return res.CreateAt, nil
+}
+
+func (repo *ExIbcTxRepo) HistoryCountAll(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+		}
+	}
+	return repo.collHistory().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) HistoryCountFailAll(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+		"status": bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded}},
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+			"status":    bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded}},
+		}
+	}
+	return repo.collHistory().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) HistoryCountSuccessAll(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+		"status": entity.IbcTxStatusSuccess,
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+			"status":    entity.IbcTxStatusSuccess,
+		}
+	}
+	return repo.collHistory().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) ActiveTxs24h(startTime int64) (int64, error) {
+	query := bson.M{
+		"tx_time": bson.M{
+			"$gte": startTime,
+		},
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+	}
+	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) CountAll(stats []entity.IbcTxStatus) (int64, error) {
+	query := bson.M{
+		"status": bson.M{
+			"$in": stats,
+		},
+	}
+	return repo.coll().Find(context.Background(), query).Count()
 }
