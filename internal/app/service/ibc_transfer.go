@@ -78,7 +78,12 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			query.Token = []string{baseDenom.Denom}
 		}
 	} else if req.Denom != "" {
-		query.Token = []string{req.Denom}
+		if len(req.Denom) == 64 {
+			req.Denom = "ibc/" + req.Denom
+		}
+		if utils.ValidateDenom(req.Denom) == nil {
+			query.Token = []string{req.Denom}
+		}
 	}
 	return query, nil
 }
