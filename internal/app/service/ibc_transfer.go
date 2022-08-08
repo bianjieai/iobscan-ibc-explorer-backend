@@ -157,6 +157,10 @@ func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp,
 		}
 		resp.Items = append(resp.Items, item)
 	}
+	if len(resp.Items) > 1 {
+		// detail api page no support more than one return
+		resp.Items = []vo.IbcTxDetailDto{}
+	}
 	return resp, nil
 }
 
