@@ -35,7 +35,8 @@ func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 }
 func (repo *ChainConfigRepo) FindAllChainInfs() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
-	err := repo.coll().Find(context.Background(), bson.M{}).Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{}).
+		Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1, "lcd": 1}).All(&res)
 	return res, err
 }
 
