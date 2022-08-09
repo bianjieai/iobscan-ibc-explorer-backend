@@ -75,6 +75,7 @@ type Task struct {
 	CronTimeSyncTransferTxTask   int    `mapstructure:"cron_time_sync_transfer_tx_task"`
 	RedisLockExpireTime          int    `mapstructure:"redis_lock_expire_time"`
 	SingleChainSyncTransferTxMax int    `mapstructure:"single_chain_sync_transfer_tx_max"`
+	CronTimeSyncAckTxTask        int    `mapstructure:"cron_time_sync_ack_tx_task"`
 }
 
 type Spi struct {

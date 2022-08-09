@@ -147,12 +147,12 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 
 func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error) {
 	var resp vo.TranaferTxDetailResp
-	ibcTxs, err := ibcTxRepo.TxDetail(hash)
+	ibcTxs, err := ibcTxRepo.TxDetail(hash, false)
 	if err != nil && err != qmgo.ErrNoSuchDocuments {
 		return resp, errors.Wrap(err)
 	}
 	if len(ibcTxs) == 0 {
-		ibcTxs, err = ibcTxRepo.HistoryTxDetail(hash)
+		ibcTxs, err = ibcTxRepo.TxDetail(hash, true)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return resp, errors.Wrap(err)
 		}

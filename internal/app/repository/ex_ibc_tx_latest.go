@@ -45,8 +45,9 @@ type IExIbcTxRepo interface {
 	CountAll(stats []entity.IbcTxStatus) (int64, error)
 	CountTransferTxs(query dto.IbcTxQuery) (int64, error)
 	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
-	TxDetail(hash string) ([]*entity.ExIbcTx, error)
-	HistoryTxDetail(hash string) ([]*entity.ExIbcTx, error)
+	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
+	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
+	SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -700,9 +701,9 @@ func (repo *ExIbcTxRepo) FindTransferTxs(query dto.IbcTxQuery, skip, limit int64
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) TxDetail(hash string) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	err := repo.coll().Find(context.Background(), bson.M{
+	query := bson.M{
 		"status": bson.M{
 			"$in": entity.IbcTxUsefulStatus,
 		},
@@ -710,20 +711,42 @@ func (repo *ExIbcTxRepo) TxDetail(hash string) ([]*entity.ExIbcTx, error) {
 			{"sc_tx_info.hash": hash},
 			{"dc_tx_info.hash": hash},
 		},
-	}).All(&res)
+	}
+	if history {
+		err := repo.collHistory().Find(context.Background(), query).All(&res)
+		return res, err
+	}
+	err := repo.coll().Find(context.Background(), query).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) HistoryTxDetail(hash string) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	err := repo.collHistory().Find(context.Background(), bson.M{
-		"status": bson.M{
-			"$in": entity.IbcTxUsefulStatus,
-		},
-		"$or": []bson.M{
-			{"sc_tx_info.hash": hash},
-			{"dc_tx_info.hash": hash},
-		},
-	}).All(&res)
+	query := bson.M{
+		//"create_at": bson.M{
+		//	"$gte": createAt,
+		//},
+		"status":                  entity.IbcTxStatusFailed,
+		"dc_tx_info.status":       entity.TxStatusSuccess,
+		"refunded_tx_info.status": bson.M{"$exists": false},
+	}
+	if history {
+		err := repo.collHistory().Find(context.Background(), query).All(&res)
+		return res, err
+	}
+	err := repo.coll().Find(context.Background(), query).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error {
+	if history {
+		err := repo.collHistory().ReplaceOne(context.Background(), bson.M{
+			"record_id": recordId,
+		}, data)
+		return err
+	}
+	err := repo.coll().ReplaceOne(context.Background(), bson.M{
+		"record_id": recordId,
+	}, data)
+	return err
 }

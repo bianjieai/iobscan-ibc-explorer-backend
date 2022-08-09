@@ -11,7 +11,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
@@ -85,6 +84,7 @@ func startTask() {
 		&task.IbcRelayerCronTask{},
 		&task.TokenPriceTask{},
 		&task.IbcStatisticCronTask{},
+		&task.IbcSyncAcknowledgeTxTask{},
 		//&task.IbcChainConfigTask{},
 		//&task.IbcDenomCalculateTask{},
 		//&task.IbcDenomUpdateTask{},
