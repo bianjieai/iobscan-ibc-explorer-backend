@@ -672,6 +672,10 @@ func parseQuery(queryCond dto.IbcTxQuery) bson.M {
 			}
 		}
 	}
+	//origin_chain_id
+	if len(queryCond.BaseDenomChainId) > 0 {
+		query["base_denom_chain_id"] = queryCond.BaseDenomChainId
+	}
 
 	//status
 	if len(queryCond.Status) == 0 {

@@ -76,6 +76,8 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 				return query, err
 			}
 			query.Token = []string{baseDenom.Denom}
+			//新增base_denom原生链chain-id的过滤
+			query.BaseDenomChainId = baseDenom.ChainId
 		}
 	} else if req.Denom != "" {
 		if len(req.Denom) == 64 {

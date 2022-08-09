@@ -137,9 +137,10 @@ type DenomSimpleDTO struct {
 }
 
 type IbcTxQuery struct {
-	StartTime int64
-	EndTime   int64
-	ChainId   []string
-	Status    []int
-	Token     []string
+	StartTime        int64
+	EndTime          int64
+	ChainId          []string
+	Status           []int
+	Token            []string
+	BaseDenomChainId string
 }

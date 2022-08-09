@@ -28,7 +28,7 @@ func (ctl *HomeController) IbcBaseDenoms(c *gin.Context) {
 }
 
 func (ctl *HomeController) IbcDenoms(c *gin.Context) {
-	resp, err := homeService.IbcBaseDenoms()
+	resp, err := homeService.IbcDenoms()
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return
