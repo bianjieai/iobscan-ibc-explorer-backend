@@ -40,5 +40,5 @@ func (ctl *IbcTransferController) TransferTxDetail(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success(resp.Items))
+	c.JSON(http.StatusOK, response.Success(resp))
 }

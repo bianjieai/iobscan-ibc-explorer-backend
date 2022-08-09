@@ -15,7 +15,7 @@ func (ctl *HomeController) DailyChains(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success(resp.Items))
+	c.JSON(http.StatusOK, response.Success(resp))
 }
 
 func (ctl *HomeController) IbcBaseDenoms(c *gin.Context) {
@@ -24,7 +24,7 @@ func (ctl *HomeController) IbcBaseDenoms(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success(resp.Items))
+	c.JSON(http.StatusOK, response.Success(resp))
 }
 
 func (ctl *HomeController) IbcDenoms(c *gin.Context) {
@@ -33,7 +33,7 @@ func (ctl *HomeController) IbcDenoms(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success(resp.Items))
+	c.JSON(http.StatusOK, response.Success(resp))
 }
 
 func (ctl *HomeController) Statistics(c *gin.Context) {
@@ -42,5 +42,5 @@ func (ctl *HomeController) Statistics(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success(resp.Items))
+	c.JSON(http.StatusOK, response.Success(resp))
 }

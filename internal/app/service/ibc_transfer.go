@@ -121,9 +121,9 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 		item := t.dto.LoadDto(val)
 		items = append(items, item)
 	}
-	resp.Data = items
-	resp.PageNum = req.PageNum
-	resp.PageSize = req.PageSize
+	resp.Items = items
+	page := vo.BuildPageInfo(int64(len(items)), req.PageNum, req.PageSize)
+	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
@@ -153,7 +153,7 @@ func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp,
 			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChainId, val.ScTxInfo.Hash, packetId)
 		}
 		if val.DcChainId != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
-			item.DcConnect, item.DcTxInfo.Ack, item.DcSigners = getDcTxInfo(val.DcChainId, val.DcTxInfo.Hash, packetId)
+			item.DcConnect, item.Ack, item.DcSigners = getDcTxInfo(val.DcChainId, val.DcTxInfo.Hash, packetId)
 		}
 		resp.Items = append(resp.Items, item)
 	}
@@ -161,6 +161,7 @@ func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp,
 		// detail api page no support more than one return
 		resp.Items = []vo.IbcTxDetailDto{}
 	}
+	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
 

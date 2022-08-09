@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -80,6 +81,14 @@ func (svc *TokenService) ListCount(req *vo.TokenListReq) (int64, errors.Error) {
 func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
 	if baseDenom == "" {
 		return nil, nil
+	}
+
+	if err := utils.ValidateDenom(baseDenom); err != nil {
+		return nil, err
+	}
+	//only ibc hash token
+	if len(baseDenom) == 64 {
+		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, baseDenom)
 	}
 
 	var baseDenomList []string

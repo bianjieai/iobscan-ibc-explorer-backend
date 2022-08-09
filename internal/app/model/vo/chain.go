@@ -44,8 +44,8 @@ func (dto ChainDto) LoadDto(chain *entity.IBCChain) ChainDto {
 
 type (
 	DailyChainsResp struct {
-		Items     DailyChainDto `json:"items"`
-		TimeStamp int64         `json:"time_stamp"`
+		Items     []DailyChainDto `json:"items"`
+		TimeStamp int64           `json:"time_stamp"`
 	}
 	DailyChainDto struct {
 		All      []DailyData `json:"all"`
@@ -101,9 +101,8 @@ type (
 		Denom     string `json:"denom" form:"denom"`
 	}
 	TranaferTxsResp struct {
-		Data      []IbcTxDto `json:"data"`
-		PageNum   int64      `json:"pageNum"`
-		PageSize  int64      `json:"pageSize"`
+		Items     []IbcTxDto `json:"items"`
+		PageInfo  PageInfo   `json:"page_info"`
 		TimeStamp int64      `json:"time_stamp"`
 	}
 
@@ -152,6 +151,7 @@ type (
 		BaseDenom string    `json:"base_denom"`
 		Denoms    Denoms    `json:"denoms"`
 		TxTime    int64     `json:"tx_time"`
+		Ack       string    `json:"ack"`
 	}
 	TxInfoDto struct {
 		Hash      string       `json:"hash,omitempty"`
@@ -161,7 +161,6 @@ type (
 		Fee       *model.Fee   `json:"fee,omitempty"`
 		MsgAmount *model.Coin  `json:"msg_amount,omitempty"`
 		Msg       *model.TxMsg `json:"msg,omitempty"`
-		Ack       string       `json:"ack,omitempty"`
 	}
 )
 
