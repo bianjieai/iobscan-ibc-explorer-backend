@@ -36,9 +36,10 @@ type App struct {
 	Name                 string
 	Addr                 string
 	Env                  string
-	StartTask            bool `mapstructure:"start_task"`
-	StartOneOffTask      bool `mapstructure:"start_one_off_task"`
-	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
+	StartTask            bool  `mapstructure:"start_task"`
+	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
+	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
+	MaxPageSize          int64 `mapstructure:"max_page_size"`
 	Version              string
 	Prometheus           string `mapstructure:"prometheus_port"`
 }

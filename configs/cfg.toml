@@ -6,6 +6,7 @@ env = "dev"
 start_task = false
 start_one_off_task = false
 api_cache_alive_seconds=3
+max_page_size=3000
 prometheus_port="9090"
 
 [log]

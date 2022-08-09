@@ -22,7 +22,6 @@ const (
 	Iris                  = "iris"
 
 	DisplayIbcRecordMax = 500000
-	MaxPageSize         = 100
 
 	MsgTypeTransfer           = "transfer"
 	MsgTypeRecvPacket         = "recv_packet"
