@@ -221,38 +221,28 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 		}
 		ibcTx.UpdateAt = time.Now().Unix()
 
-		dcDenomPath := w.calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
-		if dcDenomPath != "" {
-			dcDenom := calculateIbcHash(dcDenomPath)
-			ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
-			return &entity.IBCDenom{
-				Symbol:           "",
-				ChainId:          ibcTx.DcChainId,
-				Denom:            dcDenom,
-				PrevDenom:        ibcTx.Denoms.ScDenom,
-				PrevChainId:      ibcTx.ScChainId,
-				BaseDenom:        ibcTx.BaseDenom,
-				BaseDenomChainId: ibcTx.BaseDenomChainId,
-				DenomPath:        dcDenomPath,
-				IsBaseDenom:      false,
-				CreateAt:         time.Now().Unix(),
-				UpdateAt:         time.Now().Unix(),
+		if ibcTx.Status == entity.IbcTxStatusSuccess {
+			dcDenomPath := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
+			if dcDenomPath != "" {
+				dcDenom := calculateIbcHash(dcDenomPath)
+				ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
+				return &entity.IBCDenom{
+					Symbol:           "",
+					ChainId:          ibcTx.DcChainId,
+					Denom:            dcDenom,
+					PrevDenom:        ibcTx.Denoms.ScDenom,
+					PrevChainId:      ibcTx.ScChainId,
+					BaseDenom:        ibcTx.BaseDenom,
+					BaseDenomChainId: ibcTx.BaseDenomChainId,
+					DenomPath:        dcDenomPath,
+					IsBaseDenom:      false,
+					CreateAt:         time.Now().Unix(),
+					UpdateAt:         time.Now().Unix(),
+				}
 			}
 		}
 	} // for
 	return nil
-}
-
-func (w *ibcTxRelateWorker) calculateNextDenomPath(packet model.Packet) string {
-	prefixSc := fmt.Sprintf("%s/%s", packet.SourcePort, packet.SourceChannel)
-	prefixDc := fmt.Sprintf("%s/%s", packet.DestinationPort, packet.DestinationChannel)
-	denomPath := packet.Data.Denom
-	if strings.HasPrefix(denomPath, prefixSc) { // transfer to prev chain
-		return ""
-	} else {
-		denomPath = fmt.Sprintf("%s/%s", prefixDc, denomPath)
-		return denomPath
-	}
 }
 
 func (w *ibcTxRelateWorker) loadAckPacketTx(ibcTx *entity.ExIbcTx, tx *entity.Tx) {

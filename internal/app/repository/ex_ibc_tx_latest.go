@@ -16,6 +16,8 @@ type IExIbcTxRepo interface {
 	DeleteByRecordIds(recordIds []string) error
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
+	FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
 	CountByStatus(status []entity.IbcTxStatus) (int64, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
@@ -43,6 +45,10 @@ type IExIbcTxRepo interface {
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24hActiveChannelTxsDTO, error)
 	Migrate(txs []*entity.ExIbcTx) error
+
+	// special method
+	UpdateDenomTrace(ibcTx *entity.ExIbcTx) error
+	UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -94,6 +100,30 @@ func (repo *ExIbcTxRepo) FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, e
 func (repo *ExIbcTxRepo) FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{"$in": status}}).Sort("tx_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	query := bson.M{
+		"tx_time": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+	}
+	err := repo.coll().Find(context.Background(), query).Sort("tx_time").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	query := bson.M{
+		"tx_time": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+	}
+	err := repo.collHistory().Find(context.Background(), query).Sort("tx_time").Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
 
@@ -163,6 +193,28 @@ func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error {
 			"retry_times":      ibcTx.RetryTimes,
 			"next_try_time":    ibcTx.NextTryTime,
 			"update_at":        ibcTx.UpdateAt,
+		},
+	})
+}
+
+func (repo *ExIbcTxRepo) UpdateDenomTrace(ibcTx *entity.ExIbcTx) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"base_denom_chain_id": ibcTx.BaseDenomChainId,
+			"base_denom":          ibcTx.BaseDenom,
+			"create_at":           ibcTx.CreateAt,
+			"update_at":           ibcTx.UpdateAt,
+		},
+	})
+}
+
+func (repo *ExIbcTxRepo) UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error {
+	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"base_denom_chain_id": ibcTx.BaseDenomChainId,
+			"base_denom":          ibcTx.BaseDenom,
+			"create_at":           ibcTx.CreateAt,
+			"update_at":           ibcTx.UpdateAt,
 		},
 	})
 }

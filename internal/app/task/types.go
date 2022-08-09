@@ -24,16 +24,19 @@ const (
 
 	ibcTxCount = 500000
 
+	fixCreateAtErrTime = 1656950400
+
 	replaceHolderOffset  = "OFFSET"
 	replaceHolderLimit   = "LIMIT"
 	replaceHolderChannel = "CHANNEL"
 	replaceHolderPort    = "PORT"
 
-	syncTransferTxTaskWorkerQuantity = 5
-	ibcTxRelateTaskWorkerQuantity    = 5
-	defaultMaxHandlerTx              = 2000
-	ibcTxTargetLatest                = "latest"
-	ibcTxTargetHistory               = "history"
+	syncTransferTxTaskWorkerQuantity    = 5
+	ibcTxRelateTaskWorkerQuantity       = 5
+	fixDenomTraceDataTaskWorkerQuantity = 8
+	defaultMaxHandlerTx                 = 2000
+	ibcTxTargetLatest                   = "latest"
+	ibcTxTargetHistory                  = "history"
 )
 
 var (
@@ -47,6 +50,7 @@ var (
 	relayerCache        cache.RelayerCacheRepo
 	chainCache          cache.ChainCacheRepo
 	baseDenomCache      cache.BaseDenomCacheRepo
+	storageCache        cache.StorageCacheRepo
 
 	// mongo
 	tokenRepo                repository.ITokenRepo                = new(repository.TokenRepo)

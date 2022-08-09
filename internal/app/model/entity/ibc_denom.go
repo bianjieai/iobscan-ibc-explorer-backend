@@ -15,7 +15,10 @@ type IBCDenom struct {
 	UpdateAt         int64  `bson:"update_at"`
 }
 
-func (i IBCDenom) CollectionName() string {
+func (i IBCDenom) CollectionName(isNew bool) string {
+	if isNew {
+		return "ibc_denom_new"
+	}
 	return "ibc_denom"
 }
 

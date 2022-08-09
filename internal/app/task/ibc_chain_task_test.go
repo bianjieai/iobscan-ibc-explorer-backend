@@ -29,8 +29,12 @@ func TestMain(m *testing.M) {
 
 	time.Local = time.UTC
 	global.Config = &conf.Config{Task: conf.Task{
-		SingleChainSyncTransferTxMax: 1000,
-		SingleChainIbcTxRelateMax:    1000,
+		SingleChainSyncTransferTxMax:      1000,
+		SingleChainIbcTxRelateMax:         1000,
+		FixDenomTraceDataStartTime:        1634081359,
+		FixDenomTraceDataEndTime:          1658814309,
+		FixDenomTraceHistoryDataStartTime: 1620369550,
+		FixDenomTraceHistoryDataEndTime:   1658830692,
 	}}
 	m.Run()
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
@@ -120,6 +121,8 @@ func matchDcInfo(scChainId, scPort, scChannel string, allChainMap map[string]*en
 	return
 }
 
+// calculateIbcHash calculate denom hash by denom path
+//   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
 func calculateIbcHash(fullPath string) string {
 	if len(strings.Split(fullPath, "/")) == 1 {
 		return fullPath
@@ -130,7 +133,7 @@ func calculateIbcHash(fullPath string) string {
 }
 
 // traceDenom trace denom path, parse denom info
-//   - fullDenomPath denom full path，eg："transfer/channel-1/uiris"
+//   - fullDenomPath denom full path，eg："transfer/channel-1/uiris", "uatom"
 func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.ChainConfig) *entity.IBCDenom {
 	unix := time.Now().Unix()
 	denom := calculateIbcHash(fullDenomPath)
@@ -212,5 +215,19 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 		IsBaseDenom:      isBaseDenom,
 		CreateAt:         unix,
 		UpdateAt:         unix,
+	}
+}
+
+// calculateNextDenomPath calculate full denom path of next hop.
+// If the denom is transferred to previous chain(cross back), return empty string
+func calculateNextDenomPath(packet model.Packet) string {
+	prefixSc := fmt.Sprintf("%s/%s", packet.SourcePort, packet.SourceChannel)
+	prefixDc := fmt.Sprintf("%s/%s", packet.DestinationPort, packet.DestinationChannel)
+	denomPath := packet.Data.Denom
+	if strings.HasPrefix(denomPath, prefixSc) { // transfer to prev chain
+		return ""
+	} else {
+		denomPath = fmt.Sprintf("%s/%s", prefixDc, denomPath)
+		return denomPath
 	}
 }
