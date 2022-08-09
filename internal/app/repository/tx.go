@@ -18,6 +18,7 @@ type ITxRepo interface {
 	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
 	GetTxByHash(chainId string, hash string) (entity.Tx, error)
 	GetAcknowledgeTxs(chainId, packetId string) (entity.Tx, error)
+	FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -145,6 +146,27 @@ func (repo *TxRepo) FindByTypeAndHeight(chainId, txType string, height int64) ([
 	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
 	return res, err
 }
+
+func (repo *TxRepo) FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error) {
+	if len(packetIds) == 0 {
+		return nil, nil
+	}
+
+	var res []*entity.Tx
+	query := bson.M{
+		"msgs.type": txType,
+		"msgs.msg.packet_id": bson.M{
+			"$in": packetIds,
+		},
+	}
+	if status != nil {
+		query["status"] = status
+	}
+
+	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
+	return res, err
+}
+
 
 func (repo *TxRepo) GetTxByHash(chainId string, hash string) (entity.Tx, error) {
 	var res entity.Tx

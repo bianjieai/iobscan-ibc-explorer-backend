@@ -11,6 +11,7 @@ import (
 )
 
 type IDenomRepo interface {
+	FindAll() (entity.IBCDenomList, error)
 	FindBaseDenom() (entity.IBCDenomList, error)
 	FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error)
 	FindByChainId(chainId string) (entity.IBCDenomList, error)
@@ -24,6 +25,7 @@ type IDenomRepo interface {
 	LatestCreateAt() (int64, error)
 	UpdateSymbol(chainId, denom, symbol string) error
 	InsertBatch(denoms entity.IBCDenomList) error
+	InsertBatchToNew(denoms entity.IBCDenomList) error
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -32,7 +34,17 @@ type DenomRepo struct {
 }
 
 func (repo *DenomRepo) coll() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCDenom{}.CollectionName())
+	return mgo.Database(ibcDatabase).Collection(entity.IBCDenom{}.CollectionName(false))
+}
+
+func (repo *DenomRepo) collNew() *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.IBCDenom{}.CollectionName(true))
+}
+
+func (repo *DenomRepo) FindAll() (entity.IBCDenomList, error) {
+	var res entity.IBCDenomList
+	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
+	return res, err
 }
 
 func (repo *DenomRepo) FindBaseDenom() (entity.IBCDenomList, error) {
@@ -97,6 +109,15 @@ func (repo *DenomRepo) UpdateSymbol(chainId, denom, symbol string) error {
 
 func (repo *DenomRepo) InsertBatch(denoms entity.IBCDenomList) error {
 	_, err := repo.coll().InsertMany(context.Background(), denoms, insertIgnoreErrOpt)
+	if mongo.IsDuplicateKeyError(err) {
+		return nil
+	}
+
+	return err
+}
+
+func (repo *DenomRepo) InsertBatchToNew(denoms entity.IBCDenomList) error {
+	_, err := repo.collNew().InsertMany(context.Background(), denoms, insertIgnoreErrOpt)
 	if mongo.IsDuplicateKeyError(err) {
 		return nil
 	}
