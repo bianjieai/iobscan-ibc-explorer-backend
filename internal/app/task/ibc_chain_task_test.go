@@ -21,17 +21,17 @@ func TestMain(m *testing.M) {
 	})
 	repository.InitMgo(conf.Mongo{
 		//Url: "mongodb://ibc:ibcpassword@192.168.0.122:27017,192.168.0.126:27017,192.168.0.127:27017/?authSource=iobscan-ibc",
-		Url: "mongodb://ibc:ibcpassword@192.168.150.60:27018/?connect=direct&authSource=iobscan-ibc",
+		Url: "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805",
 		//Url:      "mongodb://ibc:ibcpassword@35.236.185.62:38129/?connect=direct&authSource=iobscan-ibc",
 
-		Database: "iobscan-ibc",
+		Database: "iobscan-ibc_0805",
 	}, context.Background())
 
 	time.Local = time.UTC
 	global.Config = &conf.Config{Task: conf.Task{
 		SingleChainSyncTransferTxMax:      1000,
 		SingleChainIbcTxRelateMax:         1000,
-		FixDenomTraceDataStartTime:        1634081359,
+		FixDenomTraceDataStartTime:        1632812202,
 		FixDenomTraceDataEndTime:          1658814309,
 		FixDenomTraceHistoryDataStartTime: 1620369550,
 		FixDenomTraceHistoryDataEndTime:   1658830692,

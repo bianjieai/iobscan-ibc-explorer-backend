@@ -26,3 +26,7 @@ func Test_getSegment(t *testing.T) {
 	}
 	fmt.Println(utils.MustMarshalJsonToStr(res))
 }
+
+func Test_ChannelStatistics(t *testing.T) {
+	channelStatisticsTask.Run()
+}

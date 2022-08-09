@@ -110,6 +110,7 @@ func (t *TokenStatisticsTask) saveTokenTransferData(dtoList []*dto.CountBaseDeno
 	for _, v := range dtoList {
 		statistics = append(statistics, &entity.IBCTokenStatistics{
 			BaseDenom:        v.BaseDenom,
+			BaseDenomChainId: v.BaseDenomChainId,
 			TransferTxs:      v.Count,
 			SegmentStartTime: segmentStart,
 			SegmentEndTime:   segmentEnd,
@@ -138,7 +139,6 @@ func (t *TokenStatisticsTask) saveTraceReceiveData(dtoList []*dto.CountIBCTokenR
 		statistics = append(statistics, &entity.IBCTokenTraceStatistics{
 			Denom:            v.Denom,
 			ChainId:          v.ChainId,
-			BaseDenom:        v.BaseDenom,
 			ReceiveTxs:       v.Count,
 			SegmentStartTime: segmentStart,
 			SegmentEndTime:   segmentEnd,

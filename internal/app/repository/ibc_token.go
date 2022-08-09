@@ -15,6 +15,7 @@ type ITokenRepo interface {
 	FindAll() (entity.IBCTokenList, error)
 	InsertBatch(batch []*entity.IBCToken) error
 	UpdateToken(token *entity.IBCToken) error
+	Delete(baseDenom, chainId string) error
 }
 
 var _ ITokenRepo = new(TokenRepo)
@@ -106,4 +107,8 @@ func (repo *TokenRepo) UpdateToken(token *entity.IBCToken) error {
 		},
 	}
 	return repo.coll().UpdateOne(context.Background(), query, update)
+}
+
+func (repo *TokenRepo) Delete(baseDenom, chainId string) error {
+	return repo.coll().Remove(context.Background(), bson.M{"base_denom": baseDenom, "chain_id": chainId})
 }

@@ -329,7 +329,7 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 
 	for _, v := range statistics {
 		if channelId == v.ChannelId {
-			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom)
+			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom, v.BaseDenomChainId)
 			txsCount += v.TxsCount
 			txsValue = txsValue.Add(valueDecimal)
 
@@ -355,8 +355,8 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 	return txsCount, txsValue
 }
 
-func (t *ChannelTask) calculateValue(amount float64, baseDenom string) decimal.Decimal {
-	denom, ok := t.baseDenomMap[baseDenom]
+func (t *ChannelTask) calculateValue(amount float64, baseDenom, baseDenomChainId string) decimal.Decimal {
+	denom, ok := t.baseDenomMap[fmt.Sprintf("%s%s", baseDenomChainId, baseDenom)]
 	if !ok || denom.CoinId == "" {
 		return decimal.Zero
 	}

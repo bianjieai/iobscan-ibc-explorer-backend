@@ -1,5 +1,7 @@
 package entity
 
+import "fmt"
+
 type IBCBaseDenom struct {
 	ChainId     string `bson:"chain_id"`
 	Denom       string `bson:"denom"`
@@ -23,7 +25,7 @@ type IBCBaseDenomMap map[string]*IBCBaseDenom
 func (l IBCBaseDenomList) ConvertToMap() IBCBaseDenomMap {
 	res := make(map[string]*IBCBaseDenom)
 	for _, v := range l {
-		res[v.Denom] = v
+		res[fmt.Sprintf("%s%s", v.ChainId, v.Denom)] = v
 	}
 	return res
 }

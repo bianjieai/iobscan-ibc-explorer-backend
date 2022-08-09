@@ -177,11 +177,12 @@ func getTokenOthers() ([]string, error) {
 		noSymbolDenomSet.Add(v.BaseDenom)
 	}
 
-	baseDenomMap := allBaseDenom.ConvertToMap()
 	for k, _ := range noSymbolDenomSet {
-		_, ok := baseDenomMap[k]
-		if ok {
-			noSymbolDenomSet.Remove(k)
+		for _, v := range allBaseDenom {
+			if v.Denom == k {
+				noSymbolDenomSet.Remove(k)
+				break
+			}
 		}
 	}
 

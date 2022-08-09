@@ -1,5 +1,7 @@
 package entity
 
+import "fmt"
+
 type TokenType string
 
 const (
@@ -31,7 +33,7 @@ type IBCTokenMap map[string]*IBCToken
 func (l IBCTokenList) ConvertToMap() IBCTokenMap {
 	res := make(map[string]*IBCToken)
 	for _, v := range l {
-		res[v.BaseDenom] = v
+		res[fmt.Sprintf("%s%s", v.ChainId, v.BaseDenom)] = v
 	}
 	return res
 }

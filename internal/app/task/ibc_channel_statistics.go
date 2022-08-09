@@ -94,7 +94,7 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 		isExisted := false
 		ChannelId := generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
 		for _, c := range cl {
-			if c.ChannelId == ChannelId && v.BaseDenom == c.BaseDenom { // 同一个channel
+			if c.ChannelId == ChannelId && v.BaseDenom == c.BaseDenom && v.BaseDenomChainId == c.BaseDenomChainId { // 同一个channel
 				c.TxsCount += v.Count
 				c.TxsAmount = c.TxsAmount.Add(decimal.NewFromFloat(v.Amount))
 				isExisted = true
@@ -104,10 +104,11 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 
 		if !isExisted {
 			cl = append(cl, &dto.ChannelStatisticsDTO{
-				ChannelId: ChannelId,
-				BaseDenom: v.BaseDenom,
-				TxsCount:  v.Count,
-				TxsAmount: decimal.NewFromFloat(v.Amount),
+				ChannelId:        ChannelId,
+				BaseDenom:        v.BaseDenom,
+				BaseDenomChainId: v.BaseDenomChainId,
+				TxsCount:         v.Count,
+				TxsAmount:        decimal.NewFromFloat(v.Amount),
 			})
 		}
 	}
@@ -119,14 +120,15 @@ func (t *ChannelStatisticsTask) saveData(dtoList []*dto.ChannelStatisticsDTO, se
 	var statistics = make([]*entity.IBCChannelStatistics, 0, len(dtoList))
 	for _, v := range dtoList {
 		statistics = append(statistics, &entity.IBCChannelStatistics{
-			ChannelId:         v.ChannelId,
-			TransferBaseDenom: v.BaseDenom,
-			TransferTxs:       v.TxsCount,
-			TransferAmount:    v.TxsAmount.String(),
-			SegmentStartTime:  segmentStart,
-			SegmentEndTime:    segmentEnd,
-			CreateAt:          time.Now().Unix(),
-			UpdateAt:          time.Now().Unix(),
+			ChannelId:        v.ChannelId,
+			BaseDenom:        v.BaseDenom,
+			BaseDenomChainId: v.BaseDenomChainId,
+			TransferTxs:      v.TxsCount,
+			TransferAmount:   v.TxsAmount.String(),
+			SegmentStartTime: segmentStart,
+			SegmentEndTime:   segmentEnd,
+			CreateAt:         time.Now().Unix(),
+			UpdateAt:         time.Now().Unix(),
 		})
 	}
 
