@@ -21,6 +21,9 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 
+	DisplayIbcRecordMax = 500000
+	MaxPageSize         = 100
+
 	MsgTypeTransfer           = "transfer"
 	MsgTypeRecvPacket         = "recv_packet"
 	MsgTypeTimeoutPacket      = "timeout_packet"
@@ -35,6 +38,7 @@ const (
 	Chains24hStatisticName    = "chains_24hr"
 	ChainsAllStatisticName    = "chain_all"
 	Tx24hAllStatisticName     = "tx_24hr_all"
+	TxLatestAllStatisticName  = "tx_latest_all"
 	TxAllStatisticName        = "tx_all"
 	TxSuccessStatisticName    = "tx_success"
 	TxFailedStatisticName     = "tx_failed"

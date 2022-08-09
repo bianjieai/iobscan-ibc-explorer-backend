@@ -97,11 +97,26 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors
 	if len(query.ChainId) > 2 {
 		return 0, nil
 	}
+
+	checkDisplayMax := func(count int64) int64 {
+		if count > constant.DisplayIbcRecordMax {
+			return constant.DisplayIbcRecordMax
+		}
+		return count
+	}
+	//default cond
+	if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 {
+		data, err := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
+		if err != nil {
+			return 0, errors.Wrap(err)
+		}
+		return checkDisplayMax(data.Count), nil
+	}
 	count, err := ibcTxRepo.CountTransferTxs(query)
 	if err != nil {
 		return 0, errors.Wrap(err)
 	}
-	return count, nil
+	return checkDisplayMax(count), nil
 }
 
 func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error) {

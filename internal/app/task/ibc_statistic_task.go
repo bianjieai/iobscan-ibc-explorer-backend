@@ -76,6 +76,10 @@ func (t *IbcStatisticCronTask) updateTxsIncre() error {
 	if err != nil {
 		return err
 	}
+	if err := statisticsRepo.UpdateOne(constant.TxLatestAllStatisticName, txAll); err != nil {
+		return err
+	}
+
 	//增量统计历史表数据
 	if err := t.handleHistoryTxsIncre(constant.TxAllStatisticName, txAll, ibcTxRepo.HistoryCountAll); err != nil {
 		return err
