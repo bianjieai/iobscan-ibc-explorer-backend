@@ -89,6 +89,9 @@ func startTask() {
 		//&task.IbcDenomCalculateTask{},
 		//&task.IbcDenomUpdateTask{},
 		//&task.IbcSyncTransferTxTask{}
+		//&task.IbcTxRelateTask{},
+		//&task.IbcTxRelateHistoryTask{},
+		//&task.IbcTxMigrateTask{}
 	)
 	task.Start()
 }
@@ -99,6 +102,8 @@ func startOneOffTask() {
 	//&task.ChannelStatisticsTask{},
 	//&task.RelayerStatisticsTask{},
 	//&task.TokenStatisticsTask{},
+	//&task.FixDenomTraceHistoryDataTask{},
+	//&task.FixDenomTraceDataTask{},
 	)
 	task.StartOneOffTask()
 }

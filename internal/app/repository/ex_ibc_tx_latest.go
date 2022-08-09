@@ -13,12 +13,21 @@ import (
 type IExIbcTxRepo interface {
 	InsertBatch(txs []*entity.ExIbcTx) error
 	InsertBatchHistory(txs []*entity.ExIbcTx) error
+	DeleteByRecordIds(recordIds []string) error
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
+	FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
+	CountByStatus(status []entity.IbcTxStatus) (int64, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
 	FirstHistory() (*entity.ExIbcTx, error)
 	Latest() (*entity.ExIbcTx, error)
 	LatestHistory() (*entity.ExIbcTx, error)
+	FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
+	FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
+	UpdateIbcTx(ibcTx *entity.ExIbcTx) error
+	UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error
 	CountBaseDenomTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountBaseDenomHistoryTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountIBCTokenRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
@@ -35,6 +44,11 @@ type IExIbcTxRepo interface {
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24hActiveChannelTxsDTO, error)
+	Migrate(txs []*entity.ExIbcTx) error
+
+	// special method
+	UpdateDenomTrace(ibcTx *entity.ExIbcTx) error
+	UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -66,6 +80,11 @@ func (repo *ExIbcTxRepo) InsertBatchHistory(txs []*entity.ExIbcTx) error {
 	return err
 }
 
+func (repo *ExIbcTxRepo) DeleteByRecordIds(recordIds []string) error {
+	_, err := repo.coll().RemoveAll(context.Background(), bson.M{"record_id": bson.M{"$in": recordIds}})
+	return err
+}
+
 func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
@@ -75,6 +94,42 @@ func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {
 func (repo *ExIbcTxRepo) FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{"$in": status}}).Sort("tx_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	query := bson.M{
+		"tx_time": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+	}
+	err := repo.coll().Find(context.Background(), query).Sort("tx_time").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	query := bson.M{
+		"tx_time": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+	}
+	err := repo.collHistory().Find(context.Background(), query).Sort("tx_time").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) CountByStatus(status []entity.IbcTxStatus) (int64, error) {
+	var res int64
+	res, err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{"$in": status}}).Count()
 	return res, err
 }
 
@@ -100,6 +155,68 @@ func (repo *ExIbcTxRepo) LatestHistory() (*entity.ExIbcTx, error) {
 	var res entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
 	return &res, err
+}
+
+func (repo *ExIbcTxRepo) FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_retry_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_retry_time").Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"status":           ibcTx.Status,
+			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
+			"dc_tx_info":       ibcTx.DcTxInfo,
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+			"retry_times":      ibcTx.RetryTimes,
+			"next_try_time":    ibcTx.NextTryTime,
+			"update_at":        ibcTx.UpdateAt,
+		},
+	})
+}
+
+func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error {
+	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"status":           ibcTx.Status,
+			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
+			"dc_tx_info":       ibcTx.DcTxInfo,
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+			"retry_times":      ibcTx.RetryTimes,
+			"next_try_time":    ibcTx.NextTryTime,
+			"update_at":        ibcTx.UpdateAt,
+		},
+	})
+}
+
+func (repo *ExIbcTxRepo) UpdateDenomTrace(ibcTx *entity.ExIbcTx) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"base_denom_chain_id": ibcTx.BaseDenomChainId,
+			"base_denom":          ibcTx.BaseDenom,
+			"create_at":           ibcTx.CreateAt,
+			"update_at":           ibcTx.UpdateAt,
+		},
+	})
+}
+
+func (repo *ExIbcTxRepo) UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error {
+	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+		"$set": bson.M{
+			"base_denom_chain_id": ibcTx.BaseDenomChainId,
+			"base_denom":          ibcTx.BaseDenom,
+			"create_at":           ibcTx.CreateAt,
+			"update_at":           ibcTx.UpdateAt,
+		},
+	})
 }
 
 func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64) []bson.M {
@@ -507,4 +624,29 @@ func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24
 	var res []*dto.Aggr24hActiveChannelTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
+	if len(txs) == 0 {
+		return nil
+	}
+
+	var recordIds []string
+	for _, v := range txs {
+		recordIds = append(recordIds, v.RecordId)
+	}
+
+	callback := func(sessCtx context.Context) (interface{}, error) {
+		if err := repo.InsertBatchHistory(txs); err != nil {
+			return nil, err
+		}
+
+		if err := repo.DeleteByRecordIds(recordIds); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
 }

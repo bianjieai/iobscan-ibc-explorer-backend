@@ -1,13 +1,17 @@
 package task
 
 import (
+	"fmt"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
 const (
 	EveryMinute          = 60
 	ThreeMinute          = 180
+	EveryHour            = 3600
 	RedisLockExpireTime  = 300
 	OneOffTaskLockTime   = 86400 * 30
 	ThreeHourCronJobTime = "0 0 */6 * * ?"
@@ -18,12 +22,21 @@ const (
 	opInsert = 1
 	opUpdate = 2
 
+	ibcTxCount = 500000
+
+	fixCreateAtErrTime = 1656950400
+
 	replaceHolderOffset  = "OFFSET"
 	replaceHolderLimit   = "LIMIT"
 	replaceHolderChannel = "CHANNEL"
 	replaceHolderPort    = "PORT"
 
-	syncTransferTxTaskWorkerQuantity = 5
+	syncTransferTxTaskWorkerQuantity    = 5
+	ibcTxRelateTaskWorkerQuantity       = 5
+	fixDenomTraceDataTaskWorkerQuantity = 8
+	defaultMaxHandlerTx                 = 2000
+	ibcTxTargetLatest                   = "latest"
+	ibcTxTargetHistory                  = "history"
 )
 const (
 	channelMatchSuccess = 1
@@ -44,6 +57,7 @@ var (
 	relayerCache        cache.RelayerCacheRepo
 	chainCache          cache.ChainCacheRepo
 	baseDenomCache      cache.BaseDenomCacheRepo
+	storageCache        cache.StorageCacheRepo
 
 	// mongo
 	tokenRepo                repository.ITokenRepo                = new(repository.TokenRepo)
@@ -65,5 +79,18 @@ var (
 	statisticsRepo           repository.IStatisticRepo            = new(repository.IbcStatisticRepo)
 	taskRecordRepo           repository.ITaskRecordRepo           = new(repository.TaskRecordRepo)
 	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
+	syncBlockRepo            repository.ISyncBlockRepo            = new(repository.SyncBlockRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )
+
+type chainQueueCoordinator struct {
+	chainQueue *utils.QueueString
+}
+
+func (coordinator *chainQueueCoordinator) getChain() (string, error) {
+	if coordinator.chainQueue == nil {
+		return "", fmt.Errorf("coordinator or chain queue is nil")
+	}
+
+	return coordinator.chainQueue.Pop()
+}

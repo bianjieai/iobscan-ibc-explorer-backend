@@ -3,14 +3,12 @@ package task
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
@@ -20,13 +18,8 @@ import (
 type IbcSyncTransferTxTask struct {
 }
 
-type syncTransferTxCoordinator struct {
-	allChainMap map[string]*entity.ChainConfig
-	chainQueue  *utils.QueueString
-}
-
 var _ Task = new(IbcSyncTransferTxTask)
-var coordinator *syncTransferTxCoordinator
+var transferTxCoordinator *chainQueueCoordinator
 
 func (t *IbcSyncTransferTxTask) Name() string {
 	return "ibc_sync_transfer_tx_task"
@@ -40,8 +33,19 @@ func (t *IbcSyncTransferTxTask) Cron() int {
 }
 
 func (t *IbcSyncTransferTxTask) Run() int {
-	if err := t.initCoordinator(); err != nil {
+	chainMap, err := getAllChainMap()
+	if err != nil {
+		logrus.Errorf("task %s getAllChainMap error, %v", t.Name(), err)
 		return -1
+	}
+
+	// init coordinator
+	chainQueue := new(utils.QueueString)
+	for _, v := range chainMap {
+		chainQueue.Push(v.ChainId)
+	}
+	transferTxCoordinator = &chainQueueCoordinator{
+		chainQueue: chainQueue,
 	}
 
 	var waitGroup sync.WaitGroup
@@ -49,7 +53,7 @@ func (t *IbcSyncTransferTxTask) Run() int {
 	for i := 1; i <= syncTransferTxTaskWorkerQuantity; i++ {
 		workName := fmt.Sprintf("worker-%d", i)
 		go func(wn string) {
-			newSyncTransferTxWorker(t.Name(), wn).exec()
+			newSyncTransferTxWorker(t.Name(), wn, chainMap).exec()
 			waitGroup.Done()
 		}(workName)
 	}
@@ -58,47 +62,28 @@ func (t *IbcSyncTransferTxTask) Run() int {
 	return 1
 }
 
-func (t *IbcSyncTransferTxTask) initCoordinator() error {
-	allChainList, err := chainConfigRepo.FindAll()
-	if err != nil {
-		logrus.Errorf("task %s chainConfigRepo.FindAll error, %v", t.Name(), err)
-		return err
-	}
-
-	allChainMap := make(map[string]*entity.ChainConfig)
-	chainQueue := new(utils.QueueString)
-	for _, v := range allChainList {
-		allChainMap[v.ChainId] = v
-		chainQueue.Push(v.ChainId)
-	}
-
-	coordinator = &syncTransferTxCoordinator{
-		allChainMap: allChainMap,
-		chainQueue:  chainQueue,
-	}
-	return nil
-}
-
 // =========================================================================
 // =========================================================================
 // worker
 
-func newSyncTransferTxWorker(taskName, workerName string) *syncTransferTxWorker {
+func newSyncTransferTxWorker(taskName, workerName string, chainMap map[string]*entity.ChainConfig) *syncTransferTxWorker {
 	return &syncTransferTxWorker{
 		taskName:   taskName,
 		workerName: workerName,
+		chainMap:   chainMap,
 	}
 }
 
 type syncTransferTxWorker struct {
 	taskName   string
 	workerName string
+	chainMap   map[string]*entity.ChainConfig
 }
 
 func (w *syncTransferTxWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := w.getChain()
+		chainId, err := transferTxCoordinator.getChain()
 		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		if err != nil {
 			break
@@ -113,17 +98,13 @@ func (w *syncTransferTxWorker) exec() {
 	}
 }
 
-func (w *syncTransferTxWorker) getChain() (string, error) {
-	if coordinator == nil || coordinator.chainQueue == nil {
-		return "", fmt.Errorf("coordinator or chain queue is nil")
-	}
-
-	return coordinator.chainQueue.Pop()
-}
-
 func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 	totalParseTx := 0
-	limit := 500
+	const limit = 500
+	maxParseTx := global.Config.Task.SingleChainSyncTransferTxMax
+	if maxParseTx <= 0 {
+		maxParseTx = defaultMaxHandlerTx
+	}
 
 	taskRecord, err := w.checkTaskRecord(chainId)
 	if err != nil {
@@ -178,7 +159,7 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 		}
 
 		totalParseTx += len(txList)
-		if totalParseTx >= global.Config.Task.SingleChainSyncTransferTxMax {
+		if len(txList) < limit || totalParseTx >= maxParseTx {
 			break
 		}
 	}
@@ -207,7 +188,7 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			scPort := transferTxMsg.SourcePort
 			scChannel := transferTxMsg.SourceChannel
 			scDenom := transferTxMsg.Token.Denom
-			dcChainId, dcPort, dcChannel := w.matchDcInfo(chainId, scPort, scChannel)
+			dcChainId, dcPort, dcChannel := matchDcInfo(chainId, scPort, scChannel, w.chainMap)
 
 			var fullDenomPath, sequence string
 			ibcDenom, isExisted := denomMap[scDenom]
@@ -216,7 +197,7 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			} else {
 				dcPort, dcChannel, fullDenomPath, sequence = w.getIbcInfoFromEventsMsg(msgIndex, tx)
 				if !isExisted { // denom 不存在
-					ibcDenom = w.traceDenom(scDenom, fullDenomPath, chainId)
+					ibcDenom = traceDenom(fullDenomPath, chainId, w.chainMap)
 				}
 			}
 
@@ -235,8 +216,10 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				baseDenomChainId = ibcDenom.BaseDenomChainId
 			}
 			recordId := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
+			nowUnix := time.Now().Unix()
 			ibcTxList = append(ibcTxList, &entity.ExIbcTx{
 				RecordId:  recordId,
+				TxTime:    tx.Time,
 				ScAddr:    transferTxMsg.Sender,
 				DcAddr:    transferTxMsg.Receiver,
 				ScPort:    scPort,
@@ -267,108 +250,15 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				},
 				BaseDenom:        baseDemom,
 				BaseDenomChainId: baseDenomChainId,
-				TxTime:           tx.Time,
-				CreateAt:         time.Now().Unix(),
-				UpdateAt:         time.Now().Unix(),
+				RetryTimes:       0,
+				NextTryTime:      nowUnix,
+				CreateAt:         nowUnix,
+				UpdateAt:         nowUnix,
 			})
 		}
 	}
 
 	return ibcTxList, ibcDenomList
-}
-
-// traceDenom 通过追踪denom的溯源路径，解析出当前denom的相关信息
-//   - fullDenomPath denom完全路径，例："transfer/channel-1/uiris"
-func (w *syncTransferTxWorker) traceDenom(denom, fullDenomPath, chainId string) *entity.IBCDenom {
-	unix := time.Now().Unix()
-	if !strings.HasPrefix(denom, constant.IBCTokenPreFix) { // base denom
-		return &entity.IBCDenom{
-			ChainId:          chainId,
-			Denom:            denom,
-			PrevDenom:        "",
-			PrevChainId:      "",
-			BaseDenom:        denom,
-			BaseDenomChainId: chainId,
-			DenomPath:        "",
-			IsSourceChain:    false,
-			IsBaseDenom:      true,
-			CreateAt:         unix,
-			UpdateAt:         unix,
-		}
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Errorf("trace denom: %s, chain: %s, full path: %s, error. %v ", denom, chainId, fullDenomPath, err)
-		}
-	}()
-
-	var currentChainId string
-	var isBaseDenom bool
-	currentChainId = chainId
-	pathSplits := strings.Split(fullDenomPath, "/")
-	denomPath := strings.Join(pathSplits[0:len(pathSplits)-1], "/")
-	var TraceDenomList []*dto.DenomSimpleDTO
-	TraceDenomList = append(TraceDenomList, &dto.DenomSimpleDTO{
-		Denom:   denom,
-		ChainId: chainId,
-	})
-
-	for {
-		if len(pathSplits) <= 1 {
-			break
-		}
-
-		currentPort, currentChannel := pathSplits[0], pathSplits[1]
-		tempPrevChainId, tempPrevPort, tempPrevChannel := w.matchDcInfo(currentChainId, currentPort, currentChannel)
-		if tempPrevChainId == "" { // 无法向前溯源了
-			break
-		} else {
-			TraceDenomList = append(TraceDenomList, &dto.DenomSimpleDTO{
-				Denom:   w.calculateIbcHash(strings.Join(pathSplits[2:], "/")),
-				ChainId: tempPrevChainId,
-			})
-		}
-
-		currentChainId, currentPort, currentChannel = tempPrevChainId, tempPrevPort, tempPrevChannel
-		pathSplits = pathSplits[2:]
-	}
-
-	var prevDenom, prevChainId, baseDenom, baseDenomChainId string
-	if len(TraceDenomList) == 1 { // denom 本身就是base denom
-		isBaseDenom = true
-		baseDenom = denom
-		baseDenomChainId = chainId
-	} else {
-		isBaseDenom = false
-		prevDenom = TraceDenomList[1].Denom
-		prevChainId = TraceDenomList[1].ChainId
-		baseDenom = TraceDenomList[len(TraceDenomList)-1].Denom
-		baseDenomChainId = TraceDenomList[len(TraceDenomList)-1].ChainId
-	}
-
-	return &entity.IBCDenom{
-		ChainId:          chainId,
-		Denom:            denom,
-		PrevDenom:        prevDenom,
-		PrevChainId:      prevChainId,
-		BaseDenom:        baseDenom,
-		BaseDenomChainId: baseDenomChainId,
-		DenomPath:        denomPath,
-		IsSourceChain:    false,
-		IsBaseDenom:      isBaseDenom,
-		CreateAt:         unix,
-		UpdateAt:         unix,
-	}
-}
-
-func (w *syncTransferTxWorker) calculateIbcHash(fullPath string) string {
-	if len(strings.Split(fullPath, "/")) == 1 {
-		return fullPath
-	}
-
-	hash := utils.Sha256(fullPath)
-	return fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, strings.ToUpper(hash))
 }
 
 func (w *syncTransferTxWorker) getIbcInfoFromEventsMsg(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomPath, sequence string) {
@@ -390,25 +280,6 @@ func (w *syncTransferTxWorker) getIbcInfoFromEventsMsg(msgIndex int, tx *entity.
 					default:
 					}
 				}
-			}
-		}
-	}
-
-	return
-}
-
-func (w *syncTransferTxWorker) matchDcInfo(scChainId, scPort, scChannel string) (dcChainId, dcPort, dcChannel string) {
-	if coordinator == nil || coordinator.allChainMap == nil || coordinator.allChainMap[scChainId] == nil {
-		return
-	}
-
-	for _, ibcInfo := range coordinator.allChainMap[scChainId].IbcInfo {
-		for _, path := range ibcInfo.Paths {
-			if path.PortId == scPort && path.ChannelId == scChannel {
-				dcChainId = path.ChainId
-				dcPort = path.Counterparty.PortId
-				dcChannel = path.Counterparty.ChannelId
-				return
 			}
 		}
 	}
