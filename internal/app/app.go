@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"os"
 	"path"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
@@ -86,25 +86,25 @@ func startTask() {
 		&task.TokenPriceTask{},
 		&task.IbcStatisticCronTask{},
 		&task.IbcSyncAcknowledgeTxTask{},
-		//&task.IbcChainConfigTask{},
-		//&task.IbcDenomCalculateTask{},
-		//&task.IbcDenomUpdateTask{},
-		//&task.IbcSyncTransferTxTask{}
-		//&task.IbcTxRelateTask{},
-		//&task.IbcTxRelateHistoryTask{},
-		//&task.IbcTxMigrateTask{}
+		&task.IbcChainConfigTask{},
+		&task.IbcDenomCalculateTask{},
+		&task.IbcDenomUpdateTask{},
+		&task.IbcSyncTransferTxTask{},
+		&task.IbcTxRelateTask{},
+		&task.IbcTxRelateHistoryTask{},
+		&task.IbcTxMigrateTask{},
 	)
 	task.Start()
 }
 
 func startOneOffTask() {
 	task.RegisterOneOffTasks(
-	// 一次性任务需要时再打开
-	//&task.ChannelStatisticsTask{},
-	//&task.RelayerStatisticsTask{},
-	//&task.TokenStatisticsTask{},
-	//&task.FixDenomTraceHistoryDataTask{},
-	//&task.FixDenomTraceDataTask{},
+		// 一次性任务需要时再打开
+		//&task.ChannelStatisticsTask{},
+		//&task.RelayerStatisticsTask{},
+		//&task.TokenStatisticsTask{},
+		&task.FixDenomTraceHistoryDataTask{},
+		&task.FixDenomTraceDataTask{},
 	)
 	task.StartOneOffTask()
 }

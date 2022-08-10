@@ -54,12 +54,14 @@ func (t *TokenTask) Run() int {
 
 	_ = t.yesterdayStatistics()
 
-	existedTokenList, newTokenList, err := t.getAllToken()
+	existedTokenList, newTokenList, removedTokenList, err := t.getAllToken()
 	if err != nil {
 		return -1
 	}
 
 	// 部分数据统计出错可以直接忽略error,继续计算后面的指标
+	t.setTokenType(existedTokenList)
+
 	_ = t.setTokenPrice(existedTokenList, newTokenList)
 
 	_ = t.setDenomSupply(existedTokenList, newTokenList)
@@ -76,13 +78,19 @@ func (t *TokenTask) Run() int {
 
 	// 更新数据到数据库
 	if err = tokenRepo.InsertBatch(newTokenList); err != nil {
-		logrus.Errorf("task %s insert new token error, %v", t.Name(), err)
+		logrus.Errorf("task %s insert new tokens error, %v", t.Name(), err)
+	}
+
+	for _, v := range removedTokenList {
+		if err = tokenRepo.Delete(v.BaseDenom, v.ChainId); err != nil {
+			logrus.Errorf("task %s delete removed tokens error, %v", t.Name(), err)
+		}
 	}
 
 	for _, v := range existedTokenList {
 		err = tokenRepo.UpdateToken(v)
 		if err != nil && err != mongo.ErrNoDocuments {
-			logrus.Errorf("task %s insert update token error, %v", t.Name(), err)
+			logrus.Errorf("task %s update token error, %v", t.Name(), err)
 		}
 	}
 
@@ -113,25 +121,27 @@ func (t *TokenTask) initDenomData() error {
 	return nil
 }
 
-func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, error) {
-	tokenList, err := denomRepo.FindBaseDenom()
+// getAllToken Cannot automatically delete nonexistent tokens
+func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, entity.IBCTokenList, error) {
+	allTokenList, err := denomRepo.FindBaseDenom()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	existedTokenList, err := tokenRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	existedTokenMap := existedTokenList.ConvertToMap()
-	var newTokenList entity.IBCTokenList
+	var newTokenList, stillExistedTokenList entity.IBCTokenList
 
-	for _, v := range tokenList {
-		_, ok := existedTokenMap[v.BaseDenom]
+	for _, v := range allTokenList {
+		token, ok := existedTokenMap[fmt.Sprintf("%s%s", v.ChainId, v.BaseDenom)]
 		if ok { // token 已存在
+			stillExistedTokenList = append(stillExistedTokenList, token)
 			continue
 		}
 
@@ -149,7 +159,16 @@ func (t *TokenTask) getAllToken() (entity.IBCTokenList, entity.IBCTokenList, err
 		})
 	}
 
-	return existedTokenList, newTokenList, nil
+	var removedTokenList entity.IBCTokenList
+	allTokenMap := allTokenList.ConvertToMap()
+	for _, v := range existedTokenList {
+		_, ok := allTokenMap[fmt.Sprintf("%s%s", v.ChainId, v.BaseDenom)]
+		if !ok {
+			removedTokenList = append(removedTokenList, v)
+		}
+	}
+
+	return existedTokenList, newTokenList, removedTokenList, nil
 }
 
 func (t *TokenTask) tokenType(baseDenom, chainId string) entity.TokenType {
@@ -162,6 +181,12 @@ func (t *TokenTask) tokenType(baseDenom, chainId string) entity.TokenType {
 	return entity.TokenTypeOther
 }
 
+func (t *TokenTask) setTokenType(existedTokenList entity.IBCTokenList) {
+	for _, v := range existedTokenList {
+		v.Type = t.tokenType(v.BaseDenom, v.ChainId)
+	}
+}
+
 func (t *TokenTask) setTokenPrice(existedTokenList, newTokenList entity.IBCTokenList) error {
 	tokenPriceMap, err := tokenPriceRepo.GetAll()
 	if err != nil {
@@ -172,7 +197,7 @@ func (t *TokenTask) setTokenPrice(existedTokenList, newTokenList entity.IBCToken
 	baseDenomMap := t.baseDenomList.ConvertToMap()
 	setPrice := func(tokenList entity.IBCTokenList, tokenPriceMap map[string]float64) {
 		for _, v := range tokenList {
-			denom, ok := baseDenomMap[v.BaseDenom]
+			denom, ok := baseDenomMap[fmt.Sprintf("%s%s", v.ChainId, v.BaseDenom)]
 			if !ok || denom.CoinId == "" {
 				continue
 			}
@@ -336,7 +361,7 @@ func (t *TokenTask) setIbcTransferTxs(existedTokenList, newTokenList entity.IBCT
 		for _, v := range tokenList {
 			var count int64
 			for _, tx := range txsCount {
-				if tx.BaseDenom == v.BaseDenom {
+				if tx.BaseDenom == v.BaseDenom && tx.BaseDenomChainId == v.ChainId {
 					count += tx.Count
 				}
 			}
@@ -496,7 +521,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 		return 0, nil
 	}
 
-	denomList, err := denomRepo.FindByBaseDenom(ibcToken.BaseDenom)
+	denomList, err := denomRepo.FindByBaseDenom(ibcToken.BaseDenom, ibcToken.ChainId)
 	if err != nil {
 		logrus.Errorf("task %s FindByBaseDenom error, %v", t.Name(), err)
 		return 0, nil
@@ -524,16 +549,16 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 		}
 
 		allTokenStatisticsList = append(allTokenStatisticsList, &entity.IBCTokenTrace{
-			Denom:       v.Denom,
-			DenomPath:   v.DenomPath,
-			BaseDenom:   ibcToken.BaseDenom,
-			ChainId:     v.ChainId,
-			OriginalId:  ibcToken.ChainId,
-			Type:        denomType,
-			IBCHops:     t.ibcHops(v.DenomPath),
-			DenomAmount: denomAmount,
-			DenomValue:  t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
-			ReceiveTxs:  t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.ChainId)],
+			Denom:            v.Denom,
+			ChainId:          v.ChainId,
+			DenomPath:        v.DenomPath,
+			BaseDenom:        ibcToken.BaseDenom,
+			BaseDenomChainId: ibcToken.ChainId,
+			Type:             denomType,
+			IBCHops:          t.ibcHops(v.DenomPath),
+			DenomAmount:      denomAmount,
+			DenomValue:       t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
+			ReceiveTxs:       t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.ChainId)],
 		})
 
 		chainsSet.Add(v.ChainId)

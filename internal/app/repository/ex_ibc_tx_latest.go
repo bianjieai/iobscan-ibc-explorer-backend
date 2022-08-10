@@ -248,15 +248,27 @@ func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64)
 
 	group := bson.M{
 		"$group": bson.M{
-			"_id": "$base_denom",
+			"_id": bson.M{
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
+			},
 			"count": bson.M{
 				"$sum": 1,
 			},
 		},
 	}
 
+	project := bson.M{
+		"$project": bson.M{
+			"_id":                 0,
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"count":               "$count",
+		},
+	}
+
 	var pipe []bson.M
-	pipe = append(pipe, match, group)
+	pipe = append(pipe, match, group, project)
 	return pipe
 }
 
@@ -288,9 +300,8 @@ func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(startTime, endTime int64) []bs
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom": "$base_denom",
-				"denom":      "$denoms.dc_denom",
-				"chain_id":   "$dc_chain_id",
+				"denom":    "$denoms.dc_denom",
+				"chain_id": "$dc_chain_id",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -301,11 +312,10 @@ func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(startTime, endTime int64) []bs
 	project :=
 		bson.M{
 			"$project": bson.M{
-				"_id":        0,
-				"base_denom": "$_id.base_denom",
-				"denom":      "$_id.denom",
-				"chain_id":   "$_id.chain_id",
-				"count":      "$count",
+				"_id":      0,
+				"denom":    "$_id.denom",
+				"chain_id": "$_id.chain_id",
+				"count":    "$count",
 			}}
 
 	var pipe []bson.M
@@ -554,11 +564,12 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom":  "$base_denom",
-				"sc_chain_id": "$sc_chain_id",
-				"dc_chain_id": "$dc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"dc_channel":  "$dc_channel",
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
+				"sc_chain_id":         "$sc_chain_id",
+				"dc_chain_id":         "$dc_chain_id",
+				"sc_channel":          "$sc_channel",
+				"dc_channel":          "$dc_channel",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -572,14 +583,15 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":         0,
-			"base_denom":  "$_id.base_denom",
-			"sc_chain_id": "$_id.sc_chain_id",
-			"dc_chain_id": "$_id.dc_chain_id",
-			"sc_channel":  "$_id.sc_channel",
-			"dc_channel":  "$_id.dc_channel",
-			"count":       "$count",
-			"amount":      "$amount",
+			"_id":                 0,
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"sc_chain_id":         "$_id.sc_chain_id",
+			"dc_chain_id":         "$_id.dc_chain_id",
+			"sc_channel":          "$_id.sc_channel",
+			"dc_channel":          "$_id.dc_channel",
+			"count":               "$count",
+			"amount":              "$amount",
 		},
 	}
 	var pipe []bson.M

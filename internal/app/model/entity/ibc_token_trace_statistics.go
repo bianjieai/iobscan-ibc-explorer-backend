@@ -3,7 +3,6 @@ package entity
 type IBCTokenTraceStatistics struct {
 	Denom            string `bson:"denom"`
 	ChainId          string `bson:"chain_id"`
-	BaseDenom        string `bson:"base_denom"`
 	ReceiveTxs       int64  `bson:"receive_txs"`
 	SegmentStartTime int64  `bson:"segment_start_time"`
 	SegmentEndTime   int64  `bson:"segment_end_time"`

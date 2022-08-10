@@ -35,14 +35,15 @@ db.ibc_channel.createIndex({
 
 db.ibc_channel_statistics.createIndex({
     "channel_id": 1,
-    "transfer_base_denom": 1,
+    "base_denom": 1,
+    "base_denom_chain_id": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
+    name: "channel_sstatistics_unique",
     unique: true,
     background: true
 });
-
 
 db.ibc_token.createIndex({
     "base_denom": 1,
@@ -52,6 +53,7 @@ db.ibc_token.createIndex({
 
 db.ibc_token_statistics.createIndex({
     "base_denom": 1,
+    "base_denom_chain_id": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
@@ -68,9 +70,8 @@ db.ibc_token_trace.createIndex({
 });
 
 db.ibc_token_trace_statistics.createIndex({
-    "chain_id": 1,
     "denom": 1,
-    "base_denom": 1,
+    "chain_id": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {

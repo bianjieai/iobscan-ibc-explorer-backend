@@ -13,7 +13,7 @@ import (
 type IDenomRepo interface {
 	FindAll() (entity.IBCDenomList, error)
 	FindBaseDenom() (entity.IBCDenomList, error)
-	FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error)
+	FindByBaseDenom(baseDenom, baseDenomChainId string) (entity.IBCDenomList, error)
 	FindByChainId(chainId string) (entity.IBCDenomList, error)
 	FindByDenom(denom string) (entity.IBCDenomList, error)
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
@@ -49,13 +49,13 @@ func (repo *DenomRepo) FindAll() (entity.IBCDenomList, error) {
 
 func (repo *DenomRepo) FindBaseDenom() (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
-	err := repo.coll().Find(context.Background(), bson.M{"is_base_denom": true, "is_source_chain": true}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"is_base_denom": true}).All(&res)
 	return res, err
 }
 
-func (repo *DenomRepo) FindByBaseDenom(baseDenom string) (entity.IBCDenomList, error) {
+func (repo *DenomRepo) FindByBaseDenom(baseDenom, baseDenomChainId string) (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
-	err := repo.coll().Find(context.Background(), bson.M{"base_denom": baseDenom}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"base_denom": baseDenom, "base_denom_chain_id": baseDenomChainId}).All(&res)
 	return res, err
 }
 

@@ -60,15 +60,27 @@ func (repo *TokenStatisticsRepo) BatchInsert(batch []*entity.IBCTokenStatistics)
 func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 	group := bson.M{
 		"$group": bson.M{
-			"_id": "$base_denom",
+			"_id": bson.M{
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
+			},
 			"count": bson.M{
 				"$sum": "$transfer_txs",
 			},
 		},
 	}
 
+	project := bson.M{
+		"$project": bson.M{
+			"_id":                 0,
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"count":               "$count",
+		},
+	}
+
 	var pipe []bson.M
-	pipe = append(pipe, group)
+	pipe = append(pipe, group, project)
 	var res []*dto.CountBaseDenomTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err

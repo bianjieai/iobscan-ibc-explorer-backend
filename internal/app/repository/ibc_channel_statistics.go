@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -18,16 +19,6 @@ var _ IChannelStatisticsRepo = new(ChannelStatisticsRepo)
 
 type ChannelStatisticsRepo struct {
 }
-
-//func (repo *ChannelStatisticsRepo) EnsureIndexes() {
-//	var indexes []options.IndexModel
-//	indexes = append(indexes, options.IndexModel{
-//		Key:          []string{"channel_id, transfer_base_denom"},
-//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-//	})
-//
-//	ensureIndexes(entity.IBCChannelStatistics{}.CollectionName(), indexes)
-//}
 
 func (repo *ChannelStatisticsRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChannelStatistics{}.CollectionName())
@@ -70,8 +61,9 @@ func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, erro
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"channel_id": "$channel_id",
-				"base_denom": "$transfer_base_denom",
+				"channel_id":          "$channel_id",
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
 			},
 			"count": bson.M{
 				"$sum": "$transfer_txs",
@@ -85,11 +77,12 @@ func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, erro
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":        0,
-			"channel_id": "$_id.channel_id",
-			"base_denom": "$_id.base_denom",
-			"count":      "$count",
-			"amount":     "$amount",
+			"_id":                 0,
+			"channel_id":          "$_id.channel_id",
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"count":               "$count",
+			"amount":              "$amount",
 		},
 	}
 
