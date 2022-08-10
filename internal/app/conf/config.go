@@ -8,13 +8,14 @@ import (
 )
 
 type Config struct {
-	App   App
-	Mongo Mongo
-	Mysql Mysql
-	Redis Redis
-	Log   Log
-	Spi   Spi
-	Task  Task
+	App         App
+	Mongo       Mongo
+	Mysql       Mysql
+	Redis       Redis
+	Log         Log
+	Spi         Spi
+	Task        Task
+	ChainConfig ChainConfig
 }
 
 type Mysql struct {
@@ -85,6 +86,10 @@ type Task struct {
 
 type Spi struct {
 	CoingeckoPriceUrl string `mapstructure:"coingecko_price_url"`
+}
+
+type ChainConfig struct {
+	NewChains string `mapstructure:"new_chains"`
 }
 
 func ReadConfig(data []byte) (*Config, error) {

@@ -225,6 +225,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 			dcDenomPath := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
 			if dcDenomPath != "" {
 				dcDenom := calculateIbcHash(dcDenomPath)
+				rootDenom := getRootDenom(dcDenomPath)
 				ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
 				return &entity.IBCDenom{
 					Symbol:           "",
@@ -236,6 +237,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 					BaseDenomChainId: ibcTx.BaseDenomChainId,
 					DenomPath:        dcDenomPath,
 					IsBaseDenom:      false,
+					RootDenom:        rootDenom,
 					CreateAt:         time.Now().Unix(),
 					UpdateAt:         time.Now().Unix(),
 				}

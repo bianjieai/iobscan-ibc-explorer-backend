@@ -215,7 +215,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				baseDemom = ibcDenom.BaseDenom
 				baseDenomChainId = ibcDenom.BaseDenomChainId
 			}
-			recordId := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
+			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
+			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
 			ibcTxList = append(ibcTxList, &entity.ExIbcTx{
 				RecordId:  recordId,
