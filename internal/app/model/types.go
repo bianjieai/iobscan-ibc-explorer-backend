@@ -8,8 +8,8 @@ import (
 
 type (
 	Fee struct {
-		Amount []*Coin `bson:"amount"`
-		Gas    int64   `bson:"gas"`
+		Amount []*Coin `bson:"amount" json:"amount"`
+		Gas    int64   `bson:"gas" json:"gas"`
 	}
 
 	Coin struct {
@@ -18,11 +18,12 @@ type (
 	}
 
 	TxMsg struct {
-		Type string `bson:"type"`
-		Msg  bson.M `bson:"msg"`
+		Type string `bson:"type" json:"type"`
+		Msg  bson.M `bson:"msg" json:"msg"`
 	}
 
 	CommonMsg struct {
+		ClientId string `bson:"client_id"`
 		PacketId string `bson:"packet_id" json:"packet_id"`
 		Signer   string `bson:"signer" json:"signer"`
 	}

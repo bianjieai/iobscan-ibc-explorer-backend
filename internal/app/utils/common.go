@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -128,4 +129,19 @@ func Sha256(s string) string {
 	h.Write([]byte(s))
 	cipherStr := h.Sum(nil)
 	return hex.EncodeToString(cipherStr)
+}
+
+var (
+	// Denominations can be 3 ~ 128 characters long and support letters, followed by either
+	// a letter, a number or a separator ('/').
+	reDnmString = `[a-zA-Z][a-zA-Z0-9/-]{2,127}`
+)
+
+// ValidateDenom is the default validation function for Coin.Denom.
+func ValidateDenom(denom string) error {
+	reDnm := regexp.MustCompile(fmt.Sprintf(`^%s$`, reDnmString))
+	if !reDnm.MatchString(denom) {
+		return fmt.Errorf("invalid denom: %s", denom)
+	}
+	return nil
 }

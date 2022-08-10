@@ -38,6 +38,11 @@ const (
 	ibcTxTargetLatest                   = "latest"
 	ibcTxTargetHistory                  = "history"
 )
+const (
+	channelMatchSuccess = 1
+	channelNotFound     = 0
+	channelMatchFail    = -1
+)
 
 var (
 	//cache
@@ -45,6 +50,8 @@ var (
 	denomDataRepo       cache.DenomDataCacheRepo
 	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
 	ibcInfoCache        cache.IbcInfoCacheRepo
+	lcdInfoCache        cache.LcdInfoCacheRepo
+	clientIdnfoCache    cache.ClientIdChannelCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
 	relayerCache        cache.RelayerCacheRepo

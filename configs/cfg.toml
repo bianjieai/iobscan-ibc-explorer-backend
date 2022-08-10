@@ -6,6 +6,7 @@ env = "dev"
 start_task = false
 start_one_off_task = false
 api_cache_alive_seconds=3
+max_page_size=3000
 prometheus_port="9090"
 
 [log]
@@ -51,6 +52,7 @@ fix_denom_trace_data_start_time = 1634081359
 fix_denom_trace_data_end_time = 1658814309
 fix_denom_trace_history_data_start_time = 0
 fix_denom_trace_history_data_end_time = 99999999
+cron_time_sync_ack_tx_task=120
 
 [chain_config]
 new_chains = "bigbang,irishub_qa"

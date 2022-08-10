@@ -85,6 +85,7 @@ func startTask() {
 		&task.IbcRelayerCronTask{},
 		&task.TokenPriceTask{},
 		&task.IbcStatisticCronTask{},
+		&task.IbcSyncAcknowledgeTxTask{},
 		&task.IbcChainConfigTask{},
 		&task.IbcDenomCalculateTask{},
 		&task.IbcDenomUpdateTask{},

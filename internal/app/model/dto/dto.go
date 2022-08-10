@@ -13,6 +13,10 @@ type GetDenomGroupByChainIdDTO struct {
 	Denom   []string `bson:"denom"`
 }
 
+type GetBaseDenomFromIbcDenomDTO struct {
+	BaseDenom string `bson:"_id"`
+}
+
 type CountIBCTokenRecvTxsDTO struct {
 	Denom   string `bson:"denom"`
 	ChainId string `bson:"chain_id"`
@@ -34,13 +38,14 @@ type GetRelayerInfoDTO struct {
 }
 
 type CountRelayerPacketTxsCntDTO struct {
-	DcChainAddress string `bson:"dc_chain_address"`
-	ScChainId      string `bson:"sc_chain_id"`
-	ScChannel      string `bson:"sc_channel"`
-	DcChainId      string `bson:"dc_chain_id"`
-	DcChannel      string `bson:"dc_channel"`
-	BaseDenom      string `bson:"base_denom"`
-	Count          int64  `bson:"count"`
+	DcChainAddress   string `bson:"dc_chain_address"`
+	ScChainId        string `bson:"sc_chain_id"`
+	ScChannel        string `bson:"sc_channel"`
+	DcChainId        string `bson:"dc_chain_id"`
+	DcChannel        string `bson:"dc_channel"`
+	BaseDenom        string `bson:"base_denom"`
+	BaseDenomChainId string `bson:"base_denom_chain_id"`
+	Count            int64  `bson:"count"`
 }
 
 func (dto *CountRelayerPacketTxsCntDTO) Valid() bool {
@@ -48,14 +53,15 @@ func (dto *CountRelayerPacketTxsCntDTO) Valid() bool {
 }
 
 type CountRelayerPacketAmountDTO struct {
-	DcChainAddress string  `bson:"dc_chain_address"`
-	DcChainId      string  `bson:"dc_chain_id"`
-	DcChannel      string  `bson:"dc_channel"`
-	ScChainId      string  `bson:"sc_chain_id"`
-	ScChannel      string  `bson:"sc_channel"`
-	BaseDenom      string  `bson:"base_denom"`
-	Amount         float64 `bson:"amount"`
-	Count          int64   `bson:"count"`
+	DcChainAddress   string  `bson:"dc_chain_address"`
+	DcChainId        string  `bson:"dc_chain_id"`
+	DcChannel        string  `bson:"dc_channel"`
+	ScChainId        string  `bson:"sc_chain_id"`
+	ScChannel        string  `bson:"sc_channel"`
+	BaseDenom        string  `bson:"base_denom"`
+	BaseDenomChainId string  `bson:"base_denom_chain_id"`
+	Amount           float64 `bson:"amount"`
+	Count            int64   `bson:"count"`
 }
 
 func (dto *CountRelayerPacketAmountDTO) Valid() bool {
@@ -63,10 +69,11 @@ func (dto *CountRelayerPacketAmountDTO) Valid() bool {
 }
 
 type CountRelayerBaseDenomAmtDTO struct {
-	StatisticId string  `bson:"statistic_id"`
-	Address     string  `bson:"address"`
-	Amount      float64 `bson:"amount"`
-	BaseDenom   string  `bson:"base_denom"`
+	StatisticId      string  `bson:"statistic_id"`
+	Address          string  `bson:"address"`
+	Amount           float64 `bson:"amount"`
+	BaseDenom        string  `bson:"base_denom"`
+	BaseDenomChainId string  `bson:"base_denom_chain_id"`
 }
 
 type AggRelayerTxsDTO struct {
@@ -143,4 +150,13 @@ type PacketIdDTO struct {
 type HeightTimeDTO struct {
 	Height int64
 	Time   int64
+}
+
+type IbcTxQuery struct {
+	StartTime        int64
+	EndTime          int64
+	ChainId          []string
+	Status           []int
+	Token            []string
+	BaseDenomChainId string
 }

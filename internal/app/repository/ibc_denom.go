@@ -18,6 +18,11 @@ type IDenomRepo interface {
 	FindByDenom(denom string) (entity.IBCDenomList, error)
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
+	FindSymbolDenoms() (entity.IBCDenomList, error)
+	GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error)
+	Count(createAt int64, record bool) (int64, error)
+	BasedDenomCount(createAt int64, record bool) (int64, error)
+	LatestCreateAt() (int64, error)
 	UpdateSymbol(chainId, denom, symbol string) error
 	InsertBatch(denoms entity.IBCDenomList) error
 	InsertBatchToNew(denoms entity.IBCDenomList) error
@@ -90,6 +95,12 @@ func (repo *DenomRepo) FindNoSymbolDenoms() (entity.IBCDenomList, error) {
 	return res, err
 }
 
+func (repo *DenomRepo) FindSymbolDenoms() (entity.IBCDenomList, error) {
+	var res entity.IBCDenomList
+	err := repo.coll().Find(context.Background(), bson.M{"symbol": bson.M{"$ne": ""}}).All(&res)
+	return res, err
+}
+
 func (repo *DenomRepo) UpdateSymbol(chainId, denom, symbol string) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": chainId, "denom": denom}, bson.M{
 		"$set": bson.M{
@@ -125,4 +136,62 @@ func (repo *DenomRepo) UpdateDenom(denom *entity.IBCDenom) error {
 			"is_base_denom":       denom.IsBaseDenom,
 		},
 	})
+}
+
+func (repo *DenomRepo) LatestCreateAt() (int64, error) {
+	var res entity.IBCDenom
+	err := repo.coll().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
+	if err != nil {
+		return 0, err
+	}
+	return res.CreateAt, nil
+}
+
+func (repo *DenomRepo) Count(createAt int64, record bool) (int64, error) {
+	query := bson.M{"create_at": bson.M{
+		"$gte": createAt,
+	}}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+		}
+	}
+	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func (repo *DenomRepo) BasedDenomCount(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"is_base_denom": true,
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"is_base_denom": true,
+			"create_at":     createAt,
+		}
+	}
+	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func (repo *DenomRepo) GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"symbol": "",
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": "$base_denom",
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, group)
+	var res []*dto.GetBaseDenomFromIbcDenomDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
 }

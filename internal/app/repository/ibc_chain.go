@@ -27,6 +27,7 @@ type IChainRepo interface {
 	UpdateTransferTxs(chainId string, txs int64, txsValue string) error
 	UpdateRelayers(chainId string, relayers int64) error
 	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
+	Count() (int64, error)
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -98,6 +99,10 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue 
 				ChainFieldUpdateAt:         time.Now().Unix(),
 			},
 		})
+}
+
+func (repo *IbcChainRepo) Count() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{}).Count()
 }
 
 //func (repo *IbcChainRepo) EnsureIndexes() {

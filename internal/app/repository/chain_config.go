@@ -9,8 +9,10 @@ import (
 
 type IChainConfigRepo interface {
 	FindAll() ([]*entity.ChainConfig, error)
+	FindAllChainInfs() ([]*entity.ChainConfig, error)
 	FindOne(chainId string) (*entity.ChainConfig, error)
 	UpdateIbcInfo(config *entity.ChainConfig) error
+	Count() (int64, error)
 }
 
 var _ IChainConfigRepo = new(ChainConfigRepo)
@@ -22,9 +24,19 @@ func (repo *ChainConfigRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.ChainConfig{}.CollectionName())
 }
 
+func (repo *ChainConfigRepo) Count() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{}).Count()
+}
+
 func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
+	return res, err
+}
+func (repo *ChainConfigRepo) FindAllChainInfs() ([]*entity.ChainConfig, error) {
+	var res []*entity.ChainConfig
+	err := repo.coll().Find(context.Background(), bson.M{}).
+		Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1, "lcd": 1}).All(&res)
 	return res, err
 }
 
