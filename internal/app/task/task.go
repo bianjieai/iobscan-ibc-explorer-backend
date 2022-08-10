@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
@@ -42,6 +43,7 @@ func Start() {
 		return
 	}
 
+	_ibcChainConfigTask.Run() // run chain config task immediately
 	for _, v := range GetTasks() {
 		task := v
 		RunOnce(task)
@@ -66,7 +68,7 @@ func RunOnce(task Task) {
 
 	utils.RunTimer(task.Cron(), utils.Sec, func() {
 		//lock redis mux
-		if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), redisLockExpireTime); err != nil {
+		if err := cache.GetRedisClient().Lock(fmt.Sprintf("%s:%s", "task", task.Name()), time.Now().Unix(), redisLockExpireTime); err != nil {
 			logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
 			return
 		}
@@ -96,6 +98,11 @@ func RegisterOneOffTasks(task ...OneOffTask) {
 }
 
 func StartOneOffTask() {
+	if len(oneOffTasks) == 0 {
+		return
+	}
+
+	_ibcChainConfigTask.Run() // run chain config task immediately
 	for _, v := range oneOffTasks {
 		task := v
 		go OneOffTaskRun(task)
@@ -103,7 +110,7 @@ func StartOneOffTask() {
 }
 
 func OneOffTaskRun(task OneOffTask) {
-	if err := cache.GetRedisClient().Lock(task.Name(), time.Now().Unix(), OneOffTaskLockTime*time.Second); err != nil {
+	if err := cache.GetRedisClient().Lock(fmt.Sprintf("%s:%s", "one_off_task", task.Name()), time.Now().Unix(), OneOffTaskLockTime*time.Second); err != nil {
 		logrus.Errorf("one-off task %s has been executed, err:%v", task.Name(), err.Error())
 		return
 	}
