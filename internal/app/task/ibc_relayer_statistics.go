@@ -72,9 +72,9 @@ func (t *RelayerStatisticsTask) Run() int {
 func (t *RelayerStatisticsTask) saveData(relayerStaticsMap map[string]Statistic, startTime, endTime int64, op int) error {
 	var relayerStatics []entity.IBCRelayerStatistics
 	for key, value := range relayerStaticsMap {
-		if arrs := strings.Split(key, ":"); len(arrs) == 3 {
-			statisticId, address, baseDenom := arrs[0], arrs[1], arrs[2]
-			item := createIBCRelayerStatistics(address, baseDenom, value.Amounts,
+		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
+			statisticId, address, baseDenom, baseDenomChainId := arrs[0], arrs[1], arrs[2], arrs[3]
+			item := createIBCRelayerStatistics(address, baseDenom, baseDenomChainId, value.Amounts,
 				value.TxsSuccess, value.Txs, startTime, endTime)
 			item.StatisticId = statisticId
 			relayerStatics = append(relayerStatics, item)

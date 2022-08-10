@@ -429,12 +429,13 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bs
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"dc_chain_id": "$dc_chain_id",
-				"dc_channel":  "$dc_channel",
-				"sc_chain_id": "$sc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"relayer":     "$dc_tx_info.msg.msg.signer",
-				"base_denom":  "$base_denom",
+				"dc_chain_id":         "$dc_chain_id",
+				"dc_channel":          "$dc_channel",
+				"sc_chain_id":         "$sc_chain_id",
+				"sc_channel":          "$sc_channel",
+				"relayer":             "$dc_tx_info.msg.msg.signer",
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -443,14 +444,15 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bs
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
-			"dc_chain_id":      "$_id.dc_chain_id",
-			"dc_channel":       "$_id.dc_channel",
-			"sc_chain_id":      "$_id.sc_chain_id",
-			"sc_channel":       "$_id.sc_channel",
-			"base_denom":       "$_id.base_denom",
-			"count":            "$count",
+			"_id":                 0,
+			"dc_chain_address":    "$_id.relayer",
+			"dc_chain_id":         "$_id.dc_chain_id",
+			"dc_channel":          "$_id.dc_channel",
+			"sc_chain_id":         "$_id.sc_chain_id",
+			"sc_channel":          "$_id.sc_channel",
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"count":               "$count",
 		},
 	}
 	var pipe []bson.M
@@ -474,12 +476,13 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"dc_chain_id": "$dc_chain_id",
-				"dc_channel":  "$dc_channel",
-				"sc_chain_id": "$sc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"relayer":     "$dc_tx_info.msg.msg.signer",
-				"base_denom":  "$base_denom",
+				"dc_chain_id":         "$dc_chain_id",
+				"dc_channel":          "$dc_channel",
+				"sc_chain_id":         "$sc_chain_id",
+				"sc_channel":          "$sc_channel",
+				"relayer":             "$dc_tx_info.msg.msg.signer",
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$sc_tx_info.msg_amount.amount"},
@@ -491,15 +494,16 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
-			"dc_chain_id":      "$_id.dc_chain_id",
-			"dc_channel":       "$_id.dc_channel",
-			"sc_chain_id":      "$_id.sc_chain_id",
-			"sc_channel":       "$_id.sc_channel",
-			"base_denom":       "$_id.base_denom",
-			"amount":           "$amount",
-			"count":            "$count",
+			"_id":                 0,
+			"dc_chain_address":    "$_id.relayer",
+			"dc_chain_id":         "$_id.dc_chain_id",
+			"dc_channel":          "$_id.dc_channel",
+			"sc_chain_id":         "$_id.sc_chain_id",
+			"sc_channel":          "$_id.sc_channel",
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"amount":              "$amount",
+			"count":               "$count",
 		},
 	}
 	var pipe []bson.M

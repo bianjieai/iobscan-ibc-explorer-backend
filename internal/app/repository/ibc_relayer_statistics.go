@@ -88,9 +88,10 @@ func (repo *RelayerStatisticsRepo) CountRelayerBaseDenomAmt() ([]*dto.CountRelay
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"address":      "$address",
-				"statistic_id": "$statistic_id",
-				"base_denom":   "$transfer_base_denom",
+				"address":             "$address",
+				"statistic_id":        "$statistic_id",
+				"base_denom":          "$transfer_base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$transfer_amount"},
@@ -99,11 +100,12 @@ func (repo *RelayerStatisticsRepo) CountRelayerBaseDenomAmt() ([]*dto.CountRelay
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":          0,
-			"address":      "$_id.address",
-			"statistic_id": "$_id.statistic_id",
-			"base_denom":   "$_id.base_denom",
-			"amount":       "$amount",
+			"_id":                 0,
+			"address":             "$_id.address",
+			"statistic_id":        "$_id.statistic_id",
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"amount":              "$amount",
 		},
 	}
 	var pipe []bson.M
