@@ -16,6 +16,8 @@ type ITxRepo interface {
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
 	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
 	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
+	GetTxByHash(chainId string, hash string) (entity.Tx, error)
+	GetAcknowledgeTxs(chainId, packetId string) (entity.Tx, error)
 	FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
 }
 
@@ -163,4 +165,26 @@ func (repo *TxRepo) FindByPacketIds(chainId, txType string, packetIds []string, 
 
 	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
 	return res, err
+}
+
+
+func (repo *TxRepo) GetTxByHash(chainId string, hash string) (entity.Tx, error) {
+	var res entity.Tx
+	err := repo.coll(chainId).Find(context.Background(), bson.M{"tx_hash": hash}).Sort("-height").One(&res)
+	return res, err
+}
+
+func (repo *TxRepo) GetAcknowledgeTxs(chainId, packetId string) (entity.Tx, error) {
+	var res entity.Tx
+	query := bson.M{
+		"msgs.msg.packet_id": packetId,
+		"msgs.type":          constant.MsgTypeAcknowledgement,
+		"status":             entity.TxStatusSuccess,
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).One(&res)
+
+	if err != nil {
+		return res, err
+	}
+	return res, nil
 }

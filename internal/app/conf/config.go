@@ -36,9 +36,10 @@ type App struct {
 	Name                 string
 	Addr                 string
 	Env                  string
-	StartTask            bool `mapstructure:"start_task"`
-	StartOneOffTask      bool `mapstructure:"start_one_off_task"`
-	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
+	StartTask            bool  `mapstructure:"start_task"`
+	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
+	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
+	MaxPageSize          int64 `mapstructure:"max_page_size"`
 	Version              string
 	Prometheus           string `mapstructure:"prometheus_port"`
 }
@@ -81,6 +82,7 @@ type Task struct {
 	FixDenomTraceDataEndTime          int64  `mapstructure:"fix_denom_trace_data_end_time"`
 	FixDenomTraceHistoryDataStartTime int64  `mapstructure:"fix_denom_trace_history_data_start_time"`
 	FixDenomTraceHistoryDataEndTime   int64  `mapstructure:"fix_denom_trace_history_data_end_time"`
+	CronTimeSyncAckTxTask             int    `mapstructure:"cron_time_sync_ack_tx_task"`
 }
 
 type Spi struct {

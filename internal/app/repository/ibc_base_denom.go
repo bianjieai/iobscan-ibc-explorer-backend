@@ -11,6 +11,7 @@ import (
 type IBaseDenomRepo interface {
 	FindAll() (entity.IBCBaseDenomList, error)
 	UpdateIbcInfoHashCalculate(denom, chainId, ibcInfoHashCalculate string) error
+	FindBySymbol(symbol string) (entity.IBCBaseDenom, error)
 }
 
 var _ IBaseDenomRepo = new(BaseDenomRepo)
@@ -25,6 +26,12 @@ func (repo *BaseDenomRepo) coll() *qmgo.Collection {
 func (repo *BaseDenomRepo) FindAll() (entity.IBCBaseDenomList, error) {
 	var res entity.IBCBaseDenomList
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
+	return res, err
+}
+
+func (repo *BaseDenomRepo) FindBySymbol(symbol string) (entity.IBCBaseDenom, error) {
+	var res entity.IBCBaseDenom
+	err := repo.coll().Find(context.Background(), bson.M{"symbol": symbol}).One(&res)
 	return res, err
 }
 

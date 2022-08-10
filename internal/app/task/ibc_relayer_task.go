@@ -29,7 +29,7 @@ type IbcRelayerCronTask struct {
 	relayerTxsAmtMap map[string]TxsAmtItem
 	//key: ChainA+ChainB+ChannelA+ChannelB
 	channelRelayerCnt map[string]int64
-	//key: BaseDenom
+	//key: BaseDenom+ChainId
 	denomPriceMap map[string]CoinItem
 }
 type (
@@ -54,8 +54,8 @@ type (
 
 type RelayerHandle func(relayer *entity.IBCRelayer)
 
-func relayerAmtsMapKey(statisticId, baseDenom, dcChainAddr string) string {
-	return fmt.Sprintf("%s:%s:%s", statisticId, dcChainAddr, baseDenom)
+func relayerAmtsMapKey(statisticId, baseDenom, dcChainAddr, baseDenomChainId string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", statisticId, dcChainAddr, baseDenom, baseDenomChainId)
 }
 
 func relayerAmtValueMapKey(statisticId, address string) string {
@@ -258,7 +258,7 @@ func (t *IbcRelayerCronTask) getTokenPriceMap() {
 	t.denomPriceMap = make(map[string]CoinItem, len(baseDenoms))
 	for _, val := range baseDenoms {
 		if price, ok := coinIdPriceMap[val.CoinId]; ok {
-			t.denomPriceMap[val.Denom] = CoinItem{Price: price, Scale: val.Scale}
+			t.denomPriceMap[val.Denom+val.ChainId] = CoinItem{Price: price, Scale: val.Scale}
 		}
 	}
 }
@@ -511,7 +511,7 @@ func createAmounts(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string
 			continue
 		}
 		statisticId, _ := relayerStatisticsRepo.CreateStatisticId(amt.ScChainId, amt.DcChainId, amt.ScChannel, amt.DcChannel)
-		key := relayerAmtsMapKey(statisticId, amt.BaseDenom, amt.DcChainAddress)
+		key := relayerAmtsMapKey(statisticId, amt.BaseDenom, amt.DcChainAddress, amt.BaseDenomChainId)
 		decAmt := decimal.NewFromFloat(amt.Amount)
 		if value, exist := relayerAmtsMap[key]; exist {
 			value.Amt = value.Amt.Add(decAmt)
@@ -527,10 +527,11 @@ func createAmounts(relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string
 	return relayerAmtsMap
 }
 
-func createIBCRelayerStatistics(address, baseDenom string, amount decimal.Decimal, successTxs, txs, startTime, endTime int64) entity.IBCRelayerStatistics {
+func createIBCRelayerStatistics(address, baseDenom, baseDenomChainId string, amount decimal.Decimal, successTxs, txs, startTime, endTime int64) entity.IBCRelayerStatistics {
 	return entity.IBCRelayerStatistics{
 		Address:           address,
 		TransferBaseDenom: baseDenom,
+		BaseDenomChainId:  baseDenomChainId,
 		TransferAmount:    amount.String(),
 		SuccessTotalTxs:   successTxs,
 		TotalTxs:          txs,
@@ -553,7 +554,7 @@ func (t *IbcRelayerCronTask) caculateRelayerTotalValue() {
 			key := relayerAmtValueMapKey(amt.StatisticId, amt.Address)
 			decAmt := decimal.NewFromFloat(amt.Amount)
 			baseDenomValue := decimal.NewFromFloat(0)
-			if coin, ok := t.denomPriceMap[amt.BaseDenom]; ok {
+			if coin, ok := t.denomPriceMap[amt.BaseDenom+amt.BaseDenomChainId]; ok {
 				if coin.Scale > 0 {
 					baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
 				}
@@ -749,7 +750,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 	if updateTime == 0 && timePeriod == -1 && relayer.UpdateTime == 0 {
 		updateTime = t.findLatestRecvPacketTime(relayer, startTime)
 	}
-	logrus.Debug("clientIdA: ", clientIdA, " clientIdB: ", clientIdB)
+	logrus.Debug("clientIdA: ", clientIdA, " clientIdB: ", clientIdB, "chainA: ", relayer.ChainA, "chainB: ", relayer.ChainB)
 	return timePeriod, updateTime, matchChannels(clientIdA, clientIdB, relayer)
 }
 

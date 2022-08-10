@@ -30,4 +30,6 @@ const (
 	chainUnbondTime  = "chain_unbond_time"
 	statisticsCheck  = "statistics_check:%s_%s"
 	missDenom        = "miss_denom_set"
+	BaseDenomUnauth  = "base_denom_unauth"
+	baseDenomSymbol  = "base_denom:%s"
 )

@@ -15,7 +15,7 @@ func TestIbcRelayerCronTask_Run(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
-	data, data1 := task.getTimePeriodAndupdateTime(&entity.IBCRelayer{
+	data, data1, _ := task.getTimePeriodAndupdateTime(&entity.IBCRelayer{
 		ChainA:        "bigbang",
 		ChainB:        "irishub_qa",
 		ChainAAddress: "cosmos16mrml9n668a6ywxsxvtkdymy9kh5m595ygr6g7",
@@ -57,7 +57,7 @@ func TestIbcRelayerCronTask_handleOneRelayerStatusAndTime(t *testing.T) {
 		Status:     2,
 		TimePeriod: -1,
 		UpdateTime: 0,
-	}, 1656558771, 146)
+	}, 1656558771, 146, 0)
 }
 
 func TestIbcRelayerCronTask_updateRelayerStatus(t *testing.T) {

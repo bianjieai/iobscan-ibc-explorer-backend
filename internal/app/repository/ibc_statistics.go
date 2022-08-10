@@ -9,9 +9,11 @@ import (
 )
 
 type IStatisticRepo interface {
-	FindOne(statisticName string) (*entity.IbcStatistic, error)
+	FindOne(statisticName string) (entity.IbcStatistic, error)
 	UpdateOne(statisticName string, count int64) error
+	UpdateOneIncre(statistic entity.IbcStatistic) error
 	FindBatchName(statisticNames []string) ([]*entity.IbcStatistic, error)
+	Save(data entity.IbcStatistic) error
 }
 
 var _ IStatisticRepo = new(IbcStatisticRepo)
@@ -41,8 +43,8 @@ func (repo *IbcStatisticRepo) UpdateOne(statisticName string, count int64) error
 	return err
 }
 
-func (repo *IbcStatisticRepo) FindOne(statisticName string) (*entity.IbcStatistic, error) {
-	var res *entity.IbcStatistic
+func (repo *IbcStatisticRepo) FindOne(statisticName string) (entity.IbcStatistic, error) {
+	var res entity.IbcStatistic
 	err := repo.coll().Find(context.Background(), bson.M{"statistics_name": statisticName}).One(&res)
 	return res, err
 }
@@ -58,4 +60,13 @@ func (repo *IbcStatisticRepo) FindBatchName(statisticNames []string) ([]*entity.
 func (repo *IbcStatisticRepo) Save(data entity.IbcStatistic) error {
 	_, err := repo.coll().InsertOne(context.Background(), data)
 	return err
+}
+
+func (repo *IbcStatisticRepo) UpdateOneIncre(statistic entity.IbcStatistic) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"statistics_name": statistic.StatisticsName}, bson.M{
+		"$set": bson.M{
+			"count":           statistic.Count,
+			"statistics_info": statistic.StatisticsInfo,
+			"update_at":       time.Now().Unix(),
+		}})
 }

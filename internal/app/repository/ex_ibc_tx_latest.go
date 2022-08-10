@@ -2,6 +2,9 @@ package repository
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"strings"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -48,6 +51,18 @@ type IExIbcTxRepo interface {
 	// special method
 	UpdateDenomTrace(ibcTx *entity.ExIbcTx) error
 	UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error
+
+	HistoryLatestCreateAt() (int64, error)
+	HistoryCountAll(createAt int64, record bool) (int64, error)
+	HistoryCountFailAll(createAt int64, record bool) (int64, error)
+	HistoryCountSuccessAll(createAt int64, record bool) (int64, error)
+	ActiveTxs24h(startTime int64) (int64, error)
+	CountAll(stats []entity.IbcTxStatus) (int64, error)
+	CountTransferTxs(query dto.IbcTxQuery) (int64, error)
+	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
+	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
+	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
+	SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -424,12 +439,13 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bs
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"dc_chain_id": "$dc_chain_id",
-				"dc_channel":  "$dc_channel",
-				"sc_chain_id": "$sc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"relayer":     "$dc_tx_info.msg.msg.signer",
-				"base_denom":  "$base_denom",
+				"dc_chain_id":         "$dc_chain_id",
+				"dc_channel":          "$dc_channel",
+				"sc_chain_id":         "$sc_chain_id",
+				"sc_channel":          "$sc_channel",
+				"relayer":             "$dc_tx_info.msg.msg.signer",
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -438,14 +454,15 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bs
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
-			"dc_chain_id":      "$_id.dc_chain_id",
-			"dc_channel":       "$_id.dc_channel",
-			"sc_chain_id":      "$_id.sc_chain_id",
-			"sc_channel":       "$_id.sc_channel",
-			"base_denom":       "$_id.base_denom",
-			"count":            "$count",
+			"_id":                 0,
+			"dc_chain_address":    "$_id.relayer",
+			"dc_chain_id":         "$_id.dc_chain_id",
+			"dc_channel":          "$_id.dc_channel",
+			"sc_chain_id":         "$_id.sc_chain_id",
+			"sc_channel":          "$_id.sc_channel",
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"count":               "$count",
 		},
 	}
 	var pipe []bson.M
@@ -469,12 +486,13 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"dc_chain_id": "$dc_chain_id",
-				"dc_channel":  "$dc_channel",
-				"sc_chain_id": "$sc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"relayer":     "$dc_tx_info.msg.msg.signer",
-				"base_denom":  "$base_denom",
+				"dc_chain_id":         "$dc_chain_id",
+				"dc_channel":          "$dc_channel",
+				"sc_chain_id":         "$sc_chain_id",
+				"sc_channel":          "$sc_channel",
+				"relayer":             "$dc_tx_info.msg.msg.signer",
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$sc_tx_info.msg_amount.amount"},
@@ -486,15 +504,16 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
-			"dc_chain_id":      "$_id.dc_chain_id",
-			"dc_channel":       "$_id.dc_channel",
-			"sc_chain_id":      "$_id.sc_chain_id",
-			"sc_channel":       "$_id.sc_channel",
-			"base_denom":       "$_id.base_denom",
-			"amount":           "$amount",
-			"count":            "$count",
+			"_id":                 0,
+			"dc_chain_address":    "$_id.relayer",
+			"dc_chain_id":         "$_id.dc_chain_id",
+			"dc_channel":          "$_id.dc_channel",
+			"sc_chain_id":         "$_id.sc_chain_id",
+			"sc_channel":          "$_id.sc_channel",
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"amount":              "$amount",
+			"count":               "$count",
 		},
 	}
 	var pipe []bson.M
@@ -659,5 +678,234 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 		return nil, nil
 	}
 	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
+}
+
+func (repo *ExIbcTxRepo) HistoryLatestCreateAt() (int64, error) {
+	var res entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{}).Sort("-create_at").One(&res)
+	if err != nil {
+		return 0, err
+	}
+	return res.CreateAt, nil
+}
+
+func (repo *ExIbcTxRepo) HistoryCountAll(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+		}
+	}
+	return repo.collHistory().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) HistoryCountFailAll(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+		"status": bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded}},
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+			"status":    bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded}},
+		}
+	}
+	return repo.collHistory().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) HistoryCountSuccessAll(createAt int64, record bool) (int64, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": createAt,
+		},
+		"status": entity.IbcTxStatusSuccess,
+	}
+	//记录create_at时间点统计的数量
+	if record {
+		query = bson.M{
+			"create_at": createAt,
+			"status":    entity.IbcTxStatusSuccess,
+		}
+	}
+	return repo.collHistory().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) ActiveTxs24h(startTime int64) (int64, error) {
+	query := bson.M{
+		"tx_time": bson.M{
+			"$gte": startTime,
+		},
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+	}
+	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func (repo *ExIbcTxRepo) CountAll(stats []entity.IbcTxStatus) (int64, error) {
+	query := bson.M{
+		"status": bson.M{
+			"$in": stats,
+		},
+	}
+	return repo.coll().Find(context.Background(), query).Count()
+}
+
+func parseQuery(queryCond dto.IbcTxQuery) bson.M {
+	query := bson.M{}
+
+	//time
+	if queryCond.StartTime > 0 && queryCond.EndTime > 0 {
+		query["tx_time"] = bson.M{
+			"$gte": queryCond.StartTime,
+			"$lte": queryCond.EndTime,
+		}
+	} else if queryCond.StartTime > 0 {
+		query["tx_time"] = bson.M{
+			"$gte": queryCond.StartTime,
+		}
+	} else if queryCond.EndTime > 0 {
+		query["tx_time"] = bson.M{
+			"$lte": queryCond.EndTime,
+		}
+	}
+	//chain
+	if length := len(queryCond.ChainId); length > 0 {
+		switch length {
+		case 1:
+			// transfer_chain or recv_chain
+			if queryCond.ChainId[0] != constant.AllChain {
+				query["$or"] = []bson.M{
+					{"sc_chain_id": queryCond.ChainId[0]},
+					{"dc_chain_id": queryCond.ChainId[0]},
+				}
+			}
+		case 2:
+			//transfer_chain and recv_chain
+			if queryCond.ChainId[0] == queryCond.ChainId[1] && queryCond.ChainId[0] == constant.AllChain {
+				// nothing to do
+			} else {
+				value := strings.Join(queryCond.ChainId, ",")
+				if strings.Contains(value, constant.AllChain) {
+					index := strings.Index(value, constant.AllChain)
+					if index > 0 { //chain-id,allchain
+						query["sc_chain_id"] = queryCond.ChainId[0]
+					} else { //allchain,chain-id
+						query["dc_chain_id"] = queryCond.ChainId[1]
+					}
+
+				} else {
+					query["$and"] = []bson.M{
+						{"sc_chain_id": queryCond.ChainId[0]},
+						{"dc_chain_id": queryCond.ChainId[1]},
+					}
+				}
+			}
+
+		}
+	}
+	//token
+	if len(queryCond.Token) > 0 {
+		if strings.HasPrefix(queryCond.Token[0], "ibc/") {
+			query["$or"] = []bson.M{
+				{"denoms.sc_denom": queryCond.Token[0]},
+				{"denoms.dc_denom": queryCond.Token[0]},
+			}
+		} else {
+			query["base_denom"] = bson.M{
+				"$in": queryCond.Token,
+			}
+		}
+	}
+	//origin_chain_id
+	if len(queryCond.BaseDenomChainId) > 0 {
+		query["base_denom_chain_id"] = queryCond.BaseDenomChainId
+	}
+
+	//status
+	if len(queryCond.Status) == 0 {
+		query["status"] = bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		}
+	} else {
+		query["status"] = bson.M{
+			"$in": queryCond.Status,
+		}
+	}
+	return query
+}
+
+func (repo *ExIbcTxRepo) CountTransferTxs(query dto.IbcTxQuery) (int64, error) {
+	return repo.coll().Find(context.Background(), parseQuery(query)).Count()
+}
+
+func (repo *ExIbcTxRepo) FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), parseQuery(query)).Skip(skip).Limit(limit).Sort("-tx_time").All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	query := bson.M{
+		"status": bson.M{
+			"$in": entity.IbcTxUsefulStatus,
+		},
+		"$or": []bson.M{
+			{"sc_tx_info.hash": hash},
+			{"dc_tx_info.hash": hash},
+		},
+	}
+	if history {
+		err := repo.collHistory().Find(context.Background(), query).All(&res)
+		return res, err
+	}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	query := bson.M{
+		//"create_at": bson.M{
+		//	"$gte": createAt,
+		//},
+		"status":                  entity.IbcTxStatusFailed,
+		"dc_tx_info.status":       entity.TxStatusSuccess,
+		"refunded_tx_info.status": bson.M{"$exists": false},
+	}
+	if history {
+		err := repo.collHistory().Find(context.Background(), query).All(&res)
+		return res, err
+	}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error {
+	if history {
+		err := repo.collHistory().ReplaceOne(context.Background(), bson.M{
+			"record_id": recordId,
+		}, data)
+		return err
+	}
+	err := repo.coll().ReplaceOne(context.Background(), bson.M{
+		"record_id": recordId,
+	}, data)
 	return err
 }
