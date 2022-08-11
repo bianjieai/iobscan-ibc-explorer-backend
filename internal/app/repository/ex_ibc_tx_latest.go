@@ -897,10 +897,10 @@ func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx,
 		"refunded_tx_info.status": bson.M{"$exists": false},
 	}
 	if history {
-		err := repo.collHistory().Find(context.Background(), query).Limit(500).All(&res)
+		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
 		return res, err
 	}
-	err := repo.coll().Find(context.Background(), query).Limit(500).All(&res)
+	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
 	return res, err
 }
 
