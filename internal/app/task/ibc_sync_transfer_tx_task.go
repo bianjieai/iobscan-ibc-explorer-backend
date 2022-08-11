@@ -84,11 +84,12 @@ func (w *syncTransferTxWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
 		chainId, err := transferTxCoordinator.getChain()
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		if err != nil {
+			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		startTime := time.Now().Unix()
 		if err = w.parseChainIbcTx(chainId); err != nil {
 			logrus.Errorf("task %s worker %s parse chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)
@@ -215,7 +216,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				baseDemom = ibcDenom.BaseDenom
 				baseDenomChainId = ibcDenom.BaseDenomChainId
 			}
-			recordId := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
+			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
+			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
 			ibcTxList = append(ibcTxList, &entity.ExIbcTx{
 				RecordId:  recordId,

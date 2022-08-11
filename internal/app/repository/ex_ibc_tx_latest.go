@@ -50,8 +50,12 @@ type IExIbcTxRepo interface {
 	Migrate(txs []*entity.ExIbcTx) error
 
 	// special method
-	UpdateDenomTrace(ibcTx *entity.ExIbcTx) error
-	UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error
+	UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error
+	UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error
+	AddNewChainUpdate(scChainId, scChannel, dcChainId string) error
+	AddNewChainUpdateHistory(scChainId, scChannel, dcChainId string) error
+	UpdateBaseDenomInfo(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
+	UpdateBaseDenomInfoHistory(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
 
 	HistoryLatestCreateAt() (int64, error)
 	HistoryCountAll(createAt int64, record bool) (int64, error)
@@ -212,8 +216,8 @@ func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error {
 	})
 }
 
-func (repo *ExIbcTxRepo) UpdateDenomTrace(ibcTx *entity.ExIbcTx) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+func (repo *ExIbcTxRepo) UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
 		"$set": bson.M{
 			"base_denom_chain_id": ibcTx.BaseDenomChainId,
 			"base_denom":          ibcTx.BaseDenom,
@@ -223,9 +227,10 @@ func (repo *ExIbcTxRepo) UpdateDenomTrace(ibcTx *entity.ExIbcTx) error {
 	})
 }
 
-func (repo *ExIbcTxRepo) UpdateDenomTraceHistory(ibcTx *entity.ExIbcTx) error {
-	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+func (repo *ExIbcTxRepo) UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error {
+	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
 		"$set": bson.M{
+			"record_id":           ibcTx.RecordId,
 			"base_denom_chain_id": ibcTx.BaseDenomChainId,
 			"base_denom":          ibcTx.BaseDenom,
 			"create_at":           ibcTx.CreateAt,
@@ -717,6 +722,70 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 		return nil, nil
 	}
 	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
+}
+
+func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, dcChainId string) error {
+	query := bson.M{
+		"sc_chain_id": scChainId,
+		"sc_channel":  scChannel,
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSetting, entity.IbcTxStatusProcessing},
+		},
+	}
+
+	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
+		"$set": bson.M{
+			"dc_chain_id": dcChainId,
+			"status":      entity.IbcTxStatusProcessing,
+		},
+	})
+	return err
+}
+
+func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, dcChainId string) error {
+	query := bson.M{
+		"sc_chain_id": scChainId,
+		"sc_channel":  scChannel,
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSetting, entity.IbcTxStatusProcessing},
+		},
+	}
+
+	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
+		"$set": bson.M{
+			"dc_chain_id": dcChainId,
+			"status":      entity.IbcTxStatusProcessing,
+		},
+	})
+	return err
+}
+
+func (repo *ExIbcTxRepo) UpdateBaseDenomInfo(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error {
+	query := bson.M{
+		"base_denom":          baseDenom,
+		"base_denom_chain_id": baseDenomChainId,
+	}
+	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
+		"$set": bson.M{
+			"base_denom":          baseDenomNew,
+			"base_denom_chain_id": baseDenomChainIdNew,
+		},
+	})
+	return err
+}
+
+func (repo *ExIbcTxRepo) UpdateBaseDenomInfoHistory(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error {
+	query := bson.M{
+		"base_denom":          baseDenom,
+		"base_denom_chain_id": baseDenomChainId,
+	}
+	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
+		"$set": bson.M{
+			"base_denom":          baseDenomNew,
+			"base_denom_chain_id": baseDenomChainIdNew,
+		},
+	})
 	return err
 }
 
