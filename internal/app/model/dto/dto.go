@@ -146,6 +146,7 @@ type DenomSimpleDTO struct {
 }
 
 type PacketIdDTO struct {
+	RecordId      string
 	DcChainId     string
 	TimeoutHeight int64
 	PacketId      string

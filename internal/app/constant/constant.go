@@ -61,3 +61,12 @@ const (
 	UnAuth = "Others"
 	//AllChain = "allchain"
 )
+
+const (
+	//packet没有过期且没有发现成功的RecvPacket
+	NoFoundSuccessRecvPacket = "NoFoundSuccessRecvPacket"
+	//packet已过期
+	NoFoundSuccessTimeoutPacket = "NoFoundSuccessTimeoutPacket"
+	//dc_chain_id为空,历史setting未处理的数据
+	NoFoundDcChainId = "NoFoundDcChainId"
+)
