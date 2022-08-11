@@ -111,7 +111,7 @@ func (w *ibcTxRelateWorker) getChain() (string, error) {
 
 func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 	totalRelateTx := 0
-	const limit = 500
+	//const limit = 500
 	maxParseTx := global.Config.Task.SingleChainIbcTxRelateMax
 	if maxParseTx <= 0 {
 		maxParseTx = defaultMaxHandlerTx
@@ -123,7 +123,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 	}
 
 	for {
-		txList, err := w.getToBeRelatedTxs(chainId, limit)
+		txList, err := w.getToBeRelatedTxs(chainId, constant.DefaultLimit)
 		if err != nil {
 			logrus.Errorf("task %s worker %s chain %s getToBeRelatedTxs error, %v", w.taskName, w.workerName, chainId, err)
 			return err
@@ -136,7 +136,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 		w.handlerIbcTxs(chainId, txList, denomMap)
 
 		totalRelateTx += len(txList)
-		if len(txList) < limit || totalRelateTx >= maxParseTx {
+		if len(txList) < constant.DefaultLimit || totalRelateTx >= maxParseTx {
 			break
 		}
 		time.Sleep(1 * time.Second) // avoid master-slave delay problem

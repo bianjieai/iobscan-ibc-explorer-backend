@@ -19,7 +19,7 @@ log_output = "std"
 
 [mongo]
 url = "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805"
-database = "iobscan-ibc"
+database = "iobscan-ibc_0805"
 
 [redis]
 addrs = "127.0.0.1:6379"

@@ -21,6 +21,8 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 
+	DefaultLimit = 500
+
 	DisplayIbcRecordMax = 500000
 
 	MsgTypeTransfer           = "transfer"

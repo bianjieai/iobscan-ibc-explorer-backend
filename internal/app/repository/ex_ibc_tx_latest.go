@@ -925,9 +925,16 @@ func parseQuery(queryCond dto.IbcTxQuery) bson.M {
 	//token
 	if len(queryCond.Token) > 0 {
 		if strings.HasPrefix(queryCond.Token[0], "ibc/") {
-			query["$or"] = []bson.M{
+			cond := []bson.M{
 				{"denoms.sc_denom": queryCond.Token[0]},
 				{"denoms.dc_denom": queryCond.Token[0]},
+			}
+			if _, exist := query["$or"]; exist {
+				query["$and"] = []bson.M{
+					{"$or": cond},
+				}
+			} else {
+				query["$or"] = cond
 			}
 		} else {
 			query["base_denom"] = bson.M{
@@ -993,10 +1000,10 @@ func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx,
 		"refunded_tx_info.status": bson.M{"$exists": false},
 	}
 	if history {
-		err := repo.collHistory().Find(context.Background(), query).All(&res)
+		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
 		return res, err
 	}
-	err := repo.coll().Find(context.Background(), query).All(&res)
+	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
 	return res, err
 }
 
