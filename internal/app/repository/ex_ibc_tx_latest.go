@@ -53,6 +53,8 @@ type IExIbcTxRepo interface {
 	UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error
 	AddNewChainUpdate(scChainId, scChannel, dcChainId string) error
 	AddNewChainUpdateHistory(scChainId, scChannel, dcChainId string) error
+	AddNewChainUpdateFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error
+	AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error
 	UpdateBaseDenomInfo(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
 	UpdateBaseDenomInfoHistory(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
 
@@ -717,6 +719,38 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, dcChainI
 		"$set": bson.M{
 			"dc_chain_id": dcChainId,
 			"status":      entity.IbcTxStatusProcessing,
+		},
+	})
+	return err
+}
+
+func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error {
+	query := bson.M{
+		"sc_chain_id": scChainId,
+		"sc_channel":  scChannel,
+		"status":      entity.IbcTxStatusFailed,
+	}
+
+	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
+		"$set": bson.M{
+			"dc_chain_id": dcChainId,
+			"dc_channel":  dcChannel,
+		},
+	})
+	return err
+}
+
+func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error {
+	query := bson.M{
+		"sc_chain_id": scChainId,
+		"sc_channel":  scChannel,
+		"status":      entity.IbcTxStatusFailed,
+	}
+
+	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
+		"$set": bson.M{
+			"dc_chain_id": dcChainId,
+			"dc_channel":  dcChannel,
 		},
 	})
 	return err
