@@ -53,3 +53,6 @@ fix_denom_trace_data_end_time = 1658814309
 fix_denom_trace_history_data_start_time = 0
 fix_denom_trace_history_data_end_time = 99999999
 cron_time_sync_ack_tx_task=120
+
+[chain_config]
+new_chains = "bigbang,irishub_qa"

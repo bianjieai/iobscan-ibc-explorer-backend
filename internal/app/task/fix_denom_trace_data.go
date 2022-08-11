@@ -6,6 +6,7 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -157,6 +158,7 @@ type fixDenomTraceDataWorker struct {
 }
 
 func (w *fixDenomTraceDataWorker) exec() {
+	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	w.newDenomMap = make(map[string]*entity.IBCDenom)
 	workloadAmount := 0
 	for index, seg := range w.workloadSegments {
@@ -205,8 +207,9 @@ func (w *fixDenomTraceDataWorker) fixData(startTime, endTime int64) {
 				tx.UpdateAt = tx.TxTime
 			}
 
-			// todo update record id? 如果要改，则全部的tx都要改，不管sc denom有没有解析成功。record id插入的地方也要改
-			if err = w.UpdateTx(tx); err != nil {
+			originRecordId := tx.RecordId
+			tx.RecordId = utils.Md5(tx.RecordId)
+			if err = w.UpdateTx(originRecordId, tx); err != nil {
 				logrus.Errorf("task %s worker %s update tx(%s) error, %v", w.taskName, w.workerName, tx.ScTxInfo.Hash, err)
 			}
 		}
@@ -232,12 +235,12 @@ func (w *fixDenomTraceDataWorker) getTxs(startTime, endTime, skip, limit int64) 
 	return ibcTxRepo.FindByTxTime(startTime, endTime, skip, limit)
 }
 
-func (w *fixDenomTraceDataWorker) UpdateTx(tx *entity.ExIbcTx) error {
+func (w *fixDenomTraceDataWorker) UpdateTx(originRecordId string, tx *entity.ExIbcTx) error {
 	if w.target == ibcTxTargetHistory {
-		return ibcTxRepo.UpdateDenomTraceHistory(tx)
+		return ibcTxRepo.UpdateDenomTraceHistory(originRecordId, tx)
 	}
 
-	return ibcTxRepo.UpdateDenomTrace(tx)
+	return ibcTxRepo.UpdateDenomTrace(originRecordId, tx)
 }
 
 func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDenom, *entity.IBCDenom) {
@@ -257,7 +260,7 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 
 	// parse dc denom
 	if scDenomEntityNew == nil {
-		_ = storageCache.AddMissDenom(tx.RecordId, tx.ScChainId, scDenom)
+		_ = storageCache.AddMissDenom(utils.Md5(tx.RecordId), tx.ScChainId, scDenom)
 		return nil, nil
 	} else {
 		scDenomEntityNew.CreateAt = scDenomEntity.CreateAt
@@ -285,6 +288,7 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 			BaseDenom:        scDenomEntityNew.BaseDenom,
 			BaseDenomChainId: scDenomEntityNew.BaseDenomChainId,
 			DenomPath:        DcDenomEntity.DenomPath,
+			RootDenom:        scDenomEntityNew.RootDenom,
 			IsBaseDenom:      false,
 			CreateAt:         DcDenomEntity.CreateAt,
 			UpdateAt:         DcDenomEntity.UpdateAt,

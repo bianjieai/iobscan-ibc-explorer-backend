@@ -85,7 +85,8 @@ func yesterdayUnix() (int64, int64) {
 }
 
 func isConnectionErr(err error) bool {
-	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout")
+	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||
+		strings.Contains(err.Error(), "unsupported protocol scheme")
 }
 
 func getAllChainMap() (map[string]*entity.ChainConfig, error) {
@@ -121,6 +122,13 @@ func matchDcInfo(scChainId, scPort, scChannel string, allChainMap map[string]*en
 	return
 }
 
+// getRootDenom get root denom by denom path
+//   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
+func getRootDenom(fullPath string) string {
+	split := strings.Split(fullPath, "/")
+	return split[len(split)-1]
+}
+
 // calculateIbcHash calculate denom hash by denom path
 //   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
 func calculateIbcHash(fullPath string) string {
@@ -137,6 +145,7 @@ func calculateIbcHash(fullPath string) string {
 func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.ChainConfig) *entity.IBCDenom {
 	unix := time.Now().Unix()
 	denom := calculateIbcHash(fullDenomPath)
+	rootDenom := getRootDenom(fullDenomPath)
 	if !strings.HasPrefix(denom, constant.IBCTokenPreFix) { // base denom
 		return &entity.IBCDenom{
 			ChainId:          chainId,
@@ -146,6 +155,7 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 			BaseDenom:        denom,
 			BaseDenomChainId: chainId,
 			DenomPath:        "",
+			RootDenom:        rootDenom,
 			IsBaseDenom:      true,
 			CreateAt:         unix,
 			UpdateAt:         unix,
@@ -210,6 +220,7 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 		BaseDenom:        baseDenom,
 		BaseDenomChainId: baseDenomChainId,
 		DenomPath:        denomPath,
+		RootDenom:        rootDenom,
 		IsBaseDenom:      isBaseDenom,
 		CreateAt:         unix,
 		UpdateAt:         unix,

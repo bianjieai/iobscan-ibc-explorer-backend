@@ -26,6 +26,7 @@ type IDenomRepo interface {
 	UpdateSymbol(chainId, denom, symbol string) error
 	InsertBatch(denoms entity.IBCDenomList) error
 	InsertBatchToNew(denoms entity.IBCDenomList) error
+	UpdateDenom(denom *entity.IBCDenom) error
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -123,6 +124,18 @@ func (repo *DenomRepo) InsertBatchToNew(denoms entity.IBCDenomList) error {
 	}
 
 	return err
+}
+
+func (repo *DenomRepo) UpdateDenom(denom *entity.IBCDenom) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": denom.ChainId, "denom": denom.Denom}, bson.M{
+		"$set": bson.M{
+			"base_denom":          denom.BaseDenom,
+			"base_denom_chain_id": denom.BaseDenomChainId,
+			"prev_denom":          denom.PrevDenom,
+			"prev_chain_id":       denom.PrevChainId,
+			"is_base_denom":       denom.IsBaseDenom,
+		},
+	})
 }
 
 func (repo *DenomRepo) LatestCreateAt() (int64, error) {

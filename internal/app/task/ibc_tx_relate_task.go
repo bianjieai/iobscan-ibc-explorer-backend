@@ -87,11 +87,12 @@ func (w *ibcTxRelateWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
 		chainId, err := w.getChain()
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		if err != nil {
+			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		startTime := time.Now().Unix()
 		if err = w.relateTx(chainId); err != nil {
 			logrus.Errorf("task %s worker %s relate chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)
@@ -225,6 +226,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 			dcDenomPath := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
 			if dcDenomPath != "" {
 				dcDenom := calculateIbcHash(dcDenomPath)
+				rootDenom := getRootDenom(dcDenomPath)
 				ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
 				return &entity.IBCDenom{
 					Symbol:           "",
@@ -236,6 +238,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 					BaseDenomChainId: ibcTx.BaseDenomChainId,
 					DenomPath:        dcDenomPath,
 					IsBaseDenom:      false,
+					RootDenom:        rootDenom,
 					CreateAt:         time.Now().Unix(),
 					UpdateAt:         time.Now().Unix(),
 				}
@@ -419,9 +422,9 @@ func (w *ibcTxRelateWorker) findLatestBlock(scChainId string, ibcTxList []*entit
 	blockMap := make(map[string]*dto.HeightTimeDTO)
 
 	findFunc := func(chainId string) {
-		block, err := syncBlockRepo.FindLatestBlock(scChainId)
+		block, err := syncBlockRepo.FindLatestBlock(chainId)
 		if err != nil {
-			logrus.Errorf("task %s worker %s chain %s findLatestBlock error, %v", w.taskName, w.workerName, scChainId, err)
+			logrus.Errorf("task %s worker %s chain %s findLatestBlock error, %v", w.taskName, w.workerName, chainId, err)
 		} else {
 			blockMap[chainId] = &dto.HeightTimeDTO{
 				Height: block.Height,
@@ -436,7 +439,9 @@ func (w *ibcTxRelateWorker) findLatestBlock(scChainId string, ibcTxList []*entit
 			continue
 		}
 
-		findFunc(tx.DcChainId)
+		if _, ok := blockMap[tx.DcChainId]; !ok {
+			findFunc(tx.DcChainId)
+		}
 	}
 
 	return blockMap

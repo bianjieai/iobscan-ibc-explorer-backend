@@ -90,6 +90,11 @@ func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
 
 // getIbcChannels 通过lcd channels_path 接口获取链上存在的所有channel信息
 func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*entity.ChannelPath, error) {
+	if lcd == "" {
+		logrus.Errorf("task %s %s getIbcChannels error, lcd error", t.Name(), chainId)
+		return nil, fmt.Errorf("lcd error")
+	}
+
 	limit := 1000
 	offset := 0
 	var channelPathList []*entity.ChannelPath
