@@ -84,11 +84,12 @@ func (w *syncTransferTxWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
 		chainId, err := transferTxCoordinator.getChain()
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		if err != nil {
+			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		startTime := time.Now().Unix()
 		if err = w.parseChainIbcTx(chainId); err != nil {
 			logrus.Errorf("task %s worker %s parse chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)

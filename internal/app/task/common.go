@@ -85,7 +85,8 @@ func yesterdayUnix() (int64, int64) {
 }
 
 func isConnectionErr(err error) bool {
-	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout")
+	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||
+		strings.Contains(err.Error(), "unsupported protocol scheme")
 }
 
 func getAllChainMap() (map[string]*entity.ChainConfig, error) {
