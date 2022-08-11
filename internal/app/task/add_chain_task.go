@@ -132,7 +132,7 @@ func (t *AddChainTask) updateDenom(denomList entity.IBCDenomList, chainMap map[s
 	logrus.Infof("task %s update denom start", t.Name())
 
 	for _, v := range denomList {
-		if v.DenomPath == "" {
+		if v.DenomPath == "" || v.RootDenom == "" {
 			continue
 		}
 
