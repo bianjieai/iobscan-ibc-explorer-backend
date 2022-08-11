@@ -197,6 +197,7 @@ func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx) error {
 			"refunded_tx_info": ibcTx.RefundedTxInfo,
 			"retry_times":      ibcTx.RetryTimes,
 			"next_try_time":    ibcTx.NextTryTime,
+			"process_info":     ibcTx.ProcessInfo,
 			"update_at":        ibcTx.UpdateAt,
 		},
 	})
@@ -211,6 +212,7 @@ func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error {
 			"refunded_tx_info": ibcTx.RefundedTxInfo,
 			"retry_times":      ibcTx.RetryTimes,
 			"next_try_time":    ibcTx.NextTryTime,
+			"process_info":     ibcTx.ProcessInfo,
 			"update_at":        ibcTx.UpdateAt,
 		},
 	})
