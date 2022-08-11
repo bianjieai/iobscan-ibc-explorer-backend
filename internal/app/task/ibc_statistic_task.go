@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
@@ -25,21 +26,26 @@ func (t *IbcStatisticCronTask) Cron() int {
 
 func (t *IbcStatisticCronTask) Run() int {
 	if err := t.updateChannelAndChains24h(); err != nil {
+		logrus.Error("updateChannelAndChains24h have error," + err.Error())
 		return -1
 	}
 	if err := t.updateChannelInfo(); err != nil {
+		logrus.Error("updateChannelAndChains24h have error," + err.Error())
 		return -1
 	}
 
 	if err := t.updateDenomIncre(); err != nil {
+		logrus.Error("updateDenomIncre have error," + err.Error())
 		return -1
 	}
 
 	if err := t.updateChains(); err != nil {
+		logrus.Error("updateChains have error," + err.Error())
 		return -1
 	}
 
 	if err := t.updateTxsIncre(); err != nil {
+		logrus.Error("updateTxsIncre have error," + err.Error())
 		return -1
 	}
 
