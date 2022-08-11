@@ -84,6 +84,11 @@ type Task struct {
 	FixDenomTraceHistoryDataStartTime int64  `mapstructure:"fix_denom_trace_history_data_start_time"`
 	FixDenomTraceHistoryDataEndTime   int64  `mapstructure:"fix_denom_trace_history_data_end_time"`
 	CronTimeSyncAckTxTask             int    `mapstructure:"cron_time_sync_ack_tx_task"`
+
+	SwitchFixDenomTraceHistoryDataTask bool `mapstructure:"switch_fix_denom_trace_history_data_task"`
+	SwitchFixDenomTraceDataTask        bool `mapstructure:"switch_fix_denom_trace_data_task"`
+	SwitchAddChainTask                 bool `mapstructure:"switch_add_chain_task"`
+	SwitchIbcTxMigrateTask             bool `mapstructure:"switch_ibc_tx_migrate_task"`
 }
 
 type Spi struct {

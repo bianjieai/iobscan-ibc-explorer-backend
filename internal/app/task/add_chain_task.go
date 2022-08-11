@@ -20,7 +20,15 @@ func (t *AddChainTask) Name() string {
 	return "add_chain_task"
 }
 
+func (t *AddChainTask) Switch() bool {
+	return global.Config.Task.SwitchAddChainTask
+}
+
 func (t *AddChainTask) Run() int {
+	if !t.Switch() {
+		return 1
+	}
+
 	chainsStr := global.Config.ChainConfig.NewChains
 	newChainIds := strings.Split(chainsStr, ",")
 	if len(newChainIds) == 0 {

@@ -3,6 +3,7 @@ package task
 import (
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
 )
@@ -16,6 +17,10 @@ func (t *IbcTxMigrateTask) Name() string {
 	return "ibc_tx_migrate_task"
 }
 
+func (t *IbcTxMigrateTask) Switch() bool {
+	return global.Config.Task.SwitchIbcTxMigrateTask
+}
+
 func (t *IbcTxMigrateTask) Cron() int {
 	if taskConf.CronTimeIbcTxMigrateTask > 0 {
 		return taskConf.CronTimeIbcTxMigrateTask
@@ -24,6 +29,10 @@ func (t *IbcTxMigrateTask) Cron() int {
 }
 
 func (t *IbcTxMigrateTask) Run() int {
+	if !t.Switch() {
+		return 1
+	}
+
 	err1 := t.migrateSetting()
 	err2 := t.migrateNormal()
 

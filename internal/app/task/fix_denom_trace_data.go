@@ -20,7 +20,14 @@ func (t *FixDenomTraceDataTask) Name() string {
 	return "fix_denom_trace_data_task"
 }
 
+func (t *FixDenomTraceDataTask) Switch() bool {
+	return global.Config.Task.SwitchFixDenomTraceDataTask
+}
+
 func (t *FixDenomTraceDataTask) Run() int {
+	if !t.Switch() {
+		return 1
+	}
 	// init
 	t.target = ibcTxTargetLatest
 	t.startTime = global.Config.Task.FixDenomTraceDataStartTime
@@ -51,7 +58,14 @@ func (t *FixDenomTraceHistoryDataTask) Name() string {
 	return "fix_denom_trace_history_data_task"
 }
 
+func (t *FixDenomTraceHistoryDataTask) Switch() bool {
+	return global.Config.Task.SwitchFixDenomTraceHistoryDataTask
+}
+
 func (t *FixDenomTraceHistoryDataTask) Run() int {
+	if !t.Switch() {
+		return 1
+	}
 	// init
 	t.target = ibcTxTargetHistory
 	t.startTime = global.Config.Task.FixDenomTraceHistoryDataStartTime
