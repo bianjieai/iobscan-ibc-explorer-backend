@@ -307,7 +307,9 @@ func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, lates
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
 		statisticData.CreateAt = time.Now().Unix()
 		statisticData.UpdateAt = time.Now().Unix()
-		if err := statisticsRepo.Save(statisticData); err != nil {
+		//加上最新表数据
+		statisticData.CountLatest = latestData
+		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
 	} else if statisticData.StatisticsInfo == "" {
@@ -326,6 +328,8 @@ func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, lates
 		}
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
 		statisticData.UpdateAt = time.Now().Unix()
+		//加上最新表数据
+		statisticData.CountLatest = latestData
 		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
@@ -350,14 +354,14 @@ func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, lates
 			}
 			statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
 			statisticData.UpdateAt = time.Now().Unix()
+			//加上最新表数据
+			statisticData.CountLatest = latestData
 			if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 				return err
 			}
 		}
 	}
-	//加上最新表数据
-	statisticData.Count += latestData
-	return statisticsRepo.UpdateOne(statisticName, statisticData.Count)
+	return nil
 }
 
 type IncreInfo struct {

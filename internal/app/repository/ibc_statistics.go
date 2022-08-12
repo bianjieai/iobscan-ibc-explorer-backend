@@ -66,6 +66,7 @@ func (repo *IbcStatisticRepo) UpdateOneIncre(statistic entity.IbcStatistic) erro
 	err := repo.coll().UpdateOne(context.Background(), bson.M{"statistics_name": statistic.StatisticsName}, bson.M{
 		"$set": bson.M{
 			"count":           statistic.Count,
+			"count_latest":    statistic.CountLatest,
 			"statistics_info": statistic.StatisticsInfo,
 			"update_at":       time.Now().Unix(),
 		}})

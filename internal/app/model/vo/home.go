@@ -78,7 +78,7 @@ func (dto IbcDenomDto) LoadDto(denom *entity.IBCDenom) IbcDenomDto {
 
 func (dto StatisticsCntDto) LoadDto(statistic *entity.IbcStatistic) StatisticsCntDto {
 	return StatisticsCntDto{
-		Count:          statistic.Count,
+		Count:          statistic.Count + statistic.CountLatest,
 		StatisticsName: statistic.StatisticsName,
 	}
 }
