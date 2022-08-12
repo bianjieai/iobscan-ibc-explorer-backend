@@ -20,7 +20,16 @@ func (t *AddChainTask) Name() string {
 	return "add_chain_task"
 }
 
+func (t *AddChainTask) Switch() bool {
+	return global.Config.Task.SwitchAddChainTask
+}
+
 func (t *AddChainTask) Run() int {
+	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
+		return 1
+	}
+
 	chainsStr := global.Config.ChainConfig.NewChains
 	newChainIds := strings.Split(chainsStr, ",")
 	if len(newChainIds) == 0 {
@@ -80,18 +89,40 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 				continue
 			}
 
-			// todo update failed dc chain id??
 			counterpartyChainId := path.ChainId
 			counterpartyChannelId := path.Counterparty.ChannelId
-			if err := ibcTxRepo.AddNewChainUpdate(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
-				logrus.Errorf("task %s %s AddNewChainUpdate error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
-				_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
-			}
+			channelId := path.ChannelId
+			var waitGroup sync.WaitGroup
+			waitGroup.Add(2)
+			go func() {
+				if err := ibcTxRepo.AddNewChainUpdate(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
+					logrus.Errorf("task %s %s AddNewChainUpdate error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
+					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
+				}
 
-			if err := ibcTxRepo.AddNewChainUpdateHistory(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
-				logrus.Errorf("task %s %s AddNewChainUpdateHistory error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
-				_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
-			}
+				if err := ibcTxRepo.AddNewChainUpdateFailedTx(counterpartyChainId, counterpartyChannelId, chainId, channelId); err != nil {
+					logrus.Errorf("task %s %s AddNewChainUpdateFailedTx error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
+					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
+				}
+
+				waitGroup.Done()
+			}()
+
+			go func() {
+				if err := ibcTxRepo.AddNewChainUpdateHistory(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
+					logrus.Errorf("task %s %s AddNewChainUpdateHistory error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
+					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
+				}
+
+				if err := ibcTxRepo.AddNewChainUpdateHistoryFailedTx(counterpartyChainId, counterpartyChannelId, chainId, channelId); err != nil {
+					logrus.Errorf("task %s %s AddNewChainUpdateHistoryFailedTx error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
+					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
+				}
+
+				waitGroup.Done()
+			}()
+
+			waitGroup.Wait()
 		}
 	}
 
@@ -102,7 +133,7 @@ func (t *AddChainTask) updateDenom(denomList entity.IBCDenomList, chainMap map[s
 	logrus.Infof("task %s update denom start", t.Name())
 
 	for _, v := range denomList {
-		if v.DenomPath == "" {
+		if v.DenomPath == "" || v.RootDenom == "" {
 			continue
 		}
 
@@ -110,8 +141,9 @@ func (t *AddChainTask) updateDenom(denomList entity.IBCDenomList, chainMap map[s
 		denomNew := traceDenom(denomFullPath, v.ChainId, chainMap)
 		if v.BaseDenom != denomNew.BaseDenom || v.BaseDenomChainId != denomNew.BaseDenomChainId || v.PrevDenom != denomNew.PrevDenom ||
 			v.PrevChainId != denomNew.PrevChainId || v.IsBaseDenom != denomNew.IsBaseDenom {
+			logrus.WithField("denom", v).WithField("denom_new", denomNew).Infof("task %s denom trace path is changed", t.Name())
 			if err := denomRepo.UpdateDenom(denomNew); err != nil {
-				logrus.Errorf("task %s update denom %s-%s error", t.Name(), denomNew.ChainId, denomNew.Denom)
+				logrus.Errorf("task %s update denom %s-%s error, %v", t.Name(), denomNew.ChainId, denomNew.Denom, err)
 			}
 		}
 

@@ -244,11 +244,11 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 		ibcTx.UpdateAt = time.Now().Unix()
 
 		if ibcTx.Status == entity.IbcTxStatusSuccess {
-			dcDenomPath := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
-			if dcDenomPath != "" {
-				dcDenom := calculateIbcHash(dcDenomPath)
+			dcDenomPath, isCrossBack := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
+			dcDenom := calculateIbcHash(dcDenomPath)
+			ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
+			if !isCrossBack {
 				rootDenom := getRootDenom(dcDenomPath)
-				ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
 				return &entity.IBCDenom{
 					Symbol:           "",
 					ChainId:          ibcTx.DcChainId,

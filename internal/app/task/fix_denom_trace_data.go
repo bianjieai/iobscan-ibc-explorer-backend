@@ -20,7 +20,15 @@ func (t *FixDenomTraceDataTask) Name() string {
 	return "fix_denom_trace_data_task"
 }
 
+func (t *FixDenomTraceDataTask) Switch() bool {
+	return global.Config.Task.SwitchFixDenomTraceDataTask
+}
+
 func (t *FixDenomTraceDataTask) Run() int {
+	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
+		return 1
+	}
 	// init
 	t.target = ibcTxTargetLatest
 	t.startTime = global.Config.Task.FixDenomTraceDataStartTime
@@ -51,7 +59,15 @@ func (t *FixDenomTraceHistoryDataTask) Name() string {
 	return "fix_denom_trace_history_data_task"
 }
 
+func (t *FixDenomTraceHistoryDataTask) Switch() bool {
+	return global.Config.Task.SwitchFixDenomTraceHistoryDataTask
+}
+
 func (t *FixDenomTraceHistoryDataTask) Run() int {
+	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
+		return 1
+	}
 	// init
 	t.target = ibcTxTargetHistory
 	t.startTime = global.Config.Task.FixDenomTraceHistoryDataStartTime
@@ -271,8 +287,8 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 		return scDenomEntityNew, nil
 	}
 
-	nextDenomPath := calculateNextDenomPath(tx.DcTxInfo.Msg.RecvPacketMsg().Packet)
-	if nextDenomPath == "" { // transfer to origin chain
+	_, isCrossBack := calculateNextDenomPath(tx.DcTxInfo.Msg.RecvPacketMsg().Packet)
+	if isCrossBack { // transfer to origin chain
 		return scDenomEntityNew, nil
 	}
 

@@ -228,15 +228,16 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 }
 
 // calculateNextDenomPath calculate full denom path of next hop.
-// If the denom is transferred to previous chain(cross back), return empty string
-func calculateNextDenomPath(packet model.Packet) string {
-	prefixSc := fmt.Sprintf("%s/%s", packet.SourcePort, packet.SourceChannel)
-	prefixDc := fmt.Sprintf("%s/%s", packet.DestinationPort, packet.DestinationChannel)
+// return full denom path and cross back identification
+func calculateNextDenomPath(packet model.Packet) (string, bool) {
+	prefixSc := fmt.Sprintf("%s/%s/", packet.SourcePort, packet.SourceChannel)
+	prefixDc := fmt.Sprintf("%s/%s/", packet.DestinationPort, packet.DestinationChannel)
 	denomPath := packet.Data.Denom
 	if strings.HasPrefix(denomPath, prefixSc) { // transfer to prev chain
-		return ""
+		denomPath = strings.Replace(denomPath, prefixSc, "", 1)
+		return denomPath, true
 	} else {
-		denomPath = fmt.Sprintf("%s/%s", prefixDc, denomPath)
-		return denomPath
+		denomPath = fmt.Sprintf("%s%s", prefixDc, denomPath)
+		return denomPath, false
 	}
 }
