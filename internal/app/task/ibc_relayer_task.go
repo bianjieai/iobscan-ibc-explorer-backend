@@ -415,7 +415,7 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
 	//处理新基准时间波动情况误差10秒
 	newTimePeriod := time.Now().Unix() - updateTime
-	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) {
+	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) && mathChannelRet == channelMatchSuccess {
 		//最新基准时间波动情况误差在10秒内，不改变基准周期和relayer状态，只更新updateTime
 		if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, 0); err != nil {
 			logrus.Error("update relayer update_time fail, ", err.Error())

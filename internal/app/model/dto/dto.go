@@ -128,11 +128,16 @@ type TokenTraceStatisticsDTO struct {
 	ReceiveTxs int64  `bson:"receive_txs"`
 }
 
-type Aggr24hActiveChannelTxsDTO struct {
+type Aggr24hActiveChannelsDTO struct {
 	ScChainId string `bson:"sc_chain_id"`
 	DcChainId string `bson:"dc_chain_id"`
 	ScChannel string `bson:"sc_channel"`
 	DcChannel string `bson:"dc_channel"`
+}
+
+type Aggr24hActiveChainsDTO struct {
+	ScChainId string `bson:"sc_chain_id"`
+	DcChainId string `bson:"dc_chain_id"`
 }
 
 type DenomSimpleDTO struct {
@@ -141,6 +146,7 @@ type DenomSimpleDTO struct {
 }
 
 type PacketIdDTO struct {
+	RecordId      string
 	DcChainId     string
 	TimeoutHeight int64
 	PacketId      string
