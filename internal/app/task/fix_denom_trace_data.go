@@ -287,8 +287,8 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 		return scDenomEntityNew, nil
 	}
 
-	nextDenomPath := calculateNextDenomPath(tx.DcTxInfo.Msg.RecvPacketMsg().Packet)
-	if nextDenomPath == "" { // transfer to origin chain
+	_, isCrossBack := calculateNextDenomPath(tx.DcTxInfo.Msg.RecvPacketMsg().Packet)
+	if isCrossBack { // transfer to origin chain
 		return scDenomEntityNew, nil
 	}
 
