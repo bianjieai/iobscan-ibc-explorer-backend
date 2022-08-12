@@ -26,6 +26,7 @@ func (t *AddChainTask) Switch() bool {
 
 func (t *AddChainTask) Run() int {
 	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
 		return 1
 	}
 

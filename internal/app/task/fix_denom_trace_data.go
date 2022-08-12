@@ -26,6 +26,7 @@ func (t *FixDenomTraceDataTask) Switch() bool {
 
 func (t *FixDenomTraceDataTask) Run() int {
 	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
 		return 1
 	}
 	// init
@@ -64,6 +65,7 @@ func (t *FixDenomTraceHistoryDataTask) Switch() bool {
 
 func (t *FixDenomTraceHistoryDataTask) Run() int {
 	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
 		return 1
 	}
 	// init

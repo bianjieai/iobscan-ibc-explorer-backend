@@ -30,6 +30,7 @@ func (t *IbcTxMigrateTask) Cron() int {
 
 func (t *IbcTxMigrateTask) Run() int {
 	if !t.Switch() {
+		logrus.Infof("task %s closed", t.Name())
 		return 1
 	}
 
