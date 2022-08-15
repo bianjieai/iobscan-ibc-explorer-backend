@@ -53,6 +53,7 @@ func (t *AddChainTask) Run() int {
 	waitGroup.Add(2)
 	// update ibc tx
 	go func() {
+		defer waitGroup.Done()
 		for _, chainId := range newChainIds {
 			chainConfig, ok := chainMap[chainId]
 			if !ok {
@@ -62,13 +63,12 @@ func (t *AddChainTask) Run() int {
 
 			t.updateIbcTx(chainId, chainConfig)
 		}
-		waitGroup.Done()
 	}()
 
 	// update denom
 	go func() {
+		defer waitGroup.Done()
 		t.updateDenom(denomList, chainMap)
-		waitGroup.Done()
 	}()
 
 	waitGroup.Wait()
@@ -93,33 +93,37 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 			counterpartyChannelId := path.Counterparty.ChannelId
 			channelId := path.ChannelId
 			var waitGroup sync.WaitGroup
-			waitGroup.Add(2)
+			waitGroup.Add(4)
 			go func() {
+				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdate(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdate error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
+			}()
 
+			go func() {
+				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdateFailedTx(counterpartyChainId, counterpartyChannelId, chainId, channelId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateFailedTx error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
-
-				waitGroup.Done()
 			}()
 
 			go func() {
+				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdateHistory(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateHistory error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
+			}()
 
+			go func() {
+				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdateHistoryFailedTx(counterpartyChainId, counterpartyChannelId, chainId, channelId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateHistoryFailedTx error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
-
-				waitGroup.Done()
 			}()
 
 			waitGroup.Wait()
