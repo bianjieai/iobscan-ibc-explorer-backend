@@ -88,6 +88,7 @@ func RunOnce(task Task) {
 // OneOffTask one-off task
 type OneOffTask interface {
 	Name() string
+	Switch() bool
 	Run() int
 }
 
@@ -110,6 +111,10 @@ func StartOneOffTask() {
 }
 
 func OneOffTaskRun(task OneOffTask) {
+	if !task.Switch() {
+		logrus.Infof("one-off task %s closed", task.Name())
+		return
+	}
 	if err := cache.GetRedisClient().Lock(fmt.Sprintf("%s:%s", "one_off_task", task.Name()), time.Now().Unix(), OneOffTaskLockTime*time.Second); err != nil {
 		logrus.Errorf("one-off task %s has been executed, err:%v", task.Name(), err.Error())
 		return

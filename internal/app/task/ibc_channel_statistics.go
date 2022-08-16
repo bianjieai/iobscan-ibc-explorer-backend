@@ -3,6 +3,7 @@ package task
 import (
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/shopspring/decimal"
@@ -16,6 +17,10 @@ var channelStatisticsTask ChannelStatisticsTask
 
 func (t *ChannelStatisticsTask) Name() string {
 	return "ibc_channel_statistics_task"
+}
+
+func (t *ChannelStatisticsTask) Switch() bool {
+	return global.Config.Task.SwitchIbcChannelStatisticsTask
 }
 
 func (t *ChannelStatisticsTask) Run() int {

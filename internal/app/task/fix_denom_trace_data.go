@@ -25,10 +25,6 @@ func (t *FixDenomTraceDataTask) Switch() bool {
 }
 
 func (t *FixDenomTraceDataTask) Run() int {
-	if !t.Switch() {
-		logrus.Infof("task %s closed", t.Name())
-		return 1
-	}
 	// init
 	t.target = ibcTxTargetLatest
 	t.startTime = global.Config.Task.FixDenomTraceDataStartTime
@@ -64,10 +60,6 @@ func (t *FixDenomTraceHistoryDataTask) Switch() bool {
 }
 
 func (t *FixDenomTraceHistoryDataTask) Run() int {
-	if !t.Switch() {
-		logrus.Infof("task %s closed", t.Name())
-		return 1
-	}
 	// init
 	t.target = ibcTxTargetHistory
 	t.startTime = global.Config.Task.FixDenomTraceHistoryDataStartTime
