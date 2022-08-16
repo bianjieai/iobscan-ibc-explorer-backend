@@ -2,13 +2,15 @@ package task
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"time"
 )
 
 type (
@@ -30,6 +32,10 @@ func (t *RelayerStatisticsTask) Name() string {
 
 func (t *RelayerStatisticsTask) relayerTxsMapKey(statisticId, address, baseDenom string) string {
 	return fmt.Sprintf("%s:%s:%s", statisticId, address, baseDenom)
+}
+
+func (t *RelayerStatisticsTask) Switch() bool {
+	return global.Config.Task.SwitchIbcRelayerStatisticsTask
 }
 
 func (t *RelayerStatisticsTask) Run() int {

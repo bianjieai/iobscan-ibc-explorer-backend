@@ -89,6 +89,9 @@ type Task struct {
 	SwitchFixDenomTraceDataTask        bool `mapstructure:"switch_fix_denom_trace_data_task"`
 	SwitchAddChainTask                 bool `mapstructure:"switch_add_chain_task"`
 	SwitchIbcTxMigrateTask             bool `mapstructure:"switch_ibc_tx_migrate_task"`
+	SwitchIbcTokenStatisticsTask       bool `mapstructure:"switch_ibc_token_statistics_task"`
+	SwitchIbcChannelStatisticsTask     bool `mapstructure:"switch_ibc_channel_statistics_task"`
+	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
 }
 
 type Spi struct {

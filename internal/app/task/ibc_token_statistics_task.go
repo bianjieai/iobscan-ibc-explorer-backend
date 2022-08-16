@@ -3,6 +3,7 @@ package task
 import (
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,10 @@ var tokenStatisticsTask TokenStatisticsTask
 
 func (t *TokenStatisticsTask) Name() string {
 	return "ibc_token_statistics_task"
+}
+
+func (t *TokenStatisticsTask) Switch() bool {
+	return global.Config.Task.SwitchIbcTokenStatisticsTask
 }
 
 func (t *TokenStatisticsTask) Run() int {
