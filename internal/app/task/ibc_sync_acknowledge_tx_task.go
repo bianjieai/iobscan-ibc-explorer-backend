@@ -31,7 +31,9 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 		for _, val := range txs {
 			err := t.SaveAcknowledgeTx(val, history)
 			if err != nil {
-				return err
+				logrus.Warn("SaveAcknowledgeTx failed, "+err.Error(),
+					"chain_id:", val.ScChainId,
+					"packet_id:", val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
 		return nil
