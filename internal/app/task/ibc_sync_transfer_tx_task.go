@@ -32,6 +32,13 @@ func (t *IbcSyncTransferTxTask) Cron() int {
 	return ThreeMinute
 }
 
+func (t *IbcSyncTransferTxTask) workerNum() int {
+	if global.Config.Task.SyncTransferTxWorkerNum > 0 {
+		return global.Config.Task.SyncTransferTxWorkerNum
+	}
+	return syncTransferTxTaskWorkerNum
+}
+
 func (t *IbcSyncTransferTxTask) Run() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
@@ -48,9 +55,10 @@ func (t *IbcSyncTransferTxTask) Run() int {
 		chainQueue: chainQueue,
 	}
 
+	workerNum := t.workerNum()
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(syncTransferTxTaskWorkerQuantity)
-	for i := 1; i <= syncTransferTxTaskWorkerQuantity; i++ {
+	waitGroup.Add(workerNum)
+	for i := 1; i <= workerNum; i++ {
 		workName := fmt.Sprintf("worker-%d", i)
 		go func(wn string) {
 			newSyncTransferTxWorker(t.Name(), wn, chainMap).exec()

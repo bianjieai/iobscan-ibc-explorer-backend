@@ -88,6 +88,13 @@ type fixDenomTraceDataTrait struct {
 	endTime   int64
 }
 
+func (trait *fixDenomTraceDataTrait) workerNum() int {
+	if global.Config.Task.FixDenomTraceDataWorkerNum > 0 {
+		return global.Config.Task.FixDenomTraceDataWorkerNum
+	}
+	return fixDenomTraceDataTaskWorkerNum
+}
+
 func (trait *fixDenomTraceDataTrait) startWorker(taskName string) error {
 	chainMap, err := getAllChainMap()
 	if err != nil {
@@ -104,13 +111,14 @@ func (trait *fixDenomTraceDataTrait) startWorker(taskName string) error {
 	denomMap := denomList.ConvertToMap()
 	const step = 3600
 	segments := trait.getSegment(trait.startTime, trait.endTime, step)
+	workerNum := trait.workerNum()
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(fixDenomTraceDataTaskWorkerQuantity)
-	for i := 0; i < fixDenomTraceDataTaskWorkerQuantity; i++ { // i must start from 0
+	waitGroup.Add(workerNum)
+	for i := 0; i < workerNum; i++ { // i must start from 0
 		workName := fmt.Sprintf("worker-%d", i)
 		workloadIndex := i
 		go func(wn string, wi int) {
-			newFixDenomTraceDataWorker(taskName, wn, trait.target, chainMap, denomMap, segments, wi).exec()
+			newFixDenomTraceDataWorker(taskName, wn, trait.target, chainMap, denomMap, segments, wi).exec(workerNum)
 			waitGroup.Done()
 		}(workName, workloadIndex)
 	}
@@ -165,12 +173,12 @@ type fixDenomTraceDataWorker struct {
 	workloadIndex    int
 }
 
-func (w *fixDenomTraceDataWorker) exec() {
+func (w *fixDenomTraceDataWorker) exec(workerNum int) {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	w.newDenomMap = make(map[string]*entity.IBCDenom)
 	workloadAmount := 0
 	for index, seg := range w.workloadSegments {
-		if index%fixDenomTraceDataTaskWorkerQuantity != w.workloadIndex {
+		if index%workerNum != w.workloadIndex {
 			continue
 		}
 

@@ -61,5 +61,9 @@ switch_ibc_token_statistics_task = false
 switch_ibc_channel_statistics_task = false
 switch_ibc_relayer_statistics_task = false
 
+sync_transfer_tx_worker_num = 5
+ibc_tx_relate_worker_num = 5
+fix_denom_trace_data_worker_num = 8
+
 [chain_config]
 new_chains = "bigbang,irishub_qa"
