@@ -752,7 +752,8 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		updateTime = t.findLatestRecvPacketTime(relayer, startTime)
 	}
 	logrus.Debug("clientIdA: ", clientIdA, " clientIdB: ", clientIdB, "chainA: ", relayer.ChainA, "chainB: ", relayer.ChainB)
-	return timePeriod, updateTime, matchChannels(clientIdA, clientIdB, relayer)
+	//return timePeriod, updateTime, matchChannels(clientIdA, clientIdB, relayer)
+	return timePeriod, updateTime, channelMatchSuccess
 }
 
 //根据clientId通过lcd或者redis获取对应的channels信息
