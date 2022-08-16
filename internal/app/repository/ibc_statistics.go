@@ -63,10 +63,15 @@ func (repo *IbcStatisticRepo) Save(data entity.IbcStatistic) error {
 }
 
 func (repo *IbcStatisticRepo) UpdateOneIncre(statistic entity.IbcStatistic) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"statistics_name": statistic.StatisticsName}, bson.M{
+	err := repo.coll().UpdateOne(context.Background(), bson.M{"statistics_name": statistic.StatisticsName}, bson.M{
 		"$set": bson.M{
 			"count":           statistic.Count,
+			"count_latest":    statistic.CountLatest,
 			"statistics_info": statistic.StatisticsInfo,
 			"update_at":       time.Now().Unix(),
 		}})
+	if err == qmgo.ErrNoSuchDocuments {
+		return repo.Save(statistic)
+	}
+	return err
 }

@@ -101,7 +101,7 @@ func (w *syncTransferTxWorker) exec() {
 
 func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 	totalParseTx := 0
-	const limit = 500
+	//const limit = 500
 	maxParseTx := global.Config.Task.SingleChainSyncTransferTxMax
 	if maxParseTx <= 0 {
 		maxParseTx = defaultMaxHandlerTx
@@ -130,7 +130,7 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 			return nil
 		}
 
-		txList, err := w.getTxList(chainId, taskRecord.Height, int64(limit))
+		txList, err := w.getTxList(chainId, taskRecord.Height, int64(constant.DefaultLimit))
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 		}
 
 		totalParseTx += len(txList)
-		if len(txList) < limit || totalParseTx >= maxParseTx {
+		if len(txList) < constant.DefaultLimit || totalParseTx >= maxParseTx {
 			break
 		}
 	}

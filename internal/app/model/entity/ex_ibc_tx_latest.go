@@ -42,6 +42,7 @@ type (
 		Denoms           *Denoms     `bson:"denoms"`
 		BaseDenom        string      `bson:"base_denom"`
 		BaseDenomChainId string      `bson:"base_denom_chain_id"`
+		ProcessInfo      string      `bson:"process_info"`
 		RetryTimes       int64       `bson:"retry_times"`
 		NextTryTime      int64       `bson:"next_try_time"`
 		CreateAt         int64       `bson:"create_at"`

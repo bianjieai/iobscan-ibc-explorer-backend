@@ -6,6 +6,8 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
+	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -24,27 +26,66 @@ func (t *IbcStatisticCronTask) Cron() int {
 
 func (t *IbcStatisticCronTask) Run() int {
 	if err := t.updateChannelAndChains24h(); err != nil {
+		logrus.Error("updateChannelAndChains24h have error," + err.Error())
 		return -1
 	}
 	if err := t.updateChannelInfo(); err != nil {
+		logrus.Error("updateChannelAndChains24h have error," + err.Error())
 		return -1
 	}
 
 	if err := t.updateDenomIncre(); err != nil {
+		logrus.Error("updateDenomIncre have error," + err.Error())
 		return -1
 	}
 
 	if err := t.updateChains(); err != nil {
+		logrus.Error("updateChains have error," + err.Error())
 		return -1
 	}
 
 	if err := t.updateTxsIncre(); err != nil {
+		logrus.Error("updateTxsIncre have error," + err.Error())
 		return -1
 	}
 
 	return 1
 }
 func (t *IbcStatisticCronTask) updateChains() error {
+	//获取最近24小时前的时间戳
+	startTime := time.Now().Unix() - 24*3600
+	chainDtos, err := ibcTxRepo.Aggr24hActiveChains(startTime)
+	if err != nil {
+		return err
+	}
+	chainIdMap := make(map[string]struct{}, len(chainDtos))
+	var chainIds []string
+	for _, val := range chainDtos {
+		if val.ScChainId != "" {
+			if _, exist := chainIdMap[val.ScChainId]; !exist {
+				chainIds = append(chainIds, val.ScChainId)
+				chainIdMap[val.ScChainId] = struct{}{}
+			}
+		}
+		if val.DcChainId != "" {
+			if _, exist := chainIdMap[val.DcChainId]; !exist {
+				chainIds = append(chainIds, val.DcChainId)
+				chainIdMap[val.DcChainId] = struct{}{}
+			}
+		}
+	}
+	chains24hInfo := strings.Join(chainIds, ",")
+	data := entity.IbcStatistic{
+		StatisticsName: constant.Chains24hStatisticName,
+		Count:          int64(len(chainIdMap)),
+		StatisticsInfo: chains24hInfo,
+		CreateAt:       time.Now().Unix(),
+		UpdateAt:       time.Now().Unix(),
+	}
+	if err := statisticsRepo.UpdateOneIncre(data); err != nil {
+		return err
+	}
+
 	chainsAll, err := chainConfigRepo.Count()
 	if err != nil {
 		return err
@@ -131,16 +172,13 @@ func (t *IbcStatisticCronTask) updateChannelInfo() error {
 func (t *IbcStatisticCronTask) updateChannelAndChains24h() error {
 	//获取最近24小时前的时间戳
 	startTime := time.Now().Unix() - 24*3600
-	channelDtos, err := ibcTxRepo.Aggr24hActiveChannelTxs(startTime)
+	channelDtos, err := ibcTxRepo.Aggr24hActiveChannels(startTime)
 	if err != nil {
 		return err
 	}
 	setChannelMap := make(map[string]struct{}, len(channelDtos))
-	chainIdMap := make(map[string]struct{}, len(channelDtos))
 	count := int64(0)
 	for _, val := range channelDtos {
-		chainIdMap[val.ScChainId] = struct{}{}
-		chainIdMap[val.DcChainId] = struct{}{}
 		channelIdPrefix := fmt.Sprintf("%s|%s", val.ScChainId, val.ScChannel)
 		channelIdEndwith := fmt.Sprintf("%s|%s", val.DcChainId, val.DcChannel)
 		_, existPrefix := setChannelMap[channelIdPrefix]
@@ -155,10 +193,6 @@ func (t *IbcStatisticCronTask) updateChannelAndChains24h() error {
 		return err
 	}
 
-	chains24hAll := len(chainIdMap)
-	if err := statisticsRepo.UpdateOne(constant.Chains24hStatisticName, int64(chains24hAll)); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -273,7 +307,9 @@ func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, lates
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
 		statisticData.CreateAt = time.Now().Unix()
 		statisticData.UpdateAt = time.Now().Unix()
-		if err := statisticsRepo.Save(statisticData); err != nil {
+		//加上最新表数据
+		statisticData.CountLatest = latestData
+		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
 	} else if statisticData.StatisticsInfo == "" {
@@ -292,6 +328,8 @@ func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, lates
 		}
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
 		statisticData.UpdateAt = time.Now().Unix()
+		//加上最新表数据
+		statisticData.CountLatest = latestData
 		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
@@ -316,14 +354,14 @@ func (t *IbcStatisticCronTask) handleHistoryTxsIncre(statisticName string, lates
 			}
 			statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentTxsCnt, CreateAt: latestCreateAt}))
 			statisticData.UpdateAt = time.Now().Unix()
+			//加上最新表数据
+			statisticData.CountLatest = latestData
 			if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 				return err
 			}
 		}
 	}
-	//加上最新表数据
-	statisticData.Count += latestData
-	return statisticsRepo.UpdateOne(statisticName, statisticData.Count)
+	return nil
 }
 
 type IncreInfo struct {

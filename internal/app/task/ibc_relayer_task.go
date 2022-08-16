@@ -206,10 +206,11 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 
 	}
 	t.handleOneRelayerStatusAndTime(relayer, value.UpdateTime, value.TimePeriod, channelMatchRet)
-	//如果update_client是该relayer对应的通道，更新channel页channel更新时间
-	if channelMatchRet == channelMatchSuccess {
-		t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
+	if channelMatchRet != channelMatchSuccess {
+		//如果update_client不是该relayer对应的通道，不更新channel页channel更新时间
+		value.UpdateTime = 0
 	}
+	t.updateIbcChannelRelayerInfo(relayer, value.UpdateTime)
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
@@ -415,7 +416,7 @@ func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRe
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
 	//处理新基准时间波动情况误差10秒
 	newTimePeriod := time.Now().Unix() - updateTime
-	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) {
+	if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) && mathChannelRet == channelMatchSuccess {
 		//最新基准时间波动情况误差在10秒内，不改变基准周期和relayer状态，只更新updateTime
 		if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, 0); err != nil {
 			logrus.Error("update relayer update_time fail, ", err.Error())

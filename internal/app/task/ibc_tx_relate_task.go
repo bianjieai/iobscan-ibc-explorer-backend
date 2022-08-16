@@ -146,7 +146,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 }
 
 func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.ExIbcTx, denomMap map[string]*entity.IBCDenom) {
-	recvPacketTxMap, refundedTxMap, ackTxMap := w.packetIdTx(scChainId, ibcTxList)
+	recvPacketTxMap, refundedTxMap, ackTxMap, timeoutIbcTxMap, noFoundAckMap := w.packetIdTx(scChainId, ibcTxList)
 
 	var ibcDenomNewList entity.IBCDenomList
 	for _, ibcTx := range ibcTxList {
@@ -166,6 +166,8 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 			w.setNextTryTime(ibcTx)
 		}
 
+		//记录"处理中"状态
+		ibcTx = w.updateProcessInfo(ibcTx, timeoutIbcTxMap, noFoundAckMap)
 		if err := w.updateIbcTx(ibcTx); err != nil {
 			logrus.Errorf("task %s worker %s chain %s updateIbcTx error, record_id: %s, %v", w.taskName, w.workerName, scChainId, ibcTx.RecordId, err)
 		}
@@ -177,6 +179,25 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 			logrus.Errorf("task %s worker %s chain %s insert denoms error, %v", w.taskName, w.workerName, scChainId, err)
 		}
 	}
+}
+
+func (w *ibcTxRelateWorker) updateProcessInfo(ibcTx *entity.ExIbcTx, timeOutMap map[string]struct{}, noFoundAckMap map[string]struct{}) *entity.ExIbcTx {
+	if ibcTx.Status == entity.IbcTxStatusProcessing {
+		if ibcTx.DcChainId == "" {
+			ibcTx.ProcessInfo = constant.NoFoundDcChainId
+		} else {
+			if _, ok := timeOutMap[ibcTx.RecordId]; ok {
+				ibcTx.ProcessInfo = constant.NoFoundSuccessTimeoutPacket
+			} else if _, ok := noFoundAckMap[ibcTx.RecordId]; ok {
+				ibcTx.ProcessInfo = constant.NoFoundSuccessAcknowledgePacket
+			} else {
+				ibcTx.ProcessInfo = constant.NoFoundSuccessRecvPacket
+			}
+		}
+	} else {
+		ibcTx.ProcessInfo = ""
+	}
+	return ibcTx
 }
 
 func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.Tx) *entity.IBCDenom {
@@ -299,23 +320,28 @@ func (w *ibcTxRelateWorker) genPacketTxMapKey(chainId, packetId string) string {
 	return fmt.Sprintf("%s_%s", chainId, packetId)
 }
 
-func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExIbcTx) (map[string]*entity.Tx, map[string]*entity.Tx, map[string]*entity.Tx) {
+func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExIbcTx) (map[string]*entity.Tx, map[string]*entity.Tx, map[string]*entity.Tx, map[string]struct{}, map[string]struct{}) {
 	packetIdsMap := w.packetIdsMap(ibcTxList)
 	chainLatestBlockMap := w.findLatestBlock(scChainId, ibcTxList)
 	var refundedTxPacketIds, ackPacketIds []string
 	recvPacketTxMap := make(map[string]*entity.Tx)
 	refundedTxMap := make(map[string]*entity.Tx)
 	ackTxMap := make(map[string]*entity.Tx)
+	timeoutIbcTxMap := make(map[string]struct{})
+	noFoundAckMap := make(map[string]struct{})
+	packetIdRecordMap := make(map[string]string, len(packetIdsMap))
 
 	for dcChainId, packetIds := range packetIdsMap {
 		latestBlock := chainLatestBlockMap[dcChainId]
 		var recvPacketIds []string
 		for _, packet := range packetIds { // recv && refunded
+			packetIdRecordMap[dcChainId+packet.PacketId] = packet.RecordId
 			recvPacketIds = append(recvPacketIds, packet.PacketId)
 			timeoutStr := strconv.FormatInt(packet.TimeOutTime, 10)
 			if len(timeoutStr) > 10 { // 非秒级时间
 				if len(timeoutStr) == 19 && time.Now().UnixNano() > packet.TimeOutTime { // Nano
 					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
+					timeoutIbcTxMap[packet.RecordId] = struct{}{}
 				} else {
 					logrus.Warningf("unkonwn timeout time %s, chain: %s, packet id: %s", timeoutStr, dcChainId, packet.PacketId)
 					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
@@ -323,6 +349,7 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 			} else if latestBlock != nil {
 				if latestBlock.Height > packet.TimeoutHeight || latestBlock.Time > packet.TimeOutTime {
 					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
+					timeoutIbcTxMap[packet.RecordId] = struct{}{}
 				}
 			}
 		}
@@ -342,6 +369,9 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 							recvPacketTxMap[w.genPacketTxMapKey(dcChainId, recvMsg.PacketId)] = tx
 						} else {
 							ackPacketIds = append(ackPacketIds, recvMsg.PacketId)
+							if recordId, ok := packetIdRecordMap[dcChainId+recvMsg.PacketId]; ok {
+								noFoundAckMap[recordId] = struct{}{}
+							}
 						}
 					} else {
 						logrus.Errorf("%s recv packet tx(%s) packet id is empty", dcChainId, tx.TxHash)
@@ -391,7 +421,7 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 		}
 	}
 
-	return recvPacketTxMap, refundedTxMap, ackTxMap
+	return recvPacketTxMap, refundedTxMap, ackTxMap, timeoutIbcTxMap, noFoundAckMap
 }
 
 func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string][]*dto.PacketIdDTO {
@@ -413,6 +443,7 @@ func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string
 			TimeoutHeight: transferMsg.TimeoutHeight.RevisionHeight,
 			PacketId:      transferMsg.PacketId,
 			TimeOutTime:   transferMsg.TimeoutTimestamp,
+			RecordId:      tx.RecordId,
 		})
 	}
 	return res

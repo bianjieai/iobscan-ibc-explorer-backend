@@ -26,6 +26,7 @@ type (
 		TimeStamp int64            `json:"time_stamp"`
 	}
 	IbcTxDto struct {
+		RecordId         string    `json:"record_id"`
 		ScAddr           string    `json:"sc_addr"`
 		DcAddr           string    `json:"dc_addr"`
 		Status           int       `json:"status"`
@@ -48,6 +49,7 @@ type (
 	}
 
 	IbcTxDetailDto struct {
+		RecordId         string    `json:"record_id"`
 		ScSigners        []string  `json:"sc_signers"`
 		DcSigners        []string  `json:"dc_signers"`
 		ScAddr           string    `json:"sc_addr"`
@@ -119,6 +121,7 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 		}
 	}
 	return IbcTxDto{
+		RecordId:         ibcTx.RecordId,
 		ScAddr:           ibcTx.ScAddr,
 		DcAddr:           ibcTx.DcAddr,
 		Status:           int(ibcTx.Status),
@@ -139,6 +142,7 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 
 func (dto IbcTxDetailDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDetailDto {
 	return IbcTxDetailDto{
+		RecordId:         ibcTx.RecordId,
 		ScAddr:           ibcTx.ScAddr,
 		DcAddr:           ibcTx.DcAddr,
 		Status:           int(ibcTx.Status),
