@@ -92,6 +92,10 @@ type Task struct {
 	SwitchIbcTokenStatisticsTask       bool `mapstructure:"switch_ibc_token_statistics_task"`
 	SwitchIbcChannelStatisticsTask     bool `mapstructure:"switch_ibc_channel_statistics_task"`
 	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
+
+	SyncTransferTxWorkerNum    int `mapstructure:"sync_transfer_tx_worker_num"`
+	IbcTxRelateWorkerNum       int `mapstructure:"ibc_tx_relate_worker_num"`
+	FixDenomTraceDataWorkerNum int `mapstructure:"fix_denom_trace_data_worker_num"`
 }
 
 type Spi struct {

@@ -33,6 +33,13 @@ func (t *IbcTxRelateTask) Cron() int {
 	return ThreeMinute
 }
 
+func (t *IbcTxRelateTask) workerNum() int {
+	if global.Config.Task.IbcTxRelateWorkerNum > 0 {
+		return global.Config.Task.IbcTxRelateWorkerNum
+	}
+	return ibcTxRelateTaskWorkerNum
+}
+
 func (t *IbcTxRelateTask) Run() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
@@ -49,9 +56,10 @@ func (t *IbcTxRelateTask) Run() int {
 		chainQueue: chainQueue,
 	}
 
+	workerNum := t.workerNum()
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(ibcTxRelateTaskWorkerQuantity)
-	for i := 1; i <= ibcTxRelateTaskWorkerQuantity; i++ {
+	waitGroup.Add(workerNum)
+	for i := 1; i <= workerNum; i++ {
 		workName := fmt.Sprintf("worker-%d", i)
 		go func(wn string) {
 			newIbcTxRelateWorker(t.Name(), wn, ibcTxTargetLatest, chainMap).exec()
