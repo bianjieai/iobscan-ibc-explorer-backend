@@ -61,11 +61,17 @@ func TestIbcRelayerCronTask_handleOneRelayerStatusAndTime(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_updateRelayerStatus(t *testing.T) {
+	chainMap, _ := getAllChainMap()
+	task.chainConfigMap = chainMap
 	task.updateRelayerStatus(&entity.IBCRelayer{
-		RelayerId:  "cf0fb3209ec3323c539e0e24c44e576d",
-		Status:     2,
-		TimePeriod: 146,
-		UpdateTime: 1656558771,
+		RelayerId:  "bf8d73cd76b3b6b4a53e1b8c956b7978",
+		ChainA:     "irishub_qa",
+		ChainB:     "bigbang",
+		ChannelA:   "channel-115",
+		ChannelB:   "channel-199",
+		Status:     1,
+		TimePeriod: -1,
+		UpdateTime: 1660705368,
 	})
 }
 

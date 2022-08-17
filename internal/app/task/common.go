@@ -1,6 +1,7 @@
 package task
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -240,4 +242,23 @@ func calculateNextDenomPath(packet model.Packet) (string, bool) {
 		denomPath = fmt.Sprintf("%s%s", prefixDc, denomPath)
 		return denomPath, false
 	}
+}
+
+// queryClientState 查询lcd client_state_path接口
+func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
+	url := fmt.Sprintf("%s%s", lcd, apiPath)
+	bz, err := utils.HttpGet(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp vo.ClientStateResp
+	err = json.Unmarshal(bz, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }

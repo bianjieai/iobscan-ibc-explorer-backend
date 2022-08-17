@@ -20,6 +20,7 @@ const (
 	AllChain              = "allchain"
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
+	PortTransfer          = "transfer"
 
 	DefaultLimit = 500
 
