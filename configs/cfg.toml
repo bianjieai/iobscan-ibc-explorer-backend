@@ -65,5 +65,7 @@ sync_transfer_tx_worker_num = 5
 ibc_tx_relate_worker_num = 5
 fix_denom_trace_data_worker_num = 8
 
+create_at_use_tx_time = false
+
 [chain_config]
 new_chains = "bigbang,irishub_qa"

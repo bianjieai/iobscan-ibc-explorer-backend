@@ -96,6 +96,8 @@ type Task struct {
 	SyncTransferTxWorkerNum    int `mapstructure:"sync_transfer_tx_worker_num"`
 	IbcTxRelateWorkerNum       int `mapstructure:"ibc_tx_relate_worker_num"`
 	FixDenomTraceDataWorkerNum int `mapstructure:"fix_denom_trace_data_worker_num"`
+
+	CreateAtUseTxTime bool `mapstructure:"create_at_use_tx_time"`
 }
 
 type Spi struct {

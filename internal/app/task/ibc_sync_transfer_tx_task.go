@@ -227,6 +227,10 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
 			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
+			createAt := nowUnix
+			if global.Config.Task.CreateAtUseTxTime {
+				createAt = tx.Time
+			}
 			ibcTxList = append(ibcTxList, &entity.ExIbcTx{
 				RecordId:  recordId,
 				TxTime:    tx.Time,
@@ -262,8 +266,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				BaseDenomChainId: baseDenomChainId,
 				RetryTimes:       0,
 				NextTryTime:      nowUnix,
-				CreateAt:         nowUnix,
-				UpdateAt:         nowUnix,
+				CreateAt:         createAt,
+				UpdateAt:         createAt,
 			})
 		}
 	}
