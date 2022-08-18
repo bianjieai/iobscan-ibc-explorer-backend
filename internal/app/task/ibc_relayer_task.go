@@ -735,7 +735,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		if err != nil {
 			return
 		}
-		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainAAddress, clientIdB, startTime)
+		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, clientIdB, startTime)
 		if err != nil {
 			logrus.Warnf("get relayer timePeriod and updateTime fail, %s", err.Error())
 		}
