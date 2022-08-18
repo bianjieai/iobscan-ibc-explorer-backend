@@ -29,7 +29,9 @@ func Serve(cfg *conf.Config) {
 
 	r := gin.Default()
 	api.Routers(r)
-	go monitor.Start(cfg.App.Prometheus)
+	if cfg.App.StartMonitor {
+		go monitor.Start(cfg.App.Prometheus)
+	}
 	if cfg.App.StartTask {
 		startTask()
 	}

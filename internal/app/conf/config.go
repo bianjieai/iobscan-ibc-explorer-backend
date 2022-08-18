@@ -37,6 +37,7 @@ type App struct {
 	Name                 string
 	Addr                 string
 	Env                  string
+	StartMonitor         bool  `mapstructure:"start_monitor"`
 	StartTask            bool  `mapstructure:"start_task"`
 	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
 	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
@@ -96,6 +97,8 @@ type Task struct {
 	SyncTransferTxWorkerNum    int `mapstructure:"sync_transfer_tx_worker_num"`
 	IbcTxRelateWorkerNum       int `mapstructure:"ibc_tx_relate_worker_num"`
 	FixDenomTraceDataWorkerNum int `mapstructure:"fix_denom_trace_data_worker_num"`
+
+	CreateAtUseTxTime bool `mapstructure:"create_at_use_tx_time"`
 }
 
 type Spi struct {
