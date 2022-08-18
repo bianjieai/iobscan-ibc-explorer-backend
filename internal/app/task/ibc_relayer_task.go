@@ -303,6 +303,10 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 }
 
 func getStakeParams(baseUrl, chainId string) {
+	if chainId == "irishub_qa" {
+		fmt.Println("sdd")
+	}
+
 	bz, err := utils.HttpGet(baseUrl)
 	if err != nil {
 		logrus.Errorf(" staking %s params error, %v", baseUrl, err)
@@ -735,7 +739,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		if err != nil {
 			return
 		}
-		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainAAddress, clientIdB, startTime)
+		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, clientIdB, startTime)
 		if err != nil {
 			logrus.Warnf("get relayer timePeriod and updateTime fail, %s", err.Error())
 		}
