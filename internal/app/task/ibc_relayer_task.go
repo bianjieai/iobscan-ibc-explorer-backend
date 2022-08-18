@@ -303,10 +303,6 @@ func (t *IbcRelayerCronTask) cacheChainUnbondTimeFromLcd() {
 }
 
 func getStakeParams(baseUrl, chainId string) {
-	if chainId == "irishub_qa" {
-		fmt.Println("sdd")
-	}
-
 	bz, err := utils.HttpGet(baseUrl)
 	if err != nil {
 		logrus.Errorf(" staking %s params error, %v", baseUrl, err)
