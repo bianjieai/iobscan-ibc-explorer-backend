@@ -350,10 +350,11 @@ func getChannelFromLcd(baseUrl string) []vo.LcdChannel {
 	return connections.Channels
 }
 
-func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
+func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime, timePeriod int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerRunningStr)
 	//Running=>Close: update_client时间与当前时间差大于relayer基准周期
-	if relayer.TimePeriod > 0 && relayer.TimePeriod < time.Now().Unix()-updateTime {
+	//处理新基准时间波动情况误差20秒
+	if timePeriod > 0 && timePeriod+20 < time.Now().Unix()-updateTime {
 		relayer.Status = entity.RelayerStop
 		if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
 			f.SetState(entity.RelayerRunningStr)
@@ -391,9 +392,9 @@ func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []
 }
 
 // Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
-func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime int64) {
+func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime, timePeriod int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerStopStr)
-	if updateTime > 0 && relayer.TimePeriod > 0 && relayer.TimePeriod > time.Now().Unix()-updateTime {
+	if updateTime > 0 && timePeriod > 0 && timePeriod > time.Now().Unix()-updateTime {
 		var channelStatus []string
 		if len(paths) == 0 {
 			return
@@ -416,7 +417,7 @@ func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths [
 				}
 			}
 		}
-	} else if relayer.TimePeriod == -1 && relayer.UpdateTime == 0 && updateTime > 0 {
+	} else if relayer.TimePeriod == -1 && relayer.UpdateTime == 0 && updateTime > 0 { //新relayer
 		relayer.Status = entity.RelayerRunning
 		if err := f.Event(fsmtool.IbcRelayerEventRunning, relayer); err == nil {
 			f.SetState(entity.RelayerStopStr)
@@ -427,26 +428,13 @@ func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths [
 }
 func (t *IbcRelayerCronTask) handleOneRelayerStatusAndTime(relayer *entity.IBCRelayer, updateTime, timePeriod int64, mathChannelRet int) {
 	paths := t.getChannelsStatus(relayer.ChainA, relayer.ChainB)
-	//处理新基准时间波动情况误差10秒
-	//newTimePeriod := time.Now().Unix() - updateTime
-	//if updateTime > 0 && (relayer.TimePeriod+10 > newTimePeriod || newTimePeriod > relayer.TimePeriod-10) && mathChannelRet == channelMatchSuccess {
-	//	//最新基准时间波动情况误差在10秒内，不改变基准周期和relayer状态，只更新updateTime
-	//	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, 0); err != nil {
-	//		logrus.Error("update relayer update_time fail, ", err.Error())
-	//	}
-	//	return
-	//}
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 	if relayer.Status == entity.RelayerRunning {
-		t.handleToUnknow(relayer, paths, updateTime)
+		t.handleToUnknow(relayer, paths, updateTime, timePeriod)
 	} else {
 		// Close=>Running: relayer的双向通道状态均为STATE_OPEN且update_client 时间与当前时间差小于relayer基准周期
-		t.handleToRunning(relayer, paths, updateTime)
+		t.handleToRunning(relayer, paths, updateTime, timePeriod)
 	}
-	//if mathChannelRet == channelMatchFail || mathChannelRet == channelNotFound {
-	//	//不是当前relayer通道，不更新updateTime和timePeriod
-	//	return
-	//}
 	if err := relayerRepo.UpdateStatusAndTime(relayer.RelayerId, 0, updateTime, timePeriod); err != nil {
 		logrus.Error("update relayer about time_period and update_time fail, ", err.Error())
 	}
