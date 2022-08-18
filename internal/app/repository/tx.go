@@ -11,8 +11,8 @@ import (
 
 type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
-	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error)
-	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
+	GetTimePeriodByUpdateClient(chainId, address, clientId string, startTime int64) (int64, int64, error)
+	GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error)
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
 	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
 	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
@@ -54,44 +54,37 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 //1: latest update_client tx_time
 //2: time_period
 //3: error
-func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error) {
-	var (
-		res      []*entity.Tx
-		clientId string
-	)
+func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address, clientId string, startTime int64) (int64, int64, error) {
+	var res []*entity.Tx
 	query := bson.M{
-		"msgs.type":       constant.MsgTypeUpdateClient,
-		"msgs.msg.signer": address,
+		"msgs.type":          constant.MsgTypeUpdateClient,
+		"msgs.msg.signer":    address,
+		"msgs.msg.client_id": clientId,
 		"time": bson.M{
 			"$gte": startTime,
 		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1, "msgs.type": 1, "msgs.msg.client_id": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
+		Select(bson.M{"time": 1, "msgs.type": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
 	if err != nil {
-		return 0, 0, clientId, err
+		return 0, 0, err
 	}
-	if len(res) > 0 && len(res[0].DocTxMsgs) > 0 {
-		for _, msg := range res[0].DocTxMsgs {
-			if msg.Type == constant.MsgTypeUpdateClient {
-				clientId = msg.CommonMsg().ClientId
-			}
-		}
-	}
+
 	if len(res) == 2 {
-		return res[0].Time, res[0].Time - res[1].Time, clientId, nil
+		return res[0].Time, res[0].Time - res[1].Time, nil
 	}
 	if len(res) == 1 {
-		return res[0].Time, -1, clientId, nil
+		return res[0].Time, -1, nil
 	}
-	return 0, -1, clientId, nil
+	return 0, -1, nil
 }
 
-func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error) {
+func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error) {
 	var res []*entity.Tx
 	query := bson.M{
-		"msgs.type":       constant.MsgTypeRecvPacket,
-		"msgs.msg.signer": address,
+		"msgs.type":                      constant.MsgTypeRecvPacket,
+		"msgs.msg.signer":                address,
+		"msgs.msg.packet.source_channel": channelId,
 		"time": bson.M{
 			"$gte": startTime,
 		},
@@ -166,7 +159,6 @@ func (repo *TxRepo) FindByPacketIds(chainId, txType string, packetIds []string, 
 	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
 	return res, err
 }
-
 
 func (repo *TxRepo) GetTxByHash(chainId string, hash string) (entity.Tx, error) {
 	var res entity.Tx

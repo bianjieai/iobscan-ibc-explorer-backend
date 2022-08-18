@@ -174,9 +174,10 @@ func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainC
 			v.ChainId = dcChainId
 		} else {
 			if !lcdConnectionErr { // 如果遇到lcd连接问题，则不再请求lcd.
-				stateResp, err := t.queryClientState(chain.ChainId, chain.Lcd, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
+				stateResp, err := queryClientState(chain.Lcd, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
 				if err != nil {
 					lcdConnectionErr = isConnectionErr(err)
+					logrus.Errorf("task %s %s queryClientState error, %v", t.Name(), chain.ChainId, err)
 				} else {
 					v.ChainId = t.formatChainId(stateResp.IdentifiedClientState.ClientState.ChainId)
 				}
@@ -192,27 +193,6 @@ func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainC
 
 func (t *IbcChainConfigTask) formatChainId(chainId string) string {
 	return strings.ReplaceAll(chainId, "-", "_")
-}
-
-// queryClientState 查询lcd client_state_path接口
-func (t *IbcChainConfigTask) queryClientState(chainId, lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
-	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
-	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
-	url := fmt.Sprintf("%s%s", lcd, apiPath)
-	bz, err := utils.HttpGet(url)
-	if err != nil {
-		logrus.Errorf("task %s %s queryClientState error, %s, %v", t.Name(), chainId, url, err)
-		return nil, err
-	}
-
-	var resp vo.ClientStateResp
-	err = json.Unmarshal(bz, &resp)
-	if err != nil {
-		logrus.Errorf("task %s %s queryClientState error, %s, %v", t.Name(), chainId, url, err)
-		return nil, err
-	}
-
-	return &resp, nil
 }
 
 func (t *IbcChainConfigTask) setCounterpartyState(chainId string) {
