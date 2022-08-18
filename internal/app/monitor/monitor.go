@@ -72,11 +72,14 @@ func lcdConnectionStatus(quit chan bool) {
 				return
 			}
 			for _, val := range chainCfgs {
-				_, err := utils.HttpGet(fmt.Sprintf("%s/node_info", val.Lcd))
+				_, err = utils.HttpGet(fmt.Sprintf("%s/node_info", val.Lcd))
 				if err != nil {
-					lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(-1))
-					logrus.Error(err.Error())
-					continue
+					_, err = utils.HttpGet(fmt.Sprintf("%s/blocks/latest", val.Lcd))
+					if err != nil {
+						lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(-1))
+						logrus.Error(err.Error())
+						continue
+					}
 				}
 				lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
 			}

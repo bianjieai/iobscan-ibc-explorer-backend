@@ -37,6 +37,7 @@ type App struct {
 	Name                 string
 	Addr                 string
 	Env                  string
+	StartMonitor         bool  `mapstructure:"start_monitor"`
 	StartTask            bool  `mapstructure:"start_task"`
 	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
 	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
