@@ -33,10 +33,10 @@ func Serve(cfg *conf.Config) {
 		go monitor.Start(cfg.App.Prometheus)
 	}
 	if cfg.App.StartTask {
-		startTask()
+		go startTask()
 	}
 	if cfg.App.StartOneOffTask {
-		startOneOffTask()
+		go startOneOffTask()
 	}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
