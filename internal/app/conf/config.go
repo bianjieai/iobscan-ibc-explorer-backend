@@ -15,7 +15,7 @@ type Config struct {
 	Log         Log
 	Spi         Spi
 	Task        Task
-	ChainConfig ChainConfig
+	ChainConfig ChainConfig `mapstructure:"chain_config"`
 }
 
 type Mysql struct {
