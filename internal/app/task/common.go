@@ -131,6 +131,15 @@ func getRootDenom(fullPath string) string {
 	return split[len(split)-1]
 }
 
+// splitFullPath get denom path and root denom from denom path
+//   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
+func splitFullPath(fullPath string) (denomPath, rootDenom string) {
+	pathSplits := strings.Split(fullPath, "/")
+	denomPath = strings.Join(pathSplits[0:len(pathSplits)-1], "/")
+	rootDenom = pathSplits[len(pathSplits)-1]
+	return
+}
+
 // calculateIbcHash calculate denom hash by denom path
 //   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
 func calculateIbcHash(fullPath string) string {
