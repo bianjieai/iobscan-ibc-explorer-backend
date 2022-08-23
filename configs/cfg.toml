@@ -1,0 +1,72 @@
+[app]
+name = "iobscan-ibc-explorer-backend"
+addr = "0.0.0.0:8000"
+version = "0.4"
+env = "dev"
+start_task = false
+start_one_off_task = false
+start_monitor = false
+api_cache_alive_seconds=3
+max_page_size=3000
+prometheus_port="9090"
+
+[log]
+log_level = "debug"
+log_file_name = "sw"
+log_path = "/var/log"
+log_max_age_day = 15
+log_rotation_time_day = 1
+log_output = "std"
+
+[mongo]
+url = "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805"
+database = "iobscan-ibc_0805"
+
+[redis]
+addrs = "127.0.0.1:6379"
+user = ""
+password = ""
+mode = "single"
+db = 0
+
+[spi]
+coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
+
+[task]
+cron_job_relayer_addr="0 0 */6 * * ?"
+cron_time_statistic_task=5
+cron_time_chain_task = 5
+cron_time_channel_task = 5
+cron_time_relayer_task = 5
+cron_time_token_price_task = 5
+cron_time_token_task = 5
+redis_lock_expire_time= 300
+cron_time_chain_config_task = 120
+cron_time_denom_calculate_task = 120
+cron_time_denom_update_task = 120
+cron_time_sync_transfer_tx_task = 120
+single_chain_sync_transfer_tx_max = 5000
+cron_time_ibc_tx_relate_task = 120
+single_chain_ibc_tx_relate_max = 5000
+cron_time_ibc_tx_migrate_task = 3600
+fix_denom_trace_data_start_time = 1634081359
+fix_denom_trace_data_end_time = 1658814309
+fix_denom_trace_history_data_start_time = 0
+fix_denom_trace_history_data_end_time = 99999999
+cron_time_sync_ack_tx_task=120
+switch_fix_denom_trace_history_data_task = false
+switch_fix_denom_trace_data_task = false
+switch_add_chain_task = false
+switch_ibc_tx_migrate_task = true
+switch_ibc_token_statistics_task = false
+switch_ibc_channel_statistics_task = false
+switch_ibc_relayer_statistics_task = false
+
+sync_transfer_tx_worker_num = 5
+ibc_tx_relate_worker_num = 5
+fix_denom_trace_data_worker_num = 8
+
+create_at_use_tx_time = false
+
+[chain_config]
+new_chains = "bigbang,irishub_qa"
