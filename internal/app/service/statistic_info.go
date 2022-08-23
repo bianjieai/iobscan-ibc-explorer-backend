@@ -44,7 +44,7 @@ func (svc *StatisticInfoService) AccountsDailyStatistic() (vo.AccountsDailyResp,
 	}
 
 	var data map[string][]string
-	utils.UnmarshalJsonIgnoreErr([]byte(ret.Data), &data)
+	utils.UnmarshalJsonIgnoreErr([]byte(ret.StatisticsInfo), &data)
 
 	datas, err := chainConfigRepo.FindAllChainIds()
 	if err != nil {
