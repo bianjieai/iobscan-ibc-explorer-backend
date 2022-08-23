@@ -1,0 +1,285 @@
+basePath: '{{.BasePath}}'
+definitions:
+  model.Coin:
+    properties:
+      amount:
+        type: string
+      denom:
+        type: string
+    type: object
+  model.Fee:
+    properties:
+      amount:
+        items:
+          $ref: '#/definitions/model.Coin'
+        type: array
+      gas:
+        type: integer
+    type: object
+  vo.AccountsDailyDto:
+    properties:
+      address:
+        items:
+          type: string
+        type: array
+      chain_name:
+        type: string
+    type: object
+  vo.AccountsDailyResp:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/vo.AccountsDailyDto'
+        type: array
+      time_stamp:
+        type: integer
+    type: object
+  vo.ChainDto:
+    properties:
+      chain_id:
+        type: string
+      channels:
+        type: integer
+      connected_chains:
+        type: integer
+      currency:
+        type: string
+      ibc_tokens:
+        type: integer
+      ibc_tokens_value:
+        type: string
+      relayers:
+        type: integer
+      transfer_txs:
+        type: integer
+      transfer_txs_value:
+        type: string
+    type: object
+  vo.ChainListResp:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/vo.ChainDto'
+        type: array
+      page_info:
+        $ref: '#/definitions/vo.PageInfo'
+        type: object
+      time_stamp:
+        type: integer
+    type: object
+  vo.FailTxsListDto:
+    properties:
+      chain_id:
+        type: string
+      recv_chain:
+        type: string
+      send_chain:
+        type: string
+      tx_error_log:
+        type: string
+      tx_hash:
+        type: string
+    type: object
+  vo.FailTxsListResp:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/vo.FailTxsListDto'
+        type: array
+      page_info:
+        $ref: '#/definitions/vo.PageInfo'
+        type: object
+      time_stamp:
+        type: integer
+    type: object
+  vo.IbcStatisticDto:
+    properties:
+      count:
+        type: integer
+      statistics_name:
+        type: string
+    type: object
+  vo.PageInfo:
+    properties:
+      page_num:
+        type: integer
+      page_size:
+        type: integer
+      total_item:
+        type: integer
+      total_page:
+        type: integer
+    type: object
+  vo.RelayerTxFeeDto:
+    properties:
+      chain_id:
+        type: string
+      fee:
+        $ref: '#/definitions/model.Fee'
+        type: object
+      relayer_addr:
+        type: string
+      tx_hash:
+        type: string
+    type: object
+  vo.RelayerTxFeesResp:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/vo.RelayerTxFeeDto'
+        type: array
+      page_info:
+        $ref: '#/definitions/vo.PageInfo'
+        type: object
+      time_stamp:
+        type: integer
+    type: object
+  vo.StatisticInfoResp:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/vo.IbcStatisticDto'
+        type: array
+      time_stamp:
+        type: integer
+    type: object
+host: '{{.Host}}'
+info:
+  contact: {}
+  description: Iobscan Ibc Explorer Support API document
+  license: {}
+  title: Iobscan Ibc Explorer Support API
+  version: visit /version
+paths:
+  /ibc/accounts_daily/api_support:
+    get:
+      consumes:
+      - application/json
+      description: get daily accounts of chains
+      operationId: list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/vo.AccountsDailyResp'
+            type: object
+      summary: list
+      tags:
+      - app_version
+  /ibc/chainList/api_support:
+    get:
+      consumes:
+      - application/json
+      description: get IBC BUSD of chains
+      operationId: list
+      parameters:
+      - default: 1
+        description: page num
+        in: query
+        name: page_num
+        required: true
+        type: integer
+      - default: 10
+        description: page size
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: if used count
+        enum:
+        - true
+        - false
+        in: query
+        name: use_count
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/vo.ChainListResp'
+            type: object
+      summary: list
+      tags:
+      - app_version
+  /ibc/fail_txs/api_support:
+    get:
+      consumes:
+      - application/json
+      description: get  fail txs list
+      operationId: list
+      parameters:
+      - default: 1
+        description: page num
+        in: query
+        name: page_num
+        required: true
+        type: integer
+      - default: 10
+        description: page size
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/vo.FailTxsListResp'
+            type: object
+      summary: list
+      tags:
+      - app_version
+  /ibc/relayers_fee/api_support:
+    get:
+      consumes:
+      - application/json
+      description: get relayers fee list of chains
+      operationId: list
+      parameters:
+      - default: 1
+        description: page num
+        in: query
+        name: page_num
+        required: true
+        type: integer
+      - default: 10
+        description: page size
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/vo.RelayerTxFeesResp'
+            type: object
+      summary: list
+      tags:
+      - app_version
+  /ibc/statistics/api_support:
+    get:
+      consumes:
+      - application/json
+      description: get ibc txs
+      operationId: list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/vo.StatisticInfoResp'
+            type: object
+      summary: list
+      tags:
+      - app_version
+swagger: "2.0"

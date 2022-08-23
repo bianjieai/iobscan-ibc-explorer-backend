@@ -14,7 +14,11 @@ type IExIbcTxRepo interface {
 	InsertBatch(txs []*entity.ExIbcTx) error
 	InsertBatchHistory(txs []*entity.ExIbcTx) error
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindAllByStatus(stats []entity.IbcTxStatus, skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindAllHistoryByStatus(stats []entity.IbcTxStatus, skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindHistoryRelayerTxs(skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindRelayerTxs(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
 	FirstHistory() (*entity.ExIbcTx, error)
 	Latest() (*entity.ExIbcTx, error)
@@ -506,5 +510,40 @@ func (repo *ExIbcTxRepo) Aggr24hActiveChannelTxs(startTime int64) ([]*dto.Aggr24
 	pipe := repo.Aggr24hActiveChannelTxsPipe(startTime)
 	var res []*dto.Aggr24hActiveChannelTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+//=========================api_support===============================================
+func (repo *ExIbcTxRepo) FindAllByStatus(stats []entity.IbcTxStatus, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{
+		"$in": stats,
+	}}).Sort("-create_at").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindAllHistoryByStatus(stats []entity.IbcTxStatus, skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{"status": bson.M{
+		"$in": stats,
+	}}).Sort("-create_at").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindRelayerTxs(skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.coll().Find(context.Background(), bson.M{
+		"status":            bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded, entity.IbcTxStatusFailed}},
+		"sc_tx_info.status": entity.TxStatusSuccess,
+	}).Sort("-create_at").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindHistoryRelayerTxs(skip, limit int64) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	err := repo.collHistory().Find(context.Background(), bson.M{
+		"status":            bson.M{"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded, entity.IbcTxStatusFailed}},
+		"sc_tx_info.status": entity.TxStatusSuccess,
+	}).Sort("-create_at").Skip(skip).Limit(limit).All(&res)
 	return res, err
 }

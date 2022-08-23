@@ -1,9 +1,7 @@
 package api
 
 import (
-	"net/http"
-	"time"
-
+	_ "github.com/bianjieai/iobscan-ibc-explorer-backend/docs"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/middleware"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/rest"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
@@ -12,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"net/http"
+	"time"
 )
 
 var (
@@ -22,7 +22,6 @@ var (
 func SetApiCacheAliveTime(duration int) {
 	aliveSeconds = duration
 }
-
 func Routers(Router *gin.Engine) {
 	Router.Use(middleware.Cors())
 	Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -31,11 +30,15 @@ func Routers(Router *gin.Engine) {
 	})
 
 	ibcRouter := Router.Group("ibc")
-	tokenPage(ibcRouter)
-	channelPage(ibcRouter)
-	chainPage(ibcRouter)
-	relayerPage(ibcRouter)
-	cacheTools(ibcRouter)
+	//tokenPage(ibcRouter)
+	//channelPage(ibcRouter)
+	//chainPage(ibcRouter)
+	//relayerPage(ibcRouter)
+	//cacheTools(ibcRouter)
+
+	//api_support
+	statisticApiSupport(ibcRouter)
+	chainListApiSupport(ibcRouter)
 }
 
 func tokenPage(r *gin.RouterGroup) {
@@ -62,4 +65,17 @@ func relayerPage(r *gin.RouterGroup) {
 func cacheTools(r *gin.RouterGroup) {
 	ctl := rest.CacheController{}
 	r.DELETE("/:key", ctl.Del)
+}
+
+func statisticApiSupport(r *gin.RouterGroup) {
+	ctl := rest.ApiSupportController{}
+	r.GET("/statistics/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.StatisticInfo))
+	r.GET("/fail_txs/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.FailTxsList))
+	r.GET("/relayers_fee/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTxsFee))
+	r.GET("/accounts_daily/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AccountsDaily))
+}
+
+func chainListApiSupport(r *gin.RouterGroup) {
+	ctl := rest.ChainController{}
+	r.GET("/chainList/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
 }

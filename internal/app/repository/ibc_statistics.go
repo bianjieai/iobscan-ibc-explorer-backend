@@ -11,6 +11,7 @@ import (
 type IStatisticRepo interface {
 	FindOne(statisticName string) (*entity.IbcStatistic, error)
 	UpdateOne(statisticName string, count int64) error
+	UpdateOneData(statisticName string, data string) error
 	FindBatchName(statisticNames []string) ([]*entity.IbcStatistic, error)
 }
 
@@ -33,6 +34,23 @@ func (repo *IbcStatisticRepo) UpdateOne(statisticName string, count int64) error
 		data := entity.IbcStatistic{
 			StatisticsName: statisticName,
 			Count:          count,
+			CreateAt:       time.Now().Unix(),
+			UpdateAt:       time.Now().Unix(),
+		}
+		return repo.Save(data)
+	}
+	return err
+}
+func (repo *IbcStatisticRepo) UpdateOneData(statisticName string, data string) error {
+	err := repo.coll().UpdateOne(context.Background(), bson.M{"statistics_name": statisticName}, bson.M{
+		"$set": bson.M{
+			"data":      data,
+			"update_at": time.Now().Unix(),
+		}})
+	if err == qmgo.ErrNoSuchDocuments {
+		data := entity.IbcStatistic{
+			StatisticsName: statisticName,
+			Data:           data,
 			CreateAt:       time.Now().Unix(),
 			UpdateAt:       time.Now().Unix(),
 		}

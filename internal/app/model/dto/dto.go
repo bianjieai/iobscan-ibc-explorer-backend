@@ -125,6 +125,9 @@ type Aggr24hActiveChannelTxsDTO struct {
 	DcChannel string `bson:"dc_channel"`
 }
 
+type Aggr24hActiveAddrOfDayDto struct {
+	Address string `bson:"address"`
+}
 type DenomSimpleDTO struct {
 	Denom   string
 	ChainId string

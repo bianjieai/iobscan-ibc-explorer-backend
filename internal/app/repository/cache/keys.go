@@ -29,4 +29,6 @@ const (
 	ibcChain         = "ibc_chain"
 	chainUnbondTime  = "chain_unbond_time"
 	statisticsCheck  = "statistics_check:%s_%s"
+	ibcTxLog          = "ibc_tx_log:%s"
+	DailyAccountsDate = "daily_accounts_date"
 )

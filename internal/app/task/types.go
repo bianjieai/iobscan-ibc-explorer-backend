@@ -6,12 +6,13 @@ import (
 )
 
 const (
-	EveryMinute          = 60
-	ThreeMinute          = 180
-	RedisLockExpireTime  = 300
-	OneOffTaskLockTime   = 86400 * 30
-	ThreeHourCronJobTime = "0 0 */6 * * ?"
-	statisticsCheckTimes = 5
+	EveryMinute              = 60
+	ThreeMinute              = 180
+	RedisLockExpireTime      = 300
+	OneOffTaskLockTime       = 86400 * 30
+	ThreeHourCronJobTime     = "0 0 */6 * * ?"
+	DailyAccountsCronJobTime = "0 0 8 * * ?"
+	statisticsCheckTimes     = 5
 )
 
 const (
