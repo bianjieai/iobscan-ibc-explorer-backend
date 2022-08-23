@@ -1,11 +1,13 @@
 package service
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/qiniu/qmgo"
 	"time"
 )
 
@@ -34,8 +36,11 @@ func (svc *StatisticInfoService) IbcTxStatistic() (vo.StatisticInfoResp, errors.
 func (svc *StatisticInfoService) AccountsDailyStatistic() (vo.AccountsDailyResp, errors.Error) {
 	var resp vo.AccountsDailyResp
 	ret, err := statisticRepo.FindOne(constant.AccountsDailyStatisticName)
-	if err != nil {
+	if err != nil && err != qmgo.ErrNoSuchDocuments {
 		return resp, errors.Wrap(err)
+	}
+	if ret == nil {
+		return resp, errors.Wrap(fmt.Errorf("no data"))
 	}
 
 	var data map[string][]string
