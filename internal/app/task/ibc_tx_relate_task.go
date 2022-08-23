@@ -147,7 +147,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 		if len(txList) < constant.DefaultLimit || totalRelateTx >= maxParseTx {
 			break
 		}
-		time.Sleep(1 * time.Second) // avoid master-slave delay problem
+		time.Sleep(200 * time.Millisecond) // avoid master-slave delay problem
 	}
 
 	return nil
