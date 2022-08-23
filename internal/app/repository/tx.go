@@ -14,7 +14,8 @@ type ITxRepo interface {
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
 	GetTimePeriodByUpdateClient(chainId, address string, startTime int64) (int64, int64, string, error)
 	GetLatestRecvPacketTime(chainId, address string, startTime int64) (int64, error)
-	GetLogByHash(chainId, txHash string) (string, error)
+	GetTxByHash(chainId, txHash string) (entity.Tx, error)
+	GetRelayerTxs(chainId string, skip, limit int64) ([]entity.Tx, error)
 	GetActiveAccountsOfDay(chainId string, startTime, endTime int64) ([]*dto.Aggr24hActiveAddrOfDayDto, error)
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
 	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
@@ -148,17 +149,30 @@ func (repo *TxRepo) FindByTypeAndHeight(chainId, txType string, height int64) ([
 }
 
 //========api support=========
-func (repo *TxRepo) GetLogByHash(chainId, txHash string) (string, error) {
+func (repo *TxRepo) GetRelayerTxs(chainId string, skip, limit int64) ([]entity.Tx, error) {
+	var res []entity.Tx
+	query := bson.M{
+		"msgs.type": bson.M{
+			"$in": []string{constant.MsgTypeRecvPacket, constant.MsgTypeTimeoutPacket, constant.MsgTypeAcknowledgement},
+		},
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).
+		Select(bson.M{"tx_hash": 1, "signers": 1, "fee": 1}).Skip(skip).Limit(limit).All(&res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+func (repo *TxRepo) GetTxByHash(chainId, txHash string) (entity.Tx, error) {
 	var res entity.Tx
 	query := bson.M{
 		"tx_hash": txHash,
 	}
-	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"log": 1}).One(&res)
+	err := repo.coll(chainId).Find(context.Background(), query).One(&res)
 	if err != nil {
-		return "", err
+		return res, err
 	}
-	return res.Log, nil
+	return res, nil
 }
 
 //need index: time_-1_msgs.type_-1

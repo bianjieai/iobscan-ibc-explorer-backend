@@ -26,12 +26,12 @@ func (repo *TxLogCacheRepo) SetExpiredTime(chainId string, expiration time.Durat
 func (repo *TxLogCacheRepo) GetLogByHash(chainId, txHash string) (string, error) {
 	value, _ := repo.Get(chainId, txHash)
 	if len(value) == 0 {
-		log, err := repo.txRepo.GetLogByHash(chainId, txHash)
+		tx, err := repo.txRepo.GetTxByHash(chainId, txHash)
 		if err != nil {
 			return "", err
 		}
-		_ = repo.Set(chainId, txHash, log)
-		return log, nil
+		_ = repo.Set(chainId, txHash, tx.Log)
+		return tx.Log, nil
 	}
 	return value, nil
 }

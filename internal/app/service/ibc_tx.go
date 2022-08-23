@@ -1,10 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/qiniu/qmgo"
+	"strings"
 	"time"
 )
 
@@ -19,8 +21,9 @@ type IbcTxService struct {
 func (svc *IbcTxService) ListFailTxs(req *vo.FailTxsListReq) (*vo.FailTxsListResp, errors.Error) {
 	queryStats := []entity.IbcTxStatus{entity.IbcTxStatusFailed, entity.IbcTxStatusRefunded}
 
+	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
 	//search ex_ibc_tx_latest collection
-	ibcTxs, err := ibcTxRepo.FindAllByStatus(queryStats, req.PageNum, req.PageSize)
+	ibcTxs, err := ibcTxRepo.FindAllByStatus(queryStats, skip, limit)
 	if err != nil && err != qmgo.ErrNoSuchDocuments {
 		return nil, errors.Wrap(err)
 	}
@@ -77,47 +80,70 @@ func (svc *IbcTxService) ListFailTxs(req *vo.FailTxsListReq) (*vo.FailTxsListRes
 }
 
 func (svc *IbcTxService) ListRelayerTxFees(req *vo.RelayerTxFeesReq) (*vo.RelayerTxFeesResp, errors.Error) {
-	//search ex_ibc_tx_latest collection
-	ibcTxs, err := ibcTxRepo.FindRelayerTxs(req.PageNum, req.PageSize)
-	if err != nil && err != qmgo.ErrNoSuchDocuments {
-		return nil, errors.Wrap(err)
+	//search sync_{chain_id}_tx collection
+	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
+	var (
+		rets []vo.RelayerTxFeeDto
+		err  error
+	)
+	if req.TxHash != "" && req.ChainId == "" {
+		return nil, errors.Wrap(fmt.Errorf("chainId is invalid"))
 	}
+	getChainRelayerTxs := func(chainId, txHash string) ([]vo.RelayerTxFeeDto, error) {
+		var (
+			txs []entity.Tx
+		)
 
-	//search ex_ibc_tx collection
-	if len(ibcTxs) == 0 {
-		ibcTxs, err = ibcTxRepo.FindHistoryRelayerTxs(req.PageNum, req.PageSize)
+		if chainId != "" && txHash == "" {
+			txs, err = txRepo.GetRelayerTxs(chainId, skip, limit)
+			if err != nil && err != qmgo.ErrNoSuchDocuments {
+				return nil, errors.Wrap(err)
+			}
+		} else if chainId != "" && txHash != "" {
+			tx, err := txRepo.GetTxByHash(chainId, txHash)
+			if err != nil && err != qmgo.ErrNoSuchDocuments {
+				return nil, errors.Wrap(err)
+			}
+			txs = append(txs, tx)
+		}
+
+		items := make([]vo.RelayerTxFeeDto, 0, len(txs))
+		for _, tx := range txs {
+			item := vo.RelayerTxFeeDto{
+				ChainId:     chainId,
+				Fee:         tx.Fee,
+				TxHash:      tx.TxHash,
+				RelayerAddr: tx.Signers[0],
+			}
+			items = append(items, item)
+		}
+		return items, nil
+	}
+	var chainIds []string
+	if req.ChainId != "" {
+		chainIds = strings.Split(req.ChainId, ",")
+	} else {
+		chainCfg, err := chainConfigRepo.FindAllChainIds()
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-	}
-	items := make([]vo.RelayerTxFeeDto, 0, len(ibcTxs))
-	for _, ibcTx := range ibcTxs {
-
-		switch ibcTx.Status {
-		case entity.IbcTxStatusFailed, entity.IbcTxStatusSuccess:
-			item := vo.RelayerTxFeeDto{
-				ChainId:     ibcTx.DcChainId,
-				Fee:         ibcTx.DcTxInfo.Fee,
-				TxHash:      ibcTx.DcTxInfo.Hash,
-				RelayerAddr: ibcTx.DcTxInfo.Msg.CommonMsg().Signer,
-			}
-			items = append(items, item)
-			break
-		case entity.IbcTxStatusRefunded:
-			item := vo.RelayerTxFeeDto{
-				ChainId:     ibcTx.ScChainId,
-				Fee:         ibcTx.RefundedTxInfo.Fee,
-				TxHash:      ibcTx.RefundedTxInfo.Hash,
-				RelayerAddr: ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer,
-			}
-			items = append(items, item)
-			break
+		for _, val := range chainCfg {
+			chainIds = append(chainIds, val.ChainId)
 		}
 	}
-	totalItem := int64(len(items))
+
+	for _, chainId := range chainIds {
+		items, err := getChainRelayerTxs(chainId, req.TxHash)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		rets = append(rets, items...)
+	}
+
+	totalItem := int64(len(rets))
 	page := vo.BuildPageInfo(totalItem, req.PageNum, req.PageSize)
 	return &vo.RelayerTxFeesResp{
-		Items:     items,
+		Items:     rets,
 		PageInfo:  page,
 		TimeStamp: time.Now().Unix(),
 	}, nil

@@ -35,6 +35,8 @@ type (
 
 	RelayerTxFeesReq struct {
 		Page
+		TxHash  string `form:"tx_hash" json:"tx_hash"`
+		ChainId string `form:"chain_id" json:"chain_id"`
 	}
 
 	RelayerTxFeesResp struct {
