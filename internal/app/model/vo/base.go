@@ -1,6 +1,9 @@
 package vo
 
-import "math"
+import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
+	"math"
+)
 
 type BaseResponse struct {
 	Code    int         `json:"code"`
@@ -41,6 +44,10 @@ type Page struct {
 func ParseParamPage(pageNum int64, pageSize int64) (skip int64, limit int64) {
 	if pageNum == 0 && pageSize == 0 {
 		pageSize = 10
+	}
+	//limit max pagesize
+	if global.Config.App.MaxPageSize > 0 && pageSize > global.Config.App.MaxPageSize {
+		pageSize = global.Config.App.MaxPageSize
 	}
 	return (pageNum - 1) * pageSize, pageSize
 }
