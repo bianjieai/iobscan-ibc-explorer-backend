@@ -80,7 +80,7 @@ func HttpGet(url string) (bz []byte, err error) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("StatusCode != 200, url: %s", url)
+		return nil, fmt.Errorf("StatusCode(%s) != 200, url: %s", resp.Status, url)
 	}
 
 	bz, err = ioutil.ReadAll(resp.Body)
@@ -101,7 +101,7 @@ func HttpPost(url string, reqBody interface{}) (bz []byte, err error) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("StatusCode != 200")
+		return nil, fmt.Errorf("StatusCode(%s) != 200, url: %s", resp.Status, url)
 	}
 
 	bz, err = ioutil.ReadAll(resp.Body)
