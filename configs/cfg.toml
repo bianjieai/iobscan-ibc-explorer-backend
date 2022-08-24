@@ -4,6 +4,7 @@ addr = "0.0.0.0:8000"
 version = "0.4"
 env = "dev"
 api_cache_alive_seconds=3
+max_page_size=3000
 
 [log]
 log_level = "debug"

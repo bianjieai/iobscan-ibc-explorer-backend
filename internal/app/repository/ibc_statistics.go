@@ -44,13 +44,13 @@ func (repo *IbcStatisticRepo) UpdateOne(statisticName string, count int64) error
 func (repo *IbcStatisticRepo) UpdateOneData(statisticName string, data string) error {
 	err := repo.coll().UpdateOne(context.Background(), bson.M{"statistics_name": statisticName}, bson.M{
 		"$set": bson.M{
-			"data":      data,
-			"update_at": time.Now().Unix(),
+			"statistics_info": data,
+			"update_at":       time.Now().Unix(),
 		}})
 	if err == qmgo.ErrNoSuchDocuments {
 		data := entity.IbcStatistic{
 			StatisticsName: statisticName,
-			Data:           data,
+			StatisticsInfo: data,
 			CreateAt:       time.Now().Unix(),
 			UpdateAt:       time.Now().Unix(),
 		}

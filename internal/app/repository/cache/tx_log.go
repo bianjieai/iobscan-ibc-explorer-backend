@@ -12,6 +12,7 @@ type TxLogCacheRepo struct {
 
 func (repo *TxLogCacheRepo) Set(chainId, txHash string, log string) error {
 	_, err := rc.HSet(fmt.Sprintf(ibcTxLog, chainId), txHash, log)
+	rc.Expire(fmt.Sprintf(ibcTxLog, chainId), oneHour)
 	return err
 }
 

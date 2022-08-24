@@ -36,9 +36,10 @@ type App struct {
 	Name                 string
 	Addr                 string
 	Env                  string
-	StartTask            bool `mapstructure:"start_task"`
-	StartOneOffTask      bool `mapstructure:"start_one_off_task"`
-	ApiCacheAliveSeconds int  `mapstructure:"api_cache_alive_seconds"`
+	StartTask            bool  `mapstructure:"start_task"`
+	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
+	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
+	MaxPageSize          int64 `mapstructure:"max_page_size"`
 	Version              string
 	Prometheus           string `mapstructure:"prometheus_port"`
 }
@@ -61,15 +62,15 @@ type Log struct {
 }
 
 type Task struct {
-	CronJobDailyChainAddr  string `mapstructure:"cron_job_daily_chain_addr"`
-	CronJobRelayerAddr     string `mapstructure:"cron_job_relayer_addr"`
-	CronTimeChainTask      int    `mapstructure:"cron_time_chain_task"`
-	CronTimeChannelTask    int    `mapstructure:"cron_time_channel_task"`
-	CronTimeRelayerTask    int    `mapstructure:"cron_time_relayer_task"`
-	CronTimeStatisticTask  int    `mapstructure:"cron_time_statistic_task"`
-	CronTimeTokenTask      int    `mapstructure:"cron_time_token_task"`
-	CronTimeTokenPriceTask int    `mapstructure:"cron_time_token_price_task"`
-	RedisLockExpireTime    int    `mapstructure:"redis_lock_expire_time"`
+	CronJobDailyChainAddr        string `mapstructure:"cron_job_daily_chain_addr"`
+	CronJobRelayerAddr           string `mapstructure:"cron_job_relayer_addr"`
+	CronTimeChainTask            int    `mapstructure:"cron_time_chain_task"`
+	CronTimeChannelTask          int    `mapstructure:"cron_time_channel_task"`
+	CronTimeRelayerTask          int    `mapstructure:"cron_time_relayer_task"`
+	CronTimeStatisticTask        int    `mapstructure:"cron_time_statistic_task"`
+	CronTimeTokenTask            int    `mapstructure:"cron_time_token_task"`
+	CronTimeTokenPriceTask       int    `mapstructure:"cron_time_token_price_task"`
+	RedisLockExpireTime          int    `mapstructure:"redis_lock_expire_time"`
 	CronTimeChainConfigTask      int    `mapstructure:"cron_time_chain_config_task"`
 	CronTimeDenomCalculateTask   int    `mapstructure:"cron_time_denom_calculate_task"`
 	CronTimeDenomUpdateTask      int    `mapstructure:"cron_time_denom_update_task"`

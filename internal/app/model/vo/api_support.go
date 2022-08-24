@@ -65,6 +65,6 @@ type (
 func (dto IbcStatisticDto) LoadDto(data *entity.IbcStatistic) IbcStatisticDto {
 	return IbcStatisticDto{
 		StatisticsName: data.StatisticsName,
-		Count:          data.Count,
+		Count:          data.Count + data.CountLatest,
 	}
 }
