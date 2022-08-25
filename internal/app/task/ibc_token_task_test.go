@@ -15,3 +15,7 @@ func TestUpdateIBCChain(t *testing.T) {
 func TestTokenStatisticsTaskRun(t *testing.T) {
 	tokenStatisticsTask.Run()
 }
+
+func TestStart(t *testing.T) {
+	Start()
+}

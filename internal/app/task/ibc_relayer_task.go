@@ -1003,7 +1003,7 @@ func caculateActiveAddrsOfChains() {
 
 	dailyDate := time.Now().AddDate(0, 0, -1)
 	cache.GetRedisClient().Set(cache.DailyAccountsDate, utils.FmtTime(dailyDate, utils.DateFmtYYYYMMDD), -1)
-	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil {
+	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil && !qmgo.IsDup(err) {
 		logrus.Errorf("update statistic data error, %v", err)
 	}
 }
