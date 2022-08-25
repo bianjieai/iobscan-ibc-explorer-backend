@@ -955,6 +955,11 @@ func checkAndUpdateRelayerSrcChainAddr() {
 
 //==========active accounts======
 func caculateActiveAddrsOfChains() {
+	startTimeA := time.Now().Unix()
+	defer func() {
+		logrus.Infof("cronjob execute caculateActiveAddrsOfChains finished, time use %d(s)", time.Now().Unix()-startTimeA)
+	}()
+	logrus.Infof("cronjob execute caculateActiveAddrsOfChains start...")
 	configList, err := chainConfigRepo.FindAllChainIds()
 	if err != nil {
 		logrus.Errorf("find chain_config error, %v", err)

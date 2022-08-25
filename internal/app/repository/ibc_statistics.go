@@ -54,7 +54,10 @@ func (repo *IbcStatisticRepo) UpdateOneData(statisticName string, data string) e
 			CreateAt:       time.Now().Unix(),
 			UpdateAt:       time.Now().Unix(),
 		}
-		return repo.Save(data)
+		if err := repo.Save(data); err != nil && !qmgo.IsDup(err) {
+			return err
+		}
+		return nil
 	}
 	return err
 }
