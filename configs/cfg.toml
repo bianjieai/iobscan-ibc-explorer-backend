@@ -57,6 +57,7 @@ switch_fix_denom_trace_history_data_task = false
 switch_fix_denom_trace_data_task = false
 switch_add_chain_task = false
 switch_ibc_tx_migrate_task = true
+switch_only_init_relayer_data=false
 
 [chain_config]
 new_chains = "bigbang,irishub_qa"

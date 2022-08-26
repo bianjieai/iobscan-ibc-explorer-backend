@@ -88,6 +88,7 @@ type Task struct {
 	SwitchFixDenomTraceHistoryDataTask bool `mapstructure:"switch_fix_denom_trace_history_data_task"`
 	SwitchFixDenomTraceDataTask        bool `mapstructure:"switch_fix_denom_trace_data_task"`
 	SwitchAddChainTask                 bool `mapstructure:"switch_add_chain_task"`
+	SwitchOnlyInitRelayerData          bool `mapstructure:"switch_only_init_relayer_data"`
 	SwitchIbcTxMigrateTask             bool `mapstructure:"switch_ibc_tx_migrate_task"`
 }
 

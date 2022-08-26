@@ -102,6 +102,8 @@ func filterDbExist(relayers []entity.IBCRelayer, distRelayerMap map[string]bool)
 		_, exist := distRelayerMap[key]
 		_, exist1 := distRelayerMap[key1]
 		if !exist && !exist1 && val.Valid() {
+			distRelayerMap[key] = true
+			distRelayerMap[key1] = true
 			val.RelayerId = utils.Md5(val.ChannelA + val.ChannelB + val.ChainA + val.ChainB + val.ChainAAddress + val.ChainBAddress)
 			distinctArr = append(distinctArr, val)
 		}

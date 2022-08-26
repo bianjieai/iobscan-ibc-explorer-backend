@@ -101,11 +101,11 @@ func startOneOffTask() {
 	task.RegisterOneOffTasks(
 		// 一次性任务需要时再打开
 		//&task.ChannelStatisticsTask{},
-		//&task.RelayerStatisticsTask{},
+		&task.RelayerStatisticsTask{},
 		//&task.TokenStatisticsTask{},
-		&task.FixDenomTraceHistoryDataTask{},
-		&task.FixDenomTraceDataTask{},
-		&task.AddChainTask{},
+		//&task.FixDenomTraceHistoryDataTask{},
+		//&task.FixDenomTraceDataTask{},
+		//&task.AddChainTask{},
 	)
 	task.StartOneOffTask()
 }
