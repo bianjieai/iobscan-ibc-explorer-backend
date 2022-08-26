@@ -58,9 +58,12 @@ func (t *RelayerStatisticsTask) NewOnlyInitRelayerOnce() int {
 func (t *RelayerStatisticsTask) Switch() bool {
 	return global.Config.Task.SwitchIbcRelayerStatisticsTask
 }
+func (t *RelayerStatisticsTask) SwitchOnlyInitRelayer() bool {
+	return global.Config.Task.SwitchOnlyInitRelayerData
+}
 
 func (t *RelayerStatisticsTask) Run() int {
-	if t.Switch() {
+	if t.SwitchOnlyInitRelayer() {
 		ret := t.NewOnlyInitRelayerOnce()
 		if ret > 0 {
 			logrus.Infof("task only init relayer data %s ok", t.Name())
