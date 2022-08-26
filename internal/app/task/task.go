@@ -68,7 +68,8 @@ func RunOnce(task Task) {
 
 	utils.RunTimer(task.Cron(), utils.Sec, func() {
 		//lock redis mux
-		if err := cache.GetRedisClient().Lock(fmt.Sprintf("%s:%s", "task", task.Name()), time.Now().Unix(), redisLockExpireTime); err != nil {
+		lockKey := fmt.Sprintf("%s:%s", "task", task.Name())
+		if err := cache.GetRedisClient().Lock(lockKey, time.Now().Unix(), redisLockExpireTime); err != nil {
 			logrus.Errorf("redis lock failed, name:%s, err:%v", task.Name(), err.Error())
 			return
 		}
@@ -77,7 +78,7 @@ func RunOnce(task Task) {
 		metricValue := task.Run()
 		monitor.SetCronTaskStatusMetricValue(task.Name(), float64(metricValue))
 		//unlock redis mux
-		cache.GetRedisClient().Del(task.Name())
+		cache.GetRedisClient().Del(lockKey)
 		logrus.Infof("task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, metricValue)
 	})
 }
@@ -115,7 +116,8 @@ func OneOffTaskRun(task OneOffTask) {
 		logrus.Infof("one-off task %s closed", task.Name())
 		return
 	}
-	if err := cache.GetRedisClient().Lock(fmt.Sprintf("%s:%s", "one_off_task", task.Name()), time.Now().Unix(), OneOffTaskLockTime*time.Second); err != nil {
+	lockKey := fmt.Sprintf("%s:%s", "one_off_task", task.Name())
+	if err := cache.GetRedisClient().Lock(lockKey, time.Now().Unix(), OneOffTaskLockTime*time.Second); err != nil {
 		logrus.Errorf("one-off task %s has been executed, err:%v", task.Name(), err.Error())
 		return
 	}
@@ -124,7 +126,7 @@ func OneOffTaskRun(task OneOffTask) {
 	res := task.Run()
 
 	if res != 1 { // 为避免错误操作、重启、扩容等因素带来的风险，one-ff task 执行成功时不释放锁
-		_, _ = cache.GetRedisClient().Del(task.Name())
+		_, _ = cache.GetRedisClient().Del(lockKey)
 	}
 
 	logrus.Infof("one-off task %s end, time use %d(s), exec status: %d", task.Name(), time.Now().Unix()-startTime, res)

@@ -364,12 +364,15 @@ func (w *syncTransferTxWorker) getTxList(chainId string, height, limit int64) ([
 		return transferTxList, nil
 	}
 
+	maxHeight := transferTxList[len(transferTxList)-1].Height
 	txHashMap := make(map[string]string)
 	for _, v := range transferTxList {
-		txHashMap[v.TxHash] = ""
+		if v.Height == maxHeight {
+			txHashMap[v.TxHash] = ""
+		}
 	}
 
-	heightTxList, err := txRepo.FindByTypeAndHeight(chainId, constant.MsgTypeTransfer, height)
+	heightTxList, err := txRepo.FindByTypeAndHeight(chainId, constant.MsgTypeTransfer, maxHeight)
 	if err != nil {
 		logrus.Errorf("task %s worker %s FindByTypeAndHeight %s error, %v", w.taskName, w.workerName, chainId, err)
 		return nil, err
