@@ -2,15 +2,14 @@ package task
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"strings"
+	"time"
 )
 
 type (
@@ -34,11 +33,40 @@ func (t *RelayerStatisticsTask) relayerTxsMapKey(statisticId, address, baseDenom
 	return fmt.Sprintf("%s:%s:%s", statisticId, address, baseDenom)
 }
 
+//only run once for relayer data
+func (t *RelayerStatisticsTask) NewOnlyInitRelayerOnce() int {
+	startTime := time.Now().Unix()
+	historySegments, err := getHistorySegment()
+	if err != nil {
+		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
+		return -1
+	}
+	//insert relayer data
+	t.handleNewRelayerOnce(historySegments, true)
+
+	segments, err := getSegment()
+	if err != nil {
+		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
+		return -1
+	}
+	//insert relayer data
+	t.handleNewRelayerOnce(segments, false)
+	logrus.Infof("task %s finish deal, time use %d(s)", t.Name(), time.Now().Unix()-startTime)
+	return 1
+}
+
 func (t *RelayerStatisticsTask) Switch() bool {
 	return global.Config.Task.SwitchIbcRelayerStatisticsTask
 }
 
 func (t *RelayerStatisticsTask) Run() int {
+	if t.Switch() {
+		ret := t.NewOnlyInitRelayerOnce()
+		if ret > 0 {
+			logrus.Infof("task only init relayer data %s ok", t.Name())
+		}
+		return ret
+	}
 	historySegments, err := getHistorySegment()
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)

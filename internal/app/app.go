@@ -105,9 +105,9 @@ func startOneOffTask() {
 		&task.ChannelStatisticsTask{},
 		&task.RelayerStatisticsTask{},
 		&task.TokenStatisticsTask{},
-		&task.FixDenomTraceHistoryDataTask{},
-		&task.FixDenomTraceDataTask{},
-		&task.AddChainTask{},
+		//&task.FixDenomTraceHistoryDataTask{},
+		//&task.FixDenomTraceDataTask{},
+		//&task.AddChainTask{},
 	)
 	task.StartOneOffTask()
 }
