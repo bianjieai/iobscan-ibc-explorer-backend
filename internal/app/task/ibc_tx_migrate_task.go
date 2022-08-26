@@ -63,7 +63,7 @@ func (t *IbcTxMigrateTask) migrateSetting() error {
 		if len(txList) < limit {
 			break
 		} else {
-			time.Sleep(1 * time.Second) // avoid master-slave delay problem
+			time.Sleep(200 * time.Millisecond) // avoid master-slave delay problem
 		}
 	}
 
@@ -102,7 +102,7 @@ func (t *IbcTxMigrateTask) migrateNormal() error {
 		if len(txList) < limit {
 			break
 		} else {
-			time.Sleep(1 * time.Second) // avoid master-slave delay problem
+			time.Sleep(200 * time.Millisecond) // avoid master-slave delay problem
 		}
 	}
 

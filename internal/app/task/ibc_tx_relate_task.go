@@ -33,6 +33,13 @@ func (t *IbcTxRelateTask) Cron() int {
 	return ThreeMinute
 }
 
+func (t *IbcTxRelateTask) workerNum() int {
+	if global.Config.Task.IbcTxRelateWorkerNum > 0 {
+		return global.Config.Task.IbcTxRelateWorkerNum
+	}
+	return ibcTxRelateTaskWorkerNum
+}
+
 func (t *IbcTxRelateTask) Run() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
@@ -49,9 +56,10 @@ func (t *IbcTxRelateTask) Run() int {
 		chainQueue: chainQueue,
 	}
 
+	workerNum := t.workerNum()
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(ibcTxRelateTaskWorkerQuantity)
-	for i := 1; i <= ibcTxRelateTaskWorkerQuantity; i++ {
+	waitGroup.Add(workerNum)
+	for i := 1; i <= workerNum; i++ {
 		workName := fmt.Sprintf("worker-%d", i)
 		go func(wn string) {
 			newIbcTxRelateWorker(t.Name(), wn, ibcTxTargetLatest, chainMap).exec()
@@ -139,7 +147,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 		if len(txList) < constant.DefaultLimit || totalRelateTx >= maxParseTx {
 			break
 		}
-		time.Sleep(1 * time.Second) // avoid master-slave delay problem
+		time.Sleep(200 * time.Millisecond) // avoid master-slave delay problem
 	}
 
 	return nil
@@ -243,12 +251,13 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, tx *entity.T
 		}
 		ibcTx.UpdateAt = time.Now().Unix()
 
+		dcDenomFullPath, isCrossBack := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
+		dcDenom := calculateIbcHash(dcDenomFullPath)
+		ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
+
 		if ibcTx.Status == entity.IbcTxStatusSuccess {
-			dcDenomPath, isCrossBack := calculateNextDenomPath(recvMsg.RecvPacketMsg().Packet)
-			dcDenom := calculateIbcHash(dcDenomPath)
-			ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
 			if !isCrossBack {
-				rootDenom := getRootDenom(dcDenomPath)
+				dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
 				return &entity.IBCDenom{
 					Symbol:           "",
 					ChainId:          ibcTx.DcChainId,

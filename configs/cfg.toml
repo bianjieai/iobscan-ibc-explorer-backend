@@ -5,6 +5,7 @@ version = "0.4"
 env = "dev"
 start_task = false
 start_one_off_task = false
+start_monitor = false
 api_cache_alive_seconds=3
 max_page_size=3000
 prometheus_port="9090"
@@ -57,7 +58,15 @@ switch_fix_denom_trace_history_data_task = false
 switch_fix_denom_trace_data_task = false
 switch_add_chain_task = false
 switch_ibc_tx_migrate_task = true
+switch_ibc_token_statistics_task = false
+switch_ibc_channel_statistics_task = false
+switch_ibc_relayer_statistics_task = false
 switch_only_init_relayer_data=false
+
+sync_transfer_tx_worker_num = 5
+ibc_tx_relate_worker_num = 5
+fix_denom_trace_data_worker_num = 8
+create_at_use_tx_time = false
 
 [chain_config]
 new_chains = "bigbang,irishub_qa"

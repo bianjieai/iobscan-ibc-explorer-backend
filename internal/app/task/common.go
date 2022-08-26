@@ -1,6 +1,7 @@
 package task
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -85,8 +87,9 @@ func yesterdayUnix() (int64, int64) {
 }
 
 func isConnectionErr(err error) bool {
-	return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||
-		strings.Contains(err.Error(), "unsupported protocol scheme")
+	return true // 直接return true, 避免task被各种奇怪的返回值问题卡死
+	//return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||
+	//	strings.Contains(err.Error(), "unsupported protocol scheme")
 }
 
 func getAllChainMap() (map[string]*entity.ChainConfig, error) {
@@ -127,6 +130,15 @@ func matchDcInfo(scChainId, scPort, scChannel string, allChainMap map[string]*en
 func getRootDenom(fullPath string) string {
 	split := strings.Split(fullPath, "/")
 	return split[len(split)-1]
+}
+
+// splitFullPath get denom path and root denom from denom path
+//   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
+func splitFullPath(fullPath string) (denomPath, rootDenom string) {
+	pathSplits := strings.Split(fullPath, "/")
+	denomPath = strings.Join(pathSplits[0:len(pathSplits)-1], "/")
+	rootDenom = pathSplits[len(pathSplits)-1]
+	return
 }
 
 // calculateIbcHash calculate denom hash by denom path
@@ -240,4 +252,23 @@ func calculateNextDenomPath(packet model.Packet) (string, bool) {
 		denomPath = fmt.Sprintf("%s%s", prefixDc, denomPath)
 		return denomPath, false
 	}
+}
+
+// queryClientState 查询lcd client_state_path接口
+func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
+	url := fmt.Sprintf("%s%s", lcd, apiPath)
+	bz, err := utils.HttpGet(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp vo.ClientStateResp
+	err = json.Unmarshal(bz, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }

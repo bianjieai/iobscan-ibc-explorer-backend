@@ -32,6 +32,13 @@ func (t *IbcSyncTransferTxTask) Cron() int {
 	return ThreeMinute
 }
 
+func (t *IbcSyncTransferTxTask) workerNum() int {
+	if global.Config.Task.SyncTransferTxWorkerNum > 0 {
+		return global.Config.Task.SyncTransferTxWorkerNum
+	}
+	return syncTransferTxTaskWorkerNum
+}
+
 func (t *IbcSyncTransferTxTask) Run() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
@@ -48,9 +55,10 @@ func (t *IbcSyncTransferTxTask) Run() int {
 		chainQueue: chainQueue,
 	}
 
+	workerNum := t.workerNum()
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(syncTransferTxTaskWorkerQuantity)
-	for i := 1; i <= syncTransferTxTaskWorkerQuantity; i++ {
+	waitGroup.Add(workerNum)
+	for i := 1; i <= workerNum; i++ {
 		workName := fmt.Sprintf("worker-%d", i)
 		go func(wn string) {
 			newSyncTransferTxWorker(t.Name(), wn, chainMap).exec()
@@ -219,6 +227,10 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
 			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
+			createAt := nowUnix
+			if global.Config.Task.CreateAtUseTxTime {
+				createAt = tx.Time
+			}
 			ibcTxList = append(ibcTxList, &entity.ExIbcTx{
 				RecordId:  recordId,
 				TxTime:    tx.Time,
@@ -254,8 +266,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				BaseDenomChainId: baseDenomChainId,
 				RetryTimes:       0,
 				NextTryTime:      nowUnix,
-				CreateAt:         nowUnix,
-				UpdateAt:         nowUnix,
+				CreateAt:         createAt,
+				UpdateAt:         createAt,
 			})
 		}
 	}
@@ -352,12 +364,15 @@ func (w *syncTransferTxWorker) getTxList(chainId string, height, limit int64) ([
 		return transferTxList, nil
 	}
 
+	maxHeight := transferTxList[len(transferTxList)-1].Height
 	txHashMap := make(map[string]string)
 	for _, v := range transferTxList {
-		txHashMap[v.TxHash] = ""
+		if v.Height == maxHeight {
+			txHashMap[v.TxHash] = ""
+		}
 	}
 
-	heightTxList, err := txRepo.FindByTypeAndHeight(chainId, constant.MsgTypeTransfer, height)
+	heightTxList, err := txRepo.FindByTypeAndHeight(chainId, constant.MsgTypeTransfer, maxHeight)
 	if err != nil {
 		logrus.Errorf("task %s worker %s FindByTypeAndHeight %s error, %v", w.taskName, w.workerName, chainId, err)
 		return nil, err

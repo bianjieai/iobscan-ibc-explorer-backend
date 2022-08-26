@@ -56,7 +56,7 @@ func (t *RelayerStatisticsTask) NewOnlyInitRelayerOnce() int {
 }
 
 func (t *RelayerStatisticsTask) Switch() bool {
-	return global.Config.Task.SwitchOnlyInitRelayerData
+	return global.Config.Task.SwitchIbcRelayerStatisticsTask
 }
 
 func (t *RelayerStatisticsTask) Run() int {

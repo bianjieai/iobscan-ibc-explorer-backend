@@ -31,12 +31,12 @@ const (
 	replaceHolderChannel = "CHANNEL"
 	replaceHolderPort    = "PORT"
 
-	syncTransferTxTaskWorkerQuantity    = 5
-	ibcTxRelateTaskWorkerQuantity       = 5
-	fixDenomTraceDataTaskWorkerQuantity = 8
-	defaultMaxHandlerTx                 = 2000
-	ibcTxTargetLatest                   = "latest"
-	ibcTxTargetHistory                  = "history"
+	syncTransferTxTaskWorkerNum    = 5
+	ibcTxRelateTaskWorkerNum       = 5
+	fixDenomTraceDataTaskWorkerNum = 8
+	defaultMaxHandlerTx            = 2000
+	ibcTxTargetLatest              = "latest"
+	ibcTxTargetHistory             = "history"
 )
 const (
 	channelMatchSuccess = 1

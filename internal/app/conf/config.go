@@ -15,7 +15,7 @@ type Config struct {
 	Log         Log
 	Spi         Spi
 	Task        Task
-	ChainConfig ChainConfig
+	ChainConfig ChainConfig `mapstructure:"chain_config"`
 }
 
 type Mysql struct {
@@ -37,6 +37,7 @@ type App struct {
 	Name                 string
 	Addr                 string
 	Env                  string
+	StartMonitor         bool  `mapstructure:"start_monitor"`
 	StartTask            bool  `mapstructure:"start_task"`
 	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
 	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
@@ -90,6 +91,15 @@ type Task struct {
 	SwitchAddChainTask                 bool `mapstructure:"switch_add_chain_task"`
 	SwitchOnlyInitRelayerData          bool `mapstructure:"switch_only_init_relayer_data"`
 	SwitchIbcTxMigrateTask             bool `mapstructure:"switch_ibc_tx_migrate_task"`
+	SwitchIbcTokenStatisticsTask       bool `mapstructure:"switch_ibc_token_statistics_task"`
+	SwitchIbcChannelStatisticsTask     bool `mapstructure:"switch_ibc_channel_statistics_task"`
+	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
+
+	SyncTransferTxWorkerNum    int `mapstructure:"sync_transfer_tx_worker_num"`
+	IbcTxRelateWorkerNum       int `mapstructure:"ibc_tx_relate_worker_num"`
+	FixDenomTraceDataWorkerNum int `mapstructure:"fix_denom_trace_data_worker_num"`
+
+	CreateAtUseTxTime bool `mapstructure:"create_at_use_tx_time"`
 }
 
 type Spi struct {
