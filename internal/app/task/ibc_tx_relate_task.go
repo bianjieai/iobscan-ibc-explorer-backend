@@ -352,7 +352,7 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
 					timeoutIbcTxMap[packet.RecordId] = struct{}{}
 				} else {
-					logrus.Warningf("unkonwn timeout time %s, chain: %s, packet id: %s", timeoutStr, dcChainId, packet.PacketId)
+					//logrus.Warningf("unkonwn timeout time %s, chain: %s, packet id: %s", timeoutStr, dcChainId, packet.PacketId)
 					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
 				}
 			} else if latestBlock != nil {

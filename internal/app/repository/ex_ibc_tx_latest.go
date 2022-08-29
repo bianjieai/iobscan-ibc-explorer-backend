@@ -180,13 +180,13 @@ func (repo *ExIbcTxRepo) LatestHistory() (*entity.ExIbcTx, error) {
 
 func (repo *ExIbcTxRepo) FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	err := repo.coll().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_retry_time").Limit(limit).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_try_time").Limit(limit).All(&res)
 	return res, err
 }
 
 func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	err := repo.collHistory().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_retry_time").Limit(limit).All(&res)
+	err := repo.collHistory().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_try_time").Limit(limit).All(&res)
 	return res, err
 }
 
