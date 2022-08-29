@@ -955,6 +955,11 @@ func checkAndUpdateRelayerSrcChainAddr() {
 
 //==========active accounts======
 func caculateActiveAddrsOfChains() {
+	startTimeA := time.Now().Unix()
+	defer func() {
+		logrus.Infof("cronjob execute caculateActiveAddrsOfChains finished, time use %d(s)", time.Now().Unix()-startTimeA)
+	}()
+	logrus.Infof("cronjob execute caculateActiveAddrsOfChains start...")
 	configList, err := chainConfigRepo.FindAllChainIds()
 	if err != nil {
 		logrus.Errorf("find chain_config error, %v", err)
@@ -998,7 +1003,7 @@ func caculateActiveAddrsOfChains() {
 
 	dailyDate := time.Now().AddDate(0, 0, -1)
 	cache.GetRedisClient().Set(cache.DailyAccountsDate, utils.FmtTime(dailyDate, utils.DateFmtYYYYMMDD), -1)
-	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil {
+	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil && !qmgo.IsDup(err) {
 		logrus.Errorf("update statistic data error, %v", err)
 	}
 }

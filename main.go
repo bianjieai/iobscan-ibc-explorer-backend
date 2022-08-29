@@ -10,6 +10,6 @@ import (
 // @version visit /version
 // @description Iobscan Ibc Explorer Support API document
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
+	runtime.GOMAXPROCS(runtime.NumCPU()/2)
 	cmd.Execute()
 }
