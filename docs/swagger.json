@@ -161,6 +161,18 @@
                         "name": "page_size",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "tx_hash",
+                        "name": "tx_hash",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "chain_id",
+                        "name": "chain_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {

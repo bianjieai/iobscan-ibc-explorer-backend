@@ -60,6 +60,8 @@ func (ctl *ApiSupportController) FailTxsList(c *gin.Context) {
 // @Produce  json
 // @Param   page_num    query   int true    "page num" Default(1)
 // @Param   page_size   query   int true    "page size" Default(10)
+// @Param   tx_hash     query   string    false "tx_hash"
+// @Param   chain_id     query   string    false "chain_id"
 // @Success 200 {object} vo.RelayerTxFeesResp	"success"
 // @Router /ibc/relayers_fee/api_support [get]
 func (ctl *ApiSupportController) RelayerTxsFee(c *gin.Context) {

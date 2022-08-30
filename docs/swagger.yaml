@@ -256,6 +256,14 @@ paths:
         name: page_size
         required: true
         type: integer
+      - description: tx_hash
+        in: query
+        name: tx_hash
+        type: string
+      - description: chain_id
+        in: query
+        name: chain_id
+        type: string
       produces:
       - application/json
       responses:
