@@ -45,7 +45,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",

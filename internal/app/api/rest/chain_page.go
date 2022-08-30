@@ -15,7 +15,7 @@ type ChainController struct {
 // @Summary list
 // @Description get IBC BUSD of chains
 // @ID list
-// @Tags app_version
+// @Tags api_support
 // @Accept  json
 // @Produce  json
 // @Param   page_num    query   int true    "page num" Default(1)

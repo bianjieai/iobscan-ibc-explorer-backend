@@ -206,7 +206,7 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
+      - api_support
   /ibc/fail_txs/api_support:
     get:
       consumes:
