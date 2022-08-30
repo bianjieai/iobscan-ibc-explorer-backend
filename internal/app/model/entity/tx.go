@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 )
 
@@ -49,5 +50,8 @@ type (
 )
 
 func (i Tx) CollectionName(chainId string) string {
+	if global.Config.Task.SwitchAddDataTask {
+		return fmt.Sprintf("sync_%v_tx_new", chainId)
+	}
 	return fmt.Sprintf("sync_%v_tx", chainId)
 }
