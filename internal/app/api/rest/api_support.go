@@ -14,7 +14,7 @@ type ApiSupportController struct {
 // @Summary list
 // @Description get ibc txs
 // @ID list
-// @Tags app_version
+// @Tags api_support
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} vo.StatisticInfoResp	"success"
@@ -31,7 +31,7 @@ func (ctl *ApiSupportController) StatisticInfo(c *gin.Context) {
 // @Summary list
 // @Description get  fail txs list
 // @ID list
-// @Tags app_version
+// @Tags api_support
 // @Accept  json
 // @Produce  json
 // @Param   page_num    query   int true    "page num" Default(1)
@@ -55,7 +55,7 @@ func (ctl *ApiSupportController) FailTxsList(c *gin.Context) {
 // @Summary list
 // @Description get relayers fee list of chains
 // @ID list
-// @Tags app_version
+// @Tags api_support
 // @Accept  json
 // @Produce  json
 // @Param   page_num    query   int true    "page num" Default(1)
@@ -79,7 +79,7 @@ func (ctl *ApiSupportController) RelayerTxsFee(c *gin.Context) {
 // @Summary list
 // @Description get daily accounts of chains
 // @ID list
-// @Tags app_version
+// @Tags api_support
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} vo.AccountsDailyResp	"success"

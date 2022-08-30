@@ -27,6 +27,8 @@ definitions:
     type: object
   vo.AccountsDailyResp:
     properties:
+      date_time:
+        type: string
       items:
         items:
           $ref: '#/definitions/vo.AccountsDailyDto'
@@ -167,7 +169,7 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
+      - api_support
   /ibc/chainList/api_support:
     get:
       consumes:
@@ -234,7 +236,7 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
+      - api_support
   /ibc/relayers_fee/api_support:
     get:
       consumes:
@@ -264,7 +266,7 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
+      - api_support
   /ibc/statistics/api_support:
     get:
       consumes:
@@ -281,5 +283,5 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
+      - api_support
 swagger: "2.0"

@@ -20,7 +20,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -98,7 +98,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -141,7 +141,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -184,7 +184,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -243,6 +243,9 @@
         "vo.AccountsDailyResp": {
             "type": "object",
             "properties": {
+                "date_time": {
+                    "type": "string"
+                },
                 "items": {
                     "type": "array",
                     "items": {
