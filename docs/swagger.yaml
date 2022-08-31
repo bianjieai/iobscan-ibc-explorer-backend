@@ -153,7 +153,7 @@ info:
   title: Iobscan Ibc Explorer Support API
   version: visit /version
 paths:
-  /ibc/accounts_daily/api_support:
+  /data/accounts_daily/api_support:
     get:
       consumes:
       - application/json
@@ -170,7 +170,7 @@ paths:
       summary: list
       tags:
       - api_support
-  /ibc/chainList/api_support:
+  /data/chainList/api_support:
     get:
       consumes:
       - application/json
@@ -207,7 +207,7 @@ paths:
       summary: list
       tags:
       - api_support
-  /ibc/fail_txs/api_support:
+  /data/fail_txs/api_support:
     get:
       consumes:
       - application/json
@@ -237,7 +237,7 @@ paths:
       summary: list
       tags:
       - api_support
-  /ibc/relayers_fee/api_support:
+  /data/relayers_fee/api_support:
     get:
       consumes:
       - application/json
@@ -275,7 +275,7 @@ paths:
       summary: list
       tags:
       - api_support
-  /ibc/statistics/api_support:
+  /data/statistics/api_support:
     get:
       consumes:
       - application/json
