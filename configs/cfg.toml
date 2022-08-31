@@ -62,6 +62,7 @@ switch_ibc_tx_migrate_task = true
 switch_ibc_token_statistics_task = false
 switch_ibc_channel_statistics_task = false
 switch_ibc_relayer_statistics_task = false
+switch_only_init_relayer_data=false
 switch_fix_dc_chain_id_task = false
 switch_fix_base_denom_chain_id_task = false
 # worker num
