@@ -29,42 +29,11 @@ func Routers(Router *gin.Engine) {
 		c.JSON(http.StatusOK, global.Config.App.Version)
 	})
 
-	ibcRouter := Router.Group("ibc")
-	//tokenPage(ibcRouter)
-	//channelPage(ibcRouter)
-	//chainPage(ibcRouter)
-	//relayerPage(ibcRouter)
-	//cacheTools(ibcRouter)
+	ibcRouter := Router.Group("data")
 
 	//api_support
 	statisticApiSupport(ibcRouter)
-	chainListApiSupport(ibcRouter)
-}
 
-func tokenPage(r *gin.RouterGroup) {
-	ctl := rest.TokenController{}
-	r.GET("/tokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-	r.GET("/:base_denom/ibcTokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IBCTokenList))
-}
-
-func channelPage(r *gin.RouterGroup) {
-	ctl := rest.ChannelController{}
-	r.GET("/channelList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-}
-
-func chainPage(r *gin.RouterGroup) {
-	ctl := rest.ChainController{}
-	r.GET("/chainList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-}
-
-func relayerPage(r *gin.RouterGroup) {
-	ctl := rest.RelayerController{}
-	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-}
-
-func cacheTools(r *gin.RouterGroup) {
-	ctl := rest.CacheController{}
-	r.DELETE("/:key", ctl.Del)
 }
 
 func statisticApiSupport(r *gin.RouterGroup) {
@@ -73,9 +42,6 @@ func statisticApiSupport(r *gin.RouterGroup) {
 	r.GET("/fail_txs/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.FailTxsList))
 	r.GET("/relayers_fee/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTxsFee))
 	r.GET("/accounts_daily/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AccountsDaily))
-}
-
-func chainListApiSupport(r *gin.RouterGroup) {
-	ctl := rest.ChainController{}
 	r.GET("/chainList/api_support", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+
 }

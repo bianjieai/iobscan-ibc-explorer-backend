@@ -10,7 +10,7 @@
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/ibc/accounts_daily/api_support": {
+        "/data/accounts_daily/api_support": {
             "get": {
                 "description": "get daily accounts of chains",
                 "consumes": [
@@ -20,7 +20,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -35,7 +35,7 @@
                 }
             }
         },
-        "/ibc/chainList/api_support": {
+        "/data/chainList/api_support": {
             "get": {
                 "description": "get IBC BUSD of chains",
                 "consumes": [
@@ -45,7 +45,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -88,7 +88,7 @@
                 }
             }
         },
-        "/ibc/fail_txs/api_support": {
+        "/data/fail_txs/api_support": {
             "get": {
                 "description": "get  fail txs list",
                 "consumes": [
@@ -98,7 +98,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -131,7 +131,7 @@
                 }
             }
         },
-        "/ibc/relayers_fee/api_support": {
+        "/data/relayers_fee/api_support": {
             "get": {
                 "description": "get relayers fee list of chains",
                 "consumes": [
@@ -141,7 +141,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -161,6 +161,18 @@
                         "name": "page_size",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "tx_hash",
+                        "name": "tx_hash",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "chain_id",
+                        "name": "chain_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -174,7 +186,7 @@
                 }
             }
         },
-        "/ibc/statistics/api_support": {
+        "/data/statistics/api_support": {
             "get": {
                 "description": "get ibc txs",
                 "consumes": [
@@ -184,7 +196,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "app_version"
+                    "api_support"
                 ],
                 "summary": "list",
                 "operationId": "list",
@@ -243,6 +255,9 @@
         "vo.AccountsDailyResp": {
             "type": "object",
             "properties": {
+                "date_time": {
+                    "type": "string"
+                },
                 "items": {
                     "type": "array",
                     "items": {

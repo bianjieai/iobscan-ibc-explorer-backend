@@ -27,6 +27,8 @@ definitions:
     type: object
   vo.AccountsDailyResp:
     properties:
+      date_time:
+        type: string
       items:
         items:
           $ref: '#/definitions/vo.AccountsDailyDto'
@@ -151,7 +153,7 @@ info:
   title: Iobscan Ibc Explorer Support API
   version: visit /version
 paths:
-  /ibc/accounts_daily/api_support:
+  /data/accounts_daily/api_support:
     get:
       consumes:
       - application/json
@@ -167,8 +169,8 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
-  /ibc/chainList/api_support:
+      - api_support
+  /data/chainList/api_support:
     get:
       consumes:
       - application/json
@@ -204,8 +206,8 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
-  /ibc/fail_txs/api_support:
+      - api_support
+  /data/fail_txs/api_support:
     get:
       consumes:
       - application/json
@@ -234,8 +236,8 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
-  /ibc/relayers_fee/api_support:
+      - api_support
+  /data/relayers_fee/api_support:
     get:
       consumes:
       - application/json
@@ -254,6 +256,14 @@ paths:
         name: page_size
         required: true
         type: integer
+      - description: tx_hash
+        in: query
+        name: tx_hash
+        type: string
+      - description: chain_id
+        in: query
+        name: chain_id
+        type: string
       produces:
       - application/json
       responses:
@@ -264,8 +274,8 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
-  /ibc/statistics/api_support:
+      - api_support
+  /data/statistics/api_support:
     get:
       consumes:
       - application/json
@@ -281,5 +291,5 @@ paths:
             type: object
       summary: list
       tags:
-      - app_version
+      - api_support
 swagger: "2.0"
