@@ -13,6 +13,7 @@ type ITokenStatisticsRepo interface {
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenStatistics) error
 	BatchInsert(batch []*entity.IBCTokenStatistics) error
 	Aggr() ([]*dto.CountBaseDenomTxsDTO, error)
+	FindEmptyBaseDenomChainIdItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error)
 }
 
 var _ ITokenStatisticsRepo = new(TokenStatisticsRepo)
@@ -83,5 +84,11 @@ func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 	pipe = append(pipe, group, project)
 	var res []*dto.CountBaseDenomTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *TokenStatisticsRepo) FindEmptyBaseDenomChainIdItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error) {
+	var res []*entity.IBCTokenStatistics
+	err := repo.coll().Find(context.Background(), bson.M{"base_denom_chain_id": ""}).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
