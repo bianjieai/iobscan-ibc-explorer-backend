@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -38,23 +39,16 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	}
 	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
 	for _, val := range relayerCfgs {
-		arrs := strings.Split(val.RelayerChannelPair, ":")
-		if len(arrs) == 6 {
-			srcChainInfo := strings.Join([]string{arrs[0], arrs[1], arrs[2]}, ":")
-			dcChainInfo := strings.Join([]string{arrs[3], arrs[4], arrs[5]}, ":")
-			relayerCfgMap[srcChainInfo] = *val
-			relayerCfgMap[dcChainInfo] = *val
-		}
-
+		relayerCfgMap[val.RelayerChannelPair] = *val
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
 		srcChainInfo := strings.Join([]string{val.ChainA, val.ChannelA, val.ChainAAddress}, ":")
 		dcChainInfo := strings.Join([]string{val.ChainB, val.ChannelB, val.ChainBAddress}, ":")
-		if cfg, ok := relayerCfgMap[srcChainInfo]; ok {
+		if cfg, ok := relayerCfgMap[fmt.Sprintf("%s:%s", srcChainInfo, dcChainInfo)]; ok {
 			item.RelayerName = cfg.RelayerName
 			item.RelayerIcon = cfg.Icon
-		} else if cfg, ok = relayerCfgMap[dcChainInfo]; ok {
+		} else if cfg, ok = relayerCfgMap[fmt.Sprintf("%s:%s", dcChainInfo, srcChainInfo)]; ok {
 			item.RelayerName = cfg.RelayerName
 			item.RelayerIcon = cfg.Icon
 		}
