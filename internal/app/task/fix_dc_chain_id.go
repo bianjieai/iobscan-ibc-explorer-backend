@@ -24,12 +24,11 @@ func (t *FixDcChainIdTask) Switch() bool {
 }
 
 func (t *FixDcChainIdTask) Run() int {
-	// latest 集合无此类数据，无需修复
-	//segments, err := getSegment()
-	//if err != nil {
-	//	logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
-	//	return -1
-	//}
+	segments, err := getSegment()
+	if err != nil {
+		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
+		return -1
+	}
 
 	historySegments, err := getHistorySegment()
 	if err != nil {
@@ -48,7 +47,7 @@ func (t *FixDcChainIdTask) Run() int {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		//t.fixDcChainId(ibcTxTargetLatest, segments) latest 集合无此类数据，无需修复
+		t.fixDcChainId(ibcTxTargetLatest, segments)
 		logrus.Infof("task %s fix latest end, %v", t.Name(), err)
 	}()
 
@@ -81,7 +80,7 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 
 			for _, tx := range txs {
 				dcChainId, _, dcChannel := matchDcInfo(tx.ScChainId, constant.PortTransfer, tx.ScChannel, t.chainMap)
-				if err = ibcTxRepo.FixDcChainId(tx.RecordId, dcChainId, dcChannel, isTargetHistory); err != nil {
+				if err = ibcTxRepo.FixDcChainId(tx.RecordId, dcChainId, dcChannel, tx.Status, isTargetHistory); err != nil {
 					logrus.Errorf("task %s FixDcChainId(%s) %s err, dcChainId: %s, dcChannel: %s, %v", t.Name(), tx.RecordId, target, dcChainId, dcChannel, err)
 				}
 			}
