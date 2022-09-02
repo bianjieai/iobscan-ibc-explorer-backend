@@ -73,7 +73,7 @@ type IExIbcTxRepo interface {
 
 	// fix dc_chain_id
 	FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	FixDcChainId(recordId, dcChainId, dcChannel string, isTargetHistory bool) error
+	FixDcChainId(recordId, dcChainId, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error
 	// fix base_denom_chain_id
 	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error
@@ -1074,7 +1074,9 @@ func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit i
 			"$gte": startTime,
 			"$lte": endTime,
 		},
-		"status":      entity.IbcTxStatusProcessing,
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusProcessing, entity.IbcTxStatusSetting},
+		},
 		"dc_chain_id": "",
 	}
 
@@ -1088,13 +1090,20 @@ func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit i
 	return txs, err
 }
 
-func (repo *ExIbcTxRepo) FixDcChainId(recordId, dcChainId, dcChannel string, isTargetHistory bool) error {
+func (repo *ExIbcTxRepo) FixDcChainId(recordId, dcChainId, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error {
 	set := bson.M{}
 	if dcChainId == "" {
-		set["status"] = entity.IbcTxStatusSetting
+		if originStatus == entity.IbcTxStatusProcessing {
+			set["status"] = entity.IbcTxStatusSetting
+		} else {
+			return nil
+		}
 	} else {
 		set["dc_chain_id"] = dcChainId
 		set["dc_channel"] = dcChannel
+		if originStatus == entity.IbcTxStatusSetting {
+			set["status"] = entity.IbcTxStatusProcessing
+		}
 	}
 
 	update := bson.M{
