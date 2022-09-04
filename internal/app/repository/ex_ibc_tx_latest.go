@@ -70,6 +70,13 @@ type IExIbcTxRepo interface {
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
 	SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error
+
+	// fix dc_chain_id
+	FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	FixDcChainId(recordId, dcChainId, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error
+	// fix base_denom_chain_id
+	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -1059,4 +1066,87 @@ func (repo *ExIbcTxRepo) SaveAcknowledgeTxs(recordId string, history bool, data 
 		"record_id": recordId,
 	}, data)
 	return err
+}
+
+func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusProcessing, entity.IbcTxStatusSetting},
+		},
+		"dc_chain_id": "",
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+	}
+	return txs, err
+}
+
+func (repo *ExIbcTxRepo) FixDcChainId(recordId, dcChainId, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error {
+	set := bson.M{}
+	if dcChainId == "" {
+		if originStatus == entity.IbcTxStatusProcessing {
+			set["status"] = entity.IbcTxStatusSetting
+		} else {
+			return nil
+		}
+	} else {
+		set["dc_chain_id"] = dcChainId
+		set["dc_channel"] = dcChannel
+		if originStatus == entity.IbcTxStatusSetting {
+			set["status"] = entity.IbcTxStatusProcessing
+		}
+	}
+
+	update := bson.M{
+		"$set": set,
+	}
+	filter := bson.M{
+		"record_id": recordId,
+	}
+	if isTargetHistory {
+		return repo.collHistory().UpdateOne(context.Background(), filter, update)
+	}
+	return repo.coll().UpdateOne(context.Background(), filter, update)
+}
+
+func (repo *ExIbcTxRepo) FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"base_denom":          baseDenom,
+		"base_denom_chain_id": baseDenomChainId,
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).All(&txs)
+	}
+
+	return txs, err
+}
+
+func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error {
+	update := bson.M{
+		"$set": bson.M{
+			"base_denom":          baseDenom,
+			"base_denom_chain_id": baseDenomChainId,
+		}}
+	if isTargetHistory {
+		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
+	}
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
 }

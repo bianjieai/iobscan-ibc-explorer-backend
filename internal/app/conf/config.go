@@ -95,6 +95,8 @@ type Task struct {
 	SwitchIbcChannelStatisticsTask     bool `mapstructure:"switch_ibc_channel_statistics_task"`
 	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
 	SwitchAddTransferDataTask          bool `mapstructure:"switch_add_transfer_data_task"`
+	SwitchFixDcChainIdTask             bool `mapstructure:"switch_fix_dc_chain_id_task"`
+	SwitchFixBaseDenomChainIdTask      bool `mapstructure:"switch_fix_base_denom_chain_id_task"`
 
 	SyncTransferTxWorkerNum    int `mapstructure:"sync_transfer_tx_worker_num"`
 	IbcTxRelateWorkerNum       int `mapstructure:"ibc_tx_relate_worker_num"`

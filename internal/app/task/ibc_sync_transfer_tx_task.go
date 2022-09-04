@@ -1,14 +1,12 @@
 package task
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
@@ -204,7 +202,7 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			if ibcTxStatus == entity.IbcTxStatusFailed { // get base_denom info from ibc_denom collection
 
 			} else {
-				dcPort, dcChannel, fullDenomPath, sequence = w.getIbcInfoFromEventsMsg(msgIndex, tx)
+				dcPort, dcChannel, fullDenomPath, sequence = parseTransferTxEvents(msgIndex, tx)
 				if !isExisted { // denom 不存在
 					ibcDenom = traceDenom(fullDenomPath, chainId, w.chainMap)
 				}
@@ -273,32 +271,6 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 	}
 
 	return ibcTxList, ibcDenomList
-}
-
-func (w *syncTransferTxWorker) getIbcInfoFromEventsMsg(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomPath, sequence string) {
-	if len(tx.EventsNew) > msgIndex {
-		for _, evt := range tx.EventsNew[msgIndex].Events {
-			if evt.Type == "send_packet" {
-				for _, attr := range evt.Attributes {
-					switch attr.Key {
-					case "packet_dst_port":
-						dcPort = attr.Value
-					case "packet_dst_channel":
-						dcChannel = attr.Value
-					case "packet_sequence":
-						sequence = attr.Value
-					case "packet_data":
-						var data model.TransferTxPacketData
-						_ = json.Unmarshal([]byte(attr.Value), &data)
-						denomPath = data.Denom
-					default:
-					}
-				}
-			}
-		}
-	}
-
-	return
 }
 
 func (w *syncTransferTxWorker) checkFollowingStatus(chainId string) (bool, error) {
