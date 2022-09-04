@@ -6,6 +6,6 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	global.Config.Task.SwitchAddDataTask = true
-	new(AddDataTask).Run()
+	global.Config.Task.SwitchAddTransferDataTask = true
+	new(AddTransferDataTask).Run()
 }

@@ -6,20 +6,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type AddDataTask struct {
+type AddTransferDataTask struct {
 }
 
-var _ OneOffTask = new(AddDataTask)
+var _ OneOffTask = new(AddTransferDataTask)
 
-func (t *AddDataTask) Name() string {
-	return "add_data_task"
+func (t *AddTransferDataTask) Name() string {
+	return "add_transfer_data_task"
 }
 
-func (t *AddDataTask) Switch() bool {
-	return global.Config.Task.SwitchAddDataTask
+func (t *AddTransferDataTask) Switch() bool {
+	return global.Config.Task.SwitchAddTransferDataTask
 }
 
-func (t *AddDataTask) Run() int {
+func (t *AddTransferDataTask) Run() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
 		return -1
@@ -34,7 +34,15 @@ func (t *AddDataTask) Run() int {
 		if err != nil {
 			return maxHeight, 0, err
 		}
-		txList, err := w.getTxList(chainId, height, limit)
+		transferHashDatas, err := txNewRepo.GetTransferTx(chainId, height, limit)
+		if err != nil {
+			return maxHeight, 0, err
+		}
+		var hashes []string
+		for _, val := range transferHashDatas {
+			hashes = append(hashes, val.TxHash)
+		}
+		txList, err := txRepo.GetTxByHashes(chainId, hashes)
 		if err != nil {
 			return maxHeight, 0, err
 		}
@@ -67,7 +75,7 @@ func (t *AddDataTask) Run() int {
 	return 1
 }
 
-func (t *AddDataTask) handleChain(chainId string, w *syncTransferTxWorker, txList []*entity.Tx, denomMap map[string]*entity.IBCDenom) error {
+func (t *AddTransferDataTask) handleChain(chainId string, w *syncTransferTxWorker, txList []*entity.Tx, denomMap map[string]*entity.IBCDenom) error {
 	if len(txList) == 0 {
 		return nil
 	}
