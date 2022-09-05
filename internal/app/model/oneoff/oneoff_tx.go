@@ -14,10 +14,9 @@ type (
 
 /***
 db.sync_tx_new.createIndex({
-"tx_hash": -1,
-    "height": -1,
-"chain_id": -1
-
+"height": -1,
+"chain_id": -1,
+"tx_hash": -1
 }, {background: true, unique: true});
 */
 func (i TxNew) CollectionName() string {
