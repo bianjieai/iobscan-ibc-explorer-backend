@@ -56,11 +56,13 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 		return err
 	}
 	ibcTx.RefundedTxInfo = &entity.TxInfo{
-		Hash:   ackTx.TxHash,
-		Height: ackTx.Height,
-		Time:   ackTx.Time,
-		Status: ackTx.Status,
-		Fee:    ackTx.Fee,
+		Hash:    ackTx.TxHash,
+		Height:  ackTx.Height,
+		Time:    ackTx.Time,
+		Status:  ackTx.Status,
+		Fee:     ackTx.Fee,
+		Memo:    ackTx.Memo,
+		Signers: ackTx.Signers,
 	}
 	return ibcTxRepo.SaveAcknowledgeTxs(ibcTx.RecordId, history, ibcTx)
 }

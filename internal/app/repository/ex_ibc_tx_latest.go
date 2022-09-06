@@ -1039,12 +1039,11 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 
 func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
+	//查询"成功"和"已退还"状态的没有refunded_tx_info的数据
 	query := bson.M{
-		//"create_at": bson.M{
-		//	"$gte": createAt,
-		//},
-		"status":                  entity.IbcTxStatusFailed,
-		"dc_tx_info.status":       entity.TxStatusSuccess,
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
+		},
 		"refunded_tx_info.status": bson.M{"$exists": false},
 	}
 	if history {
