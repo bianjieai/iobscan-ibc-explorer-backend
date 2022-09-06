@@ -110,7 +110,8 @@ type Spi struct {
 }
 
 type ChainConfig struct {
-	NewChains string `mapstructure:"new_chains"`
+	NewChains         string `mapstructure:"new_chains"`
+	AddTransferChains string `mapstructure:"add_transfer_chains"`
 }
 
 func ReadConfig(data []byte) (*Config, error) {

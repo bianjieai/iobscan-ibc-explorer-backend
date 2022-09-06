@@ -21,7 +21,7 @@ func (t *AddTransferDataTask) Switch() bool {
 }
 
 func (t *AddTransferDataTask) Run() int {
-	chainsStr := global.Config.ChainConfig.NewChains
+	chainsStr := global.Config.ChainConfig.AddTransferChains
 	newChainIds := strings.Split(chainsStr, ",")
 	if len(newChainIds) == 0 {
 		logrus.Errorf("task %s don't have new chains", t.Name())

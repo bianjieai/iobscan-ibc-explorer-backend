@@ -74,3 +74,4 @@ create_at_use_tx_time = false
 
 [chain_config]
 new_chains = "bigbang,irishub_qa"
+add_transfer_chains=""

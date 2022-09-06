@@ -7,7 +7,7 @@ import (
 
 func TestRun(t *testing.T) {
 	global.Config.Task.SwitchAddTransferDataTask = true
-	global.Config.ChainConfig.NewChains = "columbus_5"
+	global.Config.ChainConfig.AddTransferChains = "columbus_5"
 	new(AddTransferDataTask).Run()
 }
 
