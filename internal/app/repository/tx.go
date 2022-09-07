@@ -19,6 +19,7 @@ type ITxRepo interface {
 	GetTxByHash(chainId string, hash string) (entity.Tx, error)
 	GetTxByHashes(chainId string, hashs []string) ([]*entity.Tx, error)
 	GetAcknowledgeTxs(chainId, packetId string) (entity.Tx, error)
+	GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, error)
 	FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
 }
 
@@ -182,6 +183,20 @@ func (repo *TxRepo) GetAcknowledgeTxs(chainId, packetId string) (entity.Tx, erro
 		"status":             entity.TxStatusSuccess,
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).One(&res)
+
+	if err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func (repo *TxRepo) GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"msgs.type":          constant.MsgTypeRecvPacket,
+		"msgs.msg.packet_id": packetId,
+	}
+	err := repo.coll(chainId).Find(context.Background(), query).Sort("-height").All(&res)
 
 	if err != nil {
 		return res, err

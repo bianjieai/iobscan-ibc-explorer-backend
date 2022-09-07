@@ -1,6 +1,8 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
 )
@@ -56,13 +58,24 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 		return err
 	}
 	ibcTx.RefundedTxInfo = &entity.TxInfo{
-		Hash:    ackTx.TxHash,
-		Height:  ackTx.Height,
-		Time:    ackTx.Time,
-		Status:  ackTx.Status,
-		Fee:     ackTx.Fee,
-		Memo:    ackTx.Memo,
-		Signers: ackTx.Signers,
+		Hash:      ackTx.TxHash,
+		Height:    ackTx.Height,
+		Time:      ackTx.Time,
+		Status:    ackTx.Status,
+		Fee:       ackTx.Fee,
+		Memo:      ackTx.Memo,
+		Signers:   ackTx.Signers,
+		MsgAmount: nil,
+		Msg:       getMsgByType(ackTx, constant.MsgTypeAcknowledgement),
 	}
-	return ibcTxRepo.SaveAcknowledgeTxs(ibcTx.RecordId, history, ibcTx)
+	return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, ibcTx)
+}
+
+func getMsgByType(tx entity.Tx, msgType string) *model.TxMsg {
+	for _, msg := range tx.DocTxMsgs {
+		if msg.Type == msgType {
+			return msg
+		}
+	}
+	return nil
 }

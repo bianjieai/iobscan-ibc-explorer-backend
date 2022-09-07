@@ -69,7 +69,8 @@ type IExIbcTxRepo interface {
 	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
-	SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error
+	GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
+	UpdateOne(recordId string, history bool, data *entity.ExIbcTx) error
 
 	// fix dc_chain_id
 	FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
@@ -1054,14 +1055,14 @@ func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx,
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) SaveAcknowledgeTxs(recordId string, history bool, data *entity.ExIbcTx) error {
+func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, data *entity.ExIbcTx) error {
 	if history {
-		err := repo.collHistory().ReplaceOne(context.Background(), bson.M{
+		err := repo.collHistory().UpdateOne(context.Background(), bson.M{
 			"record_id": recordId,
 		}, data)
 		return err
 	}
-	err := repo.coll().ReplaceOne(context.Background(), bson.M{
+	err := repo.coll().UpdateOne(context.Background(), bson.M{
 		"record_id": recordId,
 	}, data)
 	return err
@@ -1148,4 +1149,19 @@ func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChainId s
 		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
 	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
+}
+
+func (repo *ExIbcTxRepo) GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	//查询"已退还"状态的没有dc_tx_info的数据
+	query := bson.M{
+		"status":            entity.IbcTxStatusRefunded,
+		"dc_tx_info.status": bson.M{"$exists": false},
+	}
+	if history {
+		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+		return res, err
+	}
+	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+	return res, err
 }
