@@ -24,4 +24,6 @@ var (
 	channelStatisticsTask        task.ChannelStatisticsTask
 	relayerStatisticsTask        task.RelayerStatisticsTask
 	relayerDataTask              task.RelayerDataTask
+	fixFailRecvPacketTask        task.FixFailRecvPacketTask
+	addTransferDataTask          task.AddTransferDataTask
 )

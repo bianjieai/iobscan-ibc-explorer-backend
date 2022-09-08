@@ -72,6 +72,10 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			res = relayerStatisticsTask.Run()
 		case relayerDataTask.Name():
 			res = relayerDataTask.Run()
+		case fixFailRecvPacketTask.Name():
+			fixFailRecvPacketTask.Run()
+		case addTransferDataTask.Name():
+			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}
