@@ -140,6 +140,10 @@ type Aggr24hActiveChainsDTO struct {
 	DcChainId string `bson:"dc_chain_id"`
 }
 
+type RelayerPairIdDTO struct {
+	RelayerPairId string `bson:"relayer_pair_id"`
+}
+
 type DenomSimpleDTO struct {
 	Denom   string
 	ChainId string

@@ -1,6 +1,13 @@
 // ibc_chain表
-
 db.ibc_chain.createIndex({'chain_id': -1}, {background: true, unique: true});
+
+// chain_registry
+db.chain_registry.createIndex({
+    "chain_id": 1
+}, {
+    unique: true,
+    background: true
+});
 
 // ibc_relayer表
 db.ibc_relayer.createIndex({
@@ -18,7 +25,7 @@ db.ibc_relayer.createIndex({
 // ibc_relayer_config表
 
 db.ibc_relayer_config.createIndex({
-    "relayer_channel_pair": -1
+    "relayer_pair_id": 1
 }, {background: true, unique: true});
 
 // ibc_relayer_statistics表
