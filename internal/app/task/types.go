@@ -2,7 +2,6 @@ package task
 
 import (
 	"fmt"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
@@ -80,6 +79,7 @@ var (
 	taskRecordRepo           repository.ITaskRecordRepo           = new(repository.TaskRecordRepo)
 	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
 	syncBlockRepo            repository.ISyncBlockRepo            = new(repository.SyncBlockRepo)
+	txNewRepo                repository.ITxNewRepo                = new(repository.TxNewRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )
 
