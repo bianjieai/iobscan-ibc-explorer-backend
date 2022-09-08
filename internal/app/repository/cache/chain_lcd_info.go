@@ -1,5 +1,7 @@
 package cache
 
+// todo no usage, remove this
+
 //缓存配置的lcd相关信息
 type LcdInfoCacheRepo struct {
 }

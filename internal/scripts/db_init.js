@@ -25,7 +25,7 @@ db.ibc_relayer.createIndex({
 // ibc_relayer_config表
 
 db.ibc_relayer_config.createIndex({
-    "relayer_channel_pair": -1
+    "relayer_pair_id": 1
 }, {background: true, unique: true});
 
 // ibc_relayer_statistics表
