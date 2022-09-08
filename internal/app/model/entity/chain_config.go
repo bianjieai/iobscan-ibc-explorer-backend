@@ -1,9 +1,9 @@
 package entity
 
 const (
-	ApiBalancesPathPlaceholder = "{address}"
+	ApiBalancesPathPlaceholder  = "{address}"
 	ParamsModulePathPlaceholder = "{module}"
-	StakeModule = "staking"
+	StakeModule                 = "staking"
 )
 
 type (
@@ -34,6 +34,7 @@ type (
 		ChannelId    string       `bson:"channel_id"`
 		ChainId      string       `bson:"chain_id"`
 		ScChainId    string       `bson:"sc_chain_id"`
+		ClientId     string       `bson:"client_id"`
 		Counterparty CounterParty `bson:"counterparty"`
 	}
 	CounterParty struct {
