@@ -108,8 +108,8 @@ func startOneOffTask() {
 		//&task.FixDenomTraceHistoryDataTask{},
 		//&task.FixDenomTraceDataTask{},
 		//&task.AddChainTask{},
-		&task.FixDcChainIdTask{},
-		&task.FixBaseDenomChainIdTask{},
+		//&task.AddTransferDataTask{},
+		//&task.FixFailRecvPacketTask{},
 	)
 	task.StartOneOffTask()
 }

@@ -63,6 +63,9 @@ type (
 		Fee       *model.Fee   `bson:"fee"`
 		MsgAmount *model.Coin  `bson:"msg_amount"`
 		Msg       *model.TxMsg `bson:"msg"`
+		Memo      string       `bson:"memo"`
+		Signers   []string     `bson:"signers"`
+		ErrLog    string       `bson:"err_log"`
 	}
 )
 
