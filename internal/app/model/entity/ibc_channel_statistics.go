@@ -1,5 +1,10 @@
 package entity
 
+const (
+	IBCChannelStatisticsCollName    = "ibc_channel_statistics"
+	IBCChannelStatisticsNewCollName = "ibc_channel_statistics_new"
+)
+
 type IBCChannelStatistics struct {
 	ChannelId        string `bson:"channel_id"`
 	BaseDenom        string `bson:"base_denom"`
@@ -12,6 +17,9 @@ type IBCChannelStatistics struct {
 	UpdateAt         int64  `bson:"update_at"`
 }
 
-func (i IBCChannelStatistics) CollectionName() string {
-	return "ibc_channel_statistics"
+func (i IBCChannelStatistics) CollectionName(isNew bool) string {
+	if isNew {
+		return IBCChannelStatisticsNewCollName
+	}
+	return IBCChannelStatisticsCollName
 }

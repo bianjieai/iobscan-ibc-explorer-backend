@@ -2,16 +2,22 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
+	opts "github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
+	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ITokenTraceStatisticsRepo interface {
+	CreateNew() error
+	SwitchColl() error
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenTraceStatistics) error
 	BatchInsert(batch []*entity.IBCTokenTraceStatistics) error
+	BatchInsertToNew(batch []*entity.IBCTokenTraceStatistics) error
 	Aggr() ([]*dto.TokenTraceStatisticsDTO, error)
 }
 
@@ -21,7 +27,24 @@ type TokenTraceStatisticsRepo struct {
 }
 
 func (repo *TokenTraceStatisticsRepo) coll() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenTraceStatistics{}.CollectionName())
+	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenTraceStatisticsCollName)
+}
+
+func (repo *TokenTraceStatisticsRepo) collNew() *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenTraceStatisticsNewCollName)
+}
+
+func (repo *TokenTraceStatisticsRepo) CreateNew() error {
+	indexOpts := officialOpts.Index().SetUnique(true)
+	key := []string{"denom", "chain_id", "-segment_start_time", "-segment_end_time"}
+	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+}
+
+func (repo *TokenTraceStatisticsRepo) SwitchColl() error {
+	command := bson.D{{"renameCollection", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCTokenTraceStatisticsNewCollName)},
+		{"to", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCTokenTraceStatisticsCollName)},
+		{"dropTarget", true}}
+	return mgo.Database(adminDatabase).RunCommand(context.Background(), command).Err()
 }
 
 func (repo *TokenTraceStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenTraceStatistics) error {
@@ -54,6 +77,15 @@ func (repo *TokenTraceStatisticsRepo) BatchInsert(batch []*entity.IBCTokenTraceS
 	}
 
 	_, err := repo.coll().InsertMany(context.Background(), batch)
+	return err
+}
+
+func (repo *TokenTraceStatisticsRepo) BatchInsertToNew(batch []*entity.IBCTokenTraceStatistics) error {
+	if len(batch) == 0 {
+		return nil
+	}
+
+	_, err := repo.collNew().InsertMany(context.Background(), batch)
 	return err
 }
 

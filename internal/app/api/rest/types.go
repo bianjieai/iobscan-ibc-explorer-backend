@@ -1,6 +1,9 @@
 package rest
 
-import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/service"
+import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/service"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
+)
 
 var (
 	tokenService    service.ITokenService    = new(service.TokenService)
@@ -10,4 +13,15 @@ var (
 	homeService     service.IHomeService     = new(service.HomeService)
 	transferService service.ITransferService = new(service.TransferService)
 	cacheService    service.CacheService
+
+	// task
+	addChainTask                 task.AddChainTask
+	fixDcChainIdTask             task.FixDcChainIdTask
+	fixBaseDenomChainIdTask      task.FixBaseDenomChainIdTask
+	fixDenomTraceDataTask        task.FixDenomTraceDataTask
+	fixDenomTraceHistoryDataTask task.FixDenomTraceHistoryDataTask
+	tokenStatisticsTask          task.TokenStatisticsTask
+	channelStatisticsTask        task.ChannelStatisticsTask
+	relayerStatisticsTask        task.RelayerStatisticsTask
+	relayerDataTask              task.RelayerDataTask
 )
