@@ -22,6 +22,7 @@ func (t *FixFailRecvPacketTask) Switch() bool {
 
 func (t *FixFailRecvPacketTask) Run() int {
 
+	logrus.Debug("FixFailRecvPacketTask start ....")
 	syncFailRecvPacket := func(history bool) error {
 		txs, err := ibcTxRepo.GetNeedFailRecvPacketTxs(history)
 		if err != nil {
@@ -42,10 +43,12 @@ func (t *FixFailRecvPacketTask) Run() int {
 		logrus.Error(err.Error())
 		return -1
 	}
+	logrus.Debug("finished syncFailRecvPacket from ex_ibc_tx_latest")
 	if err := syncFailRecvPacket(true); err != nil {
 		logrus.Error(err.Error())
 		return -1
 	}
+	logrus.Debug("finished syncFailRecvPacket from ex_ibc_tx")
 	return 1
 }
 

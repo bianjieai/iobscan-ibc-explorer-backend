@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
@@ -10,7 +11,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
@@ -20,13 +20,13 @@ type ITransferService interface {
 	TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors.Error)
 	TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error)
 	TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error)
+	TraceSource(hash string, req *vo.TraceSourceReq) (vo.TraceSourceResp, errors.Error)
 }
 
 var _ ITransferService = new(TransferService)
 
 type TransferService struct {
-	dto       vo.IbcTxDto
-	detailDto vo.IbcTxDetailDto
+	dto vo.IbcTxDto
 }
 
 func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
@@ -157,100 +157,79 @@ func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp,
 			return resp, errors.Wrap(err)
 		}
 	}
-	setMap := make(map[string]struct{}, len(ibcTxs))
-	for _, val := range ibcTxs {
-		packetId := fmt.Sprintf("%s%s%s%s%s", val.ScPort, val.ScChannel, val.DcPort, val.DcChannel, val.Sequence)
-		if _, exist := setMap[val.RecordId]; exist {
-			continue
-		}
-		setMap[val.RecordId] = struct{}{}
 
-		item := t.detailDto.LoadDto(val)
-		if val.ScChainId != "" && val.ScTxInfo != nil && val.ScTxInfo.Hash != "" {
-			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChainId, val.ScTxInfo.Hash, packetId)
+	if len(ibcTxs) == 1 {
+		resp = vo.LoadTranaferTxDetail(ibcTxs[0])
+		resp.RelayerInfo, err = getRelayerInfo(ibcTxs[0])
+		if err != nil {
+			return resp, errors.Wrap(err)
 		}
-		if val.DcChainId != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
-			item.DcConnect, item.Ack, item.DcSigners = getDcTxInfo(val.DcChainId, val.DcTxInfo.Hash, packetId)
+		resp.TokenInfo, err = getTokenInfo(ibcTxs[0])
+		if err != nil {
+			return resp, errors.Wrap(err)
 		}
-		resp.Items = append(resp.Items, item)
-	}
-	if len(resp.Items) > 1 {
-		// detail api page no support more than one return
-		resp.Items = []vo.IbcTxDetailDto{}
+	} else if len(ibcTxs) > 1 {
+		resp.IsList = true
+		for _, val := range ibcTxs {
+			item := t.dto.LoadDto(val)
+			resp.Items = append(resp.Items, item)
+		}
 	}
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
 
-func getMsgIndex(tx entity.Tx, msgType string, packetId string) int {
-	for i, val := range tx.DocTxMsgs {
-		if val.Type == msgType && val.CommonMsg().PacketId == packetId {
-			return i
-		}
-	}
-	return -1
-}
-
-func getScTxInfo(chainId string, txHash string, packetId string) (scConnect string, signers []string) {
-	tx, err := txRepo.GetTxByHash(chainId, txHash)
+func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
+	relayerCfgMap, err := getRelayerCfgMap()
 	if err != nil {
-		logrus.Error(err.Error())
-		return
+		return nil, err
 	}
-	signers = tx.Signers
-	scConnect = getConnectByTransferEventNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeTransfer, packetId))
-	return
+	var relayerInfo vo.RelayerInfo
+	var matchInfo string
+	if val.DcTxInfo != nil {
+		relayerInfo.DcRelayerAddr = val.DcTxInfo.Msg.CommonMsg().Signer
+		matchInfo = strings.Join([]string{val.DcChainId, val.DcChannel, relayerInfo.DcRelayerAddr}, ":")
+	} else if val.RefundedTxInfo != nil {
+		relayerInfo.ScRelayerAddr = val.RefundedTxInfo.Msg.CommonMsg().Signer
+		matchInfo = strings.Join([]string{val.ScChainId, val.ScChannel, relayerInfo.ScRelayerAddr}, ":")
+	}
+	if cfg, ok := relayerCfgMap[matchInfo]; ok {
+		relayerInfo.RelayerName = cfg.RelayerName
+		relayerInfo.Icon = cfg.Icon
+	}
+	return &relayerInfo, nil
 }
 
-func getDcTxInfo(chainId string, txHash string, packetId string) (dcConnect string, ack string, signers []string) {
-	tx, err := txRepo.GetTxByHash(chainId, txHash)
-	if err != nil {
-		logrus.Error(err.Error())
-		return
-	}
-	signers = tx.Signers
-	dcConnect, ack = getConnectByRecvPacketEventsNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeRecvPacket, packetId))
-	return
-}
-
-func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) string {
-	var connect string
-	for _, item := range eventNews {
-		if item.MsgIndex == uint32(msgIndex) {
-			for _, val := range item.Events {
-				if val.Type == "send_packet" {
-					for _, attribute := range val.Attributes {
-						switch attribute.Key {
-						case "packet_connection":
-							connect = attribute.Value
-						}
-					}
-				}
-			}
+func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
+	var (
+		sendToken = vo.DetailToken{
+			Denom: ibcTx.Denoms.ScDenom,
 		}
-	}
-	return connect
-}
-
-func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) (string, string) {
-	var connect, ackData string
-	for _, item := range eventNews {
-		if item.MsgIndex == uint32(msgIndex) {
-			for _, val := range item.Events {
-				if val.Type == "write_acknowledgement" || val.Type == "recv_packet" {
-					for _, attribute := range val.Attributes {
-						switch attribute.Key {
-						case "packet_connection":
-							connect = attribute.Value
-						case "packet_ack":
-							ackData = attribute.Value
-						}
-					}
-				}
-			}
+		recvToken = vo.DetailToken{
+			Denom: ibcTx.Denoms.DcDenom,
 		}
+	)
+	if strings.HasPrefix(ibcTx.Denoms.ScDenom, "ibc/") {
+		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.ScDenom, ibcTx.ScChainId)
+		if err != nil && err != qmgo.ErrNoSuchDocuments {
+			return nil, err
+		}
+		sendToken.DenomPath = denom.DenomPath
 	}
-	return connect, ackData
+	if strings.HasPrefix(ibcTx.Denoms.DcDenom, "ibc/") {
+		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.DcDenom, ibcTx.DcChainId)
+		if err != nil && err != qmgo.ErrNoSuchDocuments {
+			return nil, err
+		}
+		recvToken.DenomPath = denom.DenomPath
+	}
+	return &vo.TokenInfo{
+		BaseDenom:        ibcTx.BaseDenom,
+		BaseDenomChainId: ibcTx.BaseDenomChainId,
+		Amount:           ibcTx.ScTxInfo.MsgAmount.Amount,
+		SendToken:        sendToken,
+		RecvToken:        recvToken,
+	}, nil
 }
 
 func getUnAuthToken() ([]string, error) {
@@ -286,4 +265,70 @@ func getUnAuthToken() ([]string, error) {
 	}
 	_ = cache.GetRedisClient().Set(cache.BaseDenomUnauth, utils.MarshalJsonIgnoreErr(unAuthTokens), cache.FiveMin)
 	return unAuthTokens, nil
+}
+
+func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.TraceSourceResp, errors.Error) {
+	var resp vo.TraceSourceResp
+	var supportMsgType = map[string]string{
+		constant.MsgTypeRecvPacket:      "MsgRecvPacket",
+		constant.MsgTypeTimeoutPacket:   "MsgTimeout",
+		constant.MsgTypeAcknowledgement: "MsgAcknowledgement",
+		constant.MsgTypeTransfer:        "MsgTransfer",
+	}
+
+	if len(hash) == 0 {
+		return resp, errors.Wrapf("invalid hash")
+	}
+
+	msgType, ok := supportMsgType[req.MsgType]
+	if !ok {
+		return resp, errors.Wrapf("only support transfer,recv_packet,acknowledge_packet,timeout_packet")
+	}
+
+	value, err := lcdTxDataCache.Get(req.ChainId, hash)
+	if err == nil {
+		utils.UnmarshalJsonIgnoreErr([]byte(value), &resp)
+		return resp, nil
+	}
+	return getMsgAndTxData(msgType, req.ChainId, hash)
+}
+
+func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.Error) {
+	var resp vo.TraceSourceResp
+	chainCfgData, err := chainCfgRepo.FindOne(chainId)
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+	lcdTxData, err := GetTxDataFromChain(chainCfgData.Lcd, hash)
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+	logMap := make(map[int][]entity.Event)
+	for _, val := range lcdTxData.TxResponse.Logs {
+		logMap[val.MsgIndex] = val.Events
+	}
+
+	for i, val := range lcdTxData.TxResponse.Tx.Body.Messages {
+		msgTy := []byte(val.Type)[strings.LastIndex(val.Type, ".")+1:]
+		if string(msgTy) == msgType {
+			resp.Msg = val
+			resp.Events = logMap[i]
+		}
+	}
+	if resp.Msg != nil {
+		_ = lcdTxDataCache.Set(chainId, hash, string(utils.MarshalJsonIgnoreErr(resp)))
+	}
+	return resp, nil
+}
+func GetTxDataFromChain(lcdUri string, hash string) (LcdTxData, error) {
+	url := fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", lcdUri, hash)
+	data, err := utils.HttpGet(url)
+	if err != nil {
+		return LcdTxData{}, err
+	}
+	var txData LcdTxData
+	if err := json.Unmarshal(data, &txData); err != nil {
+		return LcdTxData{}, err
+	}
+	return txData, nil
 }

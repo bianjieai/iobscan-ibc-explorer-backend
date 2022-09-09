@@ -32,20 +32,9 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
-	relayerCfgs, err := relayerCfgRepo.FindAll()
+	relayerCfgMap, err := getRelayerCfgMap()
 	if err != nil {
 		return resp, errors.Wrap(err)
-	}
-	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
-	for _, val := range relayerCfgs {
-		arrs := strings.Split(val.RelayerChannelPair, ":")
-		if len(arrs) == 6 {
-			srcChainInfo := strings.Join([]string{arrs[0], arrs[1], arrs[2]}, ":")
-			dcChainInfo := strings.Join([]string{arrs[3], arrs[4], arrs[5]}, ":")
-			relayerCfgMap[srcChainInfo] = *val
-			relayerCfgMap[dcChainInfo] = *val
-		}
-
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
@@ -73,4 +62,23 @@ func (svc *RelayerService) ListCount(req *vo.RelayerListReq) (int64, errors.Erro
 	}
 
 	return total, nil
+}
+
+func getRelayerCfgMap() (map[string]entity.IBCRelayerConfig, error) {
+	relayerCfgs, err := relayerCfgRepo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
+	for _, val := range relayerCfgs {
+		arrs := strings.Split(val.RelayerChannelPair, ":")
+		if len(arrs) == 6 {
+			srcChainInfo := strings.Join([]string{arrs[0], arrs[1], arrs[2]}, ":")
+			dcChainInfo := strings.Join([]string{arrs[3], arrs[4], arrs[5]}, ":")
+			relayerCfgMap[srcChainInfo] = *val
+			relayerCfgMap[dcChainInfo] = *val
+		}
+
+	}
+	return relayerCfgMap, nil
 }

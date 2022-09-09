@@ -16,6 +16,7 @@ type IDenomRepo interface {
 	FindByBaseDenom(baseDenom, baseDenomChainId string) (entity.IBCDenomList, error)
 	FindByChainId(chainId string) (entity.IBCDenomList, error)
 	FindByDenom(denom string) (entity.IBCDenomList, error)
+	FindByDenomChainId(denom, chainId string) (entity.IBCDenom, error)
 	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
 	FindSymbolDenoms() (entity.IBCDenomList, error)
@@ -70,6 +71,12 @@ func (repo *DenomRepo) FindByChainId(chainId string) (entity.IBCDenomList, error
 func (repo *DenomRepo) FindByDenom(denom string) (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
 	err := repo.coll().Find(context.Background(), bson.M{"denom": denom}).All(&res)
+	return res, err
+}
+
+func (repo *DenomRepo) FindByDenomChainId(denom, chainId string) (entity.IBCDenom, error) {
+	var res entity.IBCDenom
+	err := repo.coll().Find(context.Background(), bson.M{"denom": denom, "chain_id": chainId}).One(&res)
 	return res, err
 }
 

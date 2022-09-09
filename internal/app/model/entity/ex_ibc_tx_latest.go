@@ -30,9 +30,13 @@ type (
 		ScPort           string      `bson:"sc_port"`
 		ScChannel        string      `bson:"sc_channel"`
 		ScChainId        string      `bson:"sc_chain_id"`
+		ScConnectionId   string      `bson:"sc_connection_id"`
+		ScClientId       string      `bson:"sc_client_id"`
 		DcPort           string      `bson:"dc_port"`
 		DcChannel        string      `bson:"dc_channel"`
 		DcChainId        string      `bson:"dc_chain_id"`
+		DcConnectionId   string      `bson:"dc_connection_id"`
+		DcClientId       string      `bson:"dc_client_id"`
 		Sequence         string      `bson:"sequence"`
 		Status           IbcTxStatus `bson:"status"`
 		ScTxInfo         *TxInfo     `bson:"sc_tx_info"`
@@ -66,6 +70,7 @@ type (
 		Memo      string       `bson:"memo"`
 		Signers   []string     `bson:"signers"`
 		ErrLog    string       `bson:"err_log"`
+		Ack       string       `bson:"ack"`
 	}
 )
 
