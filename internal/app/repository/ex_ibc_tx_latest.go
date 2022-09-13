@@ -1155,8 +1155,8 @@ func (repo *ExIbcTxRepo) GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbc
 	var res []*entity.ExIbcTx
 	//查询"已退还"状态的没有dc_tx_info的数据
 	query := bson.M{
-		"status":            entity.IbcTxStatusRefunded,
-		"dc_tx_info.status": bson.M{"$exists": false},
+		"status":         entity.IbcTxStatusRefunded,
+		"dc_tx_info.msg": bson.M{"$exists": false},
 	}
 	if history {
 		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
