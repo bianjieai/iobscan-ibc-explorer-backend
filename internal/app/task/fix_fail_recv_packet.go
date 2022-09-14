@@ -93,6 +93,20 @@ func SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 	if err != nil {
 		return err
 	}
+	dcAddrMap := make(map[string]struct{}, 20)
+	if len(recvTxs) > 0 {
+		relayers, err := relayerRepo.FindRelayer(ibcTx.ScChainId, ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer, ibcTx.ScChannel)
+		if err != nil {
+			return err
+		}
+		for _, val := range relayers {
+			if val.ChainAAddress == ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer && val.ChainBAddress != "" {
+				dcAddrMap[val.ChainBAddress] = struct{}{}
+			} else if val.ChainBAddress == ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer && val.ChainAAddress != "" {
+				dcAddrMap[val.ChainAAddress] = struct{}{}
+			}
+		}
+	}
 	var recvTx *entity.Tx
 	for _, val := range recvTxs {
 		if val.Status == entity.TxStatusSuccess {
@@ -100,6 +114,16 @@ func SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 			for index, msg := range val.DocTxMsgs {
 				if msg.Type == constant.MsgTypeRecvPacket {
 					ibcTx.DcConnectionId = getConnectByRecvPacketEventsNews(val.EventsNew, index)
+				}
+			}
+			break
+		} else if len(dcAddrMap) > 0 {
+			//失败的recv_packet交易
+			if len(val.Signers) > 0 {
+				_, ok := dcAddrMap[val.Signers[0]]
+				if ok {
+					recvTx = val
+					break
 				}
 			}
 		}
@@ -122,7 +146,8 @@ func SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 		}
 		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
 			"$set": bson.M{
-				"dc_tx_info": ibcTx.DcTxInfo,
+				"dc_tx_info":       ibcTx.DcTxInfo,
+				"dc_connection_id": ibcTx.DcConnectionId,
 			},
 		})
 	}
