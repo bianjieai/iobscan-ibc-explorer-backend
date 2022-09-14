@@ -4,7 +4,10 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
+	"sync"
 )
 
 type IbcSyncAcknowledgeTxTask struct {
@@ -41,14 +44,37 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 		return nil
 	}
 
-	if err := syncAcknowledge(false); err != nil {
-		logrus.Error(err.Error())
-		return -1
+	syncRecvPacket := func(history bool) error {
+		txs, err := ibcTxRepo.GetNeedFailRecvPacketTxs(history)
+		if err != nil {
+			return err
+		}
+		for _, val := range txs {
+			err := SaveFailRecvPacketTx(val, history)
+			if err != nil && err != qmgo.ErrNoSuchDocuments {
+				logrus.Warn("SaveFailRecvPacketTx failed, "+err.Error(),
+					"chain_id:", val.ScChainId,
+					"packet_id:", val.ScTxInfo.Msg.CommonMsg().PacketId)
+			}
+		}
+		return nil
 	}
-	if err := syncAcknowledge(true); err != nil {
-		logrus.Error(err.Error())
-		return -1
-	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		err := syncAcknowledge(false)
+		logrus.Infof("task %s fix Acknowledge latest end, %v", t.Name(), err)
+	}()
+
+	go func() {
+		defer wg.Done()
+		err := syncRecvPacket(false)
+		logrus.Infof("task %s fix RecvPacket latest end, %v", t.Name(), err)
+	}()
+
+	wg.Wait()
 	return 1
 }
 
@@ -68,7 +94,11 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 		MsgAmount: nil,
 		Msg:       getMsgByType(ackTx, constant.MsgTypeAcknowledgement),
 	}
-	return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, ibcTx)
+	return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+		"$set": bson.M{
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+		},
+	})
 }
 
 func getMsgByType(tx entity.Tx, msgType string) *model.TxMsg {

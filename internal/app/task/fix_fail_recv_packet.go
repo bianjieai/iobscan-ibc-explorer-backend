@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"sync"
 )
 
@@ -71,7 +72,7 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 			}
 
 			for _, val := range txs {
-				err := t.SaveFailRecvPacketTx(val, isTargetHistory)
+				err := SaveFailRecvPacketTx(val, isTargetHistory)
 				if err != nil && err != qmgo.ErrNoSuchDocuments {
 					logrus.Errorf("task %s SaveFailRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 					return err
@@ -87,19 +88,7 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 	return nil
 }
 
-func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
-	relayers, err := relayerRepo.FindRelayer(ibcTx.ScChainId, ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer, ibcTx.ScChannel)
-	if err != nil {
-		return err
-	}
-	dcAddrMap := make(map[string]struct{}, len(relayers))
-	for _, val := range relayers {
-		if val.ChainAAddress == ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer && val.ChainBAddress != "" {
-			dcAddrMap[val.ChainBAddress] = struct{}{}
-		} else if val.ChainBAddress == ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer && val.ChainAAddress != "" {
-			dcAddrMap[val.ChainAAddress] = struct{}{}
-		}
-	}
+func SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
 	if err != nil {
 		return err
@@ -110,16 +99,7 @@ func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, hist
 			recvTx = val
 			for index, msg := range val.DocTxMsgs {
 				if msg.Type == constant.MsgTypeRecvPacket {
-					ibcTx.DcConnectionId = t.getConnectByRecvPacketEventsNews(val.EventsNew, index)
-				}
-			}
-		} else {
-			//失败的recv_packet交易
-			if len(val.Signers) > 0 {
-				_, ok := dcAddrMap[val.Signers[0]]
-				if ok {
-					recvTx = val
-					break
+					ibcTx.DcConnectionId = getConnectByRecvPacketEventsNews(val.EventsNew, index)
 				}
 			}
 		}
@@ -140,12 +120,16 @@ func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, hist
 			MsgAmount: nil,
 			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket),
 		}
-		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, ibcTx)
+		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+			"$set": bson.M{
+				"dc_tx_info": ibcTx.DcTxInfo,
+			},
+		})
 	}
 	return nil
 }
 
-func (t *FixFailRecvPacketTask) getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) string {
+func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) string {
 	var connect string
 	for _, item := range eventNews {
 		if item.MsgIndex == uint32(msgIndex) {

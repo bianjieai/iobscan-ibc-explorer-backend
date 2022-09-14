@@ -70,7 +70,7 @@ type IExIbcTxRepo interface {
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
 	GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
-	UpdateOne(recordId string, history bool, data *entity.ExIbcTx) error
+	UpdateOne(recordId string, history bool, setData bson.M) error
 
 	// fix dc_chain_id
 	FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
@@ -1045,18 +1045,16 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 
 func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	//查询"成功"和"已退还"状态的没有refunded_tx_info的数据
+	//查询"成功"状态的没有refunded_tx_info的数据
 	query := bson.M{
-		"status": bson.M{
-			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
-		},
+		"status":               entity.IbcTxStatusSuccess,
 		"refunded_tx_info.msg": bson.M{"$exists": false},
 	}
 	if history {
-		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").All(&res)
 		return res, err
 	}
-	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").All(&res)
 	return res, err
 }
 
@@ -1081,16 +1079,16 @@ func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, li
 	}
 	return txs, err
 }
-func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, data *entity.ExIbcTx) error {
+func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, setData bson.M) error {
 	if history {
 		err := repo.collHistory().UpdateOne(context.Background(), bson.M{
 			"record_id": recordId,
-		}, data)
+		}, setData)
 		return err
 	}
 	err := repo.coll().UpdateOne(context.Background(), bson.M{
 		"record_id": recordId,
-	}, data)
+	}, setData)
 	return err
 }
 

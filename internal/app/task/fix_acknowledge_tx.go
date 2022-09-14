@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"sync"
 )
 
@@ -103,5 +104,9 @@ func (t *FixAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history 
 		MsgAmount: nil,
 		Msg:       getMsgByType(ackTx, constant.MsgTypeAcknowledgement),
 	}
-	return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, ibcTx)
+	return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+		"$set": bson.M{
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+		},
+	})
 }
