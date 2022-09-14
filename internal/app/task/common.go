@@ -274,7 +274,7 @@ func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, 
 }
 
 // parseTransferTxEvents parse ibc info from events of transfer tx
-func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomFullPath, sequence string) {
+func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomFullPath, sequence, scConnection string) {
 	if len(tx.EventsNew) > msgIndex {
 		for _, evt := range tx.EventsNew[msgIndex].Events {
 			if evt.Type == "send_packet" {
@@ -290,6 +290,37 @@ func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, deno
 						var data model.TransferTxPacketData
 						_ = json.Unmarshal([]byte(attr.Value), &data)
 						denomFullPath = data.Denom
+					case "packet_connection":
+						scConnection = attr.Value
+					default:
+					}
+				}
+			}
+		}
+	}
+
+	return
+}
+
+// parseRecvPacketTxEvents parse ibc info from events of recv packet tx
+func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetAck string) {
+	if len(tx.EventsNew) > msgIndex {
+		for _, evt := range tx.EventsNew[msgIndex].Events {
+			if evt.Type == "recv_packet" {
+				for _, attr := range evt.Attributes {
+					switch attr.Key {
+					case "packet_connection":
+						dcConnection = attr.Value
+					default:
+					}
+				}
+			}
+
+			if evt.Type == "write_acknowledgement" {
+				for _, attr := range evt.Attributes {
+					switch attr.Key {
+					case "packet_ack":
+						packetAck = attr.Value
 					default:
 					}
 				}

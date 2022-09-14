@@ -109,7 +109,7 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 
 		for msgIndex, msg := range tx.DocTxMsgs {
 			if msg.Type == constant.MsgTypeTransfer && msg.CommonMsg().PacketId == packetId {
-				_, _, denomFullPath, _ := parseTransferTxEvents(msgIndex, &tx)
+				_, _, denomFullPath, _, _ := parseTransferTxEvents(msgIndex, &tx)
 
 				ibcDenom := traceDenom(denomFullPath, ibcTx.ScChainId, t.chainMap)
 				if err = ibcTxRepo.UpdateBaseDenom(ibcTx.RecordId, ibcDenom.BaseDenom, ibcDenom.BaseDenomChainId, isTargetHistory); err != nil {

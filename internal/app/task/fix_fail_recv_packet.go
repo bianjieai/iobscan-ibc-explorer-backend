@@ -89,6 +89,7 @@ func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, hist
 			Fee:       recvTx.Fee,
 			Memo:      recvTx.Memo,
 			Signers:   recvTx.Signers,
+			Log:       recvTx.Log,
 			MsgAmount: nil,
 			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket),
 		}

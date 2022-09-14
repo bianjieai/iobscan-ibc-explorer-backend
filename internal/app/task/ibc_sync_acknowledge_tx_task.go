@@ -65,6 +65,7 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 		Fee:       ackTx.Fee,
 		Memo:      ackTx.Memo,
 		Signers:   ackTx.Signers,
+		Log:       ackTx.Log,
 		MsgAmount: nil,
 		Msg:       getMsgByType(ackTx, constant.MsgTypeAcknowledgement),
 	}

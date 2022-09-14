@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"strings"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -202,6 +202,8 @@ func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
 		"$set": bson.M{
 			"status":           ibcTx.Status,
+			"dc_connection_id": ibcTx.DcConnectionId,
+			"dc_client_id":     ibcTx.DcClientId,
 			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
 			"dc_tx_info":       ibcTx.DcTxInfo,
 			"refunded_tx_info": ibcTx.RefundedTxInfo,
@@ -784,6 +786,7 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, dcChain
 		"$set": bson.M{
 			"dc_chain_id": dcChainId,
 			"dc_channel":  dcChannel,
+			"dc_port":     constant.PortTransfer,
 		},
 	})
 	return err
@@ -800,6 +803,7 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, 
 		"$set": bson.M{
 			"dc_chain_id": dcChainId,
 			"dc_channel":  dcChannel,
+			"dc_port":     constant.PortTransfer,
 		},
 	})
 	return err

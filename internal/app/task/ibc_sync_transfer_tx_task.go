@@ -197,12 +197,10 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			scDenom := transferTxMsg.Token.Denom
 			dcChainId, dcPort, dcChannel := matchDcInfo(chainId, scPort, scChannel, w.chainMap)
 
-			var fullDenomPath, sequence string
+			var fullDenomPath, sequence, scConnection string
 			ibcDenom, isExisted := denomMap[scDenom]
-			if ibcTxStatus == entity.IbcTxStatusFailed { // get base_denom info from ibc_denom collection
-
-			} else {
-				dcPort, dcChannel, fullDenomPath, sequence = parseTransferTxEvents(msgIndex, tx)
+			if ibcTxStatus != entity.IbcTxStatusFailed {
+				dcPort, dcChannel, fullDenomPath, sequence, scConnection = parseTransferTxEvents(msgIndex, tx)
 				if !isExisted { // denom 不存在
 					ibcDenom = traceDenom(fullDenomPath, chainId, w.chainMap)
 				}
@@ -229,19 +227,24 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			if global.Config.Task.CreateAtUseTxTime {
 				createAt = tx.Time
 			}
-			ibcTxList = append(ibcTxList, &entity.ExIbcTx{
-				RecordId:  recordId,
-				TxTime:    tx.Time,
-				ScAddr:    transferTxMsg.Sender,
-				DcAddr:    transferTxMsg.Receiver,
-				ScPort:    scPort,
-				ScChannel: scChannel,
-				ScChainId: chainId,
-				DcPort:    dcPort,
-				DcChannel: dcChannel,
-				DcChainId: dcChainId,
-				Sequence:  sequence,
-				Status:    ibcTxStatus,
+
+			exIbcTx := &entity.ExIbcTx{
+				RecordId:       recordId,
+				TxTime:         tx.Time,
+				ScAddr:         transferTxMsg.Sender,
+				DcAddr:         transferTxMsg.Receiver,
+				ScPort:         scPort,
+				ScChannel:      scChannel,
+				ScConnectionId: scConnection,
+				ScClientId:     "",
+				ScChainId:      chainId,
+				DcPort:         dcPort,
+				DcChannel:      dcChannel,
+				DcConnectionId: "",
+				DcClientId:     "",
+				DcChainId:      dcChainId,
+				Sequence:       sequence,
+				Status:         ibcTxStatus,
 				ScTxInfo: &entity.TxInfo{
 					Hash:      tx.TxHash,
 					Status:    tx.Status,
@@ -250,12 +253,15 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 					Fee:       tx.Fee,
 					MsgAmount: transferTxMsg.Token,
 					Msg:       msg,
+					Memo:      tx.Memo,
+					Signers:   tx.Signers,
+					Log:       tx.Log,
 				},
 				DcTxInfo:       nil,
 				RefundedTxInfo: nil,
-				Log: &entity.Log{
-					ScLog: tx.Log,
-				},
+				//Log: &entity.Log{
+				//	ScLog: tx.Log,
+				//},
 				Denoms: &entity.Denoms{
 					ScDenom: scDenom,
 					DcDenom: "",
@@ -266,11 +272,28 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				NextTryTime:      nowUnix,
 				CreateAt:         createAt,
 				UpdateAt:         createAt,
-			})
+			}
+			w.setClientId(exIbcTx) // set ScClientId, DcClientId
+			ibcTxList = append(ibcTxList, exIbcTx)
 		}
 	}
-
 	return ibcTxList, ibcDenomList
+}
+
+func (w *syncTransferTxWorker) setClientId(ibcTx *entity.ExIbcTx) {
+	chainConf, ok := w.chainMap[ibcTx.ScChainId]
+	if ok {
+		client := chainConf.GetChannelClient(ibcTx.ScPort, ibcTx.ScChannel)
+		ibcTx.ScClientId = client
+	}
+
+	if ibcTx.DcChainId != "" {
+		chainConf, ok = w.chainMap[ibcTx.DcChainId]
+		if ok {
+			client := chainConf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
+			ibcTx.DcClientId = client
+		}
+	}
 }
 
 func (w *syncTransferTxWorker) checkFollowingStatus(chainId string) (bool, error) {
