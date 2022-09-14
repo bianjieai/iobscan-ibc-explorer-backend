@@ -48,13 +48,13 @@ func (t *FixDcChainIdTask) Run() int {
 	go func() {
 		defer wg.Done()
 		t.fixDcChainId(ibcTxTargetLatest, segments)
-		logrus.Infof("task %s fix latest end, %v", t.Name(), err)
+		logrus.Infof("task %s fix latest end", t.Name())
 	}()
 
 	go func() {
 		defer wg.Done()
 		t.fixDcChainId(ibcTxTargetHistory, historySegments)
-		logrus.Infof("task %s fix history end, %v", t.Name(), err)
+		logrus.Infof("task %s fix history end", t.Name())
 	}()
 
 	wg.Wait()
@@ -71,6 +71,7 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 	for _, v := range segments {
 		logrus.Infof("task %s fix %s %d-%d", t.Name(), target, v.StartTime, v.EndTime)
 		var skip int64 = 0
+		var toBeFixedTxs []*fixDcChainIdTx
 		for {
 			txs, err := ibcTxRepo.FindDcChainIdEmptyTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
 			if err != nil {
@@ -80,9 +81,12 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 
 			for _, tx := range txs {
 				dcChainId, _, dcChannel := matchDcInfo(tx.ScChainId, constant.PortTransfer, tx.ScChannel, t.chainMap)
-				if err = ibcTxRepo.FixDcChainId(tx.RecordId, dcChainId, dcChannel, tx.Status, isTargetHistory); err != nil {
-					logrus.Errorf("task %s FixDcChainId(%s) %s err, dcChainId: %s, dcChannel: %s, %v", t.Name(), tx.RecordId, target, dcChainId, dcChannel, err)
-				}
+				toBeFixedTxs = append(toBeFixedTxs, &fixDcChainIdTx{
+					RecordId:  tx.RecordId,
+					DcChainId: dcChainId,
+					DcChannel: dcChannel,
+					Status:    tx.Status,
+				})
 			}
 
 			if int64(len(txs)) < limit {
@@ -90,5 +94,18 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 			}
 			skip += limit
 		}
+
+		for _, tx := range toBeFixedTxs {
+			if err := ibcTxRepo.FixDcChainId(tx.RecordId, tx.DcChainId, tx.DcChannel, tx.Status, isTargetHistory); err != nil {
+				logrus.Errorf("task %s FixDcChainId(%s) %s err, dcChainId: %s, dcChannel: %s, %v", t.Name(), tx.RecordId, target, tx.DcChainId, tx.DcChannel, err)
+			}
+		}
 	}
+}
+
+type fixDcChainIdTx struct {
+	RecordId  string
+	DcChainId string
+	DcChannel string
+	Status    entity.IbcTxStatus
 }

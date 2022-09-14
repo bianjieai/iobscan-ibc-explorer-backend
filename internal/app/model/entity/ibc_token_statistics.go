@@ -1,5 +1,10 @@
 package entity
 
+const (
+	IBCTokenStatisticsCollName    = "ibc_token_statistics"
+	IBCTokenStatisticsNewCollName = "ibc_token_statistics_new"
+)
+
 type IBCTokenStatistics struct {
 	BaseDenom        string `bson:"base_denom"`
 	BaseDenomChainId string `bson:"base_denom_chain_id"`
@@ -10,6 +15,9 @@ type IBCTokenStatistics struct {
 	UpdateAt         int64  `bson:"update_at"`
 }
 
-func (i IBCTokenStatistics) CollectionName() string {
-	return "ibc_token_statistics"
+func (i IBCTokenStatistics) CollectionName(isNew bool) string {
+	if isNew {
+		return IBCTokenStatisticsNewCollName
+	}
+	return IBCTokenStatisticsCollName
 }

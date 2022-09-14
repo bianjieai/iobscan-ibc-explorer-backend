@@ -23,6 +23,16 @@ func (t *TokenStatisticsTask) Switch() bool {
 }
 
 func (t *TokenStatisticsTask) Run() int {
+	if err := tokenTraceStatisticsRepo.CreateNew(); err != nil {
+		logrus.Errorf("task %s tokenTraceStatisticsRepo.CreateNew err, %v", t.Name(), err)
+		return -1
+	}
+
+	if err := tokenStatisticsRepo.CreateNew(); err != nil {
+		logrus.Errorf("task %s tokenStatisticsRepo.CreateNew err, %v", t.Name(), err)
+		return -1
+	}
+
 	historySegments, err := getHistorySegment()
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
@@ -42,6 +52,16 @@ func (t *TokenStatisticsTask) Run() int {
 	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
 	if err = t.deal(segments, opInsert); err != nil {
 		logrus.Errorf("task %s deal err, %v", t.Name(), err)
+		return -1
+	}
+
+	if err = tokenTraceStatisticsRepo.SwitchColl(); err != nil {
+		logrus.Errorf("task %s tokenTraceStatisticsRepo.SwitchColl err, %v", t.Name(), err)
+		return -1
+	}
+
+	if err = tokenStatisticsRepo.SwitchColl(); err != nil {
+		logrus.Errorf("task %s tokenStatisticsRepo.SwitchColl err, %v", t.Name(), err)
 		return -1
 	}
 
@@ -126,8 +146,8 @@ func (t *TokenStatisticsTask) saveTokenTransferData(dtoList []*dto.CountBaseDeno
 
 	var err error
 	if op == opInsert {
-		if err = tokenStatisticsRepo.BatchInsert(statistics); err != nil {
-			logrus.Errorf("task %s tokenStatisticsRepo.BatchInsert err, %v", t.Name(), err)
+		if err = tokenStatisticsRepo.BatchInsertToNew(statistics); err != nil {
+			logrus.Errorf("task %s tokenStatisticsRepo.BatchInsertToNew err, %v", t.Name(), err)
 		}
 	} else {
 		if err = tokenStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {
@@ -154,8 +174,8 @@ func (t *TokenStatisticsTask) saveTraceReceiveData(dtoList []*dto.CountIBCTokenR
 
 	var err error
 	if op == opInsert {
-		if err = tokenTraceStatisticsRepo.BatchInsert(statistics); err != nil {
-			logrus.Errorf("task %s tokenTraceStatisticsRepo.BatchInsert err, %v", t.Name(), err)
+		if err = tokenTraceStatisticsRepo.BatchInsertToNew(statistics); err != nil {
+			logrus.Errorf("task %s tokenTraceStatisticsRepo.BatchInsertToNew err, %v", t.Name(), err)
 		}
 	} else {
 		if err = tokenTraceStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {

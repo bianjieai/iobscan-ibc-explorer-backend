@@ -156,22 +156,25 @@ func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*en
 // 1. 对于之前已经存在的channel，取之前的值即可;对于新增的channel，需要查询lcd 接口获取
 // 2. 对于之前已经存在的channel，目标链channel state，暂取之前的值，后面 setCounterpartyState 方法会进一步处理
 func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainConfig, channelPathList []*entity.ChannelPath) {
-	existDcChainIdMap := make(map[string]string)
-	existDcChannelStateMap := make(map[string]string)
+	existChannelStateMap := make(map[string]*entity.ChannelPath)
 	for _, ibcInfo := range chain.IbcInfo {
 		for _, path := range ibcInfo.Paths {
 			key := fmt.Sprintf("%s%s%s%s", path.PortId, path.ChannelId, path.Counterparty.PortId, path.Counterparty.ChannelId)
-			existDcChainIdMap[key] = path.ChainId
-			existDcChannelStateMap[key] = path.Counterparty.State
+			existChannelStateMap[key] = path
 		}
 	}
 
 	lcdConnectionErr := false
 	for _, v := range channelPathList {
 		key := fmt.Sprintf("%s%s%s%s", v.PortId, v.ChannelId, v.Counterparty.PortId, v.Counterparty.ChannelId)
-		dcChainId, ok := existDcChainIdMap[key]
+		existChannelState, ok := existChannelStateMap[key]
 		if ok {
-			v.ChainId = dcChainId
+			v.Counterparty.State = existChannelState.Counterparty.State
+		}
+
+		if ok && existChannelState.ChainId != "" && existChannelState.ClientId != "" {
+			v.ChainId = existChannelState.ChainId
+			v.ClientId = existChannelState.ClientId
 		} else {
 			if !lcdConnectionErr { // 如果遇到lcd连接问题，则不再请求lcd.
 				stateResp, err := queryClientState(chain.Lcd, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
@@ -180,13 +183,9 @@ func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainC
 					logrus.Errorf("task %s %s queryClientState error, %v", t.Name(), chain.ChainId, err)
 				} else {
 					v.ChainId = t.formatChainId(stateResp.IdentifiedClientState.ClientState.ChainId)
+					v.ClientId = stateResp.IdentifiedClientState.ClientId
 				}
 			}
-		}
-
-		state, ok := existDcChannelStateMap[key]
-		if ok {
-			v.Counterparty.State = state
 		}
 	}
 }

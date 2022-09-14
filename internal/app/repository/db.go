@@ -15,9 +15,13 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
-var mgo *qmgo.Client
-var ibcDatabase string
+var (
+	db          *gorm.DB
+	mgo         *qmgo.Client
+	ibcDatabase string
+)
+
+const adminDatabase = "admin"
 
 func InitMysqlDB(cfg conf.Mysql) *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
