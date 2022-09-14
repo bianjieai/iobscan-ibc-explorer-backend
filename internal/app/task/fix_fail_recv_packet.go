@@ -4,7 +4,9 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type FixFailRecvPacketTask struct {
@@ -21,35 +23,68 @@ func (t *FixFailRecvPacketTask) Switch() bool {
 }
 
 func (t *FixFailRecvPacketTask) Run() int {
-
-	logrus.Debug("FixFailRecvPacketTask start ....")
-	syncFailRecvPacket := func(history bool) error {
-		txs, err := ibcTxRepo.GetNeedFailRecvPacketTxs(history)
-		if err != nil {
-			return err
-		}
-		for _, val := range txs {
-			err := t.SaveFailRecvPacketTx(val, history)
-			if err != nil {
-				logrus.Warn("SaveFailRecvPacketTx failed, "+err.Error(),
-					" chain_id: ", val.ScChainId,
-					" packet_id: ", val.ScTxInfo.Msg.CommonMsg().PacketId)
-			}
-		}
-		return nil
-	}
-
-	if err := syncFailRecvPacket(false); err != nil {
-		logrus.Error(err.Error())
+	segments, err := getSegment()
+	if err != nil {
+		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
 		return -1
 	}
-	logrus.Debug("finished syncFailRecvPacket from ex_ibc_tx_latest")
-	if err := syncFailRecvPacket(true); err != nil {
-		logrus.Error(err.Error())
+
+	historySegments, err := getHistorySegment()
+	if err != nil {
+		logrus.Errorf("task %s getHistorySegment error, %v", t.Name(), err)
 		return -1
 	}
-	logrus.Debug("finished syncFailRecvPacket from ex_ibc_tx")
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		err := t.fixFailRecvPacketTxs(ibcTxTargetLatest, segments)
+		logrus.Infof("task %s fix latest end, %v", t.Name(), err)
+	}()
+
+	go func() {
+		defer wg.Done()
+		err := t.fixFailRecvPacketTxs(ibcTxTargetHistory, historySegments)
+		logrus.Infof("task %s fix history end, %v", t.Name(), err)
+	}()
+
+	wg.Wait()
 	return 1
+}
+
+func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*segment) error {
+	const limit int64 = 1000
+	isTargetHistory := false
+	if target == ibcTxTargetHistory {
+		isTargetHistory = true
+	}
+
+	for _, v := range segments {
+		logrus.Infof("task %s fix %s %d-%d", t.Name(), target, v.StartTime, v.EndTime)
+		var skip int64 = 0
+		for {
+			txs, err := ibcTxRepo.FindRecvPacketTxsEmptyTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
+			if err != nil {
+				logrus.Errorf("task %s FindRecvPacketTxsEmptyTxs %s %d-%d err, %v", t.Name(), target, v.StartTime, v.EndTime, err)
+				return err
+			}
+
+			for _, val := range txs {
+				err := t.SaveFailRecvPacketTx(val, isTargetHistory)
+				if err != nil && err != qmgo.ErrNoSuchDocuments {
+					logrus.Errorf("task %s SaveFailRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+					return err
+				}
+			}
+
+			if int64(len(txs)) < limit {
+				break
+			}
+			skip += limit
+		}
+	}
+	return nil
 }
 
 func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
@@ -71,11 +106,21 @@ func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, hist
 	}
 	var recvTx *entity.Tx
 	for _, val := range recvTxs {
-		if len(val.Signers) > 0 {
-			_, ok := dcAddrMap[val.Signers[0]]
-			if ok {
-				recvTx = val
-				break
+		if val.Status == entity.TxStatusSuccess {
+			recvTx = val
+			for index, msg := range val.DocTxMsgs {
+				if msg.Type == constant.MsgTypeRecvPacket {
+					ibcTx.DcConnectionId = t.getConnectByRecvPacketEventsNews(val.EventsNew, index)
+				}
+			}
+		} else {
+			//失败的recv_packet交易
+			if len(val.Signers) > 0 {
+				_, ok := dcAddrMap[val.Signers[0]]
+				if ok {
+					recvTx = val
+					break
+				}
 			}
 		}
 	}
@@ -98,4 +143,25 @@ func (t *FixFailRecvPacketTask) SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, hist
 		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, ibcTx)
 	}
 	return nil
+}
+
+func (t *FixFailRecvPacketTask) getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) string {
+	var connect string
+	for _, item := range eventNews {
+		if item.MsgIndex == uint32(msgIndex) {
+			for _, val := range item.Events {
+				if val.Type == "write_acknowledgement" || val.Type == "recv_packet" {
+					for _, attribute := range val.Attributes {
+						switch attribute.Key {
+						case "packet_connection":
+							connect = attribute.Value
+							//case "packet_ack":
+							//	ackData = attribute.Value
+						}
+					}
+				}
+			}
+		}
+	}
+	return connect
 }

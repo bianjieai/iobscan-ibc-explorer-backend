@@ -185,17 +185,23 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 		return nil, err
 	}
 	var relayerInfo vo.RelayerInfo
-	var matchInfo string
-	if val.DcTxInfo != nil {
-		relayerInfo.DcRelayerAddr = val.DcTxInfo.Msg.CommonMsg().Signer
-		matchInfo = strings.Join([]string{val.DcChainId, val.DcChannel, relayerInfo.DcRelayerAddr}, ":")
-	} else if val.RefundedTxInfo != nil {
-		relayerInfo.ScRelayerAddr = val.RefundedTxInfo.Msg.CommonMsg().Signer
-		matchInfo = strings.Join([]string{val.ScChainId, val.ScChannel, relayerInfo.ScRelayerAddr}, ":")
+	if val.DcTxInfo != nil && val.DcTxInfo.Msg != nil {
+		dcRelayerAddr := val.DcTxInfo.Msg.CommonMsg().Signer
+		relayerInfo.DcRelayer.RelayerAddr = dcRelayerAddr
+		matchInfo := strings.Join([]string{val.DcChainId, val.DcChannel, dcRelayerAddr}, ":")
+		if cfg, ok := relayerCfgMap[matchInfo]; ok {
+			relayerInfo.DcRelayer.RelayerName = cfg.RelayerName
+			relayerInfo.DcRelayer.Icon = cfg.Icon
+		}
 	}
-	if cfg, ok := relayerCfgMap[matchInfo]; ok {
-		relayerInfo.RelayerName = cfg.RelayerName
-		relayerInfo.Icon = cfg.Icon
+	if val.RefundedTxInfo != nil && val.RefundedTxInfo.Msg != nil {
+		scRelayerAddr := val.RefundedTxInfo.Msg.CommonMsg().Signer
+		relayerInfo.ScRelayer.RelayerAddr = scRelayerAddr
+		matchInfo := strings.Join([]string{val.ScChainId, val.ScChannel, scRelayerAddr}, ":")
+		if cfg, ok := relayerCfgMap[matchInfo]; ok {
+			relayerInfo.ScRelayer.RelayerName = cfg.RelayerName
+			relayerInfo.ScRelayer.Icon = cfg.Icon
+		}
 	}
 	return &relayerInfo, nil
 }

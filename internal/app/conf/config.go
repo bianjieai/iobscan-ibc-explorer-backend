@@ -96,6 +96,7 @@ type Task struct {
 	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
 	SwitchAddTransferDataTask          bool `mapstructure:"switch_add_transfer_data_task"`
 	SwitchFixFailRecvPacketTask        bool `mapstructure:"switch_fix_fail_recv_packet_task"`
+	SwitchFixAcknowledgeTxTask         bool `mapstructure:"switch_fix_acknowledge_tx_task"`
 	SwitchFixDcChainIdTask             bool `mapstructure:"switch_fix_dc_chain_id_task"`
 	SwitchFixBaseDenomChainIdTask      bool `mapstructure:"switch_fix_base_denom_chain_id_task"`
 

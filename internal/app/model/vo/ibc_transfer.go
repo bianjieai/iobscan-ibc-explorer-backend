@@ -88,10 +88,13 @@ type (
 		DenomPath string `json:"denom_path"`
 	}
 	RelayerInfo struct {
-		RelayerName   string `json:"relayer_name"`
-		ScRelayerAddr string `json:"sc_relayer_addr"`
-		DcRelayerAddr string `json:"dc_relayer_addr"`
-		Icon          string `json:"icon"`
+		ScRelayer RelayerCfg `json:"sc_relayer,omitempty"`
+		DcRelayer RelayerCfg `json:"dc_relayer,omitempty"`
+	}
+	RelayerCfg struct {
+		RelayerName string `json:"relayer_name"`
+		Icon        string `json:"icon"`
+		RelayerAddr string `json:"relayer_addr"`
 	}
 	IbcTxInfo struct {
 		ScTxInfo     *TxDetailDto `json:"sc_tx_info"`
@@ -185,7 +188,7 @@ func loadTxDetailDto(info *entity.TxInfo) *TxDetailDto {
 
 	switch info.Msg.Type {
 	case constant.MsgTypeRecvPacket:
-		dto.Ack = info.Ack
+		//dto.Ack = info.Ack
 		dto.ProofHeight = proofHeightString(info.Msg.RecvPacketMsg().ProofHeight)
 	case constant.MsgTypeAcknowledgement:
 		dto.Ack = info.Msg.AckPacketMsg().Acknowledgement
@@ -247,15 +250,21 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailResp {
 	var errLog string
 	switch ibcTx.Status {
 	case entity.IbcTxStatusFailed:
-		errLog = ibcTx.Log.ScLog
+		errLog = ibcTx.ScTxInfo.ErrLog
 	case entity.IbcTxStatusRefunded:
 		if ibcTx.DcTxInfo != nil {
 			if ibcTx.DcTxInfo.Status == entity.TxStatusSuccess {
-				errLog = ibcTx.DcTxInfo.Ack
+				if ibcTx.RefundedTxInfo != nil {
+					errLog = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+				}
 			} else {
 				errLog = ibcTx.DcTxInfo.ErrLog
 			}
 		}
+	}
+	dcTxInfo := loadTxDetailDto(ibcTx.DcTxInfo)
+	if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
+		dcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
 	}
 	return TranaferTxDetailResp{
 		ErrorLog: errLog,
@@ -265,7 +274,7 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailResp {
 		DcInfo:   dcChainInfo,
 		IbcTxInfo: &IbcTxInfo{
 			ScTxInfo:     loadTxDetailDto(ibcTx.ScTxInfo),
-			DcTxInfo:     loadTxDetailDto(ibcTx.DcTxInfo),
+			DcTxInfo:     dcTxInfo,
 			RefundTxInfo: loadTxDetailDto(ibcTx.RefundedTxInfo),
 		},
 	}

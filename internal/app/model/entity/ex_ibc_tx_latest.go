@@ -70,7 +70,6 @@ type (
 		Memo      string       `bson:"memo"`
 		Signers   []string     `bson:"signers"`
 		ErrLog    string       `bson:"err_log"`
-		Ack       string       `bson:"ack"`
 	}
 )
 
