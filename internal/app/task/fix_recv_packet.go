@@ -72,9 +72,9 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 			}
 
 			for _, val := range txs {
-				err := SaveFailRecvPacketTx(val, isTargetHistory)
+				err := SaveRecvPacketTx(val, isTargetHistory)
 				if err != nil && err != qmgo.ErrNoSuchDocuments {
-					logrus.Errorf("task %s SaveFailRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+					logrus.Errorf("task %s SaveRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 					return err
 				}
 			}
@@ -88,7 +88,7 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 	return nil
 }
 
-func SaveFailRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
+func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
 	if err != nil {
 		return err

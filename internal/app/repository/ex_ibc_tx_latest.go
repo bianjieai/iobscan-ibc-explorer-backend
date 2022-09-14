@@ -69,7 +69,7 @@ type IExIbcTxRepo interface {
 	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
-	GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
+	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
 	UpdateOne(recordId string, history bool, setData bson.M) error
 
 	// fix dc_chain_id
@@ -1175,7 +1175,7 @@ func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChainId s
 	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
 }
 
-func (repo *ExIbcTxRepo) GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	//查询"已退还"状态的没有dc_tx_info的数据
 	query := bson.M{

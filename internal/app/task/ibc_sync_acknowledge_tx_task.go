@@ -35,26 +35,30 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 		}
 		for _, val := range txs {
 			err := t.SaveAcknowledgeTx(val, history)
-			if err != nil {
-				logrus.Warn("SaveAcknowledgeTx failed, "+err.Error(),
-					"chain_id:", val.ScChainId,
-					"packet_id:", val.ScTxInfo.Msg.CommonMsg().PacketId)
+			if err != nil && err != qmgo.ErrNoSuchDocuments {
+				logrus.Warnf("task %s SaveAcknowledgeTx failed %s, chain_id:%s packet_id:%s",
+					t.Name(),
+					err.Error(),
+					val.ScChainId,
+					val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
 		return nil
 	}
 
 	syncRecvPacket := func(history bool) error {
-		txs, err := ibcTxRepo.GetNeedFailRecvPacketTxs(history)
+		txs, err := ibcTxRepo.GetNeedRecvPacketTxs(history)
 		if err != nil {
 			return err
 		}
 		for _, val := range txs {
-			err := SaveFailRecvPacketTx(val, history)
+			err := SaveRecvPacketTx(val, history)
 			if err != nil && err != qmgo.ErrNoSuchDocuments {
-				logrus.Warn("SaveFailRecvPacketTx failed, "+err.Error(),
-					"chain_id:", val.ScChainId,
-					"packet_id:", val.ScTxInfo.Msg.CommonMsg().PacketId)
+				logrus.Warnf("task %s SaveRecvPacketTx failed %s, chain_id:%s packet_id:%s",
+					t.Name(),
+					err.Error(),
+					val.ScChainId,
+					val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
 		return nil
