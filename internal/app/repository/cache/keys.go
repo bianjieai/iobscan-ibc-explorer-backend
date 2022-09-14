@@ -24,6 +24,7 @@ const (
 	lcdTxData            = "lcd_tx_data:%s"
 	clientIdInfo         = "client_id_info:%s"
 	ibcRelayerCfg        = "ibc_relayer_config"
+	ibcRelayerCfgPairIds = "ibc_relayer_config_pair_ids"
 	ibcRelayer           = "ibc_relayer"
 	baseDenom            = "base_denom"
 	ibcChain             = "ibc_chain"

@@ -1107,9 +1107,9 @@ func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit i
 	var txs []*entity.ExIbcTx
 	var err error
 	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Sort("-create_at").Limit(limit).All(&txs)
 	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Sort("-create_at").Limit(limit).All(&txs)
 	}
 	return txs, err
 }

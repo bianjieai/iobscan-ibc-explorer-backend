@@ -75,6 +75,7 @@ func chainPage(r *gin.RouterGroup) {
 func relayerPage(r *gin.RouterGroup) {
 	ctl := rest.RelayerController{}
 	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+	r.POST("/relayerCollect", ctl.Collect)
 }
 
 func cacheTools(r *gin.RouterGroup) {

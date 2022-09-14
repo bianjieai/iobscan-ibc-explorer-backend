@@ -1,5 +1,7 @@
 package cache
 
+// todo no usage, remove this
+
 type IbcInfoHashCacheRepo struct {
 }
 

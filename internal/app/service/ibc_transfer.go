@@ -316,7 +316,20 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 	}
 	return &relayerInfo, nil
 }
-
+func getRelayerCfgMap() (map[string]entity.IBCRelayerConfig, error) {
+	relayerCfgs, err := relayerCfgRepo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
+	for _, val := range relayerCfgs {
+		srcChainInfo := strings.Join([]string{val.ChainA, val.ChannelA, val.ChainAAddress}, ":")
+		dcChainInfo := strings.Join([]string{val.ChainB, val.ChannelB, val.ChainBAddress}, ":")
+		relayerCfgMap[srcChainInfo] = *val
+		relayerCfgMap[dcChainInfo] = *val
+	}
+	return relayerCfgMap, nil
+}
 func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 	var (
 		sendToken = vo.DetailToken{

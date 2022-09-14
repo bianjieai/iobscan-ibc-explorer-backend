@@ -12,10 +12,12 @@ import (
 type IRelayerService interface {
 	List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error)
 	ListCount(req *vo.RelayerListReq) (int64, errors.Error)
+	Collect(OperatorFile string) errors.Error
 }
 
 type RelayerService struct {
-	dto vo.RelayerDto
+	dto            vo.RelayerDto
+	relayerHandler RelayerHandler
 }
 
 var _ IRelayerService = new(RelayerService)
@@ -32,20 +34,21 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
-	relayerCfgMap, err := getRelayerCfgMap()
+	relayerCfgs, err := relayerCfgRepo.FindAll()
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
+	relayerCfgMap := make(map[string]*entity.IBCRelayerConfig, len(relayerCfgs))
+	for _, val := range relayerCfgs {
+		relayerCfgMap[val.RelayerPairId] = val
+	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
-		srcChainInfo := strings.Join([]string{val.ChainA, val.ChannelA, val.ChainAAddress}, ":")
-		dcChainInfo := strings.Join([]string{val.ChainB, val.ChannelB, val.ChainBAddress}, ":")
-		if cfg, ok := relayerCfgMap[srcChainInfo]; ok {
-			item.RelayerName = cfg.RelayerName
-			item.RelayerIcon = cfg.Icon
-		} else if cfg, ok = relayerCfgMap[dcChainInfo]; ok {
-			item.RelayerName = cfg.RelayerName
-			item.RelayerIcon = cfg.Icon
+		pairId := entity.GenerateRelayerPairId(val.ChainA, val.ChannelA, val.ChainAAddress, val.ChainB, val.ChannelB, val.ChainBAddress)
+		config, ok := relayerCfgMap[pairId]
+		if ok {
+			item.RelayerName = config.RelayerName
+			item.RelayerIcon = config.Icon
 		}
 		resp.Items = append(resp.Items, item)
 	}
@@ -64,21 +67,7 @@ func (svc *RelayerService) ListCount(req *vo.RelayerListReq) (int64, errors.Erro
 	return total, nil
 }
 
-func getRelayerCfgMap() (map[string]entity.IBCRelayerConfig, error) {
-	relayerCfgs, err := relayerCfgRepo.FindAll()
-	if err != nil {
-		return nil, err
-	}
-	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
-	for _, val := range relayerCfgs {
-		arrs := strings.Split(val.RelayerChannelPair, ":")
-		if len(arrs) == 6 {
-			srcChainInfo := strings.Join([]string{arrs[0], arrs[1], arrs[2]}, ":")
-			dcChainInfo := strings.Join([]string{arrs[3], arrs[4], arrs[5]}, ":")
-			relayerCfgMap[srcChainInfo] = *val
-			relayerCfgMap[dcChainInfo] = *val
-		}
-
-	}
-	return relayerCfgMap, nil
+func (svc *RelayerService) Collect(OperatorFile string) errors.Error {
+	go svc.relayerHandler.Collect(OperatorFile)
+	return nil
 }

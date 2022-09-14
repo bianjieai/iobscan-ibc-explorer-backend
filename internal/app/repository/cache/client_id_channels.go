@@ -2,6 +2,8 @@ package cache
 
 import "fmt"
 
+// todo no usage, remove this
+
 //缓存chain_id链上的client_id与channel对的对应关系
 type ClientIdChannelCacheRepo struct {
 }
