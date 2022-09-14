@@ -111,8 +111,9 @@ func startOneOffTask() {
 		//&task.FixDcChainIdTask{},
 		//&task.FixBaseDenomChainIdTask{},
 		//&task.RelayerDataTask{},
-		//&task.AddTransferDataTask{},
-		//&task.FixFailRecvPacketTask{},
+		&task.AddTransferDataTask{},
+		&task.FixFailRecvPacketTask{},
+		&task.FixAcknowledgeTxTask{},
 	)
 	task.StartOneOffTask()
 }
