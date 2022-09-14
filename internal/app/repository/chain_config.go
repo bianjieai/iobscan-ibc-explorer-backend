@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,6 +13,7 @@ type IChainConfigRepo interface {
 	FindAllChainInfs() ([]*entity.ChainConfig, error)
 	FindOne(chainId string) (*entity.ChainConfig, error)
 	UpdateIbcInfo(config *entity.ChainConfig) error
+	UpdateLcdApi(config *entity.ChainConfig) error
 	Count() (int64, error)
 }
 
@@ -36,7 +38,7 @@ func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 func (repo *ChainConfigRepo) FindAllChainInfs() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
-		Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1, "lcd": 1}).All(&res)
+		Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1, "lcd": 1, "lcd_api_path": 1}).All(&res)
 	return res, err
 }
 
@@ -51,5 +53,17 @@ func (repo *ChainConfigRepo) UpdateIbcInfo(config *entity.ChainConfig) error {
 		"$set": bson.M{
 			"ibc_info":          config.IbcInfo,
 			"ibc_info_hash_lcd": config.IbcInfoHashLcd,
+		}})
+}
+
+func (repo *ChainConfigRepo) UpdateLcdApi(config *entity.ChainConfig) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": config.ChainId}, bson.M{
+		"$set": bson.M{
+			"lcd":                            config.Lcd,
+			"lcd_api_path.channels_path":     config.LcdApiPath.ChannelsPath,
+			"lcd_api_path.client_state_path": config.LcdApiPath.ClientStatePath,
+			"lcd_api_path.supply_path":       config.LcdApiPath.SupplyPath,
+			"lcd_api_path.balances_path":     config.LcdApiPath.BalancesPath,
+			"lcd_api_path.params_path":       config.LcdApiPath.ParamsPath,
 		}})
 }

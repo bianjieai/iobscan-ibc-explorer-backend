@@ -19,7 +19,7 @@ type FixBaseDenomChainIdTask struct {
 var _ OneOffTask = new(FixBaseDenomChainIdTask)
 
 func (t *FixBaseDenomChainIdTask) Name() string {
-	return "fix_base_denom_chain_id"
+	return "fix_base_denom_chain_id_task"
 }
 
 func (t *FixBaseDenomChainIdTask) Switch() bool {
