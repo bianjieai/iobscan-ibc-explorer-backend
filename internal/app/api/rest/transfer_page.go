@@ -43,6 +43,16 @@ func (ctl *IbcTransferController) TransferTxDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(resp))
 }
 
+func (ctl *IbcTransferController) TransferTxDetailNew(c *gin.Context) {
+	hash := c.Param("hash")
+	resp, err := transferService.TransferTxDetailNew(hash)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(resp))
+}
+
 func (ctl *IbcTransferController) TraceSource(c *gin.Context) {
 	hash := c.Param("hash")
 	var req vo.TraceSourceReq

@@ -24,6 +24,34 @@ type (
 	}
 
 	TranaferTxDetailResp struct {
+		Items     []IbcTxDetailDto `json:"items"`
+		TimeStamp int64            `json:"time_stamp"`
+	}
+	IbcTxDetailDto struct {
+		ScSigners        []string  `json:"sc_signers"`
+		DcSigners        []string  `json:"dc_signers"`
+		ScAddr           string    `json:"sc_addr"`
+		DcAddr           string    `json:"dc_addr"`
+		Status           int       `json:"status"`
+		ScChainId        string    `json:"sc_chain_id"`
+		ScChannel        string    `json:"sc_channel"`
+		ScPort           string    `json:"sc_port"`
+		ScConnect        string    `json:"sc_connect"`
+		DcChainId        string    `json:"dc_chain_id"`
+		DcChannel        string    `json:"dc_channel"`
+		DcPort           string    `json:"dc_port"`
+		DcConnect        string    `json:"dc_connect"`
+		Sequence         string    `json:"sequence"`
+		ScTxInfo         TxInfoDto `json:"sc_tx_info"`
+		DcTxInfo         TxInfoDto `json:"dc_tx_info"`
+		BaseDenom        string    `json:"base_denom"`
+		BaseDenomChainId string    `json:"base_denom_chain_id"`
+		Denoms           Denoms    `json:"denoms"`
+		TxTime           int64     `json:"tx_time"`
+		Ack              string    `json:"ack"`
+	}
+
+	TranaferTxDetailNewResp struct {
 		Items       []IbcTxDto   `json:"items,omitempty"`
 		IsList      bool         `json:"is_list"`
 		ScInfo      *ChainInfo   `json:"sc_info,omitempty"`
@@ -245,7 +273,7 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 	}
 }
 
-func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailResp {
+func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	scChainInfo, dcChainInfo := loadChainInfo(ibcTx)
 	var errLog string
 	switch ibcTx.Status {
@@ -266,7 +294,7 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailResp {
 	if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
 		dcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
 	}
-	return TranaferTxDetailResp{
+	return TranaferTxDetailNewResp{
 		ErrorLog: errLog,
 		Status:   int(ibcTx.Status),
 		Sequence: ibcTx.Sequence,
@@ -277,5 +305,26 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailResp {
 			DcTxInfo:     dcTxInfo,
 			RefundTxInfo: loadTxDetailDto(ibcTx.RefundedTxInfo),
 		},
+	}
+}
+
+func (dto IbcTxDetailDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDetailDto {
+	return IbcTxDetailDto{
+		ScAddr:           ibcTx.ScAddr,
+		DcAddr:           ibcTx.DcAddr,
+		Status:           int(ibcTx.Status),
+		ScChainId:        ibcTx.ScChainId,
+		ScChannel:        ibcTx.ScChannel,
+		ScPort:           ibcTx.ScPort,
+		DcChainId:        ibcTx.DcChainId,
+		DcChannel:        ibcTx.DcChannel,
+		DcPort:           ibcTx.DcPort,
+		Sequence:         ibcTx.Sequence,
+		ScTxInfo:         loadTxInfoDto(ibcTx.ScTxInfo),
+		DcTxInfo:         loadTxInfoDto(ibcTx.DcTxInfo),
+		BaseDenom:        ibcTx.BaseDenom,
+		BaseDenomChainId: ibcTx.BaseDenomChainId,
+		Denoms:           Denoms{ScDenom: ibcTx.Denoms.ScDenom, DcDenom: ibcTx.Denoms.DcDenom},
+		TxTime:           ibcTx.TxTime,
 	}
 }
