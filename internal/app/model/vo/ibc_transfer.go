@@ -27,6 +27,24 @@ type (
 		Items     []IbcTxDetailDto `json:"items"`
 		TimeStamp int64            `json:"time_stamp"`
 	}
+	IbcTxDto struct {
+		RecordId         string    `json:"record_id"`
+		ScAddr           string    `json:"sc_addr"`
+		DcAddr           string    `json:"dc_addr"`
+		Status           int       `json:"status"`
+		ScChainId        string    `json:"sc_chain_id"`
+		DcChainId        string    `json:"dc_chain_id"`
+		ScChannel        string    `json:"sc_channel"`
+		DcChannel        string    `json:"dc_channel"`
+		Sequence         string    `json:"sequence"`
+		ScTxInfo         TxInfoDto `json:"sc_tx_info"`
+		DcTxInfo         TxInfoDto `json:"dc_tx_info"`
+		BaseDenom        string    `json:"base_denom"`
+		BaseDenomChainId string    `json:"base_denom_chain_id"`
+		Denoms           Denoms    `json:"denoms"`
+		TxTime           int64     `json:"tx_time"`
+		EndTime          int64     `json:"end_time"`
+	}
 	IbcTxDetailDto struct {
 		ScSigners        []string  `json:"sc_signers"`
 		DcSigners        []string  `json:"dc_signers"`
@@ -74,24 +92,7 @@ type (
 		Msg    interface{} `json:"msg"`
 		Events interface{} `json:"events"`
 	}
-	IbcTxDto struct {
-		RecordId         string    `json:"record_id"`
-		ScAddr           string    `json:"sc_addr"`
-		DcAddr           string    `json:"dc_addr"`
-		Status           int       `json:"status"`
-		ScChainId        string    `json:"sc_chain_id"`
-		DcChainId        string    `json:"dc_chain_id"`
-		ScChannel        string    `json:"sc_channel"`
-		DcChannel        string    `json:"dc_channel"`
-		Sequence         string    `json:"sequence"`
-		ScTxInfo         TxInfoDto `json:"sc_tx_info"`
-		DcTxInfo         TxInfoDto `json:"dc_tx_info"`
-		BaseDenom        string    `json:"base_denom"`
-		BaseDenomChainId string    `json:"base_denom_chain_id"`
-		Denoms           Denoms    `json:"denoms"`
-		TxTime           int64     `json:"tx_time"`
-		EndTime          int64     `json:"end_time"`
-	}
+
 	Denoms struct {
 		ScDenom string `json:"sc_denom"`
 		DcDenom string `json:"dc_denom"`

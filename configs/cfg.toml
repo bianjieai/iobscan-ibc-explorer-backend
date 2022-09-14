@@ -65,8 +65,6 @@ switch_ibc_relayer_statistics_task = false
 switch_only_init_relayer_data=false
 switch_fix_dc_chain_id_task = false
 switch_fix_base_denom_chain_id_task = false
-switch_fix_fail_recv_packet_task = false
-switch_fix_acknowledge_tx_task=false
 # worker num
 sync_transfer_tx_worker_num = 5
 ibc_tx_relate_worker_num = 5
@@ -76,4 +74,3 @@ create_at_use_tx_time = false
 
 [chain_config]
 new_chains = "bigbang,irishub_qa"
-add_transfer_chains=""
