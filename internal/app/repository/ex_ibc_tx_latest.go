@@ -83,6 +83,8 @@ type IExIbcTxRepo interface {
 	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	//fix acknowledge tx
 	FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	//fix ibcTransfer fail and fix acknowledge
+	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -1208,4 +1210,25 @@ func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, lim
 		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
 	}
 	return txs, err
+}
+
+func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	var res []*entity.ExIbcTx
+	//查询"失败"状态的没有refunded_tx_info的数据
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status":               entity.IbcTxStatusFailed,
+		"dc_tx_info.status":    entity.TxStatusSuccess,
+		"refunded_tx_info.msg": bson.M{"$exists": false},
+	}
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).All(&res)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&res)
+	}
+	return res, err
 }
