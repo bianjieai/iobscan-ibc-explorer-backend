@@ -182,7 +182,8 @@ func (repo *TxRepo) GetAcknowledgeTxs(chainId, packetId string) (entity.Tx, erro
 		"msgs.type":          constant.MsgTypeAcknowledgement,
 		"status":             entity.TxStatusSuccess,
 	}
-	err := repo.coll(chainId).Find(context.Background(), query).One(&res)
+	//取"成功"状态最新的acknowledge_tx交易
+	err := repo.coll(chainId).Find(context.Background(), query).Sort("-height").One(&res)
 
 	if err != nil {
 		return res, err
