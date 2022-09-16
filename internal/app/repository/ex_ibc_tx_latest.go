@@ -1075,9 +1075,9 @@ func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, li
 	var txs []*entity.ExIbcTx
 	var err error
 	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
 	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
 	}
 	return txs, err
 }
@@ -1205,9 +1205,9 @@ func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, lim
 	var txs []*entity.ExIbcTx
 	var err error
 	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
 	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&txs)
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
 	}
 	return txs, err
 }
@@ -1226,9 +1226,9 @@ func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64
 	}
 	var err error
 	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).All(&res)
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&res)
 	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).All(&res)
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&res)
 	}
 	return res, err
 }
