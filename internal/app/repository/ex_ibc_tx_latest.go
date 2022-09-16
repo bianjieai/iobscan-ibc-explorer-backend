@@ -1064,9 +1064,7 @@ func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, li
 			"$gte": startTime,
 			"$lte": endTime,
 		},
-		"status": bson.M{
-			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
-		},
+		"status":               entity.IbcTxStatusSuccess,
 		"refunded_tx_info.msg": bson.M{"$exists": false},
 	}
 

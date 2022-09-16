@@ -89,24 +89,31 @@ func (t *FixAcknowledgeTxTask) fixAcknowledgeTxs(target string, segments []*segm
 }
 
 func (t *FixAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history bool) error {
-	ackTx, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
+	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
 	if err != nil {
 		return err
 	}
-	ibcTx.RefundedTxInfo = &entity.TxInfo{
-		Hash:      ackTx.TxHash,
-		Height:    ackTx.Height,
-		Time:      ackTx.Time,
-		Status:    ackTx.Status,
-		Fee:       ackTx.Fee,
-		Memo:      ackTx.Memo,
-		Signers:   ackTx.Signers,
-		MsgAmount: nil,
-		Msg:       getMsgByType(ackTx, constant.MsgTypeAcknowledgement),
+	if len(ackTxs) > 0 {
+		if ibcTx.Status == entity.IbcTxStatusSuccess {
+			//"成功"状态IBC，第三段取最新的ack tx交易
+			ackTx := ackTxs[0]
+			ibcTx.RefundedTxInfo = &entity.TxInfo{
+				Hash:      ackTx.TxHash,
+				Height:    ackTx.Height,
+				Time:      ackTx.Time,
+				Status:    ackTx.Status,
+				Fee:       ackTx.Fee,
+				Memo:      ackTx.Memo,
+				Signers:   ackTx.Signers,
+				MsgAmount: nil,
+				Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement),
+			}
+			return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+				"$set": bson.M{
+					"refunded_tx_info": ibcTx.RefundedTxInfo,
+				},
+			})
+		}
 	}
-	return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
-		"$set": bson.M{
-			"refunded_tx_info": ibcTx.RefundedTxInfo,
-		},
-	})
+	return nil
 }
