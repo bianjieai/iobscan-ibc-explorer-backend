@@ -79,10 +79,6 @@ type IExIbcTxRepo interface {
 	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error
 
-	//fix fail recv_packet
-	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	//fix acknowledge tx
-	FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	//fix ibcTransfer fail and fix acknowledge
 	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 }
@@ -1060,27 +1056,6 @@ func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx,
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status": bson.M{
-			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
-		},
-		"refunded_tx_info.msg": bson.M{"$exists": false},
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
-	}
-	return txs, err
-}
 func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, setData bson.M) error {
 	if history {
 		err := repo.collHistory().UpdateOne(context.Background(), bson.M{
@@ -1190,26 +1165,6 @@ func (repo *ExIbcTxRepo) GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, 
 	}
 	err := repo.coll().Find(context.Background(), query).Sort("-update_at").Limit(constant.DefaultLimit).All(&res)
 	return res, err
-}
-
-func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status":         entity.IbcTxStatusRefunded,
-		"dc_tx_info.msg": bson.M{"$exists": false},
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&txs)
-	}
-	return txs, err
 }
 
 func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
