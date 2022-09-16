@@ -36,7 +36,7 @@ func (t *RelayerStatisticsTask) relayerTxsMapKey(statisticId, address, baseDenom
 //only run once for relayer data
 func (t *RelayerStatisticsTask) NewOnlyInitRelayerOnce() int {
 	startTime := time.Now().Unix()
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -44,7 +44,7 @@ func (t *RelayerStatisticsTask) NewOnlyInitRelayerOnce() int {
 	//insert relayer data
 	t.handleNewRelayerOnce(historySegments, true)
 
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1
@@ -70,7 +70,7 @@ func (t *RelayerStatisticsTask) Run() int {
 		}
 		return ret
 	}
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -86,7 +86,7 @@ func (t *RelayerStatisticsTask) Run() int {
 	}
 
 	logrus.Infof("task %s finish dealHistory, time use %d(s)", t.Name(), time.Now().Unix()-startTime)
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1

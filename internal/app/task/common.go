@@ -20,7 +20,7 @@ type segment struct {
 	EndTime   int64 `json:"end_time"`
 }
 
-func getHistorySegment() ([]*segment, error) {
+func getHistorySegment(step int64) ([]*segment, error) {
 	first, err := ibcTxRepo.FirstHistory()
 	if err != nil {
 		return nil, err
@@ -36,7 +36,6 @@ func getHistorySegment() ([]*segment, error) {
 	end := time.Unix(latest.CreateAt, 0)
 	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
 
-	var step int64 = 12 * 3600
 	var segments []*segment
 	for temp := startUnix; temp < endUnix; temp += step {
 		segments = append(segments, &segment{
@@ -47,7 +46,7 @@ func getHistorySegment() ([]*segment, error) {
 	return segments, nil
 }
 
-func getSegment() ([]*segment, error) {
+func getSegment(step int64) ([]*segment, error) {
 	first, err := ibcTxRepo.First()
 	if err != nil {
 		return nil, err
@@ -58,7 +57,6 @@ func getSegment() ([]*segment, error) {
 	end := time.Now()
 	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
 
-	var step int64 = 24 * 3600
 	var segments []*segment
 	for temp := startUnix; temp < endUnix; temp += step {
 		segments = append(segments, &segment{
@@ -303,7 +301,7 @@ func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, deno
 }
 
 // parseRecvPacketTxEvents parse ibc info from events of recv packet tx
-func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetAck string) {
+func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetAck string, existPacketAck bool) {
 	if len(tx.EventsNew) > msgIndex {
 		for _, evt := range tx.EventsNew[msgIndex].Events {
 			if evt.Type == "recv_packet" {
@@ -321,6 +319,7 @@ func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetA
 					switch attr.Key {
 					case "packet_ack":
 						packetAck = attr.Value
+						existPacketAck = true
 					default:
 					}
 				}
@@ -328,5 +327,18 @@ func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetA
 		}
 	}
 
+	return
+}
+
+// parseAckPacketTxEvents parse ibc info from events of ack packet tx
+func parseAckPacketTxEvents(msgIndex int, tx *entity.Tx) (existTransferEvent bool) {
+	if len(tx.EventsNew) > msgIndex {
+		for _, evt := range tx.EventsNew[msgIndex].Events {
+			if evt.Type == "transfer" {
+				existTransferEvent = true
+				return
+			}
+		}
+	}
 	return
 }

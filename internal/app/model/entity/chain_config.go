@@ -54,6 +54,9 @@ func (c *ChainConfig) GetChannelClient(port, channel string) string {
 	if port == "" {
 		port = constant.PortTransfer
 	}
+	if channel == "" {
+		return ""
+	}
 	for _, ibcInfo := range c.IbcInfo {
 		for _, path := range ibcInfo.Paths {
 			if path.PortId == port && path.ChannelId == channel {

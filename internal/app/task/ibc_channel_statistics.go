@@ -24,7 +24,7 @@ func (t *ChannelStatisticsTask) Switch() bool {
 }
 
 func (t *ChannelStatisticsTask) Run() int {
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -35,7 +35,7 @@ func (t *ChannelStatisticsTask) Run() int {
 		return -1
 	}
 
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1

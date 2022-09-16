@@ -20,6 +20,7 @@ type IExIbcTxRepo interface {
 	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
 	FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindByCreateAt(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	CountByStatus(status []entity.IbcTxStatus) (int64, error)
 	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
@@ -78,6 +79,8 @@ type IExIbcTxRepo interface {
 	// fix base_denom_chain_id
 	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error
+	// fix ibc tx
+	FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -154,6 +157,24 @@ func (repo *ExIbcTxRepo) FindHistoryByTxTime(startTime, endTime, skip, limit int
 	}
 	err := repo.collHistory().Find(context.Background(), query).Sort("tx_time").Skip(skip).Limit(limit).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindByCreateAt(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Sort("-create_at").Limit(limit).All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Sort("-create_at").Limit(limit).All(&txs)
+	}
+	return txs, err
 }
 
 func (repo *ExIbcTxRepo) CountByStatus(status []entity.IbcTxStatus) (int64, error) {
@@ -1168,4 +1189,25 @@ func (repo *ExIbcTxRepo) GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbc
 	}
 	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error {
+	set := bson.M{
+		"$set": bson.M{
+			"dc_port": ibcTx.DcPort,
+			//"status":           ibcTx.Status,
+			"sc_client_id":     ibcTx.ScClientId,
+			"sc_connection_id": ibcTx.ScConnectionId,
+			"dc_client_id":     ibcTx.DcClientId,
+			"dc_connection_id": ibcTx.DcConnectionId,
+			"sc_tx_info":       ibcTx.ScTxInfo,
+			"dc_tx_info":       ibcTx.DcTxInfo,
+			"refunded_tx_info": ibcTx.RefundedTxInfo,
+		},
+	}
+
+	if isTargetHistory {
+		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, set)
+	}
+	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, set)
 }

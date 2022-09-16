@@ -33,9 +33,13 @@ const (
 	syncTransferTxTaskWorkerNum    = 5
 	ibcTxRelateTaskWorkerNum       = 5
 	fixDenomTraceDataTaskWorkerNum = 8
+	fixIbxTxWorkerNum              = 5
 	defaultMaxHandlerTx            = 2000
 	ibcTxTargetLatest              = "latest"
 	ibcTxTargetHistory             = "history"
+
+	segmentStepLatest  = 24 * 3600
+	segmentStepHistory = 12 * 3600
 )
 const (
 	channelMatchSuccess = 1
