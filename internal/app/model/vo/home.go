@@ -82,3 +82,8 @@ func (dto StatisticsCntDto) LoadDto(statistic *entity.IbcStatistic) StatisticsCn
 		StatisticsName: statistic.StatisticsName,
 	}
 }
+
+type SearchPointReq struct {
+	Content string `json:"content"`
+	Ip      string `json:"ip"`
+}

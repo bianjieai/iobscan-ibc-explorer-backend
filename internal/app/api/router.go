@@ -46,6 +46,7 @@ func homePage(r *gin.RouterGroup) {
 	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcBaseDenoms))
 	r.GET("/denoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcDenoms))
 	r.GET("/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Statistics))
+	r.POST("/searchPoint", ctl.SearchPoint)
 }
 
 func txsPage(r *gin.RouterGroup) {
