@@ -28,13 +28,13 @@ func (t *IbcSyncAcknowledgeTxTask) Cron() int {
 
 func (t *IbcSyncAcknowledgeTxTask) Run() int {
 
-	syncAcknowledge := func(history bool) error {
-		txs, err := ibcTxRepo.GetNeedAcknowledgeTxs(history)
+	syncLatestAcknowledge := func() error {
+		txs, err := ibcTxRepo.GetNeedAcknowledgeTxs(false)
 		if err != nil {
 			return err
 		}
 		for _, val := range txs {
-			err := t.SaveAcknowledgeTx(val, history)
+			err := t.SaveAcknowledgeTx(val, false)
 			if err != nil && err != qmgo.ErrNoSuchDocuments {
 				logrus.Warnf("task %s SaveAcknowledgeTx failed %s, chain_id:%s packet_id:%s",
 					t.Name(),
@@ -46,13 +46,13 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 		return nil
 	}
 
-	syncRecvPacket := func(history bool) error {
-		txs, err := ibcTxRepo.GetNeedRecvPacketTxs(history)
+	syncLatestRecvPacket := func() error {
+		txs, err := ibcTxRepo.GetNeedRecvPacketTxs(false)
 		if err != nil {
 			return err
 		}
 		for _, val := range txs {
-			err := SaveRecvPacketTx(val, history)
+			err := SaveRecvPacketTx(val, false)
 			if err != nil && err != qmgo.ErrNoSuchDocuments {
 				logrus.Warnf("task %s SaveRecvPacketTx failed %s, chain_id:%s packet_id:%s",
 					t.Name(),
@@ -68,13 +68,13 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		err := syncAcknowledge(false)
+		err := syncLatestAcknowledge()
 		logrus.Infof("task %s fix Acknowledge latest end, %v", t.Name(), err)
 	}()
 
 	go func() {
 		defer wg.Done()
-		err := syncRecvPacket(false)
+		err := syncLatestRecvPacket()
 		logrus.Infof("task %s fix RecvPacket latest end, %v", t.Name(), err)
 	}()
 
