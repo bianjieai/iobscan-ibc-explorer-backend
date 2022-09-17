@@ -1181,9 +1181,9 @@ func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64
 	}
 	var err error
 	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&res)
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&res)
 	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").All(&res)
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&res)
 	}
 	return res, err
 }
