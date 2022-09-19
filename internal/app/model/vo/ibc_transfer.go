@@ -72,14 +72,14 @@ type (
 	TranaferTxDetailNewResp struct {
 		Items       []IbcTxDto   `json:"items,omitempty"`
 		IsList      bool         `json:"is_list"`
-		ScInfo      *ChainInfo   `json:"sc_info,omitempty"`
-		DcInfo      *ChainInfo   `json:"dc_info,omitempty"`
-		TokenInfo   *TokenInfo   `json:"token_info,omitempty"`
-		RelayerInfo *RelayerInfo `json:"relayer_info,omitempty"`
-		IbcTxInfo   *IbcTxInfo   `json:"ibc_tx_info,omitempty"`
-		Status      int          `json:"status,omitempty"`
-		Sequence    string       `json:"sequence,omitempty"`
-		ErrorLog    string       `json:"error_log,omitempty"`
+		ScInfo      *ChainInfo   `json:"sc_info"`
+		DcInfo      *ChainInfo   `json:"dc_info"`
+		TokenInfo   *TokenInfo   `json:"token_info"`
+		RelayerInfo *RelayerInfo `json:"relayer_info"`
+		IbcTxInfo   *IbcTxInfo   `json:"ibc_tx_info"`
+		Status      int          `json:"status"`
+		Sequence    string       `json:"sequence"`
+		ErrorLog    string       `json:"error_log"`
 		TimeStamp   int64        `json:"time_stamp"`
 	}
 
