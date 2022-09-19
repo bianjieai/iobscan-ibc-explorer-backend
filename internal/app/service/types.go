@@ -53,7 +53,7 @@ type (
 		Sender           string      `json:"sender,omitempty"`
 		Receiver         string      `json:"receiver,omitempty"`
 		TimeoutHeight    interface{} `json:"timeout_height,omitempty"`
-		TimeoutTimestamp int64       `json:"timeout_timestamp,omitempty"`
+		TimeoutTimestamp string      `json:"timeout_timestamp,omitempty"`
 
 		ProofUnreceived  string `json:"proof_unreceived,omitempty"`
 		NextSequenceRecv int64  `json:"next_sequence_recv,omitempty"`

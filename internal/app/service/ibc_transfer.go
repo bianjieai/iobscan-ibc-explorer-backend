@@ -429,6 +429,15 @@ func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
+	if !strings.Contains(chainCfgData.Lcd, "://") {
+		return resp, errors.Wrap(fmt.Errorf("lcd from chain_config invalid for no include ://"))
+	}
+
+	values := strings.Split(chainCfgData.Lcd, "://")
+	if len(values) < 2 || len(values[1]) == 0 {
+		return resp, errors.Wrap(fmt.Errorf("lcd from chain_config invalid"))
+	}
+
 	lcdTxData, err := GetTxDataFromChain(chainCfgData.Lcd, hash)
 	if err != nil {
 		return resp, errors.Wrap(err)
