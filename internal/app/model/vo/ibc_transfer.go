@@ -198,10 +198,10 @@ func loadTxDetailDto(info *entity.TxInfo) *TxDetailDto {
 		Time:    info.Time,
 		Height:  info.Height,
 		Fee:     info.Fee,
-		Type:    info.Msg.Type,
 		Memo:    info.Memo,
 		Signers: info.Signers,
 	}
+
 	proofHeightString := func(pfHeight model.ProofHeight) string {
 		if pfHeight.RevisionHeight == 0 {
 			return ""
@@ -214,21 +214,24 @@ func loadTxDetailDto(info *entity.TxInfo) *TxDetailDto {
 		}
 		return fmt.Sprintf("%v-%v", timeoutHeight.RevisionNumber, timeoutHeight.RevisionHeight)
 	}
-
-	switch info.Msg.Type {
-	case constant.MsgTypeRecvPacket:
-		//dto.Ack = info.Ack
-		dto.ProofHeight = proofHeightString(info.Msg.RecvPacketMsg().ProofHeight)
-	case constant.MsgTypeAcknowledgement:
-		dto.Ack = info.Msg.AckPacketMsg().Acknowledgement
-		dto.ProofHeight = proofHeightString(info.Msg.AckPacketMsg().ProofHeight)
-	case constant.MsgTypeTimeoutPacket:
-		dto.NextSequenceRecv = info.Msg.TimeoutPacketMsg().NextSequenceRecv
-		dto.ProofHeight = proofHeightString(info.Msg.TimeoutPacketMsg().ProofHeight)
-	case constant.MsgTypeTransfer:
-		dto.TimeoutTimestamp = info.Msg.TransferMsg().TimeoutTimestamp
-		dto.TimeoutHeight = timeHeightString(info.Msg.TransferMsg().TimeoutHeight)
+	if info.Msg != nil {
+		dto.Type = info.Msg.Type
+		switch info.Msg.Type {
+		case constant.MsgTypeRecvPacket:
+			//dto.Ack = info.Ack
+			dto.ProofHeight = proofHeightString(info.Msg.RecvPacketMsg().ProofHeight)
+		case constant.MsgTypeAcknowledgement:
+			dto.Ack = info.Msg.AckPacketMsg().Acknowledgement
+			dto.ProofHeight = proofHeightString(info.Msg.AckPacketMsg().ProofHeight)
+		case constant.MsgTypeTimeoutPacket:
+			dto.NextSequenceRecv = info.Msg.TimeoutPacketMsg().NextSequenceRecv
+			dto.ProofHeight = proofHeightString(info.Msg.TimeoutPacketMsg().ProofHeight)
+		case constant.MsgTypeTransfer:
+			dto.TimeoutTimestamp = info.Msg.TransferMsg().TimeoutTimestamp
+			dto.TimeoutHeight = timeHeightString(info.Msg.TransferMsg().TimeoutHeight)
+		}
 	}
+
 	return dto
 }
 
@@ -295,17 +298,22 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
 		dcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
 	}
+	ibcTxInfo := &IbcTxInfo{
+		DcTxInfo: dcTxInfo,
+	}
+	if ibcTx.ScTxInfo != nil {
+		ibcTxInfo.ScTxInfo = loadTxDetailDto(ibcTx.ScTxInfo)
+	}
+	if ibcTx.RefundedTxInfo != nil {
+		ibcTxInfo.RefundTxInfo = loadTxDetailDto(ibcTx.RefundedTxInfo)
+	}
 	return TranaferTxDetailNewResp{
-		ErrorLog: errLog,
-		Status:   int(ibcTx.Status),
-		Sequence: ibcTx.Sequence,
-		ScInfo:   scChainInfo,
-		DcInfo:   dcChainInfo,
-		IbcTxInfo: &IbcTxInfo{
-			ScTxInfo:     loadTxDetailDto(ibcTx.ScTxInfo),
-			DcTxInfo:     dcTxInfo,
-			RefundTxInfo: loadTxDetailDto(ibcTx.RefundedTxInfo),
-		},
+		ErrorLog:  errLog,
+		Status:    int(ibcTx.Status),
+		Sequence:  ibcTx.Sequence,
+		ScInfo:    scChainInfo,
+		DcInfo:    dcChainInfo,
+		IbcTxInfo: ibcTxInfo,
 	}
 }
 
