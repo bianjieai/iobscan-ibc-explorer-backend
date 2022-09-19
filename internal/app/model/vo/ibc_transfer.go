@@ -149,11 +149,11 @@ type (
 		Memo             string     `json:"memo"`
 		Fee              *model.Fee `json:"fee"`
 		Signers          []string   `json:"signers"`
-		TimeoutHeight    string     `json:"timeout_height,omitempty"`
-		TimeoutTimestamp int64      `json:"timeout_timestamp,omitempty"`
-		Ack              string     `json:"ack,omitempty"`
-		ProofHeight      string     `json:"proof_height,omitempty"`
-		NextSequenceRecv int64      `json:"next_sequence_recv,omitempty"`
+		TimeoutHeight    string     `json:"timeout_height"`
+		TimeoutTimestamp int64      `json:"timeout_timestamp"`
+		Ack              string     `json:"ack"`
+		ProofHeight      string     `json:"proof_height"`
+		NextSequenceRecv int64      `json:"next_sequence_recv"`
 	}
 )
 
