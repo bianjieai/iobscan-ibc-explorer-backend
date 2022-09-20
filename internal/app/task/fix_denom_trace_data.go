@@ -44,6 +44,26 @@ func (t *FixDenomTraceDataTask) Run() int {
 	return 1
 }
 
+func (t *FixDenomTraceDataTask) RunWithParam(startTime, endTime int64) int {
+	// init
+	t.target = ibcTxTargetLatest
+	t.startTime = startTime
+	t.endTime = endTime
+
+	if t.startTime < 0 || t.endTime < t.startTime {
+		logrus.Errorf("task %s start/end time config error, start time: %d, end time: %d", t.Name(), t.startTime, t.endTime)
+		return -1
+	}
+
+	// start worker
+	if err := t.startWorker(t.Name()); err != nil {
+		logrus.Errorf("task %s start worker failed, %v", t.Name(), err)
+		return -1
+	}
+
+	return 1
+}
+
 // FixDenomTraceHistoryDataTask fix history tx
 type FixDenomTraceHistoryDataTask struct {
 	fixDenomTraceDataTrait
@@ -64,6 +84,26 @@ func (t *FixDenomTraceHistoryDataTask) Run() int {
 	t.target = ibcTxTargetHistory
 	t.startTime = global.Config.Task.FixDenomTraceHistoryDataStartTime
 	t.endTime = global.Config.Task.FixDenomTraceHistoryDataEndTime
+
+	if t.startTime < 0 || t.endTime < t.startTime {
+		logrus.Errorf("task %s start/end time config error, start time: %d, end time: %d", t.Name(), t.startTime, t.endTime)
+		return -1
+	}
+
+	// start worker
+	if err := t.startWorker(t.Name()); err != nil {
+		logrus.Errorf("task %s start worker failed, %v", t.Name(), err)
+		return -1
+	}
+
+	return 1
+}
+
+func (t *FixDenomTraceHistoryDataTask) RunWithParam(startTime, endTime int64) int {
+	// init
+	t.target = ibcTxTargetHistory
+	t.startTime = startTime
+	t.endTime = endTime
 
 	if t.startTime < 0 || t.endTime < t.startTime {
 		logrus.Errorf("task %s start/end time config error, start time: %d, end time: %d", t.Name(), t.startTime, t.endTime)
@@ -109,7 +149,7 @@ func (trait *fixDenomTraceDataTrait) startWorker(taskName string) error {
 	}
 
 	denomMap := denomList.ConvertToMap()
-	const step = 3600
+	const step = 7200
 	segments := trait.getSegment(trait.startTime, trait.endTime, step)
 	workerNum := trait.workerNum()
 	var waitGroup sync.WaitGroup

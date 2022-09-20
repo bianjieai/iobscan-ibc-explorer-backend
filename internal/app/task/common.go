@@ -255,6 +255,7 @@ func calculateNextDenomPath(packet model.Packet) (string, bool) {
 }
 
 // queryClientState 查询lcd client_state_path接口
+// todo add cache
 func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
 	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
 	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
@@ -271,4 +272,31 @@ func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, 
 	}
 
 	return &resp, nil
+}
+
+// parseTransferTxEvents parse ibc info from events of transfer tx
+func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomFullPath, sequence string) {
+	if len(tx.EventsNew) > msgIndex {
+		for _, evt := range tx.EventsNew[msgIndex].Events {
+			if evt.Type == "send_packet" {
+				for _, attr := range evt.Attributes {
+					switch attr.Key {
+					case "packet_dst_port":
+						dcPort = attr.Value
+					case "packet_dst_channel":
+						dcChannel = attr.Value
+					case "packet_sequence":
+						sequence = attr.Value
+					case "packet_data":
+						var data model.TransferTxPacketData
+						_ = json.Unmarshal([]byte(attr.Value), &data)
+						denomFullPath = data.Denom
+					default:
+					}
+				}
+			}
+		}
+	}
+
+	return
 }

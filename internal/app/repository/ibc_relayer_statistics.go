@@ -3,17 +3,23 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
+	opts "github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
+	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IRelayerStatisticsRepo interface {
+	CreateNew() error
+	SwitchColl() error
 	InserOrUpdate(data entity.IBCRelayerStatistics) error
 	CountRelayerBaseDenomAmt() ([]*dto.CountRelayerBaseDenomAmtDTO, error)
 	Insert(relayerStatistics []entity.IBCRelayerStatistics) error
+	InsertToNew(relayerStatistics []entity.IBCRelayerStatistics) error
 	AggregateRelayerTxs() ([]*dto.AggRelayerTxsDTO, error)
 	CreateStatisticId(scChain, dcChain, scChannel, dcChannel string) (string, string)
 }
@@ -41,11 +47,35 @@ func (repo *RelayerStatisticsRepo) CreateStatisticId(scChain, dcChain, scChannel
 //}
 
 func (repo *RelayerStatisticsRepo) coll() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayerStatistics{}.CollectionName())
+	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayerStatisticsCollName)
+}
+
+func (repo *RelayerStatisticsRepo) collNew() *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayerStatisticsNewCollName)
+}
+
+func (repo *RelayerStatisticsRepo) CreateNew() error {
+	indexOpts := officialOpts.Index().SetUnique(true).SetName("relayer_statistics_unique")
+	key := []string{"transfer_base_denom", "address", "statistic_id", "-segment_start_time", "-segment_end_time"}
+	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+}
+
+func (repo *RelayerStatisticsRepo) SwitchColl() error {
+	command := bson.D{{"renameCollection", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCRelayerStatisticsNewCollName)},
+		{"to", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCRelayerStatisticsCollName)},
+		{"dropTarget", true}}
+	return mgo.Database(adminDatabase).RunCommand(context.Background(), command).Err()
 }
 
 func (repo *RelayerStatisticsRepo) Insert(relayerStatistics []entity.IBCRelayerStatistics) error {
 	if _, err := repo.coll().InsertMany(context.Background(), relayerStatistics); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *RelayerStatisticsRepo) InsertToNew(relayerStatistics []entity.IBCRelayerStatistics) error {
+	if _, err := repo.collNew().InsertMany(context.Background(), relayerStatistics); err != nil {
 		return err
 	}
 	return nil

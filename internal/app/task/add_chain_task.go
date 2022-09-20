@@ -32,6 +32,20 @@ func (t *AddChainTask) Run() int {
 		return 1
 	}
 
+	return t.handle(newChainIds)
+}
+
+func (t *AddChainTask) RunWithParam(chainsStr string) int {
+	newChainIds := strings.Split(chainsStr, ",")
+	if len(newChainIds) == 0 {
+		logrus.Errorf("task %s don't have new chains", t.Name())
+		return 1
+	}
+
+	return t.handle(newChainIds)
+}
+
+func (t *AddChainTask) handle(newChainIds []string) int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
 		logrus.Errorf("task %s getAllChainMap error, %v", t.Name(), err)

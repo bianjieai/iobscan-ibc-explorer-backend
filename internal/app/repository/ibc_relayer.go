@@ -41,7 +41,7 @@ type IRelayerRepo interface {
 	CountBycond(chainId string, status int) (int64, error)
 	CountChainRelayers(chainId string) (int64, error)
 	CountChannelRelayers() ([]*dto.CountChannelRelayersDTO, error)
-	FindRelayer(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error)
+	FindRelayer(chainId, relayerAddr, channel string) ([]*entity.IBCRelayer, error)
 	FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRelayer, error)
 	UpdateSrcAddress(relayerId string, addrs []string) error
 }
@@ -227,14 +227,14 @@ func (repo *IbcRelayerRepo) CountChainRelayers(chainId string) (int64, error) {
 	}).Count()
 }
 
-func (repo *IbcRelayerRepo) FindRelayer(chainId, relayerAddr, channel string) (*entity.IBCRelayer, error) {
-	var res *entity.IBCRelayer
+func (repo *IbcRelayerRepo) FindRelayer(chainId, relayerAddr, channel string) ([]*entity.IBCRelayer, error) {
+	var res []*entity.IBCRelayer
 	err := repo.coll().Find(context.Background(), bson.M{
 		"$or": []bson.M{
 			{RelayerFieldChainA: chainId, RelayerFieldChannelA: channel, RelayerFieldChainAAddress: relayerAddr},
 			{RelayerFieldChainB: chainId, RelayerFieldChannelB: channel, RelayerFieldChainBAddress: relayerAddr},
 		},
-	}).One(&res)
+	}).All(&res)
 	return res, err
 }
 

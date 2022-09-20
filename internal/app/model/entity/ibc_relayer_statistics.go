@@ -1,5 +1,10 @@
 package entity
 
+const (
+	IBCRelayerStatisticsCollName    = "ibc_relayer_statistics"
+	IBCRelayerStatisticsNewCollName = "ibc_relayer_statistics_new"
+)
+
 type IBCRelayerStatistics struct {
 	StatisticId       string `bson:"statistic_id"` // scChain|scChannel|dcChain|dcChannel
 	Address           string `bson:"address"`
@@ -14,6 +19,9 @@ type IBCRelayerStatistics struct {
 	UpdateAt          int64  `bson:"update_at"`
 }
 
-func (i IBCRelayerStatistics) CollectionName() string {
-	return "ibc_relayer_statistics"
+func (i IBCRelayerStatistics) CollectionName(isNew bool) string {
+	if isNew {
+		return IBCRelayerStatisticsNewCollName
+	}
+	return IBCRelayerStatisticsCollName
 }
