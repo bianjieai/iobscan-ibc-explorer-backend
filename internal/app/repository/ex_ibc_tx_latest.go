@@ -1052,10 +1052,10 @@ func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool, startTime int64) ([
 		"refunded_tx_info.msg": bson.M{"$exists": false},
 	}
 	if history {
-		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").All(&res)
+		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").Hint("create_at_-1").All(&res)
 		return res, err
 	}
-	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").All(&res)
+	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").Hint("create_at_-1").All(&res)
 	return res, err
 }
 
