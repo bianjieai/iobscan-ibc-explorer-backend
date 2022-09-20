@@ -113,9 +113,9 @@ func startOneOffTask() {
 		//&task.RelayerDataTask{},
 		//&task.AddTransferDataTask{},
 		//&task.FixFailRecvPacketTask{},
-		&task.FixFailTxTask{},
-		&task.FixAcknowledgeTxTask{},
-		&task.FixAckTxPacketIdTask{},
+		//&task.FixFailTxTask{},
+		//&task.FixAcknowledgeTxTask{},
+		//&task.FixAckTxPacketIdTask{},
 	)
 	task.StartOneOffTask()
 }
