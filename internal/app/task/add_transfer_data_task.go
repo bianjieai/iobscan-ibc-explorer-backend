@@ -4,6 +4,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"time"
 )
 
 type AddTransferDataTask struct {
@@ -29,6 +30,7 @@ func (t *AddTransferDataTask) RunWithParam(chainsStr string) int {
 }
 
 func (t *AddTransferDataTask) handle(chainsStr string) int {
+	defer printExectime(t.Name(), time.Now().Unix())
 	newChainIds := strings.Split(chainsStr, ",")
 	if len(newChainIds) == 0 {
 		logrus.Errorf("task %s don't have new chains", t.Name())

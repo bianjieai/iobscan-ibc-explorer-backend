@@ -225,8 +225,8 @@ func (repo *TxRepo) FindHeight(chainId string, min bool) (entity.Tx, error) {
 		sorts = "+height"
 	}
 	err := repo.coll(chainId).Find(context.Background(), bson.M{
-		"types":              constant.MsgTypeAcknowledgement,
-		"msgs.msg.packet_id": bson.M{"$exists": false},
+		"types": constant.MsgTypeAcknowledgement,
+		//"msgs.msg.packet_id": bson.M{"$exists": false},
 	}).Sort(sorts).Limit(1).One(&tx)
 	return tx, err
 }

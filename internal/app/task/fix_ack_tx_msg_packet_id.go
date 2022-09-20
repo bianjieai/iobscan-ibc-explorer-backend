@@ -7,6 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"time"
 )
 
 var _ OneOffTask = new(FixAckTxPacketIdTask)
@@ -36,6 +37,7 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
 		logrus.Errorf("task %s don't have fix ack packet_id chains", f.Name())
 		return 1
 	}
+	defer printExectime(f.Name(), time.Now().Unix())
 
 	for _, val := range newChainIds {
 		minHTx, err := txRepo.FindHeight(val, true)
@@ -82,20 +84,27 @@ func (t *fixAckTxTask) Run() int {
 		logrus.Println("EndHeight or StartHeight is invalid")
 		return -1
 	}
+	logrus.Infof("Run fixAckTxTask chain_id:%s start-end:%d-%d", t.ChainId, t.StartHeight, t.EndHeight)
 	height := t.StartHeight
 	for {
 		txs, err := txRepo.FindAllAckTxs(t.ChainId, height)
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("fix ack txs in height:%d-%d chain_id:%s err:%s",
+				height, height+constant.IncreHeight, t.ChainId, err.Error())
 			return -1
 		}
 		if len(txs) > 0 {
 			if err := t.doTask(t.ChainId, txs); err != nil {
-				logrus.Error(err.Error())
+				logrus.Errorf("fix ack txs in height:%d-%d chain_id:%s err:%s",
+					height, height+constant.IncreHeight, t.ChainId, err.Error())
+				return -1
 			}
-			logrus.Debugf("finish fix ack txs in height:%d-%d\n", height, height+constant.IncreHeight)
+			logrus.Debugf("finish fix ack txs in height:%d-%d chain_id:%s",
+				height, height+constant.IncreHeight, t.ChainId)
 		}
 		height += constant.IncreHeight
+		logrus.Infof("finish scan %d-%d txs:%d chain_id:%s",
+			height-constant.IncreHeight, height, len(txs), t.ChainId)
 		if height > t.EndHeight {
 			break
 		}

@@ -3,6 +3,7 @@ package task
 import (
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -25,6 +26,7 @@ func (t *FixFailTxTask) Switch() bool {
 }
 
 func (t *FixFailTxTask) Run() int {
+	defer printExectime(t.Name(), time.Now().Unix())
 	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
