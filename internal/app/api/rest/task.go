@@ -76,6 +76,10 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			fixFailRecvPacketTask.Run()
 		case addTransferDataTask.Name():
 			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
+		case fixAcknowledgeTxTask.Name():
+			fixAcknowledgeTxTask.Run()
+		case fixAckTxPacketIdTask.Name():
+			fixAckTxPacketIdTask.RunWithParam(c.PostForm("new_chains"))
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}
