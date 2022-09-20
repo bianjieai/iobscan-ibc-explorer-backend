@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"sync"
+	"time"
 )
 
 type IbcSyncAcknowledgeTxTask struct {
@@ -29,7 +30,9 @@ func (t *IbcSyncAcknowledgeTxTask) Cron() int {
 func (t *IbcSyncAcknowledgeTxTask) Run() int {
 
 	syncAcknowledge := func(history bool) error {
-		txs, err := ibcTxRepo.GetNeedAcknowledgeTxs(history)
+		startTime := time.Now().Add(-3 * time.Hour).Unix()
+		//只处理最近3h的数据
+		txs, err := ibcTxRepo.GetNeedAcknowledgeTxs(history, startTime)
 		if err != nil {
 			return err
 		}

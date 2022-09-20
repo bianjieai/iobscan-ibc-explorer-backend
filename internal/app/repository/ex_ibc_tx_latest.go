@@ -68,7 +68,7 @@ type IExIbcTxRepo interface {
 	CountTransferTxs(query dto.IbcTxQuery) (int64, error)
 	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
-	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
+	GetNeedAcknowledgeTxs(history bool, startTime int64) ([]*entity.ExIbcTx, error)
 	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
 	UpdateOne(recordId string, history bool, setData bson.M) error
 
@@ -1041,10 +1041,13 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool, startTime int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	//查询"成功"状态的没有refunded_tx_info的数据
 	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+		},
 		"status":               entity.IbcTxStatusSuccess,
 		"refunded_tx_info.msg": bson.M{"$exists": false},
 	}
