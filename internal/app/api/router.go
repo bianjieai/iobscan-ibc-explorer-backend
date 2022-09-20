@@ -38,6 +38,7 @@ func Routers(Router *gin.Engine) {
 	chainPage(ibcRouter)
 	relayerPage(ibcRouter)
 	cacheTools(ibcRouter)
+	taskTools(ibcRouter)
 }
 
 func homePage(r *gin.RouterGroup) {
@@ -46,6 +47,7 @@ func homePage(r *gin.RouterGroup) {
 	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcBaseDenoms))
 	r.GET("/denoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcDenoms))
 	r.GET("/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Statistics))
+	r.POST("/searchPoint", ctl.SearchPoint)
 }
 
 func txsPage(r *gin.RouterGroup) {
@@ -80,5 +82,10 @@ func relayerPage(r *gin.RouterGroup) {
 
 func cacheTools(r *gin.RouterGroup) {
 	ctl := rest.CacheController{}
-	r.DELETE("/:key", ctl.Del)
+	r.DELETE("/cache/:key", ctl.Del)
+}
+
+func taskTools(r *gin.RouterGroup) {
+	ctl := rest.TaskController{}
+	r.POST("/task/:task_name", ctl.Run)
 }

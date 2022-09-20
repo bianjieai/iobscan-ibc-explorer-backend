@@ -24,7 +24,12 @@ func (t *ChannelStatisticsTask) Switch() bool {
 }
 
 func (t *ChannelStatisticsTask) Run() int {
-	historySegments, err := getHistorySegment()
+	if err := channelStatisticsRepo.CreateNew(); err != nil {
+		logrus.Errorf("task %s CreateNew err, %v", t.Name(), err)
+		return -1
+	}
+
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -35,7 +40,7 @@ func (t *ChannelStatisticsTask) Run() int {
 		return -1
 	}
 
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1
@@ -43,6 +48,11 @@ func (t *ChannelStatisticsTask) Run() int {
 	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
 	if err = t.deal(segments, opInsert); err != nil {
 		logrus.Errorf("task %s deal err, %v", t.Name(), err)
+		return -1
+	}
+
+	if err = channelStatisticsRepo.SwitchColl(); err != nil {
+		logrus.Errorf("task %s SwitchColl err, %v", t.Name(), err)
 		return -1
 	}
 
@@ -139,8 +149,8 @@ func (t *ChannelStatisticsTask) saveData(dtoList []*dto.ChannelStatisticsDTO, se
 
 	var err error
 	if op == opInsert {
-		if err = channelStatisticsRepo.BatchInsert(statistics); err != nil {
-			logrus.Errorf("task %s channelStatisticsRepo.BatchInsert err, %v", t.Name(), err)
+		if err = channelStatisticsRepo.BatchInsertToNew(statistics); err != nil {
+			logrus.Errorf("task %s channelStatisticsRepo.BatchInsertToNew err, %v", t.Name(), err)
 		}
 	} else {
 		if err = channelStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {

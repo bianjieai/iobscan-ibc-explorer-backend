@@ -1,14 +1,14 @@
 package task
 
 import (
+	"strings"
+	"sync"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
-	"strings"
-	"sync"
 )
 
 type FixFailTxTask struct {
@@ -21,17 +21,17 @@ func (t *FixFailTxTask) Name() string {
 }
 
 func (t *FixFailTxTask) Switch() bool {
-	return global.Config.Task.SwitchFixFailTxTask
+	return false
 }
 
 func (t *FixFailTxTask) Run() int {
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
 		return -1
 	}
 
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment error, %v", t.Name(), err)
 		return -1

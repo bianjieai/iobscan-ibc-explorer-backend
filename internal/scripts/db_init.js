@@ -37,6 +37,7 @@ db.ibc_relayer_statistics.createIndex({
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
+    name: "relayer_statistics_unique",
     unique: true,
     background: true
 });
@@ -58,7 +59,7 @@ db.ibc_channel_statistics.createIndex({
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
-    name: "channel_sstatistics_unique",
+    name: "channel_statistics_unique",
     unique: true,
     background: true
 });

@@ -14,6 +14,14 @@ func TestIbcRelayerCronTask_Run(t *testing.T) {
 	task.Run()
 }
 
+func Test_RelayerDataTask(t *testing.T) {
+	relayerDataTask.Run()
+}
+
+func Test_RelayerStatisticsTask(t *testing.T) {
+	relayerStatisticsTask.Run()
+}
+
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
 	data, data1, _ := task.getTimePeriodAndupdateTime(&entity.IBCRelayer{
 		ChainA:        "bigbang",
@@ -80,8 +88,9 @@ func TestIbcRelayerCronTask_DistinctRelayer(t *testing.T) {
 		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
 		{ChainA: "cosmoshub", ChainB: "irishub_1", ChannelA: "channel-182", ChannelB: "channel-12", ChainAAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3", ChainBAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq"},
 	}
-	relayerStatisticsTask.initdistRelayerMap()
-	value := distinctRelayer(datas, relayerStatisticsTask.distRelayerMap)
+
+	relayerDataTask.initdistRelayerMap()
+	value := distinctRelayer(datas, relayerDataTask.distRelayerMap)
 	t.Log(value)
 }
 
@@ -90,8 +99,8 @@ func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
 		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
 		{ChainA: "cosmoshub", ChainB: "irishub_1", ChannelA: "channel-182", ChannelB: "channel-12", ChainAAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3", ChainBAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq"},
 	}
-	relayerStatisticsTask.initdistRelayerMap()
-	value := filterDbExist(datas, relayerStatisticsTask.distRelayerMap)
+	relayerDataTask.initdistRelayerMap()
+	value := filterDbExist(datas, relayerDataTask.distRelayerMap)
 	t.Log(value)
 }
 

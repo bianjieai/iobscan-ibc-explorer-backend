@@ -144,7 +144,7 @@ func switchLcd(chainConf *entity.ChainConfig) bool {
 		}
 
 		chainConf.Lcd = v.Address
-		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Channels)); err == nil {
+		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Channels)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
 			chainConf.LcdApiPath.ChannelsPath = strings.ReplaceAll(chainConf.LcdApiPath.ChannelsPath, v1, v1beta1)
 			chainConf.LcdApiPath.ClientStatePath = strings.ReplaceAll(chainConf.LcdApiPath.ClientStatePath, v1, v1beta1)
 		} else {
@@ -152,7 +152,7 @@ func switchLcd(chainConf *entity.ChainConfig) bool {
 			chainConf.LcdApiPath.ClientStatePath = strings.ReplaceAll(chainConf.LcdApiPath.ClientStatePath, v1beta1, v1)
 		}
 
-		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Params)); err == nil {
+		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Params)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
 			chainConf.LcdApiPath.BalancesPath = strings.ReplaceAll(chainConf.LcdApiPath.BalancesPath, v1, v1beta1)
 			chainConf.LcdApiPath.SupplyPath = strings.ReplaceAll(chainConf.LcdApiPath.SupplyPath, v1, v1beta1)
 			chainConf.LcdApiPath.ParamsPath = strings.ReplaceAll(chainConf.LcdApiPath.ParamsPath, v1, v1beta1)

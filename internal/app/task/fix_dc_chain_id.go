@@ -24,13 +24,13 @@ func (t *FixDcChainIdTask) Switch() bool {
 }
 
 func (t *FixDcChainIdTask) Run() int {
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
 		return -1
 	}
 
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment error, %v", t.Name(), err)
 		return -1

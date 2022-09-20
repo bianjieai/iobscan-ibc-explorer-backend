@@ -23,34 +23,34 @@ const (
 
 type (
 	ExIbcTx struct {
-		RecordId         string      `bson:"record_id"`
-		TxTime           int64       `bson:"tx_time"`
-		ScAddr           string      `bson:"sc_addr"`
-		DcAddr           string      `bson:"dc_addr"`
-		ScPort           string      `bson:"sc_port"`
-		ScChannel        string      `bson:"sc_channel"`
-		ScChainId        string      `bson:"sc_chain_id"`
-		ScConnectionId   string      `bson:"sc_connection_id"`
-		ScClientId       string      `bson:"sc_client_id"`
-		DcPort           string      `bson:"dc_port"`
-		DcChannel        string      `bson:"dc_channel"`
-		DcChainId        string      `bson:"dc_chain_id"`
-		DcConnectionId   string      `bson:"dc_connection_id"`
-		DcClientId       string      `bson:"dc_client_id"`
-		Sequence         string      `bson:"sequence"`
-		Status           IbcTxStatus `bson:"status"`
-		ScTxInfo         *TxInfo     `bson:"sc_tx_info"`
-		DcTxInfo         *TxInfo     `bson:"dc_tx_info"`
-		RefundedTxInfo   *TxInfo     `bson:"refunded_tx_info"`
-		Log              *Log        `bson:"log"`
-		Denoms           *Denoms     `bson:"denoms"`
-		BaseDenom        string      `bson:"base_denom"`
-		BaseDenomChainId string      `bson:"base_denom_chain_id"`
-		ProcessInfo      string      `bson:"process_info"`
-		RetryTimes       int64       `bson:"retry_times"`
-		NextTryTime      int64       `bson:"next_try_time"`
-		CreateAt         int64       `bson:"create_at"`
-		UpdateAt         int64       `bson:"update_at"`
+		RecordId       string      `bson:"record_id"`
+		TxTime         int64       `bson:"tx_time"`
+		ScAddr         string      `bson:"sc_addr"`
+		DcAddr         string      `bson:"dc_addr"`
+		ScPort         string      `bson:"sc_port"`
+		ScChannel      string      `bson:"sc_channel"`
+		ScConnectionId string      `bson:"sc_connection_id"`
+		ScClientId     string      `bson:"sc_client_id"`
+		ScChainId      string      `bson:"sc_chain_id"`
+		DcPort         string      `bson:"dc_port"`
+		DcChannel      string      `bson:"dc_channel"`
+		DcConnectionId string      `bson:"dc_connection_id"`
+		DcClientId     string      `bson:"dc_client_id"`
+		DcChainId      string      `bson:"dc_chain_id"`
+		Sequence       string      `bson:"sequence"`
+		Status         IbcTxStatus `bson:"status"`
+		ScTxInfo       *TxInfo     `bson:"sc_tx_info"`
+		DcTxInfo       *TxInfo     `bson:"dc_tx_info"`
+		RefundedTxInfo *TxInfo     `bson:"refunded_tx_info"`
+		//Log              *Log        `bson:"log"`
+		Denoms           *Denoms `bson:"denoms"`
+		BaseDenom        string  `bson:"base_denom"`
+		BaseDenomChainId string  `bson:"base_denom_chain_id"`
+		ProcessInfo      string  `bson:"process_info"`
+		RetryTimes       int64   `bson:"retry_times"`
+		NextTryTime      int64   `bson:"next_try_time"`
+		CreateAt         int64   `bson:"create_at"`
+		UpdateAt         int64   `bson:"update_at"`
 	}
 	Log struct {
 		ScLog string `bson:"sc_log"`
@@ -69,7 +69,7 @@ type (
 		Msg       *model.TxMsg `bson:"msg"`
 		Memo      string       `bson:"memo"`
 		Signers   []string     `bson:"signers"`
-		ErrLog    string       `bson:"err_log"`
+		Log       string       `bson:"log"`
 	}
 )
 
