@@ -1,8 +1,10 @@
 package service
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"time"
 )
 
 var (
@@ -17,6 +19,46 @@ var (
 	ibcTxRepo           repository.IExIbcTxRepo        = new(repository.ExIbcTxRepo)
 	txRepo              repository.ITxRepo             = new(repository.TxRepo)
 	exSearchRecordRepo  repository.IExSearchRecordRepo = new(repository.ExSearchRecordRepo)
+	lcdTxDataCache      cache.LcdTxDataCacheRepo
 	relayerCfgRepo      repository.IRelayerConfigRepo  = new(cache.RelayerConfigCacheRepo)
 	baseDenomRepo       cache.BaseDenomCacheRepo
+)
+
+type (
+	LcdTxData struct {
+		TxResponse struct {
+			Logs []LogData `json:"logs"`
+			Tx   struct {
+				Body struct {
+					Messages []LcdMessage `json:"messages"`
+				} `json:"body"`
+			} `json:"tx"`
+			Timestamp time.Time `json:"timestamp"`
+		} `json:"tx_response"`
+	}
+	LogData struct {
+		MsgIndex int            `json:"msg_index"`
+		Log      string         `json:"log"`
+		Events   []entity.Event `json:"events"`
+	}
+	LcdMessage struct {
+		Type            string      `json:"@type"`
+		Packet          interface{} `json:"packet,omitempty"`
+		ProofCommitment string      `json:"proof_commitment,omitempty"`
+		ProofHeight     interface{} `json:"proof_height,omitempty"`
+		Signer          string      `json:"signer,omitempty"`
+
+		SourcePort       string      `json:"source_port,omitempty"`
+		SourceChannel    string      `json:"source_channel,omitempty"`
+		Token            interface{} `json:"token,omitempty"`
+		Sender           string      `json:"sender,omitempty"`
+		Receiver         string      `json:"receiver,omitempty"`
+		TimeoutHeight    interface{} `json:"timeout_height,omitempty"`
+		TimeoutTimestamp string      `json:"timeout_timestamp,omitempty"`
+
+		ProofUnreceived  string `json:"proof_unreceived,omitempty"`
+		NextSequenceRecv int64  `json:"next_sequence_recv,omitempty"`
+		Acknowledgement  string `json:"acknowledgement,omitempty"`
+		ProofAcked       string `json:"proof_acked,omitempty"`
+	}
 )

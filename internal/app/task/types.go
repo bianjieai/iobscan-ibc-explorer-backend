@@ -53,7 +53,6 @@ var (
 	denomDataRepo       cache.DenomDataCacheRepo
 	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
 	ibcInfoCache        cache.IbcInfoCacheRepo
-	lcdInfoCache        cache.LcdInfoCacheRepo
 	clientIdnfoCache    cache.ClientIdChannelCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
