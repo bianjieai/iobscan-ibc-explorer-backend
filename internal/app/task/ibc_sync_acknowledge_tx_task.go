@@ -176,7 +176,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 			Fee:       recvTx.Fee,
 			Memo:      recvTx.Memo,
 			Signers:   recvTx.Signers,
-			ErrLog:    recvTx.Log,
+			Log:       recvTx.Log,
 			MsgAmount: nil,
 			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket),
 		}

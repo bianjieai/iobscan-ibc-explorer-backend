@@ -34,7 +34,6 @@ type (
 		State        string       `bson:"state"`
 		PortId       string       `bson:"port_id"`
 		ChannelId    string       `bson:"channel_id"`
-		ClientId     string       `bson:"client_id"`
 		ChainId      string       `bson:"chain_id"`
 		ScChainId    string       `bson:"sc_chain_id"`
 		ClientId     string       `bson:"client_id"`

@@ -84,6 +84,11 @@ type IExIbcTxRepo interface {
 	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	// fix ibc tx
 	FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error
+
+	//fix fail recv_packet
+	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	//fix acknowledge tx
+	FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -1235,4 +1240,44 @@ func (repo *ExIbcTxRepo) FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) e
 		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, set)
 	}
 	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, set)
+}
+
+func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status":         entity.IbcTxStatusRefunded,
+		"dc_tx_info.msg": bson.M{"$exists": false},
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	}
+	return txs, err
+}
+
+func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status":               entity.IbcTxStatusSuccess,
+		"refunded_tx_info.msg": bson.M{"$exists": false},
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	}
+	return txs, err
 }
