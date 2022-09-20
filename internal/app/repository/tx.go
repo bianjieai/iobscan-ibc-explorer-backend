@@ -23,7 +23,7 @@ type ITxRepo interface {
 	FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
 	FindAllAckTxs(chainId string, height int64) ([]*entity.Tx, error)
 	FindHeight(chainId string, min bool) (entity.Tx, error)
-	UpdateAckPacketId(chainId string, height int64, txHash, packetId string) error
+	UpdateAckPacketId(chainId string, height int64, txHash string, msgs []interface{}) error
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -231,13 +231,12 @@ func (repo *TxRepo) FindHeight(chainId string, min bool) (entity.Tx, error) {
 	return tx, err
 }
 
-func (repo *TxRepo) UpdateAckPacketId(chainId string, height int64, txHash, packetId string) error {
+func (repo *TxRepo) UpdateAckPacketId(chainId string, height int64, txHash string, msgs []interface{}) error {
 	filter, update := bson.M{
 		"height": height, "tx_hash": txHash,
-		"msgs.type": constant.MsgTypeAcknowledgement,
 	}, bson.M{
 		"$set": bson.M{
-			"msgs.$.msg.packet_id": packetId,
+			"msgs": msgs,
 		},
 	}
 	err := repo.coll(chainId).UpdateOne(context.Background(), filter, update)

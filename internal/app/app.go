@@ -114,6 +114,7 @@ func startOneOffTask() {
 		&task.AddTransferDataTask{},
 		&task.FixFailRecvPacketTask{},
 		&task.FixAcknowledgeTxTask{},
+		&task.FixAckTxPacketIdTask{},
 	)
 	task.StartOneOffTask()
 }

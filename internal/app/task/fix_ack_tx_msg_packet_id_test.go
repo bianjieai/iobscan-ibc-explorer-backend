@@ -9,5 +9,5 @@ func Test_fixAckTxTask(t *testing.T) {
 }
 
 func TestFixAckTxPacketIdTask_Run(t *testing.T) {
-	new(FixAckTxPacketIdTask).RunWithParam("bigbang")
+	new(FixAckTxPacketIdTask).RunWithParam("qa_iris_snapshot")
 }
