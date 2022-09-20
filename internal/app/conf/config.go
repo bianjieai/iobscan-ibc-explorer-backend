@@ -113,9 +113,9 @@ type Spi struct {
 }
 
 type ChainConfig struct {
-	NewChains         string `mapstructure:"new_chains"`
-	AddTransferChains string `mapstructure:"add_transfer_chains"`
-	FixAckTxChains    string `mapstructure:"fix_ack_tx_chains"`
+	NewChains              string `mapstructure:"new_chains"`
+	AddTransferChains      string `mapstructure:"add_transfer_chains"`
+	FixAckTxPacketIdChains string `mapstructure:"fix_ack_tx_packet_id_chains"`
 }
 
 func ReadConfig(data []byte) (*Config, error) {

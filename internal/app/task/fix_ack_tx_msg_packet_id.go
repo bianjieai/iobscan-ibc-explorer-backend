@@ -27,7 +27,7 @@ func (f FixAckTxPacketIdTask) RunWithParam(chainsStr string) int {
 	return f.handle(chainsStr)
 }
 func (f FixAckTxPacketIdTask) Run() int {
-	return f.handle(global.Config.ChainConfig.FixAckTxChains)
+	return f.handle(global.Config.ChainConfig.FixAckTxPacketIdChains)
 }
 
 func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
