@@ -86,7 +86,6 @@ func (t *IbcRelayerCronTask) Run() int {
 	}
 
 	t.getTokenPriceMap()
-	relayerStatisticsTask.initdistRelayerMap()
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
 	t.cacheChainUnbondTimeFromLcd()
@@ -229,7 +228,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
-	limit := int64(50)
+	limit := int64(500)
 	threadNum := 10
 	for {
 		relayers, err := relayerRepo.FindAll(skip, limit)
@@ -658,19 +657,6 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 	return
 }
 
-func handleIbcTxLatest(startTime, endTime int64) []entity.IBCRelayer {
-	relayerDtos, err := ibcTxRepo.GetRelayerInfo(startTime, endTime)
-	if err != nil {
-		logrus.Errorf("get relayer info fail, %s", err.Error())
-		return nil
-	}
-	var relayers []entity.IBCRelayer
-	for _, val := range relayerDtos {
-		relayers = append(relayers, createRelayerData(val))
-	}
-	return relayers
-}
-
 func createRelayerData(dto *dto.GetRelayerInfoDTO) entity.IBCRelayer {
 	return entity.IBCRelayer{
 		ChainA:        dto.ScChainId,
@@ -822,7 +808,7 @@ func (t *IbcRelayerCronTask) todayStatistics() error {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
-	relayerStatisticsTask.handleNewRelayerOnce(segments, false)
+	relayerDataTask.handleNewRelayerOnce(segments, false)
 
 	return nil
 }
@@ -846,7 +832,7 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
-	relayerStatisticsTask.handleNewRelayerOnce(segments, false)
+	relayerDataTask.handleNewRelayerOnce(segments, false)
 
 	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
@@ -854,7 +840,7 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 
 func checkAndUpdateRelayerSrcChainAddr() {
 	skip := int64(0)
-	limit := int64(50)
+	limit := int64(500)
 	startTimeA := time.Now().Unix()
 	for {
 		relayers, err := relayerRepo.FindEmptyAddrAll(skip, limit)

@@ -253,6 +253,7 @@ func calculateNextDenomPath(packet model.Packet) (string, bool) {
 }
 
 // queryClientState 查询lcd client_state_path接口
+// todo add cache
 func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
 	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
 	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)

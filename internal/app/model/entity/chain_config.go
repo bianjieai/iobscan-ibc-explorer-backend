@@ -37,6 +37,7 @@ type (
 		ClientId     string       `bson:"client_id"`
 		ChainId      string       `bson:"chain_id"`
 		ScChainId    string       `bson:"sc_chain_id"`
+		ClientId     string       `bson:"client_id"`
 		Counterparty CounterParty `bson:"counterparty"`
 	}
 	CounterParty struct {
