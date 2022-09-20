@@ -33,6 +33,7 @@ type (
 		DcPort           string      `bson:"dc_port"`
 		DcChannel        string      `bson:"dc_channel"`
 		DcChainId        string      `bson:"dc_chain_id"`
+		DcConnectionId   string      `bson:"dc_connection_id"`
 		Sequence         string      `bson:"sequence"`
 		Status           IbcTxStatus `bson:"status"`
 		ScTxInfo         *TxInfo     `bson:"sc_tx_info"`

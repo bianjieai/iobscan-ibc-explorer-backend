@@ -69,8 +69,8 @@ type IExIbcTxRepo interface {
 	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error)
-	GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
-	UpdateOne(recordId string, history bool, data *entity.ExIbcTx) error
+	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
+	UpdateOne(recordId string, history bool, setData bson.M) error
 
 	// fix dc_chain_id
 	FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
@@ -78,6 +78,11 @@ type IExIbcTxRepo interface {
 	// fix base_denom_chain_id
 	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error
+
+	//fix fail recv_packet
+	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	//fix acknowledge tx
+	FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -1040,31 +1045,48 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 
 func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	//查询"成功"和"已退还"状态的没有refunded_tx_info的数据
+	//查询"成功"状态的没有refunded_tx_info的数据
 	query := bson.M{
-		"status": bson.M{
-			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
-		},
-		"refunded_tx_info.status": bson.M{"$exists": false},
+		"status":               entity.IbcTxStatusSuccess,
+		"refunded_tx_info.msg": bson.M{"$exists": false},
 	}
 	if history {
-		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").All(&res)
 		return res, err
 	}
-	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, data *entity.ExIbcTx) error {
+func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status":               entity.IbcTxStatusSuccess,
+		"refunded_tx_info.msg": bson.M{"$exists": false},
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	}
+	return txs, err
+}
+func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, setData bson.M) error {
 	if history {
 		err := repo.collHistory().UpdateOne(context.Background(), bson.M{
 			"record_id": recordId,
-		}, data)
+		}, setData)
 		return err
 	}
 	err := repo.coll().UpdateOne(context.Background(), bson.M{
 		"record_id": recordId,
-	}, data)
+	}, setData)
 	return err
 }
 
@@ -1151,17 +1173,37 @@ func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChainId s
 	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
 }
 
-func (repo *ExIbcTxRepo) GetNeedFailRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	//查询"已退还"状态的没有dc_tx_info的数据
 	query := bson.M{
-		"status":            entity.IbcTxStatusRefunded,
-		"dc_tx_info.status": bson.M{"$exists": false},
+		"status":         entity.IbcTxStatusRefunded,
+		"dc_tx_info.msg": bson.M{"$exists": false},
 	}
 	if history {
-		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+		err := repo.collHistory().Find(context.Background(), query).Sort("-update_at").Limit(constant.DefaultLimit).All(&res)
 		return res, err
 	}
-	err := repo.coll().Find(context.Background(), query).Limit(constant.DefaultLimit).All(&res)
+	err := repo.coll().Find(context.Background(), query).Sort("-update_at").Limit(constant.DefaultLimit).All(&res)
 	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status":         entity.IbcTxStatusRefunded,
+		"dc_tx_info.msg": bson.M{"$exists": false},
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	}
+	return txs, err
 }

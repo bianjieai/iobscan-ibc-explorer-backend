@@ -95,6 +95,8 @@ type Task struct {
 	SwitchIbcChannelStatisticsTask     bool `mapstructure:"switch_ibc_channel_statistics_task"`
 	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
 	SwitchAddTransferDataTask          bool `mapstructure:"switch_add_transfer_data_task"`
+	SwitchFixAcknowledgeTxTask         bool `mapstructure:"switch_fix_acknowledge_tx_task"`
+	SwitchFixAckTxPacketIdTask         bool `mapstructure:"switch_fix_ack_tx_packet_id_task"`
 	SwitchFixFailRecvPacketTask        bool `mapstructure:"switch_fix_fail_recv_packet_task"`
 	SwitchFixDcChainIdTask             bool `mapstructure:"switch_fix_dc_chain_id_task"`
 	SwitchFixBaseDenomChainIdTask      bool `mapstructure:"switch_fix_base_denom_chain_id_task"`
@@ -111,8 +113,9 @@ type Spi struct {
 }
 
 type ChainConfig struct {
-	NewChains         string `mapstructure:"new_chains"`
-	AddTransferChains string `mapstructure:"add_transfer_chains"`
+	NewChains              string `mapstructure:"new_chains"`
+	AddTransferChains      string `mapstructure:"add_transfer_chains"`
+	FixAckTxPacketIdChains string `mapstructure:"fix_ack_tx_packet_id_chains"`
 }
 
 func ReadConfig(data []byte) (*Config, error) {

@@ -26,4 +26,6 @@ var (
 	relayerDataTask              task.RelayerDataTask
 	fixFailRecvPacketTask        task.FixFailRecvPacketTask
 	addTransferDataTask          task.AddTransferDataTask
+	fixAcknowledgeTxTask         task.FixAcknowledgeTxTask
+	fixAckTxPacketIdTask         task.FixAckTxPacketIdTask
 )
