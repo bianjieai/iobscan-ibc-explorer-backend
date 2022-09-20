@@ -2,17 +2,24 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
+	opts "github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
+	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ITokenStatisticsRepo interface {
+	CreateNew() error
+	SwitchColl() error
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenStatistics) error
 	BatchInsert(batch []*entity.IBCTokenStatistics) error
+	BatchInsertToNew(batch []*entity.IBCTokenStatistics) error
 	Aggr() ([]*dto.CountBaseDenomTxsDTO, error)
+	FindEmptyBaseDenomChainIdItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error)
 }
 
 var _ ITokenStatisticsRepo = new(TokenStatisticsRepo)
@@ -21,7 +28,24 @@ type TokenStatisticsRepo struct {
 }
 
 func (repo *TokenStatisticsRepo) coll() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenStatistics{}.CollectionName())
+	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenStatisticsCollName)
+}
+
+func (repo *TokenStatisticsRepo) collNew() *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenStatisticsNewCollName)
+}
+
+func (repo *TokenStatisticsRepo) CreateNew() error {
+	indexOpts := officialOpts.Index().SetUnique(true)
+	key := []string{"base_denom", "base_denom_chain_id", "-segment_start_time", "-segment_end_time"}
+	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+}
+
+func (repo *TokenStatisticsRepo) SwitchColl() error {
+	command := bson.D{{"renameCollection", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCTokenStatisticsNewCollName)},
+		{"to", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCTokenStatisticsCollName)},
+		{"dropTarget", true}}
+	return mgo.Database(adminDatabase).RunCommand(context.Background(), command).Err()
 }
 
 func (repo *TokenStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenStatistics) error {
@@ -57,6 +81,15 @@ func (repo *TokenStatisticsRepo) BatchInsert(batch []*entity.IBCTokenStatistics)
 	return err
 }
 
+func (repo *TokenStatisticsRepo) BatchInsertToNew(batch []*entity.IBCTokenStatistics) error {
+	if len(batch) == 0 {
+		return nil
+	}
+
+	_, err := repo.collNew().InsertMany(context.Background(), batch)
+	return err
+}
+
 func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 	group := bson.M{
 		"$group": bson.M{
@@ -83,5 +116,11 @@ func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 	pipe = append(pipe, group, project)
 	var res []*dto.CountBaseDenomTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *TokenStatisticsRepo) FindEmptyBaseDenomChainIdItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error) {
+	var res []*entity.IBCTokenStatistics
+	err := repo.coll().Find(context.Background(), bson.M{"base_denom_chain_id": ""}).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
