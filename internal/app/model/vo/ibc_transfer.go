@@ -283,6 +283,10 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	switch ibcTx.Status {
 	case entity.IbcTxStatusFailed:
 		errLog = ibcTx.ScTxInfo.ErrLog
+		//兼容历史err数据
+		if len(errLog) == 0 && ibcTx.Log != nil {
+			errLog = ibcTx.Log.ScLog
+		}
 	case entity.IbcTxStatusRefunded:
 		if ibcTx.DcTxInfo != nil {
 			if ibcTx.DcTxInfo.Status == entity.TxStatusSuccess {
