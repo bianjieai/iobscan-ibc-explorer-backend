@@ -28,7 +28,6 @@ func (t *IbcSyncAcknowledgeTxTask) Cron() int {
 }
 
 func (t *IbcSyncAcknowledgeTxTask) Run() int {
-
 	syncAcknowledge := func(history bool) error {
 		startTime := time.Now().Add(-3 * time.Hour).Unix()
 		//只处理最近3h的数据
@@ -186,6 +185,9 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 				"dc_connection_id": ibcTx.DcConnectionId,
 			},
 		})
+	} else {
+		logrus.Debugf("status:%d recv_packet(chain_id:%s)  no found transfer(hash:%s chain_id:%s)",
+			ibcTx.Status, ibcTx.DcChainId, ibcTx.ScTxInfo.Hash, ibcTx.ScChainId)
 	}
 	return nil
 }

@@ -23,7 +23,7 @@ const (
 	PortTransfer          = "transfer"
 
 	DefaultLimit = 500
-	IncreHeight  = 100
+	IncreHeight  = 5000
 
 	DisplayIbcRecordMax = 500000
 
