@@ -145,9 +145,9 @@ func (t *fixAckTxTask) doTask(txs []*entity.Tx) error {
 		Type string      `bson:"type"`
 		Msg  interface{} `bson:"msg"`
 	}
-	msgsChange := false
 	for _, val := range txs {
 		valMsgs := make([]interface{}, 0, len(val.DocTxMsgs))
+		msgsChange := false
 		for _, msg := range val.DocTxMsgs {
 			if msg.Type == constant.MsgTypeAcknowledgement {
 				ackmsg := msg.AckPacketMsg()

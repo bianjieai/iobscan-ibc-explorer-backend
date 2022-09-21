@@ -186,6 +186,9 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 				"dc_connection_id": ibcTx.DcConnectionId,
 			},
 		})
+	} else {
+		logrus.Debugf("status:%d recv_packet(chain_id:%s)  no found transfer(hash:%s chain_id:%s)",
+			ibcTx.Status, ibcTx.DcChainId, ibcTx.ScTxInfo.Hash, ibcTx.ScChainId)
 	}
 	return nil
 }

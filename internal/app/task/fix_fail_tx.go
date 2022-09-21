@@ -193,6 +193,9 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 							logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 							return err
 						}
+					} else {
+						logrus.Debugf("status:%d recv_packet(chain_id:%s hash:%s) findWriteAck is ok,but no found acknowledge tx(chain_id:%s) tx",
+							val.Status, val.DcChainId, bindedTx.TxHash, val.ScChainId)
 					}
 				} else {
 					//status: fail->success or fail->refund or fail->process
