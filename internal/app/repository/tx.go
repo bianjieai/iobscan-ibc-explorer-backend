@@ -211,9 +211,8 @@ func (repo *TxRepo) GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, er
 func (repo *TxRepo) FindAllAckTxs(chainId string, height int64) ([]*entity.Tx, error) {
 	var txs []*entity.Tx
 	err := repo.coll(chainId).Find(context.Background(), bson.M{
-		"types":              constant.MsgTypeAcknowledgement,
-		"height":             bson.M{"$gt": height, "$lte": height + constant.IncreHeight},
-		"msgs.msg.packet_id": bson.M{"$exists": false},
+		"types":  constant.MsgTypeAcknowledgement,
+		"height": bson.M{"$gt": height, "$lte": height + constant.IncreHeight},
 	}).Sort("height").All(&txs)
 	return txs, err
 }
@@ -226,7 +225,6 @@ func (repo *TxRepo) FindHeight(chainId string, min bool) (entity.Tx, error) {
 	}
 	err := repo.coll(chainId).Find(context.Background(), bson.M{
 		"types": constant.MsgTypeAcknowledgement,
-		//"msgs.msg.packet_id": bson.M{"$exists": false},
 	}).Sort(sorts).Limit(1).One(&tx)
 	return tx, err
 }
