@@ -44,7 +44,9 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
-		pairId := entity.GenerateRelayerPairId(val.ChainA, val.ChannelA, val.ChainAAddress, val.ChainB, val.ChannelB, val.ChainBAddress)
+		chainA := strings.ReplaceAll(val.ChainA, "_", "-")
+		chainB := strings.ReplaceAll(val.ChainB, "_", "-")
+		pairId := entity.GenerateRelayerPairId(chainA, val.ChannelA, val.ChainAAddress, chainB, val.ChannelB, val.ChainBAddress)
 		config, ok := relayerCfgMap[pairId]
 		if ok {
 			item.RelayerName = config.RelayerName
