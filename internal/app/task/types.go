@@ -51,9 +51,7 @@ var (
 	//cache
 	tokenPriceRepo      cache.TokenPriceCacheRepo
 	denomDataRepo       cache.DenomDataCacheRepo
-	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
 	ibcInfoCache        cache.IbcInfoCacheRepo
-	clientIdnfoCache    cache.ClientIdChannelCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
 	relayerCache        cache.RelayerCacheRepo
