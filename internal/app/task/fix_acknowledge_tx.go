@@ -88,7 +88,8 @@ func (t *FixAcknowledgeTxTask) fixAcknowledgeTxs(target string, segments []*segm
 }
 
 func (t *FixAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history bool) error {
-	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
+	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
+	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, packetId)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (t *FixAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history 
 				Memo:      ackTx.Memo,
 				Signers:   ackTx.Signers,
 				MsgAmount: nil,
-				Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement),
+				Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement, packetId),
 			}
 			return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
 				"$set": bson.M{
