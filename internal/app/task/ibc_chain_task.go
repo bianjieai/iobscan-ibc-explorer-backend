@@ -2,7 +2,6 @@ package task
 
 import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 	"time"
 )
@@ -26,24 +25,11 @@ func (t *IbcChainCronTask) Run() int {
 		return -1
 	}
 	var chains []entity.IBCChain
-	//set redis key expired time
 	for _, chainCfg := range chainCfgs {
-		//chainCfg.IbcInfo = nil
-		//lcdInfoCache.Set(chainCfg.ChainId, string(utils.MarshalJsonIgnoreErr(chainCfg)))
-		//hashVal, _ := ibcInfoHashCache.Get(chainCfg.ChainId)
-		////check hashValLcd if have change for reduce update or insert times
-		//if hashVal != "" && hashVal == chainCfg.IbcInfoHashLcd {
-		//	continue
-		//}
-		//_ = ibcInfoHashCache.Set(chainCfg.ChainId, chainCfg.IbcInfoHashLcd)
 		conntectedChains := len(chainCfg.IbcInfo)
 		channels := 0
 		for _, val := range chainCfg.IbcInfo {
 			channels += len(val.Paths)
-			//save cache
-			if len(val.Paths) > 0 {
-				_ = ibcInfoCache.Set(chainCfg.ChainId, val.ChainId, string(utils.MarshalJsonIgnoreErr(val.Paths)))
-			}
 		}
 		data := createChainData(chainCfg.ChainId, channels, conntectedChains)
 		chains = append(chains, data)

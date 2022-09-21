@@ -35,4 +35,5 @@ const (
 	updateBaseDenomError = "update_base_denom_error_set"
 	BaseDenomUnauth      = "base_denom_unauth"
 	baseDenomSymbol      = "base_denom:%s"
+	clientState          = "client_state:%s"
 )
