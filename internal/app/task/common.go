@@ -20,10 +20,6 @@ type segment struct {
 	EndTime   int64 `json:"end_time"`
 }
 
-func printExectime(taskName string, startTime int64) {
-	logrus.Infof("task %s end, time use %d(s)", taskName, time.Now().Unix()-startTime)
-}
-
 func getHistorySegment(step int64) ([]*segment, error) {
 	first, err := ibcTxRepo.FirstHistory()
 	if err != nil {

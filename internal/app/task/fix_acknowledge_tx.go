@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"sync"
-	"time"
 )
 
 type FixAcknowledgeTxTask struct {
@@ -24,7 +23,6 @@ func (t *FixAcknowledgeTxTask) Switch() bool {
 }
 
 func (t *FixAcknowledgeTxTask) Run() int {
-	defer printExectime(t.Name(), time.Now().Unix())
 	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)

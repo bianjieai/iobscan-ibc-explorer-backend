@@ -1,15 +1,13 @@
 package task
 
 import (
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"strings"
+	"sync"
 )
 
 type FixFailTxTask struct {
@@ -26,7 +24,6 @@ func (t *FixFailTxTask) Switch() bool {
 }
 
 func (t *FixFailTxTask) Run() int {
-	defer printExectime(t.Name(), time.Now().Unix())
 	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)

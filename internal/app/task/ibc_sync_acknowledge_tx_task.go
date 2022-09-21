@@ -28,7 +28,6 @@ func (t *IbcSyncAcknowledgeTxTask) Cron() int {
 }
 
 func (t *IbcSyncAcknowledgeTxTask) Run() int {
-	defer printExectime(t.Name(), time.Now().Unix())
 	syncAcknowledge := func(history bool) error {
 		startTime := time.Now().Add(-3 * time.Hour).Unix()
 		//只处理最近3h的数据

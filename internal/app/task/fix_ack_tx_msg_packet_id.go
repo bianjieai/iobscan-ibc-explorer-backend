@@ -8,7 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
-	"time"
 )
 
 var _ OneOffTask = new(FixAckTxPacketIdTask)
@@ -54,7 +53,6 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
 			logrus.Infof("chain_id %s worker %s exit", chainId, workerName)
 			return 1
 		}
-		defer printExectime(fmt.Sprintf("chain:%s", chainId), time.Now().Unix())
 		minHTx, err := txRepo.FindHeight(chainId, true)
 		if err != nil {
 			logrus.Errorf("find minHeight err chain_id:%s err:%v", chainId, err.Error())

@@ -5,7 +5,6 @@ import (
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
 	"sync"
-	"time"
 )
 
 type FixFailRecvPacketTask struct {
@@ -22,7 +21,6 @@ func (t *FixFailRecvPacketTask) Switch() bool {
 }
 
 func (t *FixFailRecvPacketTask) Run() int {
-	defer printExectime(t.Name(), time.Now().Unix())
 	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment error, %v", t.Name(), err)
