@@ -117,6 +117,12 @@ db.ex_ibc_tx.createIndex({
 });
 
 db.ex_ibc_tx.createIndex({
+    "refunded_tx_info.hash": -1,
+}, {
+    background: true
+});
+
+db.ex_ibc_tx.createIndex({
     "status": 1,
     "sc_tx_info.status": 1
 }, {
@@ -173,6 +179,12 @@ db.ex_ibc_tx_latest.createIndex({
 
 db.ex_ibc_tx_latest.createIndex({
     "dc_tx_info.hash": -1,
+}, {
+    background: true
+});
+
+db.ex_ibc_tx_latest.createIndex({
+    "refunded_tx_info.hash": -1,
 }, {
     background: true
 });
