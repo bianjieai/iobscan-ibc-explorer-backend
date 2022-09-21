@@ -85,7 +85,8 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 }
 
 func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history bool) error {
-	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
+	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
+	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, packetId)
 	if err != nil {
 		return err
 	}
@@ -101,7 +102,7 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 			Memo:      ackTx.Memo,
 			Signers:   ackTx.Signers,
 			MsgAmount: nil,
-			Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement),
+			Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement, packetId),
 		}
 		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
 			"$set": bson.M{
@@ -112,9 +113,9 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 	return nil
 }
 
-func getMsgByType(tx entity.Tx, msgType string) *model.TxMsg {
+func getMsgByType(tx entity.Tx, msgType, packetId string) *model.TxMsg {
 	for _, msg := range tx.DocTxMsgs {
-		if msg.Type == msgType {
+		if msg.Type == msgType && msg.CommonMsg().PacketId == packetId {
 			return msg
 		}
 	}
@@ -122,7 +123,8 @@ func getMsgByType(tx entity.Tx, msgType string) *model.TxMsg {
 }
 
 func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
-	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChainId, ibcTx.ScTxInfo.Msg.CommonMsg().PacketId)
+	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
+	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChainId, packetId)
 	if err != nil {
 		return err
 	}
@@ -145,7 +147,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 		if val.Status == entity.TxStatusSuccess {
 			recvTx = val
 			for index, msg := range val.DocTxMsgs {
-				if msg.Type == constant.MsgTypeRecvPacket {
+				if msg.Type == constant.MsgTypeRecvPacket && msg.RecvPacketMsg().PacketId == packetId {
 					ibcTx.DcConnectionId = getConnectByRecvPacketEventsNews(val.EventsNew, index)
 				}
 			}
@@ -177,7 +179,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 			Signers:   recvTx.Signers,
 			Log:       recvTx.Log,
 			MsgAmount: nil,
-			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket),
+			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket, packetId),
 		}
 		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
 			"$set": bson.M{

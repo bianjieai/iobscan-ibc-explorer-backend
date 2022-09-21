@@ -54,7 +54,7 @@ func (t *FixFailTxTask) Run() int {
 	return 1
 }
 
-func (t *FixFailTxTask) FixAcknowledgeTx(recordId string, ackTx *entity.Tx, history bool, status entity.IbcTxStatus) error {
+func (t *FixFailTxTask) FixAcknowledgeTx(recordId string, ackTx *entity.Tx, history bool, status entity.IbcTxStatus, packetId string) error {
 	refundedTxInfo := &entity.TxInfo{
 		Hash:      ackTx.TxHash,
 		Height:    ackTx.Height,
@@ -64,7 +64,7 @@ func (t *FixFailTxTask) FixAcknowledgeTx(recordId string, ackTx *entity.Tx, hist
 		Memo:      ackTx.Memo,
 		Signers:   ackTx.Signers,
 		MsgAmount: nil,
-		Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement),
+		Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement, packetId),
 	}
 	update := bson.M{
 		"refunded_tx_info": refundedTxInfo,
@@ -75,7 +75,7 @@ func (t *FixFailTxTask) FixAcknowledgeTx(recordId string, ackTx *entity.Tx, hist
 	})
 }
 
-func (t *FixFailTxTask) FixRecvPacketTxs(recordId string, recvTx, ackTx *entity.Tx, history bool, status entity.IbcTxStatus) error {
+func (t *FixFailTxTask) FixRecvPacketTxs(recordId string, recvTx, ackTx *entity.Tx, history bool, status entity.IbcTxStatus, packetId string) error {
 	if status <= 0 {
 		return nil
 	}
@@ -92,7 +92,7 @@ func (t *FixFailTxTask) FixRecvPacketTxs(recordId string, recvTx, ackTx *entity.
 			Memo:      recvTx.Memo,
 			Signers:   recvTx.Signers,
 			MsgAmount: nil,
-			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket),
+			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket, packetId),
 		}
 		update["dc_tx_info"] = dcTxInfo
 	} else if status == entity.IbcTxStatusProcessing {
@@ -110,7 +110,7 @@ func (t *FixFailTxTask) FixRecvPacketTxs(recordId string, recvTx, ackTx *entity.
 			Memo:      ackTx.Memo,
 			Signers:   ackTx.Signers,
 			MsgAmount: nil,
-			Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement),
+			Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement, packetId),
 		}
 		update["refunded_tx_info"] = refundedTxInfo
 	}
@@ -121,9 +121,9 @@ func (t *FixFailTxTask) FixRecvPacketTxs(recordId string, recvTx, ackTx *entity.
 }
 
 //检查recv_packet的events中是否包含write_acknowledgement
-func (t *FixFailTxTask) checkWriteAcknowledgeError(tx *entity.Tx) (writeAckOk, findWriteAck bool, ackRes string) {
+func (t *FixFailTxTask) checkWriteAcknowledgeError(tx *entity.Tx, packetId string) (writeAckOk, findWriteAck bool, ackRes string) {
 	for msgIndex, msg := range tx.DocTxMsgs {
-		if msg.Type != constant.MsgTypeRecvPacket {
+		if msg.Type != constant.MsgTypeRecvPacket || msg.CommonMsg().PacketId != packetId {
 			continue
 		}
 		for _, event := range tx.EventsNew {
@@ -172,7 +172,8 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 					return err
 				}
-				wAckOk, findWriteAck, ackRes := t.checkWriteAcknowledgeError(&bindedTx)
+				packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
+				wAckOk, findWriteAck, ackRes := t.checkWriteAcknowledgeError(&bindedTx, packetId)
 				if findWriteAck { //关联的recv_packet有ack，根据ack找acknowledge tx
 					ackTx, err := findAckTx(val, ackRes)
 					if err != nil {
@@ -185,7 +186,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 						} else { //status: fail->refund
 							status = entity.IbcTxStatusRefunded
 						}
-						err = t.FixAcknowledgeTx(val.RecordId, ackTx, isTargetHistory, status)
+						err = t.FixAcknowledgeTx(val.RecordId, ackTx, isTargetHistory, status, packetId)
 						if err != nil && err != qmgo.ErrNoSuchDocuments {
 							logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 							return err
@@ -193,6 +194,13 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					} else {
 						logrus.Debugf("status:%d recv_packet(chain_id:%s hash:%s) findWriteAck is ok,but no found acknowledge tx(chain_id:%s) tx",
 							val.Status, val.DcChainId, bindedTx.TxHash, val.ScChainId)
+						//status:fail->process
+						err = t.FixRecvPacketTxs(val.RecordId, nil, nil, isTargetHistory, entity.IbcTxStatusProcessing, packetId)
+						if err != nil && err != qmgo.ErrNoSuchDocuments {
+							logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v",
+								t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+							return err
+						}
 					}
 				} else {
 					//status: fail->success or fail->refund or fail->process
@@ -209,7 +217,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					)
 
 					for _, recvOne := range recvTxs {
-						ackOk, varfindWriteAck, varAckRes = t.checkWriteAcknowledgeError(recvOne)
+						ackOk, varfindWriteAck, varAckRes = t.checkWriteAcknowledgeError(recvOne, packetId)
 						if varfindWriteAck {
 							recvTx = recvOne
 							break
@@ -230,7 +238,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					} else { //没有找到包含writeAck的recv_packet
 						status = entity.IbcTxStatusProcessing
 					}
-					err = t.FixRecvPacketTxs(val.RecordId, recvTx, ackTx, isTargetHistory, status)
+					err = t.FixRecvPacketTxs(val.RecordId, recvTx, ackTx, isTargetHistory, status, packetId)
 					if err != nil && err != qmgo.ErrNoSuchDocuments {
 						logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 						return err
@@ -250,16 +258,18 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 
 func findAckTx(val *entity.ExIbcTx, ackRes string) (*entity.Tx, error) {
 	var ackTx *entity.Tx
-	ackTxs, err := txRepo.GetAcknowledgeTxs(val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId)
+	packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
+	ackTxs, err := txRepo.GetAcknowledgeTxs(val.ScChainId, packetId)
 	if err != nil {
 		return nil, err
 	}
 	if len(ackTxs) > 0 {
 		for _, ackOne := range ackTxs {
-			for _, msg := range ackOne.DocTxMsgs {
-				if msg.Type == constant.MsgTypeAcknowledgement {
-					//ack tx的msg.ack 与 recv_packet的events ack一样
-					if msg.AckPacketMsg().Acknowledgement == ackRes {
+			for msgIndex, msg := range ackOne.DocTxMsgs {
+				if msg.Type == constant.MsgTypeAcknowledgement && msg.CommonMsg().PacketId == packetId {
+					existTransferEvent := parseAckPacketTxEvents(msgIndex, ackTx)
+					//ack tx的msg.ack 与 recv_packet的events ack一样 且ack tx的events有"transfer"
+					if msg.AckPacketMsg().Acknowledgement == ackRes && existTransferEvent {
 						ackTx = ackOne
 						break
 					}
