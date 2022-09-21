@@ -193,6 +193,13 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					} else {
 						logrus.Debugf("status:%d recv_packet(chain_id:%s hash:%s) findWriteAck is ok,but no found acknowledge tx(chain_id:%s) tx",
 							val.Status, val.DcChainId, bindedTx.TxHash, val.ScChainId)
+						//status:fail->process
+						err = t.FixRecvPacketTxs(val.RecordId, nil, nil, isTargetHistory, entity.IbcTxStatusProcessing)
+						if err != nil && err != qmgo.ErrNoSuchDocuments {
+							logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v",
+								t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+							return err
+						}
 					}
 				} else {
 					//status: fail->success or fail->refund or fail->process

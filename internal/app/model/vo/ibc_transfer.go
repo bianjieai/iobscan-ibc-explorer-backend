@@ -118,7 +118,7 @@ type (
 	}
 	RelayerInfo struct {
 		ScRelayer RelayerCfg `json:"sc_relayer,omitempty"`
-		DcRelayer RelayerCfg `json:"dc_relayer,omitempty"`
+		//DcRelayer RelayerCfg `json:"dc_relayer,omitempty"`
 	}
 	RelayerCfg struct {
 		RelayerName string `json:"relayer_name"`

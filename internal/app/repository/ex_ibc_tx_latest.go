@@ -1208,9 +1208,8 @@ func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64
 			"$gte": startTime,
 			"$lte": endTime,
 		},
-		"status":               entity.IbcTxStatusFailed,
-		"dc_tx_info.status":    entity.TxStatusSuccess,
-		"refunded_tx_info.msg": bson.M{"$exists": false},
+		"status":            entity.IbcTxStatusFailed,
+		"dc_tx_info.status": entity.TxStatusSuccess,
 	}
 	var err error
 	if isTargetHistory {
@@ -1248,8 +1247,7 @@ func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, lim
 			"$gte": startTime,
 			"$lte": endTime,
 		},
-		"status":         entity.IbcTxStatusRefunded,
-		"dc_tx_info.msg": bson.M{"$exists": false},
+		"status": entity.IbcTxStatusRefunded,
 	}
 
 	var txs []*entity.ExIbcTx
@@ -1268,8 +1266,7 @@ func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, li
 			"$gte": startTime,
 			"$lte": endTime,
 		},
-		"status":               entity.IbcTxStatusSuccess,
-		"refunded_tx_info.msg": bson.M{"$exists": false},
+		"status": entity.IbcTxStatusSuccess,
 	}
 
 	var txs []*entity.ExIbcTx
