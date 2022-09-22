@@ -57,22 +57,20 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 	if target == ibcTxTargetHistory {
 		isTargetHistory = true
 	}
-
-	for _, v := range segments {
-		logrus.Infof("task %s fix %s %d-%d", t.Name(), target, v.StartTime, v.EndTime)
+	doHandleSegments(t.Name(), 3, segments, isTargetHistory, func(seg *segment, isTargetHistory bool) {
 		var skip int64 = 0
 		for {
-			txs, err := ibcTxRepo.FindRecvPacketTxsEmptyTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
+			txs, err := ibcTxRepo.FindRecvPacketTxsEmptyTxs(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
 			if err != nil {
-				logrus.Errorf("task %s FindRecvPacketTxsEmptyTxs %s %d-%d err, %v", t.Name(), target, v.StartTime, v.EndTime, err)
-				return err
+				logrus.Errorf("task %s FindRecvPacketTxsEmptyTxs %s %d-%d err, %v", t.Name(), target, seg.StartTime, seg.EndTime, err)
+				return
 			}
 
 			for _, val := range txs {
 				err := SaveRecvPacketTx(val, isTargetHistory)
 				if err != nil && err != qmgo.ErrNoSuchDocuments {
 					logrus.Errorf("task %s SaveRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-					return err
+					return
 				}
 			}
 
@@ -81,6 +79,7 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 			}
 			skip += limit
 		}
-	}
+	})
+
 	return nil
 }

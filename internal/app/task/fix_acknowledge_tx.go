@@ -59,22 +59,20 @@ func (t *FixAcknowledgeTxTask) fixAcknowledgeTxs(target string, segments []*segm
 	if target == ibcTxTargetHistory {
 		isTargetHistory = true
 	}
-
-	for _, v := range segments {
-		logrus.Infof("task %s fix %s %d-%d", t.Name(), target, v.StartTime, v.EndTime)
+	doHandleSegments(t.Name(), 5, segments, isTargetHistory, func(seg *segment, isTargetHistory bool) {
 		var skip int64 = 0
 		for {
-			txs, err := ibcTxRepo.FindAcknowledgeTxsEmptyTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
+			txs, err := ibcTxRepo.FindAcknowledgeTxsEmptyTxs(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
 			if err != nil {
-				logrus.Errorf("task %s FindAcknowledgeTxsEmptyTxs %s %d-%d err, %v", t.Name(), target, v.StartTime, v.EndTime, err)
-				return err
+				logrus.Errorf("task %s FindAcknowledgeTxsEmptyTxs %s %d-%d err, %v", t.Name(), target, seg.StartTime, seg.EndTime, err)
+				return
 			}
 
 			for _, val := range txs {
 				err := t.SaveAcknowledgeTx(val, isTargetHistory)
 				if err != nil && err != qmgo.ErrNoSuchDocuments {
 					logrus.Errorf("task %s saveAcknowledgeTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-					return err
+					return
 				}
 			}
 
@@ -83,7 +81,8 @@ func (t *FixAcknowledgeTxTask) fixAcknowledgeTxs(target string, segments []*segm
 			}
 			skip += limit
 		}
-	}
+	})
+
 	return nil
 }
 
