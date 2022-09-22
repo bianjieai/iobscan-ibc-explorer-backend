@@ -175,7 +175,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 				packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
 				wAckOk, findWriteAck, ackRes := t.checkWriteAcknowledgeError(&bindedTx, packetId)
 				if findWriteAck { //关联的recv_packet有ack，根据ack找acknowledge tx
-					ackTx, err := findAckTx(val, ackRes)
+					ackTx, err := findAckTx(val, ackRes, wAckOk)
 					if err != nil {
 						return err
 					}
@@ -225,7 +225,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					}
 
 					if varfindWriteAck {
-						ackTx, err = findAckTx(val, varAckRes)
+						ackTx, err = findAckTx(val, varAckRes, ackOk)
 						if err != nil {
 							return err
 						}
@@ -256,7 +256,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 	return nil
 }
 
-func findAckTx(val *entity.ExIbcTx, ackRes string) (*entity.Tx, error) {
+func findAckTx(val *entity.ExIbcTx, ackRes string, ackOk bool) (*entity.Tx, error) {
 	var ackTx *entity.Tx
 	packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
 	ackTxs, err := txRepo.GetAcknowledgeTxs(val.ScChainId, packetId)
@@ -264,6 +264,11 @@ func findAckTx(val *entity.ExIbcTx, ackRes string) (*entity.Tx, error) {
 		return nil, err
 	}
 	if len(ackTxs) > 0 {
+		if ackOk {
+			//"成功"状态IBC，取最新的ack tx交易
+			ackTx = ackTxs[0]
+			return ackTx, nil
+		}
 		for _, ackOne := range ackTxs {
 			for msgIndex, msg := range ackOne.DocTxMsgs {
 				if msg.Type == constant.MsgTypeAcknowledgement && msg.CommonMsg().PacketId == packetId {
