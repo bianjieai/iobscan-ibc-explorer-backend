@@ -21,7 +21,7 @@ type ITransferService interface {
 	TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors.Error)
 	TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error)
 	TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error)
-	TransferTxDetailNew(hash string) (vo.TranaferTxDetailNewResp, errors.Error)
+	TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error)
 	TraceSource(hash string, req *vo.TraceSourceReq) (vo.TraceSourceResp, errors.Error)
 }
 
@@ -256,28 +256,31 @@ func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int)
 	return connect, ackData
 }
 
-func (t TransferService) TransferTxDetailNew(hash string) (vo.TranaferTxDetailNewResp, errors.Error) {
+func (t TransferService) TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error) {
 	var resp vo.TranaferTxDetailNewResp
 	ibcTxs, err := ibcTxRepo.TxDetail(hash, false)
 	if err != nil && err != qmgo.ErrNoSuchDocuments {
-		return resp, errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 	if len(ibcTxs) == 0 {
 		ibcTxs, err = ibcTxRepo.TxDetail(hash, true)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
-			return resp, errors.Wrap(err)
+			return nil, errors.Wrap(err)
 		}
+	}
+	if len(ibcTxs) == 0 {
+		return nil, nil
 	}
 
 	if len(ibcTxs) == 1 {
 		resp = vo.LoadTranaferTxDetail(ibcTxs[0])
 		resp.RelayerInfo, err = getRelayerInfo(ibcTxs[0])
 		if err != nil {
-			return resp, errors.Wrap(err)
+			return nil, errors.Wrap(err)
 		}
 		resp.TokenInfo, err = getTokenInfo(ibcTxs[0])
 		if err != nil {
-			return resp, errors.Wrap(err)
+			return nil, errors.Wrap(err)
 		}
 	} else if len(ibcTxs) > 1 {
 		resp.IsList = true
@@ -287,7 +290,7 @@ func (t TransferService) TransferTxDetailNew(hash string) (vo.TranaferTxDetailNe
 		}
 	}
 	resp.TimeStamp = time.Now().Unix()
-	return resp, nil
+	return &resp, nil
 }
 
 func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
