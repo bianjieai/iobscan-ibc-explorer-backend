@@ -364,17 +364,17 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, isTarge
 	wg.Add(workNum)
 	for i := 0; i < workNum; i++ {
 		num := i
-		go func() {
+		go func(num int) {
 			defer wg.Done()
 
-			for i, v := range segments {
-				if i%workNum != num {
+			for id, v := range segments {
+				if id%workNum != num {
 					continue
 				}
 				logrus.Infof("task %s worker %d fix %d-%d, target history: %t", taskName, num, v.StartTime, v.EndTime, isTargetHistory)
 				dowork(v, isTargetHistory)
 			}
-		}()
+		}(num)
 	}
 	wg.Wait()
 }
