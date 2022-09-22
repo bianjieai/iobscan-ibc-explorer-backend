@@ -10,7 +10,7 @@ const (
 	UnknownTokenPrice     = -1
 	UnknownDenomAmount    = "-1"
 	ZeroDenomAmount       = "0"
-	IBCTokenPreFix        = "ibc"
+	IBCTokenPrefix        = "ibc"
 	IBCHopsIndex          = "/channel"
 	DefaultValuePrecision = 5
 	ChannelStateOpen      = "STATE_OPEN"

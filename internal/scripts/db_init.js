@@ -246,3 +246,10 @@ db.sync_xxxx_tx.createIndex({"height": -1},{background: true});
 db.sync_xxxx_tx.createIndex({"types": -1,"height": -1},{background: true});
 db.sync_xxxx_tx.createIndex({"msgs.msg.packet_id":-1},{background: true});
 db.sync_xxxx_tx.createIndex({"msgs.msg.signer": 1,"msgs.type": 1,"time": 1},{background: true});
+
+// ex_search_record
+db.ex_search_record.createIndex({
+    "create_at": 1
+}, {
+    expireAfterSeconds: 31536000
+})
