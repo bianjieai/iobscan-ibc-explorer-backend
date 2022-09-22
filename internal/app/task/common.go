@@ -147,7 +147,7 @@ func calculateIbcHash(fullPath string) string {
 	}
 
 	hash := utils.Sha256(fullPath)
-	return fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, strings.ToUpper(hash))
+	return fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, strings.ToUpper(hash))
 }
 
 // traceDenom trace denom path, parse denom info
@@ -156,7 +156,7 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 	unix := time.Now().Unix()
 	denom := calculateIbcHash(fullDenomPath)
 	rootDenom := getRootDenom(fullDenomPath)
-	if !strings.HasPrefix(denom, constant.IBCTokenPreFix) { // base denom
+	if !strings.HasPrefix(denom, constant.IBCTokenPrefix) { // base denom
 		return &entity.IBCDenom{
 			ChainId:          chainId,
 			Denom:            denom,

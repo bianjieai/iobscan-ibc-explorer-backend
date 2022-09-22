@@ -41,7 +41,7 @@ func (ctl *TokenController) List(c *gin.Context) {
 func (ctl *TokenController) IBCTokenList(c *gin.Context) {
 	baseDenom := c.Param("base_denom")
 	if len(baseDenom) == 64 {
-		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, baseDenom)
+		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, baseDenom)
 	}
 	var req vo.IBCTokenListReq
 	if err := c.ShouldBind(&req); err != nil {

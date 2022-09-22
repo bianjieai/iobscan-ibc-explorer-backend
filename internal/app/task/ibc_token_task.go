@@ -337,7 +337,7 @@ func (t *TokenTask) getSupplyFromLcd(chainId string) {
 		}
 
 		for _, v := range supplyResp.Supply { // ibc denom 和 链原生denom的amount 存下来
-			if strings.HasPrefix(v.Denom, constant.IBCTokenPreFix) || utils.InArray(denoms, v.Denom) {
+			if strings.HasPrefix(v.Denom, constant.IBCTokenPrefix) || utils.InArray(denoms, v.Denom) {
 				_ = denomDataRepo.SetSupply(chainId, v.Denom, v.Amount)
 			}
 		}
