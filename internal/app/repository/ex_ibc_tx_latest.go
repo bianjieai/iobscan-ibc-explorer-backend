@@ -1061,6 +1061,7 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 		"$or": []bson.M{
 			{"sc_tx_info.hash": hash},
 			{"dc_tx_info.hash": hash},
+			{"refunded_tx_info.hash": hash},
 		},
 	}
 	if history {

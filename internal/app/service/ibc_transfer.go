@@ -299,18 +299,11 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 	if val.DcTxInfo != nil && val.DcTxInfo.Msg != nil {
 		dcRelayerAddr := val.DcTxInfo.Msg.CommonMsg().Signer
 		relayerInfo.DcRelayer.RelayerAddr = dcRelayerAddr
-		//dcChainId := strings.ReplaceAll(val.DcChainId, "_", "-")
-		//matchInfo := strings.Join([]string{dcChainId, val.DcChannel, dcRelayerAddr}, ":")
-		//if cfg, ok := relayerCfgMap[matchInfo]; ok {
-		//	relayerInfo.DcRelayer.RelayerName = cfg.RelayerName
-		//	relayerInfo.DcRelayer.Icon = cfg.Icon
-		//}
 	}
 	if val.RefundedTxInfo != nil && val.RefundedTxInfo.Msg != nil {
 		scRelayerAddr := val.RefundedTxInfo.Msg.CommonMsg().Signer
 		relayerInfo.ScRelayer.RelayerAddr = scRelayerAddr
-		scChainId := strings.ReplaceAll(val.ScChainId, "_", "-")
-		matchInfo := strings.Join([]string{scChainId, val.ScChannel, scRelayerAddr}, ":")
+		matchInfo := strings.Join([]string{val.ScChainId, val.ScChannel, scRelayerAddr}, ":")
 		if cfg, ok := relayerCfgMap[matchInfo]; ok {
 			relayerInfo.ScRelayer.RelayerName = cfg.RelayerName
 			relayerInfo.ScRelayer.Icon = cfg.Icon
