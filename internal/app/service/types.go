@@ -20,7 +20,7 @@ var (
 	txRepo              repository.ITxRepo             = new(repository.TxRepo)
 	exSearchRecordRepo  repository.IExSearchRecordRepo = new(repository.ExSearchRecordRepo)
 	lcdTxDataCache      cache.LcdTxDataCacheRepo
-	relayerCfgRepo      repository.IRelayerConfigRepo  = new(cache.RelayerConfigCacheRepo)
+	relayerCfgRepo      repository.IRelayerConfigRepo = new(cache.RelayerConfigCacheRepo)
 	baseDenomRepo       cache.BaseDenomCacheRepo
 )
 
@@ -57,7 +57,7 @@ type (
 		TimeoutTimestamp string      `json:"timeout_timestamp,omitempty"`
 
 		ProofUnreceived  string `json:"proof_unreceived,omitempty"`
-		NextSequenceRecv int64  `json:"next_sequence_recv,omitempty"`
+		NextSequenceRecv string `json:"next_sequence_recv,omitempty"`
 		Acknowledgement  string `json:"acknowledgement,omitempty"`
 		ProofAcked       string `json:"proof_acked,omitempty"`
 	}
