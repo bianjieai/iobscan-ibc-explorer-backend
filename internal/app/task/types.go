@@ -51,15 +51,12 @@ var (
 	//cache
 	tokenPriceRepo      cache.TokenPriceCacheRepo
 	denomDataRepo       cache.DenomDataCacheRepo
-	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
-	ibcInfoCache        cache.IbcInfoCacheRepo
-	clientIdnfoCache    cache.ClientIdChannelCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
-	relayerCache        cache.RelayerCacheRepo
 	chainCache          cache.ChainCacheRepo
 	baseDenomCache      cache.BaseDenomCacheRepo
 	storageCache        cache.StorageCacheRepo
+	lcdTxDataCacheRepo  cache.LcdTxDataCacheRepo
 
 	// mongo
 	tokenRepo                repository.ITokenRepo                = new(repository.TokenRepo)
