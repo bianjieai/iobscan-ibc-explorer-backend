@@ -29,4 +29,5 @@ var (
 	fixFailTxTask                task.FixFailTxTask
 	fixAcknowledgeTxTask         task.FixAcknowledgeTxTask
 	fixAckTxPacketIdTask         task.FixAckTxPacketIdTask
+	fixIbxTxTask                 task.FixIbxTxTask
 )
