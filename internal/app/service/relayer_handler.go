@@ -160,7 +160,9 @@ func (h *RelayerHandler) fetchAndSave(seq int) {
 			continue
 		}
 
-		cfgEntity := entity.GenerateRelayerConfigEntity(pairJson.Chain1.ChainId, pairJson.Chain1.ChannelId, pairJson.Chain1.Address, pairJson.Chain2.ChainId, pairJson.Chain2.ChannelId, pairJson.Chain2.Address)
+		chain1 := strings.ReplaceAll(pairJson.Chain1.ChainId, "-", "_")
+		chain2 := strings.ReplaceAll(pairJson.Chain2.ChainId, "-", "_")
+		cfgEntity := entity.GenerateRelayerConfigEntity(chain1, pairJson.Chain1.ChannelId, pairJson.Chain1.Address, chain2, pairJson.Chain2.ChannelId, pairJson.Chain2.Address)
 		if _, ok := h.pairIdMap[cfgEntity.RelayerPairId]; !ok {
 			cfgEntity.RelayerName = h.teamNameMap[split[0]]
 			iconName := strings.ReplaceAll(cfgEntity.RelayerName, " ", "_")

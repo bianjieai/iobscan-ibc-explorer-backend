@@ -629,13 +629,16 @@ func (t *IbcRelayerCronTask) saveOrUpdateRelayerTxsAndValue(val *entity.IBCRelay
 }
 
 func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*entity.ChannelPath {
-	// use cache find channels
-	var ibcPaths []*entity.ChannelPath
-	if paths, _ := ibcInfoCache.Get(chainId, dcChainId); paths != nil {
-		data := paths.(string)
-		utils.UnmarshalJsonIgnoreErr([]byte(data), &ibcPaths)
+	cfg, ok := t.chainConfigMap[chainId]
+	if ok {
+		for _, v := range cfg.IbcInfo {
+			if v.ChainId == dcChainId {
+				return v.Paths
+			}
+		}
 	}
-	return ibcPaths
+
+	return nil
 }
 
 func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
