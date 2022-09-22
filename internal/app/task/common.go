@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -348,3 +349,34 @@ func parseAckPacketTxEvents(msgIndex int, tx *entity.Tx) (existTransferEvent boo
 	}
 	return
 }
+
+//并发处理全量数据
+func doHandleSegments(taskName string, workNum int, segments []*segment, isTargetHistory bool, dowork WorkerExecHandler) {
+	if workNum <= 0 {
+		return
+	}
+	st := time.Now().Unix()
+	logrus.Infof("task %s worker group start, target hirtoty: %t", taskName, isTargetHistory)
+	defer func() {
+		logrus.Infof("task %s worker group end, target hirtoty: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
+	}()
+	var wg sync.WaitGroup
+	wg.Add(workNum)
+	for i := 0; i < workNum; i++ {
+		num := i
+		go func(num int) {
+			defer wg.Done()
+
+			for id, v := range segments {
+				if id%workNum != num {
+					continue
+				}
+				logrus.Infof("task %s worker %d fix %d-%d, target history: %t", taskName, num, v.StartTime, v.EndTime, isTargetHistory)
+				dowork(v, isTargetHistory)
+			}
+		}(num)
+	}
+	wg.Wait()
+}
+
+type WorkerExecHandler func(seg *segment, isTargetHistory bool)

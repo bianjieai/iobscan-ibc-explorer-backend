@@ -155,29 +155,29 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 	if target == ibcTxTargetHistory {
 		isTargetHistory = true
 	}
-
-	for _, v := range segments {
-		logrus.Infof("task %s fix %s %d-%d", t.Name(), target, v.StartTime, v.EndTime)
+	doHandleSegments(t.Name(), 3, segments, isTargetHistory, func(seg *segment, isTargetHistory bool) {
 		var skip int64 = 0
 		for {
-			txs, err := ibcTxRepo.FindFailStatusTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
+			txs, err := ibcTxRepo.FindFailStatusTxs(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
 			if err != nil {
-				logrus.Errorf("task %s FindFailToRefundStatusTxs %s %d-%d err, %v", t.Name(), target, v.StartTime, v.EndTime, err)
-				return err
+				logrus.Errorf("task %s FindFailToRefundStatusTxs %s %d-%d err, %v", t.Name(), target, seg.StartTime, seg.EndTime, err)
+				return
 			}
 
 			for _, val := range txs {
 				bindedTx, err := txRepo.GetTxByHash(val.DcChainId, val.DcTxInfo.Hash)
 				if err != nil {
 					logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-					return err
+					return
 				}
 				packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
 				wAckOk, findWriteAck, ackRes := t.checkWriteAcknowledgeError(&bindedTx, packetId)
 				if findWriteAck { //关联的recv_packet有ack，根据ack找acknowledge tx
 					ackTx, err := findAckTx(val, ackRes, wAckOk)
 					if err != nil {
-						return err
+						logrus.Errorf("task %s findAckTx %s err, chain_id: %s, packet_id: %s, %v",
+							t.Name(), target, val.ScChainId, packetId, err.Error())
+						return
 					}
 					if ackTx != nil {
 						var status entity.IbcTxStatus
@@ -189,7 +189,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 						err = t.FixAcknowledgeTx(val.RecordId, ackTx, isTargetHistory, status, packetId)
 						if err != nil && err != qmgo.ErrNoSuchDocuments {
 							logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-							return err
+							return
 						}
 					} else {
 						logrus.Debugf("status:%d recv_packet(chain_id:%s hash:%s) findWriteAck is ok,but no found acknowledge tx(chain_id:%s) tx",
@@ -199,14 +199,15 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 						if err != nil && err != qmgo.ErrNoSuchDocuments {
 							logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v",
 								t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-							return err
+							return
 						}
 					}
 				} else {
 					//status: fail->success or fail->refund or fail->process
 					recvTxs, err := txRepo.GetRecvPacketTxs(val.DcChainId, val.ScTxInfo.Msg.CommonMsg().PacketId)
 					if err != nil {
-						return err
+						logrus.Errorf("task %s GetRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, packetId, err)
+						return
 					}
 
 					var (
@@ -227,7 +228,8 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					if varfindWriteAck {
 						ackTx, err = findAckTx(val, varAckRes, ackOk)
 						if err != nil {
-							return err
+							logrus.Errorf("task %s findAckTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, packetId, err)
+							return
 						}
 
 						if ackOk {
@@ -240,8 +242,8 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					}
 					err = t.FixRecvPacketTxs(val.RecordId, recvTx, ackTx, isTargetHistory, status, packetId)
 					if err != nil && err != qmgo.ErrNoSuchDocuments {
-						logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-						return err
+						logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, packetId, err)
+						return
 					}
 				}
 
@@ -252,7 +254,8 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 			}
 			skip += limit
 		}
-	}
+	})
+
 	return nil
 }
 
