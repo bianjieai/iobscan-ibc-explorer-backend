@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -23,20 +24,51 @@ func (f FixAckTxPacketIdTask) Switch() bool {
 	return false
 }
 
-func (f FixAckTxPacketIdTask) RunWithParam(chainsStr string) int {
-	return f.handle(chainsStr)
+func (f FixAckTxPacketIdTask) RunWithParam(chainsStr string, endHeightStr string) int {
+	return f.handle(chainsStr, endHeightStr)
 }
 func (f FixAckTxPacketIdTask) Run() int {
 	return 1
 	//return f.handle(global.Config.ChainConfig.FixAckTxPacketIdChains)
 }
 
-func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
+func (f FixAckTxPacketIdTask) handle(chainsStr string, endHeightStr string) int {
 	newChainIds := strings.Split(chainsStr, ",")
 	if len(newChainIds) == 0 {
-		logrus.Errorf("task %s don't have fix ack packet_id chains", f.Name())
+		logrus.Errorf("task %s don't have valid chains(%s)", f.Name(), chainsStr)
 		return 1
 	}
+	chainEndHeights := strings.Split(endHeightStr, ",")
+	if len(chainEndHeights) == 0 {
+		logrus.Errorf("task %s don't have valid end_height(%s)", f.Name(), endHeightStr)
+		return 1
+	}
+	if len(chainEndHeights) != len(newChainIds) {
+		logrus.Errorf("task %s chains(%s) don't match end_height(%s)", f.Name(), chainsStr, endHeightStr)
+		return 1
+	}
+	chainHeightMap := make(map[string]int64, len(chainEndHeights))
+	for _, val := range chainEndHeights {
+		datas := strings.Split(val, ":")
+		if len(datas) != 2 {
+			logrus.Errorf("task %s don't have valid end_height(<chain_id:end_height>(%s))", f.Name(), val)
+			return 1
+		}
+		endHeight, err := strconv.ParseInt(datas[1], 10, 64)
+		if err != nil {
+			logrus.Errorf("TaskController run %s err, %v", f.Name(), err)
+			return 1
+		}
+		chainHeightMap[datas[0]] = endHeight
+	}
+
+	for _, chain := range newChainIds {
+		if _, ok := chainHeightMap[chain]; !ok {
+			logrus.Errorf("task %s chains(%s) don't match end_height", f.Name(), chain)
+			return 1
+		}
+	}
+
 	// init queue
 	chainQueue := new(utils.QueueString)
 	for _, v := range newChainIds {
@@ -47,31 +79,26 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
 	}
 
 	//handle chain
-	handleChain := func(workerName string) int {
-		chainId, err := fixChainCoordinator.getChain()
-		if err != nil {
-			logrus.Infof("task_name:%s chain_id %s worker %s exit", f.Name(), chainId, workerName)
-			return 1
-		}
+	handleChain := func(workerName, chainId string, maxEndHeight int64) int {
 		minHTx, err := txRepo.FindHeight(chainId, true)
 		if err != nil {
 			logrus.Errorf("task_name:%s find minHeight err chain_id:%s err:%v", f.Name(), chainId, err.Error())
 			return -1
 		}
-		maxETx, err := txRepo.FindHeight(chainId, false)
-		if err != nil {
-			logrus.Errorf("task_name:%s skip fix ack_tx packet_id chain_id:%s err:%v", f.Name(), chainId, err.Error())
-			return -1
-		}
+		//maxETx, err := txRepo.FindHeight(chainId, false)
+		//if err != nil {
+		//	logrus.Errorf("task_name:%s skip fix ack_tx packet_id chain_id:%s err:%v", f.Name(), chainId, err.Error())
+		//	return -1
+		//}
 		logrus.Infof("task_name:%s fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
-			f.Name(), minHTx.Height-1, maxETx.Height, chainId)
-		ret := NewfixAckTxTask(chainId, f.Name(), minHTx.Height-1, maxETx.Height).Run()
+			f.Name(), minHTx.Height-1, maxEndHeight, chainId)
+		ret := NewfixAckTxTask(chainId, f.Name(), minHTx.Height-1, maxEndHeight).Run()
 		if ret > 0 {
 			logrus.Infof("task_name:%s finish fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
-				f.Name(), minHTx.Height-1, maxETx.Height, chainId)
+				f.Name(), minHTx.Height-1, maxEndHeight, chainId)
 		} else {
 			logrus.Errorf("task_name:%s fail fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
-				f.Name(), minHTx.Height-1, maxETx.Height, chainId)
+				f.Name(), minHTx.Height-1, maxEndHeight, chainId)
 		}
 		return 1
 	}
@@ -81,8 +108,16 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
 	for i := 1; i <= 5; i++ {
 		workName := fmt.Sprintf("worker-%d", i)
 		go func(wn string) {
-			handleChain(wn)
-			waitGroup.Done()
+			defer waitGroup.Done()
+			for {
+				chainId, err := fixChainCoordinator.getChain()
+				if err != nil {
+					logrus.Infof("task_name:%s chain_id %s worker %s exit", f.Name(), chainId, wn)
+					return
+				}
+				handleChain(wn, chainId, chainHeightMap[chainId])
+			}
+
 		}(workName)
 	}
 	waitGroup.Wait()
