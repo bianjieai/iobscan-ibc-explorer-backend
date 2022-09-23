@@ -275,7 +275,7 @@ func findAckTx(val *entity.ExIbcTx, ackRes string, ackOk bool) (*entity.Tx, erro
 		for _, ackOne := range ackTxs {
 			for msgIndex, msg := range ackOne.DocTxMsgs {
 				if msg.Type == constant.MsgTypeAcknowledgement && msg.CommonMsg().PacketId == packetId {
-					existTransferEvent := parseAckPacketTxEvents(msgIndex, ackTx)
+					existTransferEvent := parseAckPacketTxEvents(msgIndex, ackOne)
 					//ack tx的msg.ack 与 recv_packet的events ack一样 且ack tx的events有"transfer"
 					if msg.AckPacketMsg().Acknowledgement == ackRes && existTransferEvent {
 						ackTx = ackOne
