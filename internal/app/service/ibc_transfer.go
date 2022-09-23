@@ -298,6 +298,9 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	if val.DcTxInfo == nil && val.RefundedTxInfo == nil {
+		return nil, nil
+	}
 	var relayerInfo vo.RelayerInfo
 	if val.DcTxInfo != nil && val.DcTxInfo.Msg != nil {
 		dcRelayerAddr := val.DcTxInfo.Msg.CommonMsg().Signer
@@ -342,14 +345,18 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
-		sendToken.DenomPath = strings.Join([]string{denom.DenomPath, denom.RootDenom}, "/")
+		if denom != nil {
+			sendToken.DenomPath = strings.Join([]string{denom.DenomPath, denom.RootDenom}, "/")
+		}
 	}
 	if strings.HasPrefix(ibcTx.Denoms.DcDenom, "ibc/") {
 		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.DcDenom, ibcTx.DcChainId)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
-		recvToken.DenomPath = strings.Join([]string{denom.DenomPath, denom.RootDenom}, "/")
+		if denom != nil {
+			recvToken.DenomPath = strings.Join([]string{denom.DenomPath, denom.RootDenom}, "/")
+		}
 	}
 	return &vo.TokenInfo{
 		BaseDenom:        ibcTx.BaseDenom,

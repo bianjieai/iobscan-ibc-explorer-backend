@@ -294,15 +294,15 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 			}
 		}
 	}
-	dcTxInfo := loadTxDetailDto(ibcTx.DcTxInfo)
-	if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
-		dcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
-	}
+	scTxInfo := loadTxDetailDto(ibcTx.ScTxInfo)
 	ibcTxInfo := &IbcTxInfo{
-		DcTxInfo: dcTxInfo,
+		ScTxInfo: scTxInfo,
 	}
-	if ibcTx.ScTxInfo != nil {
-		ibcTxInfo.ScTxInfo = loadTxDetailDto(ibcTx.ScTxInfo)
+	if ibcTx.DcTxInfo != nil {
+		ibcTxInfo.DcTxInfo = loadTxDetailDto(ibcTx.DcTxInfo)
+		if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
+			ibcTxInfo.DcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+		}
 	}
 	if ibcTx.RefundedTxInfo != nil {
 		ibcTxInfo.RefundTxInfo = loadTxDetailDto(ibcTx.RefundedTxInfo)
