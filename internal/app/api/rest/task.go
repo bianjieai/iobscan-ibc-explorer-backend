@@ -26,7 +26,6 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		c.JSON(http.StatusTooManyRequests, response.FailMsg("Please try again later"))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success("task is running"))
 
 	go func() {
 		st := time.Now().Unix()
@@ -90,4 +89,7 @@ func (ctl *TaskController) Run(c *gin.Context) {
 
 		logrus.Infof("TaskController task %s end, time use %d(s), exec status: %d", taskName, time.Now().Unix()-st, res)
 	}()
+	time.Sleep(1 * time.Second)
+	c.JSON(http.StatusOK, response.Success("task is running"))
+
 }

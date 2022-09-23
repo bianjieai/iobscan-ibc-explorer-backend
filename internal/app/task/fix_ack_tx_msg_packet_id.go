@@ -50,28 +50,28 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string) int {
 	handleChain := func(workerName string) int {
 		chainId, err := fixChainCoordinator.getChain()
 		if err != nil {
-			logrus.Infof("chain_id %s worker %s exit", chainId, workerName)
+			logrus.Infof("task_name:%s chain_id %s worker %s exit", f.Name(), chainId, workerName)
 			return 1
 		}
 		minHTx, err := txRepo.FindHeight(chainId, true)
 		if err != nil {
-			logrus.Errorf("find minHeight err chain_id:%s err:%v", chainId, err.Error())
+			logrus.Errorf("task_name:%s find minHeight err chain_id:%s err:%v", f.Name(), chainId, err.Error())
 			return -1
 		}
 		maxETx, err := txRepo.FindHeight(chainId, false)
 		if err != nil {
-			logrus.Errorf("skip fix ack_tx packet_id chain_id:%s err:%v", chainId, err.Error())
+			logrus.Errorf("task_name:%s skip fix ack_tx packet_id chain_id:%s err:%v", f.Name(), chainId, err.Error())
 			return -1
 		}
-		logrus.Infof("start fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
-			minHTx.Height-1, maxETx.Height, chainId)
-		ret := NewfixAckTxTask(chainId, minHTx.Height-1, maxETx.Height).Run()
+		logrus.Infof("task_name:%s fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
+			f.Name(), minHTx.Height-1, maxETx.Height, chainId)
+		ret := NewfixAckTxTask(chainId, f.Name(), minHTx.Height-1, maxETx.Height).Run()
 		if ret > 0 {
-			logrus.Infof("finish fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
-				minHTx.Height-1, maxETx.Height, chainId)
+			logrus.Infof("task_name:%s finish fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
+				f.Name(), minHTx.Height-1, maxETx.Height, chainId)
 		} else {
-			logrus.Errorf("fail fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
-				minHTx.Height-1, maxETx.Height, chainId)
+			logrus.Errorf("task_name:%s fail fix ack_tx packet_id,start-end:%v-%v chain_id:%s",
+				f.Name(), minHTx.Height-1, maxETx.Height, chainId)
 		}
 		return 1
 	}
@@ -96,13 +96,15 @@ type fixAckTxTask struct {
 	StartHeight int64
 	EndHeight   int64
 	ChainId     string
+	TaskName    string
 }
 
-func NewfixAckTxTask(chainId string, startH, endH int64) *fixAckTxTask {
+func NewfixAckTxTask(chainId, taskName string, startH, endH int64) *fixAckTxTask {
 	return &fixAckTxTask{
 		StartHeight: startH,
 		EndHeight:   endH,
 		ChainId:     chainId,
+		TaskName:    taskName,
 	}
 }
 
@@ -121,16 +123,16 @@ func (t *fixAckTxTask) Run() int {
 		}
 		if len(txs) > 0 {
 			if err := t.doTask(txs); err != nil {
-				logrus.Errorf("fix ack packet_id task height:%d-%d chain_id:%s err:%s",
-					height, height+constant.IncreHeight, t.ChainId, err.Error())
+				logrus.Errorf("task_name:%s fix ack packet_id task height:%d-%d chain_id:%s err:%s",
+					t.TaskName, height, height+constant.IncreHeight, t.ChainId, err.Error())
 				return -1
 			}
-			logrus.Infof("finish fix ack packet_id txs in height:%d-%d chain_id:%s",
-				height, height+constant.IncreHeight, t.ChainId)
+			logrus.Infof("task_name:%s finish fix ack packet_id txs in height:%d-%d chain_id:%s",
+				t.TaskName, height, height+constant.IncreHeight, t.ChainId)
 		}
 		height += constant.IncreHeight
-		logrus.Infof("finish scan %d-%d txs:%d chain_id:%s",
-			height-constant.IncreHeight, height, len(txs), t.ChainId)
+		logrus.Infof("task_name:%s finish scan %d-%d txs:%d chain_id:%s",
+			t.TaskName, height-constant.IncreHeight, height, len(txs), t.ChainId)
 		if height > t.EndHeight {
 			break
 		}
