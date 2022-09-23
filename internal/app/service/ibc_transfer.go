@@ -342,14 +342,14 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
-		sendToken.DenomPath = denom.DenomPath
+		sendToken.DenomPath = strings.Join([]string{denom.DenomPath, denom.RootDenom}, "/")
 	}
 	if strings.HasPrefix(ibcTx.Denoms.DcDenom, "ibc/") {
 		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.DcDenom, ibcTx.DcChainId)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
-		recvToken.DenomPath = denom.DenomPath
+		recvToken.DenomPath = strings.Join([]string{denom.DenomPath, denom.RootDenom}, "/")
 	}
 	return &vo.TokenInfo{
 		BaseDenom:        ibcTx.BaseDenom,
