@@ -149,6 +149,7 @@ func (t *fixAckTxTask) Run() int {
 		return -1
 	}
 	height := t.StartHeight
+	endTime := int64(1640966400) //修补数据的截止时间2022-01-01 00:00:00
 	for {
 		txs, err := txRepo.FindAllAckTxs(t.ChainId, height)
 		if err != nil {
@@ -156,7 +157,9 @@ func (t *fixAckTxTask) Run() int {
 				height, height+constant.IncreHeight, t.ChainId, err.Error())
 			return -1
 		}
+		curTxTime := int64(0)
 		if len(txs) > 0 {
+			curTxTime = txs[0].Time
 			if err := t.doTask(txs); err != nil {
 				logrus.Errorf("task_name:%s fix ack packet_id task height:%d-%d chain_id:%s err:%s",
 					t.TaskName, height, height+constant.IncreHeight, t.ChainId, err.Error())
@@ -168,7 +171,10 @@ func (t *fixAckTxTask) Run() int {
 		height += constant.IncreHeight
 		logrus.Infof("task_name:%s finish scan %d-%d txs:%d chain_id:%s",
 			t.TaskName, height-constant.IncreHeight, height, len(txs), t.ChainId)
-		if height > t.EndHeight {
+		if height > t.EndHeight || curTxTime > endTime {
+			if curTxTime > endTime {
+				logrus.Infof("task_name:%s finish for reach end_time(2022-01-01 00:00:00) chain_id:%s", t.TaskName, t.ChainId)
+			}
 			break
 		}
 	}
