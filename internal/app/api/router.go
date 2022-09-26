@@ -47,12 +47,15 @@ func homePage(r *gin.RouterGroup) {
 	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcBaseDenoms))
 	r.GET("/denoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcDenoms))
 	r.GET("/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Statistics))
+	r.POST("/searchPoint", ctl.SearchPoint)
 }
 
 func txsPage(r *gin.RouterGroup) {
 	ctl := rest.IbcTransferController{}
 	r.GET("/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxs))
 	r.GET("/txs/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetail))
+	r.GET("/txs_detail/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetailNew))
+	r.GET("/trace_source/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TraceSource))
 }
 
 func tokenPage(r *gin.RouterGroup) {
@@ -74,6 +77,7 @@ func chainPage(r *gin.RouterGroup) {
 func relayerPage(r *gin.RouterGroup) {
 	ctl := rest.RelayerController{}
 	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+	r.POST("/relayerCollect", ctl.Collect)
 }
 
 func cacheTools(r *gin.RouterGroup) {

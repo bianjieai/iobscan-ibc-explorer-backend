@@ -33,9 +33,13 @@ const (
 	syncTransferTxTaskWorkerNum    = 5
 	ibcTxRelateTaskWorkerNum       = 5
 	fixDenomTraceDataTaskWorkerNum = 8
+	fixIbxTxWorkerNum              = 5
 	defaultMaxHandlerTx            = 2000
 	ibcTxTargetLatest              = "latest"
 	ibcTxTargetHistory             = "history"
+
+	segmentStepLatest  = 24 * 3600
+	segmentStepHistory = 12 * 3600
 )
 const (
 	channelMatchSuccess = 1
@@ -47,16 +51,12 @@ var (
 	//cache
 	tokenPriceRepo      cache.TokenPriceCacheRepo
 	denomDataRepo       cache.DenomDataCacheRepo
-	ibcInfoHashCache    cache.IbcInfoHashCacheRepo
-	ibcInfoCache        cache.IbcInfoCacheRepo
-	lcdInfoCache        cache.LcdInfoCacheRepo
-	clientIdnfoCache    cache.ClientIdChannelCacheRepo
 	unbondTimeCache     cache.UnbondTimeCacheRepo
 	statisticsCheckRepo cache.StatisticsCheckCacheRepo
-	relayerCache        cache.RelayerCacheRepo
 	chainCache          cache.ChainCacheRepo
 	baseDenomCache      cache.BaseDenomCacheRepo
 	storageCache        cache.StorageCacheRepo
+	lcdTxDataCacheRepo  cache.LcdTxDataCacheRepo
 
 	// mongo
 	tokenRepo                repository.ITokenRepo                = new(repository.TokenRepo)

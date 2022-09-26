@@ -43,7 +43,7 @@ func (t *RelayerStatisticsTask) Run() int {
 		return -1
 	}
 
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -56,7 +56,7 @@ func (t *RelayerStatisticsTask) Run() int {
 	}
 	logrus.Infof("task %s finish dealHistory, time use %d(s)", t.Name(), time.Now().Unix()-startTime)
 
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1

@@ -18,8 +18,8 @@ func TestMain(m *testing.M) {
 		Db:       0,
 	})
 	repository.InitMgo(conf.Mongo{
-		Url:      "mongodb://ibc:ibcpassword@192.168.150.60:27018/?connect=direct&authSource=iobscan-ibc",
-		Database: "iobscan-ibc",
+		Url:      "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805",
+		Database: "iobscan-ibc_0805",
 	}, context.Background())
 	m.Run()
 }

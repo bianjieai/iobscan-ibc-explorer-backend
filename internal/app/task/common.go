@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -20,7 +21,7 @@ type segment struct {
 	EndTime   int64 `json:"end_time"`
 }
 
-func getHistorySegment() ([]*segment, error) {
+func getHistorySegment(step int64) ([]*segment, error) {
 	first, err := ibcTxRepo.FirstHistory()
 	if err != nil {
 		return nil, err
@@ -36,7 +37,6 @@ func getHistorySegment() ([]*segment, error) {
 	end := time.Unix(latest.CreateAt, 0)
 	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
 
-	var step int64 = 12 * 3600
 	var segments []*segment
 	for temp := startUnix; temp < endUnix; temp += step {
 		segments = append(segments, &segment{
@@ -47,7 +47,7 @@ func getHistorySegment() ([]*segment, error) {
 	return segments, nil
 }
 
-func getSegment() ([]*segment, error) {
+func getSegment(step int64) ([]*segment, error) {
 	first, err := ibcTxRepo.First()
 	if err != nil {
 		return nil, err
@@ -58,7 +58,6 @@ func getSegment() ([]*segment, error) {
 	end := time.Now()
 	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
 
-	var step int64 = 24 * 3600
 	var segments []*segment
 	for temp := startUnix; temp < endUnix; temp += step {
 		segments = append(segments, &segment{
@@ -149,7 +148,7 @@ func calculateIbcHash(fullPath string) string {
 	}
 
 	hash := utils.Sha256(fullPath)
-	return fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, strings.ToUpper(hash))
+	return fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, strings.ToUpper(hash))
 }
 
 // traceDenom trace denom path, parse denom info
@@ -158,7 +157,7 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 	unix := time.Now().Unix()
 	denom := calculateIbcHash(fullDenomPath)
 	rootDenom := getRootDenom(fullDenomPath)
-	if !strings.HasPrefix(denom, constant.IBCTokenPreFix) { // base denom
+	if !strings.HasPrefix(denom, constant.IBCTokenPrefix) { // base denom
 		return &entity.IBCDenom{
 			ChainId:          chainId,
 			Denom:            denom,
@@ -255,11 +254,15 @@ func calculateNextDenomPath(packet model.Packet) (string, bool) {
 }
 
 // queryClientState 查询lcd client_state_path接口
-// todo add cache
 func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
 	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
 	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
 	url := fmt.Sprintf("%s%s", lcd, apiPath)
+
+	if state, err := lcdTxDataCacheRepo.GetClientState(utils.Md5(url)); err == nil {
+		return state, nil
+	}
+
 	bz, err := utils.HttpGet(url)
 	if err != nil {
 		return nil, err
@@ -271,11 +274,12 @@ func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, 
 		return nil, err
 	}
 
+	_ = lcdTxDataCacheRepo.SetClientState(utils.Md5(url), &resp)
 	return &resp, nil
 }
 
 // parseTransferTxEvents parse ibc info from events of transfer tx
-func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomFullPath, sequence string) {
+func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, denomFullPath, sequence, scConnection string) {
 	if len(tx.EventsNew) > msgIndex {
 		for _, evt := range tx.EventsNew[msgIndex].Events {
 			if evt.Type == "send_packet" {
@@ -291,6 +295,8 @@ func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, deno
 						var data model.TransferTxPacketData
 						_ = json.Unmarshal([]byte(attr.Value), &data)
 						denomFullPath = data.Denom
+					case "packet_connection":
+						scConnection = attr.Value
 					default:
 					}
 				}
@@ -300,3 +306,77 @@ func parseTransferTxEvents(msgIndex int, tx *entity.Tx) (dcPort, dcChannel, deno
 
 	return
 }
+
+// parseRecvPacketTxEvents parse ibc info from events of recv packet tx
+func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetAck string, existPacketAck bool) {
+	if len(tx.EventsNew) > msgIndex {
+		for _, evt := range tx.EventsNew[msgIndex].Events {
+			if evt.Type == "recv_packet" {
+				for _, attr := range evt.Attributes {
+					switch attr.Key {
+					case "packet_connection":
+						dcConnection = attr.Value
+					default:
+					}
+				}
+			}
+
+			if evt.Type == "write_acknowledgement" {
+				for _, attr := range evt.Attributes {
+					switch attr.Key {
+					case "packet_ack":
+						packetAck = attr.Value
+						existPacketAck = true
+					default:
+					}
+				}
+			}
+		}
+	}
+
+	return
+}
+
+// parseAckPacketTxEvents parse ibc info from events of ack packet tx
+func parseAckPacketTxEvents(msgIndex int, tx *entity.Tx) (existTransferEvent bool) {
+	if len(tx.EventsNew) > msgIndex {
+		for _, evt := range tx.EventsNew[msgIndex].Events {
+			if evt.Type == "transfer" {
+				existTransferEvent = true
+				return
+			}
+		}
+	}
+	return
+}
+
+//并发处理全量数据
+func doHandleSegments(taskName string, workNum int, segments []*segment, isTargetHistory bool, dowork WorkerExecHandler) {
+	if workNum <= 0 {
+		return
+	}
+	st := time.Now().Unix()
+	logrus.Infof("task %s worker group start, target hirtoty: %t", taskName, isTargetHistory)
+	defer func() {
+		logrus.Infof("task %s worker group end, target hirtoty: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
+	}()
+	var wg sync.WaitGroup
+	wg.Add(workNum)
+	for i := 0; i < workNum; i++ {
+		num := i
+		go func(num int) {
+			defer wg.Done()
+
+			for id, v := range segments {
+				if id%workNum != num {
+					continue
+				}
+				logrus.Infof("task %s worker %d fix %d-%d, target history: %t", taskName, num, v.StartTime, v.EndTime, isTargetHistory)
+				dowork(v, isTargetHistory)
+			}
+		}(num)
+	}
+	wg.Wait()
+}
+
+type WorkerExecHandler func(seg *segment, isTargetHistory bool)

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	v8 "github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 )
@@ -137,7 +136,7 @@ func (r *Client) UnmarshalGet(key string, value interface{}) error {
 
 // MarshalSet RedisClient `SET` command with marshal
 func (r *Client) MarshalSet(key string, value interface{}, expiration time.Duration) error {
-	str := utils.MustMarshalJsonToStr(value)
+	str, _ := json.Marshal(value)
 	return r.Set(key, str, expiration)
 }
 
@@ -177,13 +176,14 @@ func (r *Client) MarshalSAdd(key string, members ...interface{}) (int64, error) 
 //   - MarshalHSet("myhash", map[string]interface{}{"key1": "value1", "key2": "value2"})
 func (r *Client) MarshalHSet(key string, valueMap interface{}) (int64, error) {
 	var m map[string]interface{}
-	bz := utils.MustMarshalJson(valueMap)
+	bz, _ := json.Marshal(valueMap)
 	if err := json.Unmarshal(bz, &m); err != nil {
 		return 0, err
 	}
 
 	for k, v := range m {
-		m[k] = utils.MustMarshalJsonToStr(v)
+		marshal, _ := json.Marshal(v)
+		m[k] = marshal
 	}
 
 	return r.HSet(key, m)

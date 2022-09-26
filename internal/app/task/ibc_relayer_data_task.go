@@ -27,7 +27,7 @@ func (t *RelayerDataTask) Switch() bool {
 
 func (t *RelayerDataTask) Run() int {
 	startTime := time.Now().Unix()
-	historySegments, err := getHistorySegment()
+	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -35,7 +35,7 @@ func (t *RelayerDataTask) Run() int {
 	//insert relayer data
 	t.handleNewRelayerOnce(historySegments, true)
 
-	segments, err := getSegment()
+	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1

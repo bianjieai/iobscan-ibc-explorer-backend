@@ -33,3 +33,12 @@ func (ctl *RelayerController) List(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(res))
 }
+
+func (ctl *RelayerController) Collect(c *gin.Context) {
+	filepath := c.PostForm("filepath")
+	if err := relayerService.Collect(filepath); err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(nil))
+}

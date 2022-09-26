@@ -14,13 +14,13 @@ func TestChannelTaskRun(t *testing.T) {
 }
 
 func Test_getSegment(t *testing.T) {
-	res, err := getSegment()
+	res, err := getSegment(segmentStepLatest)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println(utils.MustMarshalJsonToStr(res))
 
-	res, err = getHistorySegment()
+	res, err = getHistorySegment(segmentStepHistory)
 	if err != nil {
 		t.Fatal(err)
 	}

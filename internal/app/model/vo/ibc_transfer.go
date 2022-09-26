@@ -1,6 +1,8 @@
 package vo
 
 import (
+	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 )
@@ -43,13 +45,7 @@ type (
 		TxTime           int64     `json:"tx_time"`
 		EndTime          int64     `json:"end_time"`
 	}
-	Denoms struct {
-		ScDenom string `json:"sc_denom"`
-		DcDenom string `json:"dc_denom"`
-	}
-
 	IbcTxDetailDto struct {
-		RecordId         string    `json:"record_id"`
 		ScSigners        []string  `json:"sc_signers"`
 		DcSigners        []string  `json:"dc_signers"`
 		ScAddr           string    `json:"sc_addr"`
@@ -72,6 +68,68 @@ type (
 		TxTime           int64     `json:"tx_time"`
 		Ack              string    `json:"ack"`
 	}
+
+	TranaferTxDetailNewResp struct {
+		Items       []IbcTxDto   `json:"items,omitempty"`
+		IsList      bool         `json:"is_list"`
+		ScInfo      *ChainInfo   `json:"sc_info"`
+		DcInfo      *ChainInfo   `json:"dc_info"`
+		TokenInfo   *TokenInfo   `json:"token_info"`
+		RelayerInfo *RelayerInfo `json:"relayer_info"`
+		IbcTxInfo   *IbcTxInfo   `json:"ibc_tx_info"`
+		Status      int          `json:"status"`
+		Sequence    string       `json:"sequence"`
+		ErrorLog    string       `json:"error_log"`
+		TimeStamp   int64        `json:"time_stamp"`
+	}
+
+	TraceSourceReq struct {
+		ChainId string `json:"chain_id" form:"chain_id"`
+		MsgType string `json:"msg_type" form:"msg_type"`
+	}
+
+	TraceSourceResp struct {
+		Msg    interface{} `json:"msg"`
+		Events interface{} `json:"events"`
+	}
+
+	Denoms struct {
+		ScDenom string `json:"sc_denom"`
+		DcDenom string `json:"dc_denom"`
+	}
+	ChainInfo struct {
+		Address      string `json:"address"`
+		ChainId      string `json:"chain_id"`
+		ChannelId    string `json:"channel_id"`
+		PortId       string `json:"port_id"`
+		ConnectionId string `json:"connection_id"`
+		ClientId     string `json:"client_id"`
+	}
+	TokenInfo struct {
+		BaseDenom        string      `json:"base_denom"`
+		BaseDenomChainId string      `json:"base_denom_chain_id"`
+		SendToken        DetailToken `json:"send_token"`
+		RecvToken        DetailToken `json:"recv_token"`
+		Amount           string      `json:"amount"`
+	}
+	DetailToken struct {
+		Denom     string `json:"denom"`
+		DenomPath string `json:"denom_path"`
+	}
+	RelayerInfo struct {
+		ScRelayer RelayerCfg `json:"sc_relayer,omitempty"`
+		DcRelayer RelayerCfg `json:"dc_relayer,omitempty"`
+	}
+	RelayerCfg struct {
+		RelayerName string `json:"relayer_name"`
+		Icon        string `json:"icon"`
+		RelayerAddr string `json:"relayer_addr"`
+	}
+	IbcTxInfo struct {
+		ScTxInfo     *TxDetailDto `json:"sc_tx_info"`
+		DcTxInfo     *TxDetailDto `json:"dc_tx_info"`
+		RefundTxInfo *TxDetailDto `json:"refund_tx_info"`
+	}
 	TxInfoDto struct {
 		Hash      string       `json:"hash,omitempty"`
 		Status    int          `json:"status,omitempty"`
@@ -80,6 +138,22 @@ type (
 		Fee       *model.Fee   `json:"fee,omitempty"`
 		MsgAmount *model.Coin  `json:"msg_amount,omitempty"`
 		Msg       *model.TxMsg `json:"msg,omitempty"`
+	}
+
+	TxDetailDto struct {
+		TxHash           string     `json:"tx_hash"`
+		Status           int        `json:"status"`
+		Time             int64      `json:"time"`
+		Height           int64      `json:"height"`
+		Type             string     `json:"type"`
+		Memo             string     `json:"memo"`
+		Fee              *model.Fee `json:"fee"`
+		Signers          []string   `json:"signers"`
+		TimeoutHeight    string     `json:"timeout_height"`
+		TimeoutTimestamp int64      `json:"timeout_timestamp"`
+		Ack              string     `json:"ack"`
+		ProofHeight      string     `json:"proof_height"`
+		NextSequenceRecv int64      `json:"next_sequence_recv"`
 	}
 )
 
@@ -96,6 +170,69 @@ func loadTxInfoDto(info *entity.TxInfo) TxInfoDto {
 		MsgAmount: info.MsgAmount,
 		Msg:       info.Msg,
 	}
+}
+func loadChainInfo(tx *entity.ExIbcTx) (*ChainInfo, *ChainInfo) {
+	return &ChainInfo{
+			Address:      tx.ScAddr,
+			ChainId:      tx.ScChainId,
+			ChannelId:    tx.ScChannel,
+			PortId:       tx.ScPort,
+			ConnectionId: tx.ScConnectionId,
+			ClientId:     tx.ScClientId,
+		}, &ChainInfo{
+			Address:      tx.DcAddr,
+			ChainId:      tx.DcChainId,
+			ChannelId:    tx.DcChannel,
+			PortId:       tx.DcPort,
+			ConnectionId: tx.DcConnectionId,
+			ClientId:     tx.DcClientId,
+		}
+}
+func loadTxDetailDto(info *entity.TxInfo) *TxDetailDto {
+	if info == nil {
+		return &TxDetailDto{}
+	}
+	dto := &TxDetailDto{
+		TxHash:  info.Hash,
+		Status:  int(info.Status),
+		Time:    info.Time,
+		Height:  info.Height,
+		Fee:     info.Fee,
+		Memo:    info.Memo,
+		Signers: info.Signers,
+	}
+
+	proofHeightString := func(pfHeight model.ProofHeight) string {
+		if pfHeight.RevisionHeight == 0 {
+			return ""
+		}
+		return fmt.Sprintf("%v-%v", pfHeight.RevisionNumber, pfHeight.RevisionHeight)
+	}
+	timeHeightString := func(timeoutHeight model.TimeoutHeight) string {
+		if timeoutHeight.RevisionHeight == 0 {
+			return ""
+		}
+		return fmt.Sprintf("%v-%v", timeoutHeight.RevisionNumber, timeoutHeight.RevisionHeight)
+	}
+	if info.Msg != nil {
+		dto.Type = info.Msg.Type
+		switch info.Msg.Type {
+		case constant.MsgTypeRecvPacket:
+			//dto.Ack = info.Ack
+			dto.ProofHeight = proofHeightString(info.Msg.RecvPacketMsg().ProofHeight)
+		case constant.MsgTypeAcknowledgement:
+			dto.Ack = info.Msg.AckPacketMsg().Acknowledgement
+			dto.ProofHeight = proofHeightString(info.Msg.AckPacketMsg().ProofHeight)
+		case constant.MsgTypeTimeoutPacket:
+			dto.NextSequenceRecv = info.Msg.TimeoutPacketMsg().NextSequenceRecv
+			dto.ProofHeight = proofHeightString(info.Msg.TimeoutPacketMsg().ProofHeight)
+		case constant.MsgTypeTransfer:
+			dto.TimeoutTimestamp = info.Msg.TransferMsg().TimeoutTimestamp
+			dto.TimeoutHeight = timeHeightString(info.Msg.TransferMsg().TimeoutHeight)
+		}
+	}
+
+	return dto
 }
 
 func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
@@ -140,9 +277,48 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 	}
 }
 
+func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
+	scChainInfo, dcChainInfo := loadChainInfo(ibcTx)
+	var errLog string
+	switch ibcTx.Status {
+	case entity.IbcTxStatusFailed:
+		errLog = ibcTx.ScTxInfo.Log
+	case entity.IbcTxStatusRefunded:
+		if ibcTx.DcTxInfo != nil {
+			if ibcTx.DcTxInfo.Status == entity.TxStatusSuccess {
+				if ibcTx.RefundedTxInfo != nil {
+					errLog = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+				}
+			} else {
+				errLog = ibcTx.DcTxInfo.Log
+			}
+		}
+	}
+	scTxInfo := loadTxDetailDto(ibcTx.ScTxInfo)
+	ibcTxInfo := &IbcTxInfo{
+		ScTxInfo: scTxInfo,
+	}
+	if ibcTx.DcTxInfo != nil {
+		ibcTxInfo.DcTxInfo = loadTxDetailDto(ibcTx.DcTxInfo)
+		if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
+			ibcTxInfo.DcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+		}
+	}
+	if ibcTx.RefundedTxInfo != nil {
+		ibcTxInfo.RefundTxInfo = loadTxDetailDto(ibcTx.RefundedTxInfo)
+	}
+	return TranaferTxDetailNewResp{
+		ErrorLog:  errLog,
+		Status:    int(ibcTx.Status),
+		Sequence:  ibcTx.Sequence,
+		ScInfo:    scChainInfo,
+		DcInfo:    dcChainInfo,
+		IbcTxInfo: ibcTxInfo,
+	}
+}
+
 func (dto IbcTxDetailDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDetailDto {
 	return IbcTxDetailDto{
-		RecordId:         ibcTx.RecordId,
 		ScAddr:           ibcTx.ScAddr,
 		DcAddr:           ibcTx.DcAddr,
 		Status:           int(ibcTx.Status),

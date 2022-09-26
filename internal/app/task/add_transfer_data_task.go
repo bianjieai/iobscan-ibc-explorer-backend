@@ -1,7 +1,6 @@
 package task
 
 import (
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -17,11 +16,12 @@ func (t *AddTransferDataTask) Name() string {
 }
 
 func (t *AddTransferDataTask) Switch() bool {
-	return global.Config.Task.SwitchAddTransferDataTask
+	return false
 }
 
 func (t *AddTransferDataTask) Run() int {
-	return t.handle(global.Config.ChainConfig.AddTransferChains)
+	return 1
+	//return t.handle(global.Config.ChainConfig.AddTransferChains)
 }
 
 func (t *AddTransferDataTask) RunWithParam(chainsStr string) int {

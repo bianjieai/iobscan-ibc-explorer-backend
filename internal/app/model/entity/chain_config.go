@@ -1,5 +1,7 @@
 package entity
 
+import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+
 const (
 	ApiBalancesPathPlaceholder  = "{address}"
 	ParamsModulePathPlaceholder = "{module}"
@@ -44,6 +46,24 @@ type (
 	}
 )
 
-func (i ChainConfig) CollectionName() string {
+func (c ChainConfig) CollectionName() string {
 	return "chain_config"
+}
+
+func (c *ChainConfig) GetChannelClient(port, channel string) string {
+	if port == "" {
+		port = constant.PortTransfer
+	}
+	if channel == "" {
+		return ""
+	}
+	for _, ibcInfo := range c.IbcInfo {
+		for _, path := range ibcInfo.Paths {
+			if path.PortId == port && path.ChannelId == channel {
+				return path.ClientId
+			}
+		}
+	}
+
+	return ""
 }

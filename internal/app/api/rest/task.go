@@ -26,7 +26,6 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		c.JSON(http.StatusTooManyRequests, response.FailMsg("Please try again later"))
 		return
 	}
-	c.JSON(http.StatusOK, response.Success("task is running"))
 
 	go func() {
 		st := time.Now().Unix()
@@ -76,10 +75,21 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			fixFailRecvPacketTask.Run()
 		case addTransferDataTask.Name():
 			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
+		case fixFailTxTask.Name():
+			fixFailTxTask.Run()
+		case fixAcknowledgeTxTask.Name():
+			fixAcknowledgeTxTask.Run()
+		case fixAckTxPacketIdTask.Name():
+			fixAckTxPacketIdTask.RunWithParam(c.PostForm("chains"), c.PostForm("end_height"))
+		case fixIbxTxTask.Name():
+			fixIbxTxTask.Run()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}
 
 		logrus.Infof("TaskController task %s end, time use %d(s), exec status: %d", taskName, time.Now().Unix()-st, res)
 	}()
+	time.Sleep(1 * time.Second)
+	c.JSON(http.StatusOK, response.Success("task is running"))
+
 }

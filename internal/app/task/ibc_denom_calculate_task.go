@@ -140,5 +140,5 @@ func (t *IbcDenomCalculateTask) IbcHash(denomPath, baseDenom string) string {
 	}
 
 	hash := utils.Sha256(fmt.Sprintf("%s/%s", denomPath, baseDenom))
-	return fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, strings.ToUpper(hash))
+	return fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, strings.ToUpper(hash))
 }

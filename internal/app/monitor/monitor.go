@@ -1,14 +1,19 @@
 package monitor
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor/metrics"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 var (
@@ -17,6 +22,18 @@ var (
 	redisStatusMetric     metrics.Guage
 	TagName               = "taskname"
 	ChainTag              = "chain_id"
+
+	chainConfigRepo   repository.IChainConfigRepo   = new(repository.ChainConfigRepo)
+	chainRegistryRepo repository.IChainRegistryRepo = new(repository.ChainRegistryRepo)
+)
+
+const (
+	v1beta1         = "v1beta1"
+	v1              = "v1"
+	v1beta1Channels = "/ibc/core/channel/v1beta1/channels"
+	v1Channels      = "/ibc/core/channel/v1/channels"
+	v1beta1Params   = "/cosmos/staking/v1beta1/params"
+	v1Params        = "/cosmos/staking/v1/params"
 )
 
 func NewMetricCronWorkStatus() metrics.Guage {
@@ -66,22 +83,22 @@ func lcdConnectionStatus(quit chan bool) {
 		t := time.NewTimer(time.Duration(15) * time.Second)
 		select {
 		case <-t.C:
-			chainCfgs, err := new(repository.ChainConfigRepo).FindAllChainInfs()
+			chainCfgs, err := chainConfigRepo.FindAllChainInfs()
 			if err != nil {
 				logrus.Error(err.Error())
 				return
 			}
 			for _, val := range chainCfgs {
-				_, err = utils.HttpGet(fmt.Sprintf("%s/node_info", val.Lcd))
-				if err != nil {
-					_, err = utils.HttpGet(fmt.Sprintf("%s/blocks/latest", val.Lcd))
-					if err != nil {
+				if checkLcd(val.Lcd) {
+					lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
+				} else {
+					if switchLcd(val) {
+						lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
+					} else {
 						lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(-1))
-						logrus.Error(err.Error())
-						continue
+						logrus.Errorf("monitor chain %s lcd is unavailable", val.ChainId)
 					}
 				}
-				lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
 			}
 
 		case <-quit:
@@ -90,6 +107,70 @@ func lcdConnectionStatus(quit chan bool) {
 
 		}
 	}
+}
+
+// checkLcd If lcd is ok, return true. Else return false
+func checkLcd(lcd string) bool {
+	_, err := utils.HttpGet(fmt.Sprintf("%s/node_info", lcd))
+	if err != nil {
+		_, err = utils.HttpGet(fmt.Sprintf("%s/blocks/latest", lcd))
+		if err != nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+// switchLcd If Switch lcd succeeded, return true. Else return false
+func switchLcd(chainConf *entity.ChainConfig) bool {
+	chainRegistry, err := chainRegistryRepo.FindOne(chainConf.ChainId)
+	if err != nil {
+		logrus.Errorf("lcd monitor error: %v", err)
+		return false
+	}
+
+	bz, err := utils.HttpGet(chainRegistry.ChainJsonUrl)
+	if err != nil {
+		logrus.Errorf("lcd monitor get chain json error: %v", err)
+		return false
+	}
+
+	var chainRegisterResp vo.ChainRegisterResp
+	_ = json.Unmarshal(bz, &chainRegisterResp)
+	for _, v := range chainRegisterResp.Apis.Rest {
+		if !checkLcd(v.Address) {
+			continue
+		}
+
+		chainConf.Lcd = v.Address
+		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Channels)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
+			chainConf.LcdApiPath.ChannelsPath = strings.ReplaceAll(chainConf.LcdApiPath.ChannelsPath, v1, v1beta1)
+			chainConf.LcdApiPath.ClientStatePath = strings.ReplaceAll(chainConf.LcdApiPath.ClientStatePath, v1, v1beta1)
+		} else {
+			chainConf.LcdApiPath.ChannelsPath = strings.ReplaceAll(chainConf.LcdApiPath.ChannelsPath, v1beta1, v1)
+			chainConf.LcdApiPath.ClientStatePath = strings.ReplaceAll(chainConf.LcdApiPath.ClientStatePath, v1beta1, v1)
+		}
+
+		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Params)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
+			chainConf.LcdApiPath.BalancesPath = strings.ReplaceAll(chainConf.LcdApiPath.BalancesPath, v1, v1beta1)
+			chainConf.LcdApiPath.SupplyPath = strings.ReplaceAll(chainConf.LcdApiPath.SupplyPath, v1, v1beta1)
+			chainConf.LcdApiPath.ParamsPath = strings.ReplaceAll(chainConf.LcdApiPath.ParamsPath, v1, v1beta1)
+		} else {
+			chainConf.LcdApiPath.BalancesPath = strings.ReplaceAll(chainConf.LcdApiPath.BalancesPath, v1beta1, v1)
+			chainConf.LcdApiPath.SupplyPath = strings.ReplaceAll(chainConf.LcdApiPath.SupplyPath, v1beta1, v1)
+			chainConf.LcdApiPath.ParamsPath = strings.ReplaceAll(chainConf.LcdApiPath.ParamsPath, v1beta1, v1)
+		}
+
+		if err = chainConfigRepo.UpdateLcdApi(chainConf); err != nil {
+			logrus.Error("switch lcd error: %v", err)
+			return false
+		} else {
+			return true
+		}
+	}
+
+	return false
 }
 
 func redisClientStatus(quit chan bool) {

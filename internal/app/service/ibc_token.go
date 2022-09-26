@@ -85,7 +85,7 @@ func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
 
 	//only ibc hash token
 	if len(baseDenom) == 64 {
-		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPreFix, baseDenom)
+		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, baseDenom)
 	}
 
 	var baseDenomList []string
@@ -96,7 +96,7 @@ func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
 		}
 
 		baseDenomList = others
-	} else if strings.HasPrefix(baseDenom, constant.IBCTokenPreFix) {
+	} else if strings.HasPrefix(baseDenom, constant.IBCTokenPrefix) {
 		var err error
 		baseDenomList, err = svc.getBaseOfIBCToken(baseDenom)
 		if err != nil {

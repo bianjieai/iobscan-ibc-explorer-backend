@@ -1,6 +1,13 @@
 // ibc_chain表
-
 db.ibc_chain.createIndex({'chain_id': -1}, {background: true, unique: true});
+
+// chain_registry
+db.chain_registry.createIndex({
+    "chain_id": 1
+}, {
+    unique: true,
+    background: true
+});
 
 // ibc_relayer表
 db.ibc_relayer.createIndex({
@@ -18,7 +25,7 @@ db.ibc_relayer.createIndex({
 // ibc_relayer_config表
 
 db.ibc_relayer_config.createIndex({
-    "relayer_channel_pair": -1
+    "relayer_pair_id": 1
 }, {background: true, unique: true});
 
 // ibc_relayer_statistics表
@@ -110,6 +117,12 @@ db.ex_ibc_tx.createIndex({
 });
 
 db.ex_ibc_tx.createIndex({
+    "refunded_tx_info.hash": -1,
+}, {
+    background: true
+});
+
+db.ex_ibc_tx.createIndex({
     "status": 1,
     "sc_tx_info.status": 1
 }, {
@@ -171,6 +184,12 @@ db.ex_ibc_tx_latest.createIndex({
 });
 
 db.ex_ibc_tx_latest.createIndex({
+    "refunded_tx_info.hash": -1,
+}, {
+    background: true
+});
+
+db.ex_ibc_tx_latest.createIndex({
     "status": -1,
     "tx_time": -1
 }, {
@@ -227,3 +246,10 @@ db.sync_xxxx_tx.createIndex({"height": -1},{background: true});
 db.sync_xxxx_tx.createIndex({"types": -1,"height": -1},{background: true});
 db.sync_xxxx_tx.createIndex({"msgs.msg.packet_id":-1},{background: true});
 db.sync_xxxx_tx.createIndex({"msgs.msg.signer": 1,"msgs.type": 1,"time": 1},{background: true});
+
+// ex_search_record
+db.ex_search_record.createIndex({
+    "create_at": 1
+}, {
+    expireAfterSeconds: 31536000
+})

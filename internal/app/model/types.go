@@ -41,7 +41,7 @@ type (
 
 	TimeoutHeight struct {
 		RevisionNumber int64 `json:"revision_number" bson:"destination_channel"`
-		RevisionHeight int64 `json:"revision_height" bson:"destination_channel"`
+		RevisionHeight int64 `json:"revision_height" bson:"revision_height"`
 	}
 
 	ProofHeight struct {
