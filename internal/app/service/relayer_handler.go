@@ -25,12 +25,14 @@ const (
 	iconUrl               = "https://iobscan.io/resources/ibc-relayer/%s.png"
 	concurrentNum         = 3
 	parentPath            = ". ."
+	imagesFileName        = "images"
 )
 
 type RelayerHandler struct {
 	teamNameMap  map[string]string
 	jsonFileList []string
 	pairIdMap    map[string]struct{}
+	imageMap     map[string]bool
 }
 
 func (h *RelayerHandler) Collect(filepath string) {
@@ -38,6 +40,7 @@ func (h *RelayerHandler) Collect(filepath string) {
 	st := time.Now().Unix()
 	h.teamNameMap = make(map[string]string)
 	h.pairIdMap = make(map[string]struct{})
+	h.imageMap = make(map[string]bool)
 	h.jsonFileList = nil
 
 	ids, err := relayerCfgRepo.FindRelayerPairIds()
@@ -116,6 +119,10 @@ func (h *RelayerHandler) xPathSubPage(filepath string) {
 		if strings.HasSuffix(jsonFile, ".json") && jsonFile != informationFileName {
 			h.jsonFileList = append(h.jsonFileList, fmt.Sprintf("%s|%s", filepath, jsonFile))
 		}
+
+		if jsonFile == imagesFileName {
+			h.imageMap[filepath] = true
+		}
 	}
 }
 
@@ -165,8 +172,10 @@ func (h *RelayerHandler) fetchAndSave(seq int) {
 		cfgEntity := entity.GenerateRelayerConfigEntity(chain1, pairJson.Chain1.ChannelId, pairJson.Chain1.Address, chain2, pairJson.Chain2.ChannelId, pairJson.Chain2.Address)
 		if _, ok := h.pairIdMap[cfgEntity.RelayerPairId]; !ok {
 			cfgEntity.RelayerName = h.teamNameMap[split[0]]
-			iconName := strings.ReplaceAll(cfgEntity.RelayerName, " ", "_")
-			cfgEntity.Icon = fmt.Sprintf(iconUrl, iconName)
+			if h.imageMap[split[0]] {
+				iconName := strings.ReplaceAll(cfgEntity.RelayerName, " ", "_")
+				cfgEntity.Icon = fmt.Sprintf(iconUrl, iconName)
+			}
 
 			if err = relayerCfgRepo.Insert(cfgEntity); err != nil {
 				logrus.Errorf("RelayerHandler insert relayer config error, %v", err)
