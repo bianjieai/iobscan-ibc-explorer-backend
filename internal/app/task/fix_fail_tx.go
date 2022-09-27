@@ -23,6 +23,19 @@ func (t *FixFailTxTask) Switch() bool {
 	return false
 }
 
+func (t *FixFailTxTask) RunWithParam(startTime int64) int {
+	// fix history segment data
+	endTime := startTime + segmentStepHistory
+	err := t.fixFailTxs(ibcTxTargetHistory, []*segment{
+		{StartTime: startTime, EndTime: endTime},
+	})
+	if err != nil {
+		logrus.Errorf("task %s Run With Param error, %v", t.Name(), err)
+		return -1
+	}
+	return 1
+}
+
 func (t *FixFailTxTask) Run() int {
 	segments, err := getSegment(segmentStepLatest)
 	if err != nil {

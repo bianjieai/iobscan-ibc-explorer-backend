@@ -76,7 +76,18 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		case addTransferDataTask.Name():
 			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
 		case fixFailTxTask.Name():
-			fixFailTxTask.Run()
+			value := c.PostForm("start_time")
+			if len(value) > 0 {
+				startTime, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					logrus.Errorf("TaskController run %s err, %v", taskName, err)
+					return
+				}
+				fixFailTxTask.RunWithParam(startTime)
+			} else {
+				fixFailTxTask.Run()
+			}
+
 		case fixAcknowledgeTxTask.Name():
 			fixAcknowledgeTxTask.Run()
 		case fixAckTxPacketIdTask.Name():
