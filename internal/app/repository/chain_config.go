@@ -62,8 +62,8 @@ func (repo *ChainConfigRepo) UpdateLcdApi(config *entity.ChainConfig) error {
 			"lcd":                            config.Lcd,
 			"lcd_api_path.channels_path":     config.LcdApiPath.ChannelsPath,
 			"lcd_api_path.client_state_path": config.LcdApiPath.ClientStatePath,
-			"lcd_api_path.supply_path":       config.LcdApiPath.SupplyPath,
-			"lcd_api_path.balances_path":     config.LcdApiPath.BalancesPath,
-			"lcd_api_path.params_path":       config.LcdApiPath.ParamsPath,
+			//"lcd_api_path.supply_path":       config.LcdApiPath.SupplyPath,
+			//"lcd_api_path.balances_path":     config.LcdApiPath.BalancesPath,
+			//"lcd_api_path.params_path":       config.LcdApiPath.ParamsPath,
 		}})
 }
