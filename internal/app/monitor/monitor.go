@@ -34,6 +34,12 @@ const (
 	v1Channels      = "/ibc/core/channel/v1/channels"
 	v1beta1Params   = "/cosmos/staking/v1beta1/params"
 	v1Params        = "/cosmos/staking/v1/params"
+
+	apiChannels    = "/ibc/core/channel/%s/channels?pagination.offset=OFFSET&pagination.limit=LIMIT&pagination.count_total=true"
+	apiClientState = "/ibc/core/channel/%s/channels/CHANNEL/ports/PORT/client_state"
+	//apiBalances    = "/cosmos/bank/%s/balances/{address}"
+	//apiParams      = "/cosmos/{module}/%s/params"
+	//apiSupply      = "/cosmos/bank/%s/supply"
 )
 
 func NewMetricCronWorkStatus() metrics.Guage {
@@ -144,23 +150,24 @@ func switchLcd(chainConf *entity.ChainConfig) bool {
 		}
 
 		chainConf.Lcd = v.Address
-		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Channels)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
-			chainConf.LcdApiPath.ChannelsPath = strings.ReplaceAll(chainConf.LcdApiPath.ChannelsPath, v1, v1beta1)
-			chainConf.LcdApiPath.ClientStatePath = strings.ReplaceAll(chainConf.LcdApiPath.ClientStatePath, v1, v1beta1)
+		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Channels)); err == nil ||
+			!strings.Contains(err.Error(), "501 Not Implemented") {
+			chainConf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, v1beta1)
+			chainConf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, v1beta1)
 		} else {
-			chainConf.LcdApiPath.ChannelsPath = strings.ReplaceAll(chainConf.LcdApiPath.ChannelsPath, v1beta1, v1)
-			chainConf.LcdApiPath.ClientStatePath = strings.ReplaceAll(chainConf.LcdApiPath.ClientStatePath, v1beta1, v1)
+			chainConf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, v1)
+			chainConf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, v1)
 		}
 
-		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Params)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
-			chainConf.LcdApiPath.BalancesPath = strings.ReplaceAll(chainConf.LcdApiPath.BalancesPath, v1, v1beta1)
-			chainConf.LcdApiPath.SupplyPath = strings.ReplaceAll(chainConf.LcdApiPath.SupplyPath, v1, v1beta1)
-			chainConf.LcdApiPath.ParamsPath = strings.ReplaceAll(chainConf.LcdApiPath.ParamsPath, v1, v1beta1)
-		} else {
-			chainConf.LcdApiPath.BalancesPath = strings.ReplaceAll(chainConf.LcdApiPath.BalancesPath, v1beta1, v1)
-			chainConf.LcdApiPath.SupplyPath = strings.ReplaceAll(chainConf.LcdApiPath.SupplyPath, v1beta1, v1)
-			chainConf.LcdApiPath.ParamsPath = strings.ReplaceAll(chainConf.LcdApiPath.ParamsPath, v1beta1, v1)
-		}
+		//if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Params)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
+		//	chainConf.LcdApiPath.BalancesPath = fmt.Sprintf(apiBalances, v1beta1)
+		//	chainConf.LcdApiPath.SupplyPath = fmt.Sprintf(apiSupply, v1beta1)
+		//	chainConf.LcdApiPath.ParamsPath = fmt.Sprintf(apiParams, v1beta1)
+		//} else {
+		//	chainConf.LcdApiPath.BalancesPath = fmt.Sprintf(apiBalances, v1)
+		//	chainConf.LcdApiPath.SupplyPath = fmt.Sprintf(apiSupply, v1)
+		//	chainConf.LcdApiPath.ParamsPath = fmt.Sprintf(apiParams, v1)
+		//}
 
 		if err = chainConfigRepo.UpdateLcdApi(chainConf); err != nil {
 			logrus.Error("switch lcd error: %v", err)

@@ -23,6 +23,19 @@ func (t *FixFailTxTask) Switch() bool {
 	return false
 }
 
+func (t *FixFailTxTask) RunWithParam(startTime int64) int {
+	// fix history segment data
+	endTime := startTime + segmentStepHistory
+	err := t.fixFailTxs(ibcTxTargetHistory, []*segment{
+		{StartTime: startTime, EndTime: endTime},
+	})
+	if err != nil {
+		logrus.Errorf("task %s Run With Param error, %v", t.Name(), err)
+		return -1
+	}
+	return 1
+}
+
 func (t *FixFailTxTask) Run() int {
 	segments, err := getSegment(segmentStepLatest)
 	if err != nil {
@@ -167,8 +180,9 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 			for _, val := range txs {
 				bindedTx, err := txRepo.GetTxByHash(val.DcChainId, val.DcTxInfo.Hash)
 				if err != nil {
-					logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
-					return
+					logrus.Errorf("task %s  %s err, chain_id: %s,dc_tx_hash:%s packet_id: %s, %v", t.Name(), target,
+						val.ScChainId, val.DcTxInfo.Hash, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+					continue
 				}
 				packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
 				wAckOk, findWriteAck, ackRes := t.checkWriteAcknowledgeError(&bindedTx, packetId)
