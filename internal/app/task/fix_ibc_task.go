@@ -201,15 +201,6 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 			v.DcClientId = cf.GetChannelClient(v.DcPort, v.DcChannel)
 		}
 
-		if v.DcPort == "" { // 修复部分交易dc_port为空的问题
-			v.DcPort = constant.PortTransfer
-		}
-
-		// recv_packet 成功但是 write_ack error时，交易置为 refunded
-		//if v.Status == entity.IbcTxStatusFailed && v.DcTxInfo != nil && v.DcTxInfo.Status == entity.TxStatusSuccess {
-		//	v.Status = entity.IbcTxStatusRefunded
-		//}
-
 		if err := ibcTxRepo.FixIbxTx(v, isTargetHistory); err != nil {
 			logrus.Errorf("task %s FixIbxTx(%s) err, %v", t.Name(), v.RecordId, err)
 		}

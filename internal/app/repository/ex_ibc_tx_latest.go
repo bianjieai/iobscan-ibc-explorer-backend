@@ -835,7 +835,6 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, scClien
 		"$set": bson.M{
 			"dc_chain_id":  dcChainId,
 			"dc_channel":   dcChannel,
-			"dc_port":      constant.PortTransfer,
 			"sc_client_id": scClientId,
 			"dc_client_id": dcClientId,
 		},
@@ -854,7 +853,6 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, 
 		"$set": bson.M{
 			"dc_chain_id":  dcChainId,
 			"dc_channel":   dcChannel,
-			"dc_port":      constant.PortTransfer,
 			"sc_client_id": scClientId,
 			"dc_client_id": dcClientId,
 		},
@@ -1248,8 +1246,6 @@ func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64
 func (repo *ExIbcTxRepo) FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error {
 	set := bson.M{
 		"$set": bson.M{
-			"dc_port": ibcTx.DcPort,
-			//"status":           ibcTx.Status,
 			"sc_client_id":     ibcTx.ScClientId,
 			"sc_connection_id": ibcTx.ScConnectionId,
 			"dc_client_id":     ibcTx.DcClientId,
