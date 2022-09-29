@@ -70,7 +70,7 @@ func (t *AddChainTask) handle(newChainIds []string) int {
 				continue
 			}
 
-			t.updateIbcTx(chainId, chainConfig)
+			t.updateIbcTx(chainId, chainConfig, chainMap)
 		}
 	}()
 
@@ -84,7 +84,7 @@ func (t *AddChainTask) handle(newChainIds []string) int {
 	return 1
 }
 
-func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConfig) {
+func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConfig, chainMap map[string]*entity.ChainConfig) {
 	logrus.Infof("task %s start updating %s ibc tx", t.Name(), chainId)
 	if len(chainConfig.IbcInfo) == 0 {
 		logrus.Warningf("task %s %s dont't have ibc info", t.Name(), chainId)
@@ -98,14 +98,21 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 				continue
 			}
 
+			clientId := path.ClientId
+			var counterpartyClientId string
 			counterpartyChainId := path.ChainId
 			counterpartyChannelId := path.Counterparty.ChannelId
+			cpChainCfg, ok := chainMap[counterpartyChainId]
+			if ok {
+				counterpartyClientId = cpChainCfg.GetChannelClient(constant.PortTransfer, counterpartyChannelId)
+			}
+
 			channelId := path.ChannelId
 			var waitGroup sync.WaitGroup
 			waitGroup.Add(4)
 			go func() {
 				defer waitGroup.Done()
-				if err := ibcTxRepo.AddNewChainUpdate(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
+				if err := ibcTxRepo.AddNewChainUpdate(counterpartyChainId, counterpartyChannelId, counterpartyClientId, chainId, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdate error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
@@ -113,7 +120,7 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 
 			go func() {
 				defer waitGroup.Done()
-				if err := ibcTxRepo.AddNewChainUpdateFailedTx(counterpartyChainId, counterpartyChannelId, chainId, channelId); err != nil {
+				if err := ibcTxRepo.AddNewChainUpdateFailedTx(counterpartyChainId, counterpartyChannelId, counterpartyClientId, chainId, channelId, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateFailedTx error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
@@ -121,7 +128,7 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 
 			go func() {
 				defer waitGroup.Done()
-				if err := ibcTxRepo.AddNewChainUpdateHistory(counterpartyChainId, counterpartyChannelId, chainId); err != nil {
+				if err := ibcTxRepo.AddNewChainUpdateHistory(counterpartyChainId, counterpartyChannelId, counterpartyClientId, chainId, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateHistory error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}
@@ -129,7 +136,7 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 
 			go func() {
 				defer waitGroup.Done()
-				if err := ibcTxRepo.AddNewChainUpdateHistoryFailedTx(counterpartyChainId, counterpartyChannelId, chainId, channelId); err != nil {
+				if err := ibcTxRepo.AddNewChainUpdateHistoryFailedTx(counterpartyChainId, counterpartyChannelId, counterpartyClientId, chainId, channelId, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateHistoryFailedTx error, counterpartyChainId: %s, counterpartyChannelId: %s", t.Name(), chainId, counterpartyChainId, counterpartyChannelId)
 					_ = storageCache.AddChainError(chainId, counterpartyChainId, counterpartyChannelId)
 				}

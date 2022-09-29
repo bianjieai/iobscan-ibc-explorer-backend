@@ -12,9 +12,15 @@ import (
 
 type FixIbxTxTask struct {
 	chainMap map[string]*entity.ChainConfig
+	domain   string // all, partly
 }
 
 var _ OneOffTask = new(FixIbxTxTask)
+
+const (
+	domainAll    = "all"
+	domainPartly = "partly"
+)
 
 func (t *FixIbxTxTask) Name() string {
 	return "fix_ibc_tx_task"
@@ -25,6 +31,16 @@ func (t *FixIbxTxTask) Switch() bool {
 }
 
 func (t *FixIbxTxTask) Run() int {
+	t.domain = domainAll
+	return t.handle()
+}
+
+func (t *FixIbxTxTask) RunWithParam(domain string) int {
+	t.domain = domain
+	return t.handle()
+}
+
+func (t *FixIbxTxTask) handle() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
@@ -80,9 +96,15 @@ func (t *FixIbxTxTask) fixSegment(seg *segment, isTargetHistory bool) {
 	var skip int64 = 0
 
 	for {
-		txs, err := ibcTxRepo.FindByCreateAt(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
+		var txs []*entity.ExIbcTx
+		var err error
+		if t.domain == domainAll {
+			txs, err = ibcTxRepo.FindByCreateAt(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
+		} else {
+			txs, err = ibcTxRepo.FindEmptyDcConnTxs(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
+		}
 		if err != nil {
-			logrus.Errorf("task %s FindByCreateAt %t %d-%d", t.Name(), isTargetHistory, seg.StartTime, seg.EndTime)
+			logrus.Errorf("task %s fixSegment %t %d-%d", t.Name(), isTargetHistory, seg.StartTime, seg.EndTime)
 			return
 		}
 
@@ -178,15 +200,6 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 		if cf, ok := t.chainMap[v.DcChainId]; ok {
 			v.DcClientId = cf.GetChannelClient(v.DcPort, v.DcChannel)
 		}
-
-		if v.DcPort == "" { // 修复部分交易dc_port为空的问题
-			v.DcPort = constant.PortTransfer
-		}
-
-		// recv_packet 成功但是 write_ack error时，交易置为 refunded
-		//if v.Status == entity.IbcTxStatusFailed && v.DcTxInfo != nil && v.DcTxInfo.Status == entity.TxStatusSuccess {
-		//	v.Status = entity.IbcTxStatusRefunded
-		//}
 
 		if err := ibcTxRepo.FixIbxTx(v, isTargetHistory); err != nil {
 			logrus.Errorf("task %s FixIbxTx(%s) err, %v", t.Name(), v.RecordId, err)
