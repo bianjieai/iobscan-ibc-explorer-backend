@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"testing"
 )
@@ -25,4 +26,18 @@ func Test_HandlerIbcTxs(t *testing.T) {
 	rw := newIbcTxRelateWorker("relate", "worker", ibcTxTargetLatest, chainMap)
 	rw.handlerIbcTxs(chainId, ibcTxList, denomMap)
 	t.Log(utils.MustMarshalJsonToStr(ibcTxList))
+}
+
+func Test_HandlerIbcTxs2(t *testing.T) {
+	tx, err := ibcTxRepo.FindByRecordId("8b139dadcbdceff9c3b924087ca16d86", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	chainMap, _ := getAllChainMap()
+	chainId := "irishub_qa"
+	denomMap := make(map[string]*entity.IBCDenom)
+
+	rw := newIbcTxRelateWorker("relate", "worker", ibcTxTargetLatest, chainMap)
+	rw.handlerIbcTxs(chainId, []*entity.ExIbcTx{tx}, denomMap)
 }

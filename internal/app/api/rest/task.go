@@ -93,7 +93,7 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		case fixAckTxPacketIdTask.Name():
 			fixAckTxPacketIdTask.RunWithParam(c.PostForm("chains"), c.PostForm("end_height"))
 		case fixIbxTxTask.Name():
-			fixIbxTxTask.Run()
+			fixIbxTxTask.RunWithParam(c.PostForm("domain"))
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

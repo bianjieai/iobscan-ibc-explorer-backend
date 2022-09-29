@@ -17,6 +17,7 @@ type IExIbcTxRepo interface {
 	InsertBatchHistory(txs []*entity.ExIbcTx) error
 	DeleteByRecordIds(recordIds []string) error
 	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
+	FindByRecordId(recordId string, targetHistory bool) (*entity.ExIbcTx, error)
 	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
 	FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
@@ -29,8 +30,8 @@ type IExIbcTxRepo interface {
 	LatestHistory() (*entity.ExIbcTx, error)
 	FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
 	FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
-	UpdateIbcTx(ibcTx *entity.ExIbcTx) error
-	UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error
+	UpdateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) error
+	UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool) error
 	CountBaseDenomTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountBaseDenomHistoryTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountIBCTokenRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
@@ -53,10 +54,10 @@ type IExIbcTxRepo interface {
 	// special method
 	UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error
 	UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error
-	AddNewChainUpdate(scChainId, scChannel, dcChainId string) error
-	AddNewChainUpdateHistory(scChainId, scChannel, dcChainId string) error
-	AddNewChainUpdateFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error
-	AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error
+	AddNewChainUpdate(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error
+	AddNewChainUpdateHistory(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error
+	AddNewChainUpdateFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error
+	AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error
 	UpdateBaseDenomInfo(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
 	UpdateBaseDenomInfoHistory(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
 
@@ -84,6 +85,7 @@ type IExIbcTxRepo interface {
 	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	// fix ibc tx
 	FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error
+	FindEmptyDcConnTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 
 	//fix fail recv_packet
 	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
@@ -128,6 +130,18 @@ func (repo *ExIbcTxRepo) DeleteByRecordIds(recordIds []string) error {
 func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) FindByRecordId(recordId string, targetHistory bool) (*entity.ExIbcTx, error) {
+	var res *entity.ExIbcTx
+	var err error
+	if targetHistory {
+		err = repo.collHistory().Find(context.Background(), bson.M{"record_id": recordId}).One(&res)
+	} else {
+		err = repo.coll().Find(context.Background(), bson.M{"record_id": recordId}).One(&res)
+	}
+
 	return res, err
 }
 
@@ -227,35 +241,37 @@ func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chainId string, limit int64) (
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx) error {
+func (repo *ExIbcTxRepo) parseUpdateIbcTxSql(ibcTx *entity.ExIbcTx, repaired bool) bson.M {
+	set := bson.M{
+		"status":           ibcTx.Status,
+		"dc_connection_id": ibcTx.DcConnectionId,
+		"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
+		"dc_tx_info":       ibcTx.DcTxInfo,
+		"refunded_tx_info": ibcTx.RefundedTxInfo,
+		"retry_times":      ibcTx.RetryTimes,
+		"next_try_time":    ibcTx.NextTryTime,
+		"process_info":     ibcTx.ProcessInfo,
+		"update_at":        ibcTx.UpdateAt,
+	}
+	if repaired {
+		set["sc_client_id"] = ibcTx.ScClientId
+		set["dc_client_id"] = ibcTx.DcClientId
+		set["sc_connection_id"] = ibcTx.ScConnectionId
+	}
+	return set
+}
+
+func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) error {
+	set := repo.parseUpdateIbcTxSql(ibcTx, repaired)
 	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
-		"$set": bson.M{
-			"status":           ibcTx.Status,
-			"dc_connection_id": ibcTx.DcConnectionId,
-			"dc_client_id":     ibcTx.DcClientId,
-			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
-			"dc_tx_info":       ibcTx.DcTxInfo,
-			"refunded_tx_info": ibcTx.RefundedTxInfo,
-			"retry_times":      ibcTx.RetryTimes,
-			"next_try_time":    ibcTx.NextTryTime,
-			"process_info":     ibcTx.ProcessInfo,
-			"update_at":        ibcTx.UpdateAt,
-		},
+		"$set": set,
 	})
 }
 
-func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx) error {
+func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool) error {
+	set := repo.parseUpdateIbcTxSql(ibcTx, repaired)
 	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
-		"$set": bson.M{
-			"status":           ibcTx.Status,
-			"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
-			"dc_tx_info":       ibcTx.DcTxInfo,
-			"refunded_tx_info": ibcTx.RefundedTxInfo,
-			"retry_times":      ibcTx.RetryTimes,
-			"next_try_time":    ibcTx.NextTryTime,
-			"process_info":     ibcTx.ProcessInfo,
-			"update_at":        ibcTx.UpdateAt,
-		},
+		"$set": set,
 	})
 }
 
@@ -768,7 +784,7 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, dcChainId string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error {
 	query := bson.M{
 		"sc_chain_id": scChainId,
 		"sc_channel":  scChannel,
@@ -779,14 +795,16 @@ func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, dcChainId strin
 
 	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id": dcChainId,
-			"status":      entity.IbcTxStatusProcessing,
+			"dc_chain_id":  dcChainId,
+			"status":       entity.IbcTxStatusProcessing,
+			"sc_client_id": scClientId,
+			"dc_client_id": dcClientId,
 		},
 	})
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, dcChainId string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error {
 	query := bson.M{
 		"sc_chain_id": scChainId,
 		"sc_channel":  scChannel,
@@ -797,14 +815,16 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, dcChainI
 
 	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id": dcChainId,
-			"status":      entity.IbcTxStatusProcessing,
+			"dc_chain_id":  dcChainId,
+			"status":       entity.IbcTxStatusProcessing,
+			"sc_client_id": scClientId,
+			"dc_client_id": dcClientId,
 		},
 	})
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error {
 	query := bson.M{
 		"sc_chain_id": scChainId,
 		"sc_channel":  scChannel,
@@ -813,15 +833,16 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, dcChain
 
 	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id": dcChainId,
-			"dc_channel":  dcChannel,
-			"dc_port":     constant.PortTransfer,
+			"dc_chain_id":  dcChainId,
+			"dc_channel":   dcChannel,
+			"sc_client_id": scClientId,
+			"dc_client_id": dcClientId,
 		},
 	})
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, dcChainId, dcChannel string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error {
 	query := bson.M{
 		"sc_chain_id": scChainId,
 		"sc_channel":  scChannel,
@@ -830,9 +851,10 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, 
 
 	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id": dcChainId,
-			"dc_channel":  dcChannel,
-			"dc_port":     constant.PortTransfer,
+			"dc_chain_id":  dcChainId,
+			"dc_channel":   dcChannel,
+			"sc_client_id": scClientId,
+			"dc_client_id": dcClientId,
 		},
 	})
 	return err
@@ -1224,8 +1246,6 @@ func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64
 func (repo *ExIbcTxRepo) FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error {
 	set := bson.M{
 		"$set": bson.M{
-			"dc_port": ibcTx.DcPort,
-			//"status":           ibcTx.Status,
 			"sc_client_id":     ibcTx.ScClientId,
 			"sc_connection_id": ibcTx.ScConnectionId,
 			"dc_client_id":     ibcTx.DcClientId,
@@ -1249,6 +1269,28 @@ func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, lim
 			"$lte": endTime,
 		},
 		"status": entity.IbcTxStatusRefunded,
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	}
+	return txs, err
+}
+
+func (repo *ExIbcTxRepo) FindEmptyDcConnTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
+		},
+		"dc_connection_id": "",
 	}
 
 	var txs []*entity.ExIbcTx
