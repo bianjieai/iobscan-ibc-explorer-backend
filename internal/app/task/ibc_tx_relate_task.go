@@ -177,13 +177,14 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 			}
 		}
 
-		w.setClientId(ibcTx)
 		if ibcTx.Status == entity.IbcTxStatusProcessing {
 			w.setNextTryTime(ibcTx)
 			//记录"处理中"状态
 			ibcTx = w.updateProcessInfo(ibcTx, timeoutIbcTxMap, noFoundAckMap)
 		}
-		if err := w.updateIbcTx(ibcTx); err != nil {
+		var repaired bool
+		ibcTx, repaired = w.repairTxInfo(ibcTx)
+		if err := w.updateIbcTx(ibcTx, repaired); err != nil {
 			logrus.Errorf("task %s worker %s chain %s updateIbcTx error, record_id: %s, %v", w.taskName, w.workerName, scChainId, ibcTx.RecordId, err)
 		}
 	}
@@ -430,11 +431,36 @@ func (w *ibcTxRelateWorker) setNextTryTime(ibcTx *entity.ExIbcTx) {
 	ibcTx.UpdateAt = time.Now().Unix()
 }
 
-func (w *ibcTxRelateWorker) setClientId(ibcTx *entity.ExIbcTx) {
-	cf, ok := w.chainMap[ibcTx.DcChainId]
-	if ok {
-		ibcTx.DcClientId = cf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
+func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx, bool) {
+	var repaired bool
+	if ibcTx.DcClientId == "" {
+		if cf, ok := w.chainMap[ibcTx.DcChainId]; ok {
+			ibcTx.DcClientId = cf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
+			repaired = true
+		}
 	}
+
+	if ibcTx.ScClientId == "" {
+		if cf, ok := w.chainMap[ibcTx.ScChainId]; ok {
+			ibcTx.ScClientId = cf.GetChannelClient(ibcTx.ScPort, ibcTx.ScChannel)
+			repaired = true
+		}
+	}
+
+	if ibcTx.ScConnectionId == "" {
+		packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
+		status := entity.TxStatusSuccess
+		if transferTxs, err := txRepo.FindByPacketIds(ibcTx.ScChainId, constant.MsgTypeTransfer, []string{packetId}, &status); err == nil && len(transferTxs) > 0 {
+			for msgIndex, msg := range transferTxs[0].DocTxMsgs {
+				if msg.Type == constant.MsgTypeTransfer && msg.CommonMsg().PacketId == packetId {
+					_, _, _, _, ibcTx.ScConnectionId = parseTransferTxEvents(msgIndex, transferTxs[0])
+					repaired = true
+					break
+				}
+			}
+		}
+	}
+	return ibcTx, repaired
 }
 
 func (w *ibcTxRelateWorker) genPacketTxMapKey(chainId, packetId string) string {
@@ -606,11 +632,11 @@ func (w *ibcTxRelateWorker) getToBeRelatedTxs(chainId string, limit int64) ([]*e
 	return ibcTxRepo.FindProcessingTxs(chainId, limit)
 }
 
-func (w *ibcTxRelateWorker) updateIbcTx(ibcTx *entity.ExIbcTx) error {
+func (w *ibcTxRelateWorker) updateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) error {
 	if w.target == ibcTxTargetHistory {
-		return ibcTxRepo.UpdateIbcHistoryTx(ibcTx)
+		return ibcTxRepo.UpdateIbcHistoryTx(ibcTx, repaired)
 	}
-	return ibcTxRepo.UpdateIbcTx(ibcTx)
+	return ibcTxRepo.UpdateIbcTx(ibcTx, repaired)
 }
 
 func (w *ibcTxRelateWorker) getChainDenomMap(chainId string) (map[string]*entity.IBCDenom, error) {
