@@ -12,9 +12,15 @@ import (
 
 type FixIbxTxTask struct {
 	chainMap map[string]*entity.ChainConfig
+	domain   string // all, partly
 }
 
 var _ OneOffTask = new(FixIbxTxTask)
+
+const (
+	domainAll    = "all"
+	domainPartly = "partly"
+)
 
 func (t *FixIbxTxTask) Name() string {
 	return "fix_ibc_tx_task"
@@ -25,6 +31,16 @@ func (t *FixIbxTxTask) Switch() bool {
 }
 
 func (t *FixIbxTxTask) Run() int {
+	t.domain = domainAll
+	return t.handle()
+}
+
+func (t *FixIbxTxTask) RunWithParam(domain string) int {
+	t.domain = domain
+	return t.handle()
+}
+
+func (t *FixIbxTxTask) handle() int {
 	chainMap, err := getAllChainMap()
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
@@ -80,9 +96,15 @@ func (t *FixIbxTxTask) fixSegment(seg *segment, isTargetHistory bool) {
 	var skip int64 = 0
 
 	for {
-		txs, err := ibcTxRepo.FindByCreateAt(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
+		var txs []*entity.ExIbcTx
+		var err error
+		if t.domain == domainAll {
+			txs, err = ibcTxRepo.FindByCreateAt(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
+		} else {
+			txs, err = ibcTxRepo.FindEmptyDcConnTxs(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
+		}
 		if err != nil {
-			logrus.Errorf("task %s FindByCreateAt %t %d-%d", t.Name(), isTargetHistory, seg.StartTime, seg.EndTime)
+			logrus.Errorf("task %s fixSegment %t %d-%d", t.Name(), isTargetHistory, seg.StartTime, seg.EndTime)
 			return
 		}
 

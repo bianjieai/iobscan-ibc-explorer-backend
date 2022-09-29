@@ -85,6 +85,7 @@ type IExIbcTxRepo interface {
 	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	// fix ibc tx
 	FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error
+	FindEmptyDcConnTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 
 	//fix fail recv_packet
 	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
@@ -1272,6 +1273,28 @@ func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, lim
 			"$lte": endTime,
 		},
 		"status": entity.IbcTxStatusRefunded,
+	}
+
+	var txs []*entity.ExIbcTx
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	} else {
+		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
+	}
+	return txs, err
+}
+
+func (repo *ExIbcTxRepo) FindEmptyDcConnTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+	query := bson.M{
+		"create_at": bson.M{
+			"$gte": startTime,
+			"$lte": endTime,
+		},
+		"status": bson.M{
+			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
+		},
+		"dc_connection_id": "",
 	}
 
 	var txs []*entity.ExIbcTx
