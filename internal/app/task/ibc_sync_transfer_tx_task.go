@@ -95,6 +95,11 @@ func (w *syncTransferTxWorker) exec() {
 			break
 		}
 
+		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+			continue
+		}
+
 		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
 		startTime := time.Now().Unix()
 		if err = w.parseChainIbcTx(chainId); err != nil {

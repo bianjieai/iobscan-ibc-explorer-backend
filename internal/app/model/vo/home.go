@@ -15,9 +15,10 @@ type (
 		Inactive []DailyData `json:"inactive"`
 	}
 	DailyData struct {
-		ChainId   string `json:"chain_id"`
-		ChainName string `json:"chain_name"`
-		Icon      string `json:"icon"`
+		ChainId   string             `json:"chain_id"`
+		ChainName string             `json:"chain_name"`
+		Icon      string             `json:"icon"`
+		Status    entity.ChainStatus `json:"status"`
 	}
 
 	IbcBaseDenomsResp struct {
