@@ -10,7 +10,8 @@ import (
 
 type IChainConfigRepo interface {
 	FindAll() ([]*entity.ChainConfig, error)
-	FindAllChainInfs() ([]*entity.ChainConfig, error)
+	FindAllChainInfos() ([]*entity.ChainConfig, error)
+	FindAllOpenChainInfos() ([]*entity.ChainConfig, error)
 	FindOne(chainId string) (*entity.ChainConfig, error)
 	UpdateIbcInfo(config *entity.ChainConfig) error
 	UpdateLcdApi(config *entity.ChainConfig) error
@@ -35,9 +36,16 @@ func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
 	return res, err
 }
-func (repo *ChainConfigRepo) FindAllChainInfs() ([]*entity.ChainConfig, error) {
+func (repo *ChainConfigRepo) FindAllChainInfos() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
+		Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1, "lcd": 1, "lcd_api_path": 1}).All(&res)
+	return res, err
+}
+
+func (repo *ChainConfigRepo) FindAllOpenChainInfos() ([]*entity.ChainConfig, error) {
+	var res []*entity.ChainConfig
+	err := repo.coll().Find(context.Background(), bson.M{"status": entity.ChainStatusOpen}).
 		Select(bson.M{"chain_id": 1, "chain_name": 1, "icon": 1, "lcd": 1, "lcd_api_path": 1}).All(&res)
 	return res, err
 }

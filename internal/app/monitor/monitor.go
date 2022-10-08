@@ -28,19 +28,17 @@ var (
 )
 
 const (
-	v1beta1         = "v1beta1"
-	v1              = "v1"
-	v1beta1Channels = "/ibc/core/channel/v1beta1/channels"
-	v1Channels      = "/ibc/core/channel/v1/channels"
-	v1beta1Params   = "/cosmos/staking/v1beta1/params"
-	v1Params        = "/cosmos/staking/v1/params"
-
+	v1beta1        = "v1beta1"
+	v1             = "v1"
+	v1Channels     = "/ibc/core/channel/v1/channels?pagination.limit=1"
 	apiChannels    = "/ibc/core/channel/%s/channels?pagination.offset=OFFSET&pagination.limit=LIMIT&pagination.count_total=true"
 	apiClientState = "/ibc/core/channel/%s/channels/CHANNEL/ports/PORT/client_state"
-	//apiBalances    = "/cosmos/bank/%s/balances/{address}"
-	//apiParams      = "/cosmos/{module}/%s/params"
-	//apiSupply      = "/cosmos/bank/%s/supply"
 )
+
+// unbelievableLcd 不可信的lcd
+var unbelievableLcd = map[string][]string{
+	"sifchain_1": {"https://api.sifchain.chaintools.tech/"},
+}
 
 func NewMetricCronWorkStatus() metrics.Guage {
 	syncWorkStatusMetric := metrics.NewGuage(
@@ -89,13 +87,13 @@ func lcdConnectionStatus(quit chan bool) {
 		t := time.NewTimer(time.Duration(15) * time.Second)
 		select {
 		case <-t.C:
-			chainCfgs, err := chainConfigRepo.FindAllChainInfs()
+			chainCfgs, err := chainConfigRepo.FindAllOpenChainInfos()
 			if err != nil {
 				logrus.Error(err.Error())
 				return
 			}
 			for _, val := range chainCfgs {
-				if checkLcd(val.Lcd) {
+				if checkAndUpdateLcd(val.Lcd, val) {
 					lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
 				} else {
 					if switchLcd(val) {
@@ -115,17 +113,42 @@ func lcdConnectionStatus(quit chan bool) {
 	}
 }
 
-// checkLcd If lcd is ok, return true. Else return false
-func checkLcd(lcd string) bool {
-	_, err := utils.HttpGet(fmt.Sprintf("%s/node_info", lcd))
-	if err != nil {
-		_, err = utils.HttpGet(fmt.Sprintf("%s/blocks/latest", lcd))
-		if err != nil {
+// checkAndUpdateLcd If lcd is ok, update db and return true. Else return false
+func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
+	unLcds, ex := unbelievableLcd[cf.ChainId]
+	if ex && utils.InArray(unLcds, lcd) {
+		return false
+	}
+
+	var ok bool
+	var version string
+	if _, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, v1Channels)); err == nil {
+		ok = true
+		version = v1
+	} else if strings.Contains(err.Error(), "501 Not Implemented") {
+		ok = true
+		version = v1beta1
+	} else {
+		ok = false
+	}
+
+	if ok {
+		if cf.Lcd == lcd && cf.LcdApiPath.ChannelsPath == fmt.Sprintf(apiChannels, version) && cf.LcdApiPath.ClientStatePath == fmt.Sprintf(apiClientState, version) {
+			return true
+		}
+
+		cf.Lcd = lcd
+		cf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, version)
+		cf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, version)
+		if err := chainConfigRepo.UpdateLcdApi(cf); err != nil {
+			logrus.Error("lcd monitor update api error: %v", err)
 			return false
+		} else {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 // switchLcd If Switch lcd succeeded, return true. Else return false
@@ -145,34 +168,7 @@ func switchLcd(chainConf *entity.ChainConfig) bool {
 	var chainRegisterResp vo.ChainRegisterResp
 	_ = json.Unmarshal(bz, &chainRegisterResp)
 	for _, v := range chainRegisterResp.Apis.Rest {
-		if !checkLcd(v.Address) {
-			continue
-		}
-
-		chainConf.Lcd = v.Address
-		if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Channels)); err == nil ||
-			!strings.Contains(err.Error(), "501 Not Implemented") {
-			chainConf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, v1beta1)
-			chainConf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, v1beta1)
-		} else {
-			chainConf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, v1)
-			chainConf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, v1)
-		}
-
-		//if _, err := utils.HttpGet(fmt.Sprintf("%s%s", v.Address, v1beta1Params)); err == nil || !strings.Contains(err.Error(), "501 Not Implemented") {
-		//	chainConf.LcdApiPath.BalancesPath = fmt.Sprintf(apiBalances, v1beta1)
-		//	chainConf.LcdApiPath.SupplyPath = fmt.Sprintf(apiSupply, v1beta1)
-		//	chainConf.LcdApiPath.ParamsPath = fmt.Sprintf(apiParams, v1beta1)
-		//} else {
-		//	chainConf.LcdApiPath.BalancesPath = fmt.Sprintf(apiBalances, v1)
-		//	chainConf.LcdApiPath.SupplyPath = fmt.Sprintf(apiSupply, v1)
-		//	chainConf.LcdApiPath.ParamsPath = fmt.Sprintf(apiParams, v1)
-		//}
-
-		if err = chainConfigRepo.UpdateLcdApi(chainConf); err != nil {
-			logrus.Error("switch lcd error: %v", err)
-			return false
-		} else {
+		if ok := checkAndUpdateLcd(v.Address, chainConf); ok {
 			return true
 		}
 	}
