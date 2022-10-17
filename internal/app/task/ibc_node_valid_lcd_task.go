@@ -98,9 +98,8 @@ func CheckAndUpdateTraceSourceNode(chainId string) {
 			continue
 		}
 		rpcAddrMap[v.Provider] = cache.TraceSourceLcd{
-			RpcAddr:        v.Address,
-			EarliestHeight: earliestH,
-			TxIndexEnable:  ok,
+			FullNode:      earliestH == 1,
+			TxIndexEnable: ok,
 		}
 	}
 
@@ -118,7 +117,7 @@ func CheckAndUpdateTraceSourceNode(chainId string) {
 	var needSort bool
 	for _, val := range rpcAddrMap {
 		//出现全节点且支持交易查询
-		if val.EarliestHeight == 1 && val.TxIndexEnable {
+		if val.FullNode && val.TxIndexEnable {
 			needSort = true
 		}
 		res = append(res, val)
@@ -126,7 +125,7 @@ func CheckAndUpdateTraceSourceNode(chainId string) {
 	if needSort {
 		//将可用的全节点放在第一个
 		for i := range res {
-			if res[i].EarliestHeight == 1 && res[i].TxIndexEnable {
+			if res[i].FullNode && res[i].TxIndexEnable {
 				res[i], res[0] = res[0], res[i]
 			}
 		}
@@ -151,7 +150,7 @@ func checkNodeTxIndex(rpc string) (bool, int64) {
 	var statusResp vo.StatusResp
 	_ = json.Unmarshal(bz, &statusResp)
 	if strings.Compare(strings.ToLower(statusResp.Result.NodeInfo.Other.TxIndex), "off") == 0 {
-		return false, 0
+		return false, statusResp.Result.SyncInfo.EarliestBlockHeight
 	}
 
 	return true, statusResp.Result.SyncInfo.EarliestBlockHeight

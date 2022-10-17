@@ -10,10 +10,9 @@ type LcdAddrCacheRepo struct {
 }
 
 type TraceSourceLcd struct {
-	LcdAddr        string `json:"lcd_addr"`
-	RpcAddr        string `json:"rpc_addr"`
-	TxIndexEnable  bool   `json:"tx_index_enable"`
-	EarliestHeight int64  `json:"earliest_height"`
+	LcdAddr       string `json:"lcd_addr"`
+	TxIndexEnable bool   `json:"tx_index_enable"`
+	FullNode      bool   `json:"full_node"`
 }
 
 func (repo *LcdAddrCacheRepo) Set(chainId string, value []TraceSourceLcd) error {

@@ -463,7 +463,7 @@ func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
 	}
 	if len(lcdAddrs) > 0 {
 		//全节点且支持交易查询
-		if lcdAddrs[0].EarliestHeight == 1 && lcdAddrs[0].TxIndexEnable {
+		if lcdAddrs[0].FullNode && lcdAddrs[0].TxIndexEnable {
 			return GetTxDataFromChain(lcdAddrs[0].LcdAddr, hash)
 		}
 		//获取支持交易查询的lcd节点
