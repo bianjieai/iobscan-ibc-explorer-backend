@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -13,8 +12,8 @@ import (
 type ITokenService interface {
 	List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error)
 	ListCount(req *vo.TokenListReq) (int64, errors.Error)
-	IBCTokenList(baseDenom string, req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error)
-	IBCTokenListCount(baseDenom string, req *vo.IBCTokenListReq) (int64, errors.Error)
+	IBCTokenList(req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error)
+	IBCTokenListCount(req *vo.IBCTokenListReq) (int64, errors.Error)
 }
 
 type TokenService struct {
@@ -23,13 +22,26 @@ type TokenService struct {
 var _ ITokenService = new(TokenService)
 
 func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error) {
+	if req.BaseDenomChainId != "" && req.Chain != "" && req.BaseDenomChainId != req.Chain {
+		return &vo.TokenListResp{
+			Items: make([]vo.TokenItem, 0, 0),
+		}, nil
+	}
+
+	var chainId string
+	if req.BaseDenomChainId != "" {
+		chainId = req.BaseDenomChainId
+	} else {
+		chainId = req.Chain
+	}
+
 	baseDenomList, err := svc.analyzeBaseDenom(req.BaseDenom)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	list, err := tokenRepo.List(baseDenomList, req.Chain, req.TokenType, skip, limit)
+	list, err := tokenRepo.List(baseDenomList, chainId, req.TokenType, skip, limit)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -49,22 +61,16 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 		})
 	}
 
-	var totalItem int64
-	if req.UseCount {
-		totalItem, err = tokenRepo.CountList(baseDenomList, req.Chain, req.TokenType)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	page := vo.BuildPageInfo(totalItem, req.PageNum, req.PageSize)
 	return &vo.TokenListResp{
-		Items:    items,
-		PageInfo: page,
+		Items: items,
 	}, nil
 }
 
 func (svc *TokenService) ListCount(req *vo.TokenListReq) (int64, errors.Error) {
+	if req.BaseDenomChainId != "" && req.Chain != "" && req.BaseDenomChainId != req.Chain {
+		return 0, nil
+	}
+
 	baseDenomList, err := svc.analyzeBaseDenom(req.BaseDenom)
 	if err != nil {
 		return 0, errors.Wrap(err)
@@ -81,11 +87,6 @@ func (svc *TokenService) ListCount(req *vo.TokenListReq) (int64, errors.Error) {
 func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
 	if baseDenom == "" {
 		return nil, nil
-	}
-
-	//only ibc hash token
-	if len(baseDenom) == 64 {
-		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, baseDenom)
 	}
 
 	var baseDenomList []string
@@ -123,9 +124,8 @@ func (svc *TokenService) getBaseOfIBCToken(denom string) ([]string, error) {
 	return set.ToSlice(), nil
 }
 
-func (svc *TokenService) IBCTokenList(baseDenom string, req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error) {
-	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	list, err := tokenStatisticsRepo.List(baseDenom, req.Chain, req.TokenType, skip, limit)
+func (svc *TokenService) IBCTokenList(req *vo.IBCTokenListReq) (*vo.IBCTokenListResp, errors.Error) {
+	list, err := tokenStatisticsRepo.List(req)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -143,23 +143,13 @@ func (svc *TokenService) IBCTokenList(baseDenom string, req *vo.IBCTokenListReq)
 		})
 	}
 
-	var totalItem int64
-	if req.UseCount {
-		totalItem, err = tokenStatisticsRepo.CountList(baseDenom, req.Chain, req.TokenType)
-		if err != nil {
-			return nil, errors.Wrap(err)
-		}
-	}
-
-	page := vo.BuildPageInfo(totalItem, req.PageNum, req.PageSize)
 	return &vo.IBCTokenListResp{
-		Items:    items,
-		PageInfo: page,
+		Items: items,
 	}, nil
 }
 
-func (svc *TokenService) IBCTokenListCount(baseDenom string, req *vo.IBCTokenListReq) (int64, errors.Error) {
-	totalItem, err := tokenStatisticsRepo.CountList(baseDenom, req.Chain, req.TokenType)
+func (svc *TokenService) IBCTokenListCount(req *vo.IBCTokenListReq) (int64, errors.Error) {
+	totalItem, err := tokenStatisticsRepo.CountList(req)
 	if err != nil {
 		return 0, errors.Wrap(err)
 	}

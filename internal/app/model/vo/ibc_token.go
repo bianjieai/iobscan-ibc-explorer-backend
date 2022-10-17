@@ -4,15 +4,16 @@ import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/ent
 
 type TokenListReq struct {
 	Page
-	BaseDenom string           `json:"base_denom" form:"base_denom"`
-	Chain     string           `json:"chain" form:"chain"`
-	TokenType entity.TokenType `json:"token_type" form:"token_type"`
-	UseCount  bool             `json:"use_count" form:"use_count"`
+	BaseDenom        string           `json:"base_denom" form:"base_denom"`
+	BaseDenomChainId string           `json:"base_denom_chain_id" form:"base_denom_chain_id"`
+	Chain            string           `json:"chain" form:"chain"`
+	TokenType        entity.TokenType `json:"token_type" form:"token_type"`
+	UseCount         bool             `json:"use_count" form:"use_count"`
 }
 
 type TokenListResp struct {
-	Items    []TokenItem `json:"items"`
-	PageInfo PageInfo    `json:"page_info"`
+	Items []TokenItem `json:"items"`
+	//PageInfo PageInfo    `json:"page_info"`
 }
 
 type TokenItem struct {
@@ -29,14 +30,16 @@ type TokenItem struct {
 
 type IBCTokenListReq struct {
 	Page
-	Chain     string                `json:"chain" form:"chain"`
-	TokenType entity.TokenTraceType `json:"token_type" form:"token_type"`
-	UseCount  bool                  `json:"use_count" form:"use_count"`
+	BaseDenom        string                `json:"base_denom" form:"base_denom"`
+	BaseDenomChainId string                `json:"base_denom_chain_id" form:"base_denom_chain_id"`
+	Chain            string                `json:"chain" form:"chain"`
+	TokenType        entity.TokenTraceType `json:"token_type" form:"token_type"`
+	UseCount         bool                  `json:"use_count" form:"use_count"`
 }
 
 type IBCTokenListResp struct {
-	Items    []IBCTokenItem `json:"items"`
-	PageInfo PageInfo       `json:"page_info"`
+	Items []IBCTokenItem `json:"items"`
+	//PageInfo PageInfo       `json:"page_info"`
 }
 
 type IBCTokenItem struct {

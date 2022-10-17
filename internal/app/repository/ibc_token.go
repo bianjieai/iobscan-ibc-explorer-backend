@@ -23,16 +23,6 @@ var _ ITokenRepo = new(TokenRepo)
 type TokenRepo struct {
 }
 
-//func (repo *TokenRepo) EnsureIndexes() {
-//	var indexes []options.IndexModel
-//	indexes = append(indexes, options.IndexModel{
-//		Key:          []string{"base_denom", "chain_id"},
-//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-//	})
-//
-//	ensureIndexes(entity.IBCToken{}.CollectionName(), indexes)
-//}
-
 func (repo *TokenRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCToken{}.CollectionName())
 }
