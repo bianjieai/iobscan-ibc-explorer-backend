@@ -36,6 +36,13 @@ func WrapBadRequest(err error) Error {
 	}
 }
 
+func WrapLcdNodeErr(errMsg string) Error {
+	return vsErr{
+		code: ErrLcdNodeError,
+		msg:  errMsg,
+	}
+}
+
 type vsErr struct {
 	code int
 	msg  string

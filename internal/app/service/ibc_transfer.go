@@ -12,8 +12,11 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -412,12 +415,12 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 	}
 
 	if len(hash) == 0 {
-		return resp, errors.Wrapf("invalid hash")
+		return resp, errors.WrapBadRequest(fmt.Errorf("invalid hash"))
 	}
 
 	msgType, ok := supportMsgType[req.MsgType]
 	if !ok {
-		return resp, errors.Wrapf("only support transfer,recv_packet,acknowledge_packet,timeout_packet")
+		return resp, errors.WrapBadRequest(fmt.Errorf("only support transfer,recv_packet,acknowledge_packet,timeout_packet"))
 	}
 
 	value, err := lcdTxDataCache.Get(req.ChainId, hash)
@@ -430,22 +433,10 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 
 func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.Error) {
 	var resp vo.TraceSourceResp
-	chainCfgData, err := chainCfgRepo.FindOne(chainId)
-	if err != nil {
-		return resp, errors.Wrap(err)
-	}
-	if !strings.Contains(chainCfgData.Lcd, "://") {
-		return resp, errors.Wrap(fmt.Errorf("lcd from chain_config invalid for no include ://"))
-	}
 
-	values := strings.Split(chainCfgData.Lcd, "://")
-	if len(values) < 2 || len(values[1]) == 0 {
-		return resp, errors.Wrap(fmt.Errorf("lcd from chain_config invalid"))
-	}
-
-	lcdTxData, err := GetTxDataFromChain(chainCfgData.Lcd, hash)
+	lcdTxData, err := GetLcdTxData(chainId, hash)
 	if err != nil {
-		return resp, errors.Wrap(err)
+		return resp, err
 	}
 	logMap := make(map[int][]entity.Event)
 	for _, val := range lcdTxData.TxResponse.Logs {
@@ -464,15 +455,89 @@ func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.
 	}
 	return resp, nil
 }
-func GetTxDataFromChain(lcdUri string, hash string) (LcdTxData, error) {
-	url := fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", lcdUri, hash)
-	data, err := utils.HttpGet(url)
+
+func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
+	lcdAddrs, err := lcdAddrCache.Get(chainId)
 	if err != nil {
-		return LcdTxData{}, err
+		return LcdTxData{}, errors.Wrap(err)
 	}
+	if len(lcdAddrs) > 0 {
+		//全节点且支持交易查询
+		if lcdAddrs[0].EarliestHeight == 1 && lcdAddrs[0].TxIndexEnable {
+			return GetTxDataFromChain(lcdAddrs[0].LcdAddr, hash)
+		}
+		//获取支持交易查询的lcd节点
+		var validNodes []cache.TraceSourceLcd
+		for _, val := range lcdAddrs {
+			if val.TxIndexEnable {
+				validNodes = append(validNodes, val)
+			}
+		}
+		//并发处理
+		return dohandle(2, validNodes, hash)
+	}
+	return LcdTxData{}, errors.Wrap(fmt.Errorf("no found"))
+}
+
+func dohandle(workNum int, lcdAddrs []cache.TraceSourceLcd, hash string) (LcdTxData, errors.Error) {
+	resData := make([]LcdTxData, len(lcdAddrs))
+	var wg sync.WaitGroup
+	wg.Add(workNum)
+	for i := 0; i < workNum; i++ {
+		num := i
+		go func(num int) {
+			defer wg.Done()
+			var err error
+			for id, v := range lcdAddrs {
+				if id%workNum != num {
+					continue
+				}
+				resData[id], err = GetTxDataFromChain(v.LcdAddr, hash)
+				if err == nil {
+					break
+				} else {
+					logrus.Errorf("err:%s lcd:%s hash:%s", err.Error(), v.LcdAddr, hash)
+				}
+			}
+		}(num)
+	}
+	wg.Wait()
+	for i := range resData {
+		if len(resData[i].TxResponse.Tx.Body.Messages) > 0 {
+			return resData[i], nil
+		}
+	}
+	return LcdTxData{}, errors.WrapLcdNodeErr("no found")
+}
+
+func GetTxDataFromChain(lcdUri string, hash string) (LcdTxData, errors.Error) {
 	var txData LcdTxData
-	if err := json.Unmarshal(data, &txData); err != nil {
-		return LcdTxData{}, err
+	url := fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", lcdUri, hash)
+	resp, err := http.Get(url)
+	if err != nil {
+		return txData, errors.Wrap(err)
+	}
+
+	defer resp.Body.Close()
+	bz, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return txData, errors.Wrap(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp LcdErrRespond
+		if err := json.Unmarshal(bz, &errResp); err != nil {
+			return txData, errors.Wrap(err)
+		}
+		return txData, errors.WrapLcdNodeErr(errResp.Message)
+	} else {
+		if err := json.Unmarshal(bz, &txData); err != nil {
+			return LcdTxData{}, errors.Wrap(err)
+		}
+	}
+
+	if err := json.Unmarshal(bz, &txData); err != nil {
+		return LcdTxData{}, errors.Wrap(err)
 	}
 	return txData, nil
 }

@@ -12,7 +12,7 @@ type LcdTxDataCacheRepo struct {
 
 func (repo *LcdTxDataCacheRepo) Set(chainId, hash, msgEvents string) error {
 	_, err := rc.HSet(fmt.Sprintf(lcdTxData, chainId), hash, msgEvents)
-	rc.Expire(fmt.Sprintf(lcdTxData, chainId), FiveMin)
+	rc.Expire(fmt.Sprintf(lcdTxData, chainId), oneHour)
 	return err
 }
 
