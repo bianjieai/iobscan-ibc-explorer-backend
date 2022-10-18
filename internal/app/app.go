@@ -22,6 +22,7 @@ import (
 
 func Serve(cfg *conf.Config) {
 	initCore(cfg)
+	defer repository.Close()
 
 	if cfg.App.ApiCacheAliveSeconds > 0 {
 		api.SetApiCacheAliveTime(cfg.App.ApiCacheAliveSeconds)
@@ -95,6 +96,7 @@ func startTask() {
 		&task.IbcTxRelateTask{},
 		&task.IbcTxRelateHistoryTask{},
 		&task.IbcTxMigrateTask{},
+		&task.IbcNodeLcdCronTask{},
 	)
 	task.Start()
 }

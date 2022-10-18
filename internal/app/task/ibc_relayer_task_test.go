@@ -2,6 +2,7 @@ package task
 
 import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"testing"
 )
@@ -95,13 +96,14 @@ func TestIbcRelayerCronTask_DistinctRelayer(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_checkDbExist(t *testing.T) {
-	var datas = []entity.IBCRelayer{
-		{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
-		{ChainA: "cosmoshub", ChainB: "irishub_1", ChannelA: "channel-182", ChannelB: "channel-12", ChainAAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3", ChainBAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq"},
-	}
+	//var datas = []entity.IBCRelayer{
+	//	{ChainA: "irishub_1", ChainB: "cosmoshub_4", ChannelA: "channel-12", ChannelB: "channel-182", ChainAAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq", ChainBAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3"},
+	//	{ChainA: "cosmoshub", ChainB: "irishub_1", ChannelA: "channel-182", ChannelB: "channel-12", ChainAAddress: "cosmos148zzqgulnly3wgx35s5f0z4l4vwf30tj6nwel3", ChainBAddress: "iaa148zzqgulnly3wgx35s5f0z4l4vwf30tj03wgaq"},
+	//}
 	relayerDataTask.initdistRelayerMap()
-	value := filterDbExist(datas, relayerDataTask.distRelayerMap)
-	t.Log(value)
+	repository.Close()
+	//value := filterDbExist(datas, relayerDataTask.distRelayerMap)
+	//t.Log(value)
 }
 
 func TestIbcRelayerCronTask_caculateRelayerTotalValue(t *testing.T) {

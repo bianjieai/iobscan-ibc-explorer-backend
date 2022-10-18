@@ -148,3 +148,21 @@ type ChainRegisterResp struct {
 		} `json:"grpc"`
 	} `json:"apis"`
 }
+
+type StatusResp struct {
+	Jsonrpc string `json:"jsonrpc"`
+	ID      int    `json:"id"`
+	Result  struct {
+		NodeInfo struct {
+			Other struct {
+				TxIndex    string `json:"tx_index"`
+				RPCAddress string `json:"rpc_address"`
+			} `json:"other"`
+		} `json:"node_info"`
+		SyncInfo struct {
+			LatestBlockHeight   int64 `json:"latest_block_height,string"`
+			EarliestBlockHeight int64 `json:"earliest_block_height,string"`
+			CatchingUp          bool  `json:"catching_up"`
+		} `json:"sync_info"`
+	} `json:"result"`
+}
