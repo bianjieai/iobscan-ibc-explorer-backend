@@ -474,12 +474,12 @@ func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
 			}
 		}
 		//并发处理
-		return dohandle(2, validNodes, hash)
+		return dohandleTxData(2, validNodes, hash)
 	}
 	return LcdTxData{}, errors.Wrap(fmt.Errorf("no found"))
 }
 
-func dohandle(workNum int, lcdAddrs []cache.TraceSourceLcd, hash string) (LcdTxData, errors.Error) {
+func dohandleTxData(workNum int, lcdAddrs []cache.TraceSourceLcd, hash string) (LcdTxData, errors.Error) {
 	resData := make([]LcdTxData, len(lcdAddrs))
 	var wg sync.WaitGroup
 	wg.Add(workNum)

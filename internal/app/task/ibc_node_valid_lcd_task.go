@@ -72,12 +72,12 @@ func getChainRegisterResp(chainId string) (vo.ChainRegisterResp, error) {
 	var chainRegisterResp vo.ChainRegisterResp
 	chainRegistry, err := chainRegistryRepo.FindOne(chainId)
 	if err != nil {
-		return chainRegisterResp, fmt.Errorf("lcd monitor error: %v", err)
+		return chainRegisterResp, fmt.Errorf("find chain_registry by chain-id(%s) error: %s", chainId, err.Error())
 	}
 
 	bz, err := utils.HttpGet(chainRegistry.ChainJsonUrl)
 	if err != nil {
-		return chainRegisterResp, fmt.Errorf("lcd monitor get chain json error: %v", err)
+		return chainRegisterResp, fmt.Errorf("get chain registry json error: %s", err.Error())
 	}
 
 	_ = json.Unmarshal(bz, &chainRegisterResp)
