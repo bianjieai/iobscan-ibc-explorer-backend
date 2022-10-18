@@ -103,6 +103,8 @@ func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		baseDenomList = append(baseDenomList, baseDenom)
 	} else {
 		baseDenomList = []string{baseDenom}
 	}
