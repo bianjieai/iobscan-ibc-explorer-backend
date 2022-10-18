@@ -33,6 +33,11 @@ func (t *IbcNodeLcdCronTask) Run() int {
 	return 1
 
 }
+
+func (t *IbcNodeLcdCronTask) RunWithParam(chainId string) int {
+	CheckAndUpdateTraceSourceNode(chainId)
+	return 1
+}
 func (t *IbcNodeLcdCronTask) ExpireTime() time.Duration {
 	return 24*time.Hour - 1*time.Second
 }
