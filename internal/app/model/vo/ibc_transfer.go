@@ -19,9 +19,9 @@ type (
 		BaseDenomChainId string `json:"base_denom_chain_id" form:"base_denom_chain_id"`
 	}
 	TranaferTxsResp struct {
-		Items []IbcTxDto `json:"items"`
-		//PageInfo  PageInfo   `json:"page_info"`
-		TimeStamp int64 `json:"time_stamp"`
+		Items     []IbcTxDto `json:"items"`
+		PageInfo  PageInfo   `json:"page_info"`
+		TimeStamp int64      `json:"time_stamp"`
 	}
 
 	TranaferTxDetailResp struct {

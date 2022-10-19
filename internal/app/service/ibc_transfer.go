@@ -130,6 +130,8 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 		items = append(items, item)
 	}
 	resp.Items = items
+	page := vo.BuildPageInfo(int64(len(items)), req.PageNum, req.PageSize)
+	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }
