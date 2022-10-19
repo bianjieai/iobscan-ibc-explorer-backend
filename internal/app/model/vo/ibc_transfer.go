@@ -10,17 +10,18 @@ import (
 type (
 	TranaferTxsReq struct {
 		Page
-		UseCount  bool   `json:"use_count" form:"use_count"`
-		DateRange string `json:"date_range" form:"date_range"`
-		Status    string `json:"status" form:"status"`
-		ChainId   string `json:"chain_id" form:"chain_id"`
-		Symbol    string `json:"symbol" form:"symbol"`
-		Denom     string `json:"denom" form:"denom"`
+		UseCount         bool   `json:"use_count" form:"use_count"`
+		DateRange        string `json:"date_range" form:"date_range"`
+		Status           string `json:"status" form:"status"`
+		ChainId          string `json:"chain_id" form:"chain_id"`
+		Denom            string `json:"denom" form:"denom"`
+		BaseDenom        string `json:"base_denom" form:"base_denom"`
+		BaseDenomChainId string `json:"base_denom_chain_id" form:"base_denom_chain_id"`
 	}
 	TranaferTxsResp struct {
-		Items     []IbcTxDto `json:"items"`
-		PageInfo  PageInfo   `json:"page_info"`
-		TimeStamp int64      `json:"time_stamp"`
+		Items []IbcTxDto `json:"items"`
+		//PageInfo  PageInfo   `json:"page_info"`
+		TimeStamp int64 `json:"time_stamp"`
 	}
 
 	TranaferTxDetailResp struct {
