@@ -39,6 +39,7 @@ func TestIbcRelayerCronTask_getChannelsStatus(t *testing.T) {
 }
 
 func TestIbcRelayerCronTask_CheckAndChangeStatus(t *testing.T) {
+	_ = task.init()
 	task.CheckAndChangeRelayer()
 }
 

@@ -31,7 +31,8 @@ type IbcRelayerCronTask struct {
 	//key: ChainA+ChainB+ChannelA+ChannelB
 	channelRelayerCnt map[string]int64
 	//key: BaseDenom+ChainId
-	denomPriceMap map[string]CoinItem
+	denomPriceMap        map[string]CoinItem
+	channelUpdateTimeMap *sync.Map
 }
 type (
 	TxsItem struct {
@@ -78,11 +79,8 @@ func (t *IbcRelayerCronTask) Cron() int {
 }
 
 func (t *IbcRelayerCronTask) Run() int {
-	if chainConfigMap, err := getAllChainMap(); err != nil {
-		logrus.Errorf("task %s getAllChainMap err, %v", t.Name(), err)
+	if err := t.init(); err != nil {
 		return -1
-	} else {
-		t.chainConfigMap = chainConfigMap
 	}
 
 	t.getTokenPriceMap()
@@ -98,6 +96,18 @@ func (t *IbcRelayerCronTask) Run() int {
 	t.updateIbcChainsRelayer()
 
 	return 1
+}
+
+func (t *IbcRelayerCronTask) init() error {
+	if chainConfigMap, err := getAllChainMap(); err != nil {
+		logrus.Errorf("task %s getAllChainMap err, %v", t.Name(), err)
+		return err
+	} else {
+		t.chainConfigMap = chainConfigMap
+	}
+
+	t.channelUpdateTimeMap = new(sync.Map)
+	return nil
 }
 
 //use cache map check relayer if exist
@@ -455,6 +465,13 @@ func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(relayer *entity.IBCRela
 		}
 
 		ChannelId := generateChannelId(relayer.ChainA, relayer.ChannelA, relayer.ChainB, relayer.ChannelB)
+		value, ok := t.channelUpdateTimeMap.Load(ChannelId)
+		if ok && value.(int64) > updateTime {
+			updateTime = 0
+		} else {
+			t.channelUpdateTimeMap.Store(ChannelId, updateTime)
+		}
+
 		if err := channelRepo.UpdateOne(ChannelId, updateTime, relayerCnt); err != nil && err != mongo.ErrNoDocuments {
 			logrus.Error("update ibc_channel about relayer fail, ", err.Error())
 		}
@@ -700,6 +717,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		defer group.Done()
 		clientIdA, err = t.getChannelClient(relayer.ChainA, relayer.ChannelA)
 		if err != nil {
+			timePeriodA = -1
 			return
 		}
 		updateTimeA, timePeriodA, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainA, relayer.ChainAAddress, clientIdA, startTime)
@@ -712,6 +730,7 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 		defer group.Done()
 		clientIdB, err = t.getChannelClient(relayer.ChainB, relayer.ChannelB)
 		if err != nil {
+			timePeriodB = -1
 			return
 		}
 		updateTimeB, timePeriodB, err = txRepo.GetTimePeriodByUpdateClient(relayer.ChainB, relayer.ChainBAddress, clientIdB, startTime)
@@ -735,13 +754,9 @@ func (t *IbcRelayerCronTask) getTimePeriodAndupdateTime(relayer *entity.IBCRelay
 			updateTime = updateTimeA
 		}
 	} else if timePeriodA == -1 || timePeriodB == -1 {
-		//如果有一条链update_client没有查到(超过12h)，就不更新updateTime
-		if relayer.UpdateTime > 0 && relayer.UpdateTime < updateTime {
-			updateTime = relayer.UpdateTime
-		}
-		//如果最新基准周期为0，就不更新
-		if timePeriod <= 0 {
-			timePeriod = relayer.TimePeriod
+		updateTime = relayer.UpdateTime
+		if timePeriodA > 0 {
+			timePeriod = timePeriodA
 		}
 	}
 	//判断更新时间如果小于历史更新时间，就不更新
@@ -762,7 +777,8 @@ func (t *IbcRelayerCronTask) getChannelClient(chainId, channelId string) (string
 		return "", fmt.Errorf("%s config not found", chainId)
 	}
 
-	state, err := queryClientState(chainConf.Lcd, chainConf.LcdApiPath.ClientStatePath, constant.PortTransfer, channelId)
+	port := chainConf.GetPortId(channelId)
+	state, err := queryClientState(chainConf.Lcd, chainConf.LcdApiPath.ClientStatePath, port, channelId)
 	if err != nil {
 		return "", err
 	}
