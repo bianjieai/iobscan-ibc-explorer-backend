@@ -65,33 +65,21 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			}
 			query.Status = append(query.Status, stat)
 		}
-
 	}
 
-	if req.Symbol != "" {
-		if req.Symbol == constant.UnAuth {
+	if req.BaseDenom != "" {
+		if strings.ToLower(req.BaseDenom) == constant.OtherDenom {
 			tokens, err := getUnAuthToken()
 			if err != nil {
 				return query, err
 			}
-			query.Token = tokens
-
+			query.BaseDenom = tokens
 		} else {
-			baseDenom, err := baseDenomRepo.FindBySymbol(req.Symbol)
-			if err != nil {
-				return query, err
-			}
-			query.Token = []string{baseDenom.Denom}
-			//新增base_denom原生链chain-id的过滤
-			query.BaseDenomChainId = baseDenom.ChainId
+			query.BaseDenom = []string{req.BaseDenom}
+			query.BaseDenomChainId = req.BaseDenomChainId
 		}
 	} else if req.Denom != "" {
-		if len(req.Denom) == 64 {
-			req.Denom = "ibc/" + req.Denom
-		}
-		if utils.ValidateDenom(req.Denom) == nil {
-			query.Token = []string{req.Denom}
-		}
+		query.Denom = req.Denom
 	}
 	return query, nil
 }
@@ -111,7 +99,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors
 		return count
 	}
 	//default cond
-	if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.Token) == 0 {
+	if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
 		data, err := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
 		if err != nil {
 			return 0, errors.Wrap(err)

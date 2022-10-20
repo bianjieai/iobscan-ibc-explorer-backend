@@ -91,7 +91,7 @@ func (svc *TokenService) analyzeBaseDenom(baseDenom string) ([]string, error) {
 
 	var baseDenomList []string
 	if strings.ToLower(baseDenom) == constant.OtherDenom {
-		others, err := getTokenOthers()
+		others, err := getUnAuthToken()
 		if err != nil {
 			return nil, err
 		}
@@ -157,32 +157,4 @@ func (svc *TokenService) IBCTokenListCount(req *vo.IBCTokenListReq) (int64, erro
 	}
 
 	return totalItem, nil
-}
-
-func getTokenOthers() ([]string, error) {
-	allBaseDenom, err := baseDenomRepo.FindAll()
-	if err != nil {
-		return nil, err
-	}
-
-	noSymbolDenomList, err := denomRepo.FindNoSymbolDenoms()
-	if err != nil {
-		return nil, err
-	}
-
-	noSymbolDenomSet := utils.NewStringSet()
-	for _, v := range noSymbolDenomList {
-		noSymbolDenomSet.Add(v.BaseDenom)
-	}
-
-	for k, _ := range noSymbolDenomSet {
-		for _, v := range allBaseDenom {
-			if v.Denom == k {
-				noSymbolDenomSet.Remove(k)
-				break
-			}
-		}
-	}
-
-	return noSymbolDenomSet.ToSlice(), nil
 }
