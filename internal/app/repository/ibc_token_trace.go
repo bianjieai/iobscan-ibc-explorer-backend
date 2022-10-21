@@ -13,7 +13,7 @@ import (
 
 type ITokenTraceRepo interface {
 	FindByBaseDenom(baseDenom, originChainId string) ([]*entity.IBCTokenTrace, error)
-	BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, originChainId string) error
+	BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, baseDenomChainId string) error
 	AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, error)
 	List(req *vo.IBCTokenListReq) ([]*entity.IBCTokenTrace, error)
 	CountList(req *vo.IBCTokenListReq) (int64, error)
@@ -37,10 +37,11 @@ func (repo *TokenTraceRepo) FindByBaseDenom(baseDenom, chainId string) ([]*entit
 	return res, err
 }
 
-func (repo *TokenTraceRepo) BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, originChainId string) error {
+func (repo *TokenTraceRepo) BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, baseDenomChainId string) error {
 	callback := func(sessCtx context.Context) (interface{}, error) {
 		query := bson.M{
-			"base_denom": baseDenom,
+			"base_denom":          baseDenom,
+			"base_denom_chain_id": baseDenomChainId,
 		}
 		if _, err := repo.coll().RemoveAll(sessCtx, query); err != nil {
 			return nil, err
