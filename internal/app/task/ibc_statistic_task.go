@@ -66,12 +66,12 @@ func (t *IbcStatisticCronTask) Run() int {
 
 	return 1
 }
-func (t *IbcStatisticCronTask) get24HChainsData() (*entity.IbcStatistic, error) {
+func (t *IbcStatisticCronTask) updateChains() error {
 	//获取最近24小时前的时间戳
 	startTime := time.Now().Unix() - 24*3600
 	chainDtos, err := ibcTxRepo.Aggr24hActiveChains(startTime)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	chainIdMap := make(map[string]struct{}, len(chainDtos))
 	var chainIds []string
@@ -90,22 +90,14 @@ func (t *IbcStatisticCronTask) get24HChainsData() (*entity.IbcStatistic, error) 
 		}
 	}
 	chains24hInfo := strings.Join(chainIds, ",")
-	data := &entity.IbcStatistic{
+	data := entity.IbcStatistic{
 		StatisticsName: constant.Chains24hStatisticName,
 		Count:          int64(len(chainIdMap)),
 		StatisticsInfo: chains24hInfo,
 		CreateAt:       time.Now().Unix(),
 		UpdateAt:       time.Now().Unix(),
 	}
-	return data, nil
-}
-
-func (t *IbcStatisticCronTask) updateChains() error {
-	data, err := t.get24HChainsData()
-	if err != nil {
-		return err
-	}
-	if err := statisticsRepo.UpdateOneIncre(*data); err != nil {
+	if err := statisticsRepo.UpdateOneIncre(data); err != nil {
 		return err
 	}
 
