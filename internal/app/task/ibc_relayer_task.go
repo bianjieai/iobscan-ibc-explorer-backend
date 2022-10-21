@@ -222,6 +222,8 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 				bondT := chainAUnbondT + chainBUnbondT
 				if bondT > 0 {
 					value.TimePeriod = bondT
+				} else {
+					value.TimePeriod = constant.DefaultUnboundTime
 				}
 			}
 		} else {
@@ -238,7 +240,7 @@ func (t *IbcRelayerCronTask) updateRelayerStatus(relayer *entity.IBCRelayer) {
 }
 func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	skip := int64(0)
-	limit := int64(500)
+	limit := int64(1000)
 	threadNum := 10
 	for {
 		relayers, err := relayerRepo.FindAll(skip, limit)
