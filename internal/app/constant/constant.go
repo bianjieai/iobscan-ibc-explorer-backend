@@ -21,6 +21,7 @@ const (
 	Cosmos                = "cosmos"
 	Iris                  = "iris"
 	PortTransfer          = "transfer"
+	DefaultUnboundTime    = 1209600
 
 	DefaultLimit = 500
 	IncreHeight  = 5000
