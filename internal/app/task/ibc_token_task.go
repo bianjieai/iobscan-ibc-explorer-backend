@@ -320,14 +320,14 @@ func (t *TokenTask) getSupplyFromLcd(chainId string) {
 
 		bz, err := utils.HttpGet(url)
 		if err != nil {
-			logrus.Errorf("task %s setSupply error, %v", t.Name(), err)
+			logrus.Errorf("task %s chain: %s setSupply error, %v", t.Name(), chainId, err)
 			return
 		}
 
 		var supplyResp vo.SupplyResp
 		err = json.Unmarshal(bz, &supplyResp)
 		if err != nil {
-			logrus.Errorf("task %s setSupply error, %v", t.Name(), err)
+			logrus.Errorf("task %s chain: %s setSupply error, %v", t.Name(), chainId, err)
 			return
 		}
 
@@ -429,21 +429,21 @@ func (t *TokenTask) getTransAmountFromLcd(chainId string, addrList []string) {
 				if isConnectionErr(err) {
 					earlyTermination = true
 				}
-				logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
+				logrus.Errorf("task %s chain: %s getTransAmountFromLcd error, %v", t.Name(), chainId, err)
 				break
 			}
 
 			var balancesResp vo.BalancesResp
 			err = json.Unmarshal(bz, &balancesResp)
 			if err != nil {
-				logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
+				logrus.Errorf("task %s chain: %s getTransAmountFromLcd error, %v", t.Name(), chainId, err)
 				break
 			}
 
 			for _, v := range balancesResp.Balances {
 				amount, err := decimal.NewFromString(v.Amount)
 				if err != nil {
-					logrus.Errorf("task %s getTransAmountFromLcd error, %v", t.Name(), err)
+					logrus.Errorf("task %s chain: %s getTransAmountFromLcd error, %v", t.Name(), chainId, err)
 					continue
 				}
 
