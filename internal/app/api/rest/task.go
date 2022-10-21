@@ -101,6 +101,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			} else {
 				ibcNodeLcdCronTask.Run()
 			}
+		case ibcStatisticCronTask.Name():
+			ibcStatisticCronTask.NewRun()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}
