@@ -378,20 +378,8 @@ func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []
 	}
 	//Running=>Close: relayer中继通道只要出现状态不是STATE_OPEN
 	for _, path := range paths {
-		if path.ChannelId == relayer.ChannelA {
-			if path.State != constant.ChannelStateOpen {
-				relayer.Status = entity.RelayerStop
-				if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
-					f.SetState(entity.RelayerRunningStr)
-					break
-				} else {
-					logrus.Warn("machine status event to running->unknown failed, " + err.Error())
-				}
-
-			}
-		}
-		if path.Counterparty.ChannelId == relayer.ChannelB {
-			if path.Counterparty.State != constant.ChannelStateOpen {
+		if path.ChannelId == relayer.ChannelA && path.Counterparty.ChannelId == relayer.ChannelB {
+			if path.State != constant.ChannelStateOpen || path.Counterparty.State != constant.ChannelStateOpen {
 				relayer.Status = entity.RelayerStop
 				if err := f.Event(fsmtool.IbcRelayerEventUnknown, relayer); err == nil {
 					f.SetState(entity.RelayerRunningStr)
@@ -408,26 +396,23 @@ func (t *IbcRelayerCronTask) handleToUnknow(relayer *entity.IBCRelayer, paths []
 func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths []*entity.ChannelPath, updateTime, timePeriod int64) {
 	f := fsmtool.NewIbcRelayerFSM(entity.RelayerStopStr)
 	if updateTime > 0 && timePeriod > 0 && timePeriod > time.Now().Unix()-updateTime {
-		var channelStatus []string
+		var channelOpen bool
 		if len(paths) == 0 {
 			return
 		}
 		for _, path := range paths {
-			if path.ChannelId == relayer.ChannelA {
-				channelStatus = append(channelStatus, path.State)
-			}
-			if path.Counterparty.ChannelId == relayer.ChannelB {
-				channelStatus = append(channelStatus, path.Counterparty.State)
+			if path.ChannelId == relayer.ChannelA && path.Counterparty.ChannelId == relayer.ChannelB &&
+				path.State == constant.ChannelStateOpen && path.Counterparty.State == constant.ChannelStateOpen {
+				channelOpen = true
+				break
 			}
 		}
-		if len(channelStatus) == 2 {
-			if channelStatus[0] == channelStatus[1] && channelStatus[0] == constant.ChannelStateOpen {
-				relayer.Status = entity.RelayerRunning
-				if err := f.Event(fsmtool.IbcRelayerEventRunning, relayer); err == nil {
-					f.SetState(entity.RelayerStopStr)
-				} else {
-					logrus.Error("machine status event to running->unknown failed, " + err.Error())
-				}
+		if channelOpen {
+			relayer.Status = entity.RelayerRunning
+			if err := f.Event(fsmtool.IbcRelayerEventRunning, relayer); err == nil {
+				f.SetState(entity.RelayerStopStr)
+			} else {
+				logrus.Error("machine status event to unknown->running failed, " + err.Error())
 			}
 		}
 	} else if relayer.TimePeriod == -1 && relayer.UpdateTime == 0 && updateTime > 0 { //新relayer
@@ -435,7 +420,7 @@ func (t *IbcRelayerCronTask) handleToRunning(relayer *entity.IBCRelayer, paths [
 		if err := f.Event(fsmtool.IbcRelayerEventRunning, relayer); err == nil {
 			f.SetState(entity.RelayerStopStr)
 		} else {
-			logrus.Error("machine status event to running->unknown failed, " + err.Error())
+			logrus.Error("machine status event to unknown->running failed, " + err.Error())
 		}
 	}
 }
