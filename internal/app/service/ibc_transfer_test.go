@@ -8,10 +8,10 @@ import (
 )
 
 func TestTransferService_TraceSource(t *testing.T) {
-	data, err := new(TransferService).TraceSource("84CFEBF67B278BE41120F95519E6C96BC41765A5FF5C3C0B272E01CA89B4C4DF",
+	data, err := new(TransferService).TraceSource("87DD9D44F64EC8E509508B99AD48554F9FCD3A79D775A400FE900CCA030290BE",
 		&vo.TraceSourceReq{
-			ChainId: "irishub_1",
-			MsgType: constant.MsgTypeRecvPacket,
+			ChainId: "laozi_mainnet",
+			MsgType: constant.MsgTypeTransfer,
 		})
 	if err != nil {
 		t.Fatal(err.Error())

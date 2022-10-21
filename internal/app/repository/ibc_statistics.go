@@ -2,12 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
-	opts "github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
-	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -17,10 +14,6 @@ type IStatisticRepo interface {
 	UpdateOneIncre(statistic entity.IbcStatistic) error
 	FindBatchName(statisticNames []string) ([]*entity.IbcStatistic, error)
 	Save(data entity.IbcStatistic) error
-	CreateNew() error
-	SwitchColl() error
-	InsertCountNew(statisticName string, count int64) error
-	InsertNew(data entity.IbcStatistic) error
 }
 
 var _ IStatisticRepo = new(IbcStatisticRepo)
@@ -29,10 +22,7 @@ type IbcStatisticRepo struct {
 }
 
 func (repo *IbcStatisticRepo) coll() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCStatisticsCollName)
-}
-func (repo *IbcStatisticRepo) collNew() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCStatisticsNewCollName)
+	return mgo.Database(ibcDatabase).Collection(entity.IbcStatistic{}.CollectionName())
 }
 
 func (repo *IbcStatisticRepo) UpdateOne(statisticName string, count int64) error {
@@ -83,33 +73,5 @@ func (repo *IbcStatisticRepo) UpdateOneIncre(statistic entity.IbcStatistic) erro
 	if err == qmgo.ErrNoSuchDocuments {
 		return repo.Save(statistic)
 	}
-	return err
-}
-
-func (repo *IbcStatisticRepo) CreateNew() error {
-	indexOpts := officialOpts.Index().SetUnique(true).SetName("statistics_unique")
-	key := []string{"statistics_name"}
-	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
-}
-
-func (repo *IbcStatisticRepo) SwitchColl() error {
-	command := bson.D{{"renameCollection", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCStatisticsNewCollName)},
-		{"to", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCStatisticsCollName)},
-		{"dropTarget", true}}
-	return mgo.Database(adminDatabase).RunCommand(context.Background(), command).Err()
-}
-
-func (repo *IbcStatisticRepo) InsertCountNew(statisticName string, count int64) error {
-
-	data := entity.IbcStatistic{
-		StatisticsName: statisticName,
-		Count:          count,
-		CreateAt:       time.Now().Unix(),
-		UpdateAt:       time.Now().Unix(),
-	}
-	return repo.InsertNew(data)
-}
-func (repo *IbcStatisticRepo) InsertNew(data entity.IbcStatistic) error {
-	_, err := repo.collNew().InsertOne(context.Background(), data)
 	return err
 }

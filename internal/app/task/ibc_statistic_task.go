@@ -25,25 +25,9 @@ func (t *IbcStatisticCronTask) Cron() int {
 }
 
 func (t *IbcStatisticCronTask) NewRun() int {
-	if err := statisticsRepo.CreateNew(); err != nil {
-		logrus.Error("CreateNew have error,"+err.Error(), t.Name())
-		return -1
-	}
-	if err := t.updateChannelAndChains24h(statisticsRepo.InsertCountNew); err != nil {
-		logrus.Error("ChannelAndChains24h have error,"+err.Error(), " task:", t.Name())
-		return -1
-	}
-	if err := t.updateChannelInfo(statisticsRepo.InsertCountNew); err != nil {
-		logrus.Error("updateChannelInfo have error,"+err.Error(), " task:", t.Name())
-		return -1
-	}
+
 	if err := t.NewDataDenom(); err != nil {
 		logrus.Error("NewDataDenom have error,"+err.Error(), " task:", t.Name())
-		return -1
-	}
-
-	if err := t.NewDataChains(); err != nil {
-		logrus.Error("NewDataChains have error,"+err.Error(), " task:", t.Name())
 		return -1
 	}
 
@@ -52,19 +36,15 @@ func (t *IbcStatisticCronTask) NewRun() int {
 		return -1
 	}
 
-	if err := statisticsRepo.SwitchColl(); err != nil {
-		logrus.Error("SwitchColl have error,"+err.Error(), " task:", t.Name())
-		return -1
-	}
 	return 1
 }
 
 func (t *IbcStatisticCronTask) Run() int {
-	if err := t.updateChannelAndChains24h(statisticsRepo.UpdateOne); err != nil {
+	if err := t.updateChannelAndChains24h(); err != nil {
 		logrus.Error("updateChannelAndChains24h have error,"+err.Error(), " task:", t.Name())
 		return -1
 	}
-	if err := t.updateChannelInfo(statisticsRepo.UpdateOne); err != nil {
+	if err := t.updateChannelInfo(); err != nil {
 		logrus.Error("updateChannelAndChains24h have error,"+err.Error(), " task:", t.Name())
 		return -1
 	}
@@ -135,21 +115,6 @@ func (t *IbcStatisticCronTask) updateChains() error {
 	}
 	return statisticsRepo.UpdateOne(constant.ChainsAllStatisticName, chainsAll)
 }
-func (t *IbcStatisticCronTask) NewDataChains() error {
-	data, err := t.get24HChainsData()
-	if err != nil {
-		return err
-	}
-	if err := statisticsRepo.InsertNew(*data); err != nil {
-		return err
-	}
-
-	chainsAll, err := chainConfigRepo.Count()
-	if err != nil {
-		return err
-	}
-	return statisticsRepo.InsertCountNew(constant.ChainsAllStatisticName, chainsAll)
-}
 
 func (t *IbcStatisticCronTask) NewDataDenom() error {
 	saveDenomFunc := func(statisticName string, call func(createAt int64, record bool) (int64, error)) error {
@@ -174,7 +139,7 @@ func (t *IbcStatisticCronTask) NewDataDenom() error {
 		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentDenomCnt, CreateAt: latestCreateAt}))
 		statisticData.CreateAt = time.Now().Unix()
 		statisticData.UpdateAt = time.Now().Unix()
-		if err := statisticsRepo.InsertNew(statisticData); err != nil {
+		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
 		return nil
@@ -203,7 +168,7 @@ func (t *IbcStatisticCronTask) NewDataTxs() error {
 	if err != nil {
 		return err
 	}
-	if err := statisticsRepo.InsertCountNew(constant.TxLatestAllStatisticName, txAll); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.TxLatestAllStatisticName, txAll); err != nil {
 		return err
 	}
 
@@ -231,7 +196,7 @@ func (t *IbcStatisticCronTask) NewDataTxs() error {
 		statisticData.UpdateAt = time.Now().Unix()
 		//加上最新表数据
 		statisticData.CountLatest = latestData
-		if err := statisticsRepo.InsertNew(statisticData); err != nil {
+		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
 			return err
 		}
 		return nil
@@ -256,7 +221,7 @@ func (t *IbcStatisticCronTask) NewDataTxs() error {
 		return err
 	}
 
-	if err := statisticsRepo.InsertCountNew(constant.Tx24hAllStatisticName, tx24hrAll); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.Tx24hAllStatisticName, tx24hrAll); err != nil {
 		return err
 	}
 
@@ -318,7 +283,7 @@ func (t *IbcStatisticCronTask) updateTxsIncre() error {
 	return nil
 }
 
-func (t *IbcStatisticCronTask) updateChannelInfo(fn func(statisticName string, count int64) error) error {
+func (t *IbcStatisticCronTask) updateChannelInfo() error {
 	channelOpen, err := channelRepo.CountStatus(entity.ChannelStatusOpened)
 	if err != nil && err != qmgo.ErrNoSuchDocuments {
 		return err
@@ -328,19 +293,19 @@ func (t *IbcStatisticCronTask) updateChannelInfo(fn func(statisticName string, c
 		return err
 	}
 	channelAll := channelOpen + channelClose
-	if err := fn(constant.ChannelOpenStatisticName, channelOpen); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.ChannelOpenStatisticName, channelOpen); err != nil {
 		return err
 	}
-	if err := fn(constant.ChannelCloseStatisticName, channelClose); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.ChannelCloseStatisticName, channelClose); err != nil {
 		return err
 	}
-	if err := fn(constant.ChannelAllStatisticName, channelAll); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.ChannelAllStatisticName, channelAll); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (t *IbcStatisticCronTask) updateChannelAndChains24h(fn func(statisticName string, count int64) error) error {
+func (t *IbcStatisticCronTask) updateChannelAndChains24h() error {
 	//获取最近24小时前的时间戳
 	startTime := time.Now().Unix() - 24*3600
 	channelDtos, err := ibcTxRepo.Aggr24hActiveChannels(startTime)
@@ -360,7 +325,7 @@ func (t *IbcStatisticCronTask) updateChannelAndChains24h(fn func(statisticName s
 			count++
 		}
 	}
-	if err := fn(constant.Channel24hStatisticName, count); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.Channel24hStatisticName, count); err != nil {
 		return err
 	}
 

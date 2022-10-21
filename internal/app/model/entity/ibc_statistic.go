@@ -1,10 +1,5 @@
 package entity
 
-const (
-	IBCStatisticsCollName    = "ibc_statistics"
-	IBCStatisticsNewCollName = "ibc_statistics_new"
-)
-
 type (
 	IbcStatistic struct {
 		StatisticsName string `bson:"statistics_name"`
