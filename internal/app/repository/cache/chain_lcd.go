@@ -16,7 +16,7 @@ type TraceSourceLcd struct {
 }
 
 func (repo *LcdAddrCacheRepo) Set(chainId string, value []TraceSourceLcd) error {
-	err := rc.Set(fmt.Sprintf(lcdAddr, chainId), string(utils.MarshalJsonIgnoreErr(value)), -1)
+	err := rc.Set(fmt.Sprintf(lcdAddr, chainId), string(utils.MarshalJsonIgnoreErr(value)), 7*oneDay)
 	return err
 }
 

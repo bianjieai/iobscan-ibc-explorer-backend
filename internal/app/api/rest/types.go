@@ -31,4 +31,5 @@ var (
 	fixAckTxPacketIdTask         task.FixAckTxPacketIdTask
 	fixIbxTxTask                 task.FixIbxTxTask
 	ibcNodeLcdCronTask           task.IbcNodeLcdCronTask
+	ibcStatisticCronTask         task.IbcStatisticCronTask
 )
