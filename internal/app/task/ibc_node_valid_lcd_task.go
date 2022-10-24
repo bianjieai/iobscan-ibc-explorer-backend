@@ -37,7 +37,7 @@ func (t *IbcNodeLcdCronTask) Run() int {
 
 func (t *IbcNodeLcdCronTask) RunWithParam(chainId string) int {
 	if chainId != "" {
-		CheckAndUpdateTraceSourceNode(chainId)
+		t.CheckAndUpdateTraceSourceNode(chainId)
 		return 1
 	}
 
@@ -118,7 +118,7 @@ func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
 				LcdAddr:       rest.Address,
 			}
 		} else {
-			ok, earliestH := checkNodeTxIndex(rpcAddress)
+			ok, earliestH := t.checkNodeTxIndex(rpcAddress)
 			//node no reach
 			if earliestH < 0 {
 				continue
