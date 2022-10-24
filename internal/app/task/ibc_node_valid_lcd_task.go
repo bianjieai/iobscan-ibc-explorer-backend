@@ -35,7 +35,7 @@ func (t *IbcNodeLcdCronTask) Run() int {
 }
 
 func (t *IbcNodeLcdCronTask) RunWithParam(chainId string) int {
-	CheckAndUpdateTraceSourceNode(chainId)
+	t.CheckAndUpdateTraceSourceNode(chainId)
 	return 1
 }
 func (t *IbcNodeLcdCronTask) ExpireTime() time.Duration {
@@ -66,7 +66,7 @@ func (t *IbcNodeLcdCronTask) doHandleChains(workNum int, chaincfgs []*entity.Cha
 					continue
 				}
 				logrus.Infof("task %s worker %d chain-id: %s", t.Name(), num, v.ChainId)
-				CheckAndUpdateTraceSourceNode(v.ChainId)
+				t.CheckAndUpdateTraceSourceNode(v.ChainId)
 			}
 		}(num)
 	}
@@ -89,17 +89,18 @@ func getChainRegisterResp(chainId string) (vo.ChainRegisterResp, error) {
 	return chainRegisterResp, nil
 }
 
-func CheckAndUpdateTraceSourceNode(chainId string) {
+func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
 	chainRegisterResp, err := getChainRegisterResp(chainId)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error(err.Error(), " task:", t.Name())
 		return
 	}
 	rpcAddrMap := make(map[string]cache.TraceSourceLcd, len(chainRegisterResp.Apis.Rpc))
 	for _, v := range chainRegisterResp.Apis.Rpc {
-		ok, earliestH := checkNodeTxIndex(v.Address)
+		ok, earliestH := t.checkNodeTxIndex(v.Address)
 		//node no reach
 		if earliestH < 0 {
+			logrus.Warn("skip node for no reach, address: ", v.Address)
 			continue
 		}
 		rpcAddrMap[v.Provider] = cache.TraceSourceLcd{
@@ -135,25 +136,35 @@ func CheckAndUpdateTraceSourceNode(chainId string) {
 			}
 		}
 	}
+	if len(res) == 0 {
+		logrus.Warn("trace source lcd is no data for api use", " task:", t.Name())
+		return
+	}
 
 	var lcdAddrCache cache.LcdAddrCacheRepo
 	chainRegisterResp.ChainId = strings.ReplaceAll(chainRegisterResp.ChainId, "-", "_")
-	_ = lcdAddrCache.Set(chainRegisterResp.ChainId, res)
+	if err := lcdAddrCache.Set(chainRegisterResp.ChainId, res); err != nil {
+		logrus.Error(err.Error(), " task:", t.Name())
+	}
 
 }
 
 // checkNodeTxIndex
 //If tx_index is 'on', return true,earliest_height. Else return false,0
 //If node is no reach, return false,-1
-func checkNodeTxIndex(rpc string) (bool, int64) {
+func (t *IbcNodeLcdCronTask) checkNodeTxIndex(rpc string) (bool, int64) {
 	bz, err := utils.HttpGet(fmt.Sprintf("%s/status", rpc))
 	if err != nil {
-		logrus.Errorf("rpc status api error: %v", err)
+		logrus.Errorf("rpc status api error: %v  task: %s", err, t.Name())
 		return false, -1
 	}
 
 	var statusResp vo.StatusResp
-	_ = json.Unmarshal(bz, &statusResp)
+	err = json.Unmarshal(bz, &statusResp)
+	if err != nil {
+		logrus.Errorf("status resp unmarshal error: %v  task: %s", err, t.Name())
+		return false, -1
+	}
 	if strings.Compare(strings.ToLower(statusResp.Result.NodeInfo.Other.TxIndex), "off") == 0 {
 		return false, statusResp.Result.SyncInfo.EarliestBlockHeight
 	}
