@@ -3,14 +3,15 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"sync"
-	"time"
 )
 
 type IbcNodeLcdCronTask struct {
@@ -23,7 +24,7 @@ func (t *IbcNodeLcdCronTask) Cron() int {
 	return OneDay
 }
 func (t *IbcNodeLcdCronTask) Run() int {
-	chainCfgs, err := chainConfigRepo.FindAll()
+	chainCfgs, err := chainConfigRepo.FindAllChainInfos()
 	if err != nil {
 		logrus.Errorf("task %s run error, %s", t.Name(), err.Error())
 		return -1
@@ -35,9 +36,14 @@ func (t *IbcNodeLcdCronTask) Run() int {
 }
 
 func (t *IbcNodeLcdCronTask) RunWithParam(chainId string) int {
-	t.CheckAndUpdateTraceSourceNode(chainId)
-	return 1
+	if chainId != "" {
+		t.CheckAndUpdateTraceSourceNode(chainId)
+		return 1
+	}
+
+	return t.Run()
 }
+
 func (t *IbcNodeLcdCronTask) ExpireTime() time.Duration {
 	return 24*time.Hour - 1*time.Second
 }
@@ -96,26 +102,37 @@ func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
 		return
 	}
 	rpcAddrMap := make(map[string]cache.TraceSourceLcd, len(chainRegisterResp.Apis.Rpc))
-	for _, v := range chainRegisterResp.Apis.Rpc {
-		ok, earliestH := t.checkNodeTxIndex(v.Address)
-		//node no reach
-		if earliestH < 0 {
-			logrus.Warn("skip node for no reach, address: ", v.Address)
-			continue
+	for _, rest := range chainRegisterResp.Apis.Rest {
+		var rpcAddress string
+		for _, rpc := range chainRegisterResp.Apis.Rpc {
+			if rest.Provider == rpc.Provider {
+				rpcAddress = rpc.Address
+				break
+			}
 		}
-		rpcAddrMap[v.Provider] = cache.TraceSourceLcd{
-			FullNode:      earliestH == 1,
-			TxIndexEnable: ok,
+
+		if rpcAddress == "" { // 没有对应的rpc
+			rpcAddrMap[rest.Provider] = cache.TraceSourceLcd{
+				FullNode:      false,
+				TxIndexEnable: true,
+				LcdAddr:       rest.Address,
+			}
+		} else {
+			ok, earliestH := t.checkNodeTxIndex(rpcAddress)
+			//node no reach
+			if earliestH < 0 {
+				continue
+			}
+			rpcAddrMap[rest.Provider] = cache.TraceSourceLcd{
+				FullNode:      earliestH == 1,
+				TxIndexEnable: ok,
+				LcdAddr:       rest.Address,
+			}
 		}
 	}
 
-	for _, v := range chainRegisterResp.Apis.Rest {
-		if val, ok := rpcAddrMap[v.Provider]; ok {
-			val.LcdAddr = v.Address
-			rpcAddrMap[v.Provider] = val
-		}
-	}
 	if len(rpcAddrMap) == 0 {
+		logrus.Warnf("CheckAndUpdateTraceSourceNode chain %s addr map is empty", chainId)
 		return
 	}
 
@@ -135,10 +152,6 @@ func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
 				res[i], res[0] = res[0], res[i]
 			}
 		}
-	}
-	if len(res) == 0 {
-		logrus.Warn("trace source lcd is no data for api use", " task:", t.Name())
-		return
 	}
 
 	var lcdAddrCache cache.LcdAddrCacheRepo
