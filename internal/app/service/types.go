@@ -20,6 +20,7 @@ var (
 	txRepo              repository.ITxRepo             = new(repository.TxRepo)
 	exSearchRecordRepo  repository.IExSearchRecordRepo = new(repository.ExSearchRecordRepo)
 	lcdTxDataCache      cache.LcdTxDataCacheRepo
+	lcdAddrCache        cache.LcdAddrCacheRepo
 	relayerCfgRepo      repository.IRelayerConfigRepo = new(cache.RelayerConfigCacheRepo)
 	baseDenomRepo       cache.BaseDenomCacheRepo
 )
@@ -60,5 +61,10 @@ type (
 		NextSequenceRecv string `json:"next_sequence_recv,omitempty"`
 		Acknowledgement  string `json:"acknowledgement,omitempty"`
 		ProofAcked       string `json:"proof_acked,omitempty"`
+	}
+	LcdErrRespond struct {
+		Code    int           `json:"code"`
+		Message string        `json:"message"`
+		Details []interface{} `json:"details"`
 	}
 )

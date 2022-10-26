@@ -75,3 +75,18 @@ func (c *ChainConfig) GetChannelClient(port, channel string) string {
 
 	return ""
 }
+
+func (c *ChainConfig) GetPortId(channel string) string {
+	if channel == "" {
+		return ""
+	}
+	for _, ibcInfo := range c.IbcInfo {
+		for _, path := range ibcInfo.Paths {
+			if path.ChannelId == channel {
+				return path.PortId
+			}
+		}
+	}
+
+	return ""
+}

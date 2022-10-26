@@ -16,6 +16,7 @@ import (
 )
 
 var (
+	_ctx        context.Context
 	db          *gorm.DB
 	mgo         *qmgo.Client
 	ibcDatabase string
@@ -67,6 +68,7 @@ func CreateTable(db *gorm.DB) {
 }
 
 func InitMgo(cfg conf.Mongo, ctx context.Context) {
+	_ctx = ctx
 	var maxPoolSize uint64 = 4096
 	var timeout = int64(600 * time.Second)
 	client, err := qmgo.NewClient(ctx, &qmgo.Config{
@@ -86,6 +88,15 @@ func InitMgo(cfg conf.Mongo, ctx context.Context) {
 	ibcDatabase = cfg.Database
 	//auto create indexs
 	//ensureDocsIndexes()
+}
+
+func Close() {
+	if _ctx != nil {
+		err := mgo.Close(_ctx)
+		if err != nil {
+			logrus.Errorf("close mongo failed, err:%s", err.Error())
+		}
+	}
 }
 
 //var (

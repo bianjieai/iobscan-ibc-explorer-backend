@@ -1,11 +1,9 @@
 package rest
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/gin-gonic/gin"
@@ -39,10 +37,6 @@ func (ctl *TokenController) List(c *gin.Context) {
 
 // IBCTokenList token page 子页面
 func (ctl *TokenController) IBCTokenList(c *gin.Context) {
-	baseDenom := c.Param("base_denom")
-	if len(baseDenom) == 64 {
-		baseDenom = fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, baseDenom)
-	}
 	var req vo.IBCTokenListReq
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusOK, response.FailBadRequest(err))
@@ -52,9 +46,9 @@ func (ctl *TokenController) IBCTokenList(c *gin.Context) {
 	var res interface{}
 	var err errors.Error
 	if req.UseCount {
-		res, err = tokenService.IBCTokenListCount(baseDenom, &req)
+		res, err = tokenService.IBCTokenListCount(&req)
 	} else {
-		res, err = tokenService.IBCTokenList(baseDenom, &req)
+		res, err = tokenService.IBCTokenList(&req)
 	}
 
 	if err != nil {

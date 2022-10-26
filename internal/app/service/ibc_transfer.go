@@ -12,8 +12,11 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -62,33 +65,21 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			}
 			query.Status = append(query.Status, stat)
 		}
-
 	}
 
-	if req.Symbol != "" {
-		if req.Symbol == constant.UnAuth {
+	if req.BaseDenom != "" {
+		if strings.ToLower(req.BaseDenom) == constant.OtherDenom {
 			tokens, err := getUnAuthToken()
 			if err != nil {
 				return query, err
 			}
-			query.Token = tokens
-
+			query.BaseDenom = tokens
 		} else {
-			baseDenom, err := baseDenomRepo.FindBySymbol(req.Symbol)
-			if err != nil {
-				return query, err
-			}
-			query.Token = []string{baseDenom.Denom}
-			//新增base_denom原生链chain-id的过滤
-			query.BaseDenomChainId = baseDenom.ChainId
+			query.BaseDenom = []string{req.BaseDenom}
+			query.BaseDenomChainId = req.BaseDenomChainId
 		}
 	} else if req.Denom != "" {
-		if len(req.Denom) == 64 {
-			req.Denom = "ibc/" + req.Denom
-		}
-		if utils.ValidateDenom(req.Denom) == nil {
-			query.Token = []string{req.Denom}
-		}
+		query.Denom = req.Denom
 	}
 	return query, nil
 }
@@ -108,7 +99,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors
 		return count
 	}
 	//default cond
-	if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.Token) == 0 {
+	if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
 		data, err := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
 		if err != nil {
 			return 0, errors.Wrap(err)
@@ -412,12 +403,12 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 	}
 
 	if len(hash) == 0 {
-		return resp, errors.Wrapf("invalid hash")
+		return resp, errors.WrapBadRequest(fmt.Errorf("invalid hash"))
 	}
 
 	msgType, ok := supportMsgType[req.MsgType]
 	if !ok {
-		return resp, errors.Wrapf("only support transfer,recv_packet,acknowledge_packet,timeout_packet")
+		return resp, errors.WrapBadRequest(fmt.Errorf("only support transfer,recv_packet,acknowledge_packet,timeout_packet"))
 	}
 
 	value, err := lcdTxDataCache.Get(req.ChainId, hash)
@@ -430,22 +421,10 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 
 func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.Error) {
 	var resp vo.TraceSourceResp
-	chainCfgData, err := chainCfgRepo.FindOne(chainId)
-	if err != nil {
-		return resp, errors.Wrap(err)
-	}
-	if !strings.Contains(chainCfgData.Lcd, "://") {
-		return resp, errors.Wrap(fmt.Errorf("lcd from chain_config invalid for no include ://"))
-	}
 
-	values := strings.Split(chainCfgData.Lcd, "://")
-	if len(values) < 2 || len(values[1]) == 0 {
-		return resp, errors.Wrap(fmt.Errorf("lcd from chain_config invalid"))
-	}
-
-	lcdTxData, err := GetTxDataFromChain(chainCfgData.Lcd, hash)
+	lcdTxData, err := GetLcdTxData(chainId, hash)
 	if err != nil {
-		return resp, errors.Wrap(err)
+		return resp, err
 	}
 	logMap := make(map[int][]entity.Event)
 	for _, val := range lcdTxData.TxResponse.Logs {
@@ -464,15 +443,91 @@ func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.
 	}
 	return resp, nil
 }
-func GetTxDataFromChain(lcdUri string, hash string) (LcdTxData, error) {
-	url := fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", lcdUri, hash)
-	data, err := utils.HttpGet(url)
-	if err != nil {
-		return LcdTxData{}, err
+
+func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
+	lcdAddrs, _ := lcdAddrCache.Get(chainId)
+	if len(lcdAddrs) > 0 {
+		//全节点且支持交易查询
+		if lcdAddrs[0].FullNode && lcdAddrs[0].TxIndexEnable {
+			return GetTxDataFromChain(lcdAddrs[0].LcdAddr, hash)
+		}
+		//获取支持交易查询的lcd节点
+		var validNodes []cache.TraceSourceLcd
+		for _, val := range lcdAddrs {
+			if val.TxIndexEnable {
+				validNodes = append(validNodes, val)
+			}
+		}
+		//并发处理
+		return doHandleTxData(2, validNodes, hash)
+	} else {
+		cfg, err := chainCfgRepo.FindOne(chainId)
+		if err != nil {
+			return LcdTxData{}, errors.Wrap(fmt.Errorf("invalid chain id"))
+		}
+		return GetTxDataFromChain(cfg.Lcd, hash)
 	}
+}
+
+func doHandleTxData(workNum int, lcdAddrs []cache.TraceSourceLcd, hash string) (LcdTxData, errors.Error) {
+	resData := make([]LcdTxData, len(lcdAddrs))
+	var wg sync.WaitGroup
+	wg.Add(workNum)
+	for i := 0; i < workNum; i++ {
+		num := i
+		go func(num int) {
+			defer wg.Done()
+			var err error
+			for id, v := range lcdAddrs {
+				if id%workNum != num {
+					continue
+				}
+				resData[id], err = GetTxDataFromChain(v.LcdAddr, hash)
+				if err == nil {
+					break
+				} else {
+					logrus.Errorf("err:%s lcd:%s hash:%s", err.Error(), v.LcdAddr, hash)
+				}
+			}
+		}(num)
+	}
+	wg.Wait()
+	for i := range resData {
+		if len(resData[i].TxResponse.Tx.Body.Messages) > 0 {
+			return resData[i], nil
+		}
+	}
+	return LcdTxData{}, errors.WrapLcdNodeErr("no found")
+}
+
+func GetTxDataFromChain(lcdUri string, hash string) (LcdTxData, errors.Error) {
 	var txData LcdTxData
-	if err := json.Unmarshal(data, &txData); err != nil {
-		return LcdTxData{}, err
+	url := fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", lcdUri, hash)
+	resp, err := http.Get(url)
+	if err != nil {
+		return txData, errors.Wrap(err)
+	}
+
+	defer resp.Body.Close()
+	bz, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return txData, errors.Wrap(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp LcdErrRespond
+		if err := json.Unmarshal(bz, &errResp); err != nil {
+			return txData, errors.Wrap(err)
+		}
+		return txData, errors.WrapLcdNodeErr(errResp.Message)
+	} else {
+		if err := json.Unmarshal(bz, &txData); err != nil {
+			return LcdTxData{}, errors.Wrap(err)
+		}
+	}
+
+	if err := json.Unmarshal(bz, &txData); err != nil {
+		return LcdTxData{}, errors.Wrap(err)
 	}
 	return txData, nil
 }

@@ -1026,29 +1026,29 @@ func parseQuery(queryCond dto.IbcTxQuery) bson.M {
 
 		}
 	}
-	//token
-	if len(queryCond.Token) > 0 {
-		if strings.HasPrefix(queryCond.Token[0], "ibc/") {
-			cond := []bson.M{
-				{"denoms.sc_denom": queryCond.Token[0]},
-				{"denoms.dc_denom": queryCond.Token[0]},
-			}
-			if _, exist := query["$or"]; exist {
-				query["$and"] = []bson.M{
-					{"$or": cond},
-				}
-			} else {
-				query["$or"] = cond
-			}
-		} else {
-			query["base_denom"] = bson.M{
-				"$in": queryCond.Token,
-			}
+	//base denom
+	if len(queryCond.BaseDenom) > 0 {
+		query["base_denom"] = bson.M{
+			"$in": queryCond.BaseDenom,
 		}
 	}
 	//origin_chain_id
 	if len(queryCond.BaseDenomChainId) > 0 {
 		query["base_denom_chain_id"] = queryCond.BaseDenomChainId
+	}
+	// denom
+	if queryCond.Denom != "" {
+		cond := []bson.M{
+			{"denoms.sc_denom": queryCond.Denom},
+			{"denoms.dc_denom": queryCond.Denom},
+		}
+		if _, exist := query["$or"]; exist {
+			query["$and"] = []bson.M{
+				{"$or": cond},
+			}
+		} else {
+			query["$or"] = cond
+		}
 	}
 
 	//status

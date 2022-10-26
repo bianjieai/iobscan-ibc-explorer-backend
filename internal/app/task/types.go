@@ -11,6 +11,7 @@ const (
 	EveryMinute          = 60
 	ThreeMinute          = 180
 	EveryHour            = 3600
+	OneDay               = 86400
 	RedisLockExpireTime  = 300
 	OneOffTaskLockTime   = 86400 * 30
 	ThreeHourCronJobTime = "0 0 */6 * * ?"
@@ -80,6 +81,7 @@ var (
 	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
 	syncBlockRepo            repository.ISyncBlockRepo            = new(repository.SyncBlockRepo)
 	txNewRepo                repository.ITxNewRepo                = new(repository.TxNewRepo)
+	chainRegistryRepo        repository.IChainRegistryRepo        = new(repository.ChainRegistryRepo)
 	relayerStatisticsTask    RelayerStatisticsTask
 )
 

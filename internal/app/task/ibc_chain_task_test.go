@@ -25,8 +25,8 @@ func TestMain(m *testing.M) {
 	})
 	repository.InitMgo(conf.Mongo{
 		//Url: "mongodb://ibc:ibcpassword@192.168.0.122:27017,192.168.0.126:27017,192.168.0.127:27017/?authSource=iobscan-ibc",
+		//Url: "mongodb://ibcreader:idy45Eth@35.229.186.42:27017/?connect=direct&authSource=iobscan-ibc",
 		Url: "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805",
-		//Url: "mongodb://ibc:ibcpassword@192.168.0.135:27017/?connect=direct&authSource=iobscan-ibc",
 
 		Database: "iobscan-ibc_0805",
 	}, context.Background())

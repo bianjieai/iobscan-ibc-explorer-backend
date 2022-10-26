@@ -94,6 +94,15 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			fixAckTxPacketIdTask.RunWithParam(c.PostForm("chains"), c.PostForm("end_height"))
 		case fixIbxTxTask.Name():
 			fixIbxTxTask.RunWithParam(c.PostForm("domain"))
+		case ibcNodeLcdCronTask.Name():
+			value := c.PostForm("chains")
+			if len(value) > 0 {
+				ibcNodeLcdCronTask.RunWithParam(value)
+			} else {
+				ibcNodeLcdCronTask.Run()
+			}
+		case ibcStatisticCronTask.Name():
+			ibcStatisticCronTask.NewRun()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

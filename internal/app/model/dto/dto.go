@@ -167,6 +167,7 @@ type IbcTxQuery struct {
 	EndTime          int64
 	ChainId          []string
 	Status           []int
-	Token            []string
+	BaseDenom        []string
 	BaseDenomChainId string
+	Denom            string
 }

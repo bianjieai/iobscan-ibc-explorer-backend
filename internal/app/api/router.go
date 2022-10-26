@@ -61,7 +61,7 @@ func txsPage(r *gin.RouterGroup) {
 func tokenPage(r *gin.RouterGroup) {
 	ctl := rest.TokenController{}
 	r.GET("/tokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-	r.GET("/:base_denom/ibcTokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IBCTokenList))
+	r.GET("/ibcTokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IBCTokenList))
 }
 
 func channelPage(r *gin.RouterGroup) {

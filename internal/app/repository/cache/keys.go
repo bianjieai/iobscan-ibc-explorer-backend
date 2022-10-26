@@ -22,6 +22,7 @@ const (
 	ibcInfoHash          = "ibc_info_hash"
 	ibcInfo              = "ibc_info:%s"
 	lcdTxData            = "lcd_tx_data:%s"
+	lcdAddr              = "lcd_addr:%s"
 	clientIdInfo         = "client_id_info:%s"
 	ibcRelayerCfg        = "ibc_relayer_config"
 	ibcRelayerCfgPairIds = "ibc_relayer_config_pair_ids"
