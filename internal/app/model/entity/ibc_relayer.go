@@ -38,21 +38,21 @@ func (i IBCRelayer) Valid() bool {
 }
 
 type IBCRelayerNew struct {
-	RelayerId            string              `bson:"relayer_id"`
-	RelayerName          string              `bson:"relayer_name"`
-	RelayerIcon          string              `bson:"relayer_icon"`
-	ServedChains         int64               `bson:"served_chains"`
-	ChannelPairInfo      []channel_pair_info `bson:"channel_pair_info"`
-	UpdateTime           int64               `bson:"update_time"`
-	RelayedTotalTxs      int64               `bson:"relayed_total_txs"`
-	RelayedSuccessTxs    int64               `bson:"relayed_success_txs"`
-	RelayedTotalTxsValue int64               `bson:"relayed_total_txs_value"`
-	TotalFeeValue        int64               `bson:"total_fee_value"`
-	CreateAt             int64               `bson:"create_at"`
-	UpdateAt             int64               `bson:"update_at"`
+	RelayerId            string            `bson:"relayer_id"`
+	RelayerName          string            `bson:"relayer_name"`
+	RelayerIcon          string            `bson:"relayer_icon"`
+	ServedChains         int64             `bson:"served_chains"`
+	ChannelPairInfo      []ChannelPairInfo `bson:"channel_pair_info"`
+	UpdateTime           int64             `bson:"update_time"`
+	RelayedTotalTxs      int64             `bson:"relayed_total_txs"`
+	RelayedSuccessTxs    int64             `bson:"relayed_success_txs"`
+	RelayedTotalTxsValue int64             `bson:"relayed_total_txs_value"`
+	TotalFeeValue        int64             `bson:"total_fee_value"`
+	CreateAt             int64             `bson:"create_at"`
+	UpdateAt             int64             `bson:"update_at"`
 }
 
-type channel_pair_info struct {
+type ChannelPairInfo struct {
 	PairId        string `bson:"pair_id"`
 	ChainA        string `bson:"chain_a"`
 	ChainB        string `bson:"chain_b"`
