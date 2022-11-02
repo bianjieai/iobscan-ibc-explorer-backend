@@ -65,33 +65,21 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			}
 			query.Status = append(query.Status, stat)
 		}
-
 	}
 
-	if req.Symbol != "" {
-		if req.Symbol == constant.UnAuth {
+	if req.BaseDenom != "" {
+		if strings.ToLower(req.BaseDenom) == constant.OtherDenom {
 			tokens, err := getUnAuthToken()
 			if err != nil {
 				return query, err
 			}
-			query.Token = tokens
-
+			query.BaseDenom = tokens
 		} else {
-			baseDenom, err := baseDenomRepo.FindBySymbol(req.Symbol)
-			if err != nil {
-				return query, err
-			}
-			query.Token = []string{baseDenom.Denom}
-			//新增base_denom原生链chain-id的过滤
-			query.BaseDenomChainId = baseDenom.ChainId
+			query.BaseDenom = []string{req.BaseDenom}
+			query.BaseDenomChainId = req.BaseDenomChainId
 		}
 	} else if req.Denom != "" {
-		if len(req.Denom) == 64 {
-			req.Denom = "ibc/" + req.Denom
-		}
-		if utils.ValidateDenom(req.Denom) == nil {
-			query.Token = []string{req.Denom}
-		}
+		query.Denom = req.Denom
 	}
 	return query, nil
 }
@@ -457,10 +445,7 @@ func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.
 }
 
 func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
-	lcdAddrs, err := lcdAddrCache.Get(chainId)
-	if err != nil {
-		return LcdTxData{}, errors.Wrap(err)
-	}
+	lcdAddrs, _ := lcdAddrCache.Get(chainId)
 	if len(lcdAddrs) > 0 {
 		//全节点且支持交易查询
 		if lcdAddrs[0].FullNode && lcdAddrs[0].TxIndexEnable {
@@ -474,12 +459,17 @@ func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
 			}
 		}
 		//并发处理
-		return dohandleTxData(2, validNodes, hash)
+		return doHandleTxData(2, validNodes, hash)
+	} else {
+		cfg, err := chainCfgRepo.FindOne(chainId)
+		if err != nil {
+			return LcdTxData{}, errors.Wrap(fmt.Errorf("invalid chain id"))
+		}
+		return GetTxDataFromChain(cfg.Lcd, hash)
 	}
-	return LcdTxData{}, errors.Wrap(fmt.Errorf("no found"))
 }
 
-func dohandleTxData(workNum int, lcdAddrs []cache.TraceSourceLcd, hash string) (LcdTxData, errors.Error) {
+func doHandleTxData(workNum int, lcdAddrs []cache.TraceSourceLcd, hash string) (LcdTxData, errors.Error) {
 	resData := make([]LcdTxData, len(lcdAddrs))
 	var wg sync.WaitGroup
 	wg.Add(workNum)

@@ -39,7 +39,7 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 		activeChainsMap[val] = struct{}{}
 	}
 
-	chainCfgs, err := chainCfgRepo.FindAllChainInfs()
+	chainCfgs, err := chainCfgRepo.FindAllChainInfos()
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
@@ -53,6 +53,7 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 			ChainName: one.ChainName,
 			ChainId:   one.ChainId,
 			Icon:      one.Icon,
+			Status:    one.Status,
 		}
 		allChains = append(allChains, item)
 

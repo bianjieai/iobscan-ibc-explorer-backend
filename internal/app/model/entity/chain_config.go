@@ -8,16 +8,24 @@ const (
 	StakeModule                 = "staking"
 )
 
+type ChainStatus int
+
+const (
+	ChainStatusOpen   ChainStatus = 1
+	ChainStatusClosed ChainStatus = 2
+)
+
 type (
 	ChainConfig struct {
-		ChainId        string     `bson:"chain_id"`
-		Icon           string     `bson:"icon"`
-		ChainName      string     `bson:"chain_name"`
-		LcdApiPath     ApiPath    `bson:"lcd_api_path"`
-		Lcd            string     `bson:"lcd"`
-		AddrPrefix     string     `bson:"addr_prefix"`
-		IbcInfo        []*IbcInfo `bson:"ibc_info"`
-		IbcInfoHashLcd string     `bson:"ibc_info_hash_lcd"`
+		ChainId        string      `bson:"chain_id"`
+		Icon           string      `bson:"icon"`
+		ChainName      string      `bson:"chain_name"`
+		LcdApiPath     ApiPath     `bson:"lcd_api_path"`
+		Lcd            string      `bson:"lcd"`
+		AddrPrefix     string      `bson:"addr_prefix"`
+		IbcInfo        []*IbcInfo  `bson:"ibc_info"`
+		IbcInfoHashLcd string      `bson:"ibc_info_hash_lcd"`
+		Status         ChainStatus `bson:"status"`
 	}
 	ApiPath struct {
 		ChannelsPath    string `bson:"channels_path"`
@@ -61,6 +69,21 @@ func (c *ChainConfig) GetChannelClient(port, channel string) string {
 		for _, path := range ibcInfo.Paths {
 			if path.PortId == port && path.ChannelId == channel {
 				return path.ClientId
+			}
+		}
+	}
+
+	return ""
+}
+
+func (c *ChainConfig) GetPortId(channel string) string {
+	if channel == "" {
+		return ""
+	}
+	for _, ibcInfo := range c.IbcInfo {
+		for _, path := range ibcInfo.Paths {
+			if path.ChannelId == channel {
+				return path.PortId
 			}
 		}
 	}
