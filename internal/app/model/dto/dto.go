@@ -29,6 +29,26 @@ type AggregateIBCChainDTO struct {
 	Count      int64   `bson:"count"`
 }
 
+type RelayerDenomStatisticsDTO struct {
+	Signer      string  `bson:"_id.signer"`
+	Status      int64   `bson:"_id.status"`
+	TxType      string  `bson:"_id.tx_type"`
+	Denom       string  `bson:"_id.denom"`
+	ScChannel   string  `bson:"_id.sc_channel"`
+	DcChannel   string  `bson:"_id.dc_channel"`
+	DenomAmount float64 `bson:"denom_amount"`
+	TxsCount    int64   `bson:"txs_count"`
+}
+
+type RelayerFeeStatisticsDTO struct {
+	Signer      string  `bson:"_id.signer"`
+	Status      int64   `bson:"_id.status"`
+	TxType      string  `bson:"_id.tx_type"`
+	Denom       string  `bson:"_id.denom"`
+	DenomAmount float64 `bson:"denom_amount"`
+	TxsCount    int64   `bson:"txs_count"`
+}
+
 type GetRelayerInfoDTO struct {
 	DcChainAddress string `bson:"dc_chain_address"`
 	ScChainId      string `bson:"sc_chain_id"`

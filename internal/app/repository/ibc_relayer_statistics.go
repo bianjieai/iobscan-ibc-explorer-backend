@@ -13,6 +13,7 @@ import (
 	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// TODO remove this
 type IRelayerStatisticsRepo interface {
 	CreateNew() error
 	SwitchColl() error

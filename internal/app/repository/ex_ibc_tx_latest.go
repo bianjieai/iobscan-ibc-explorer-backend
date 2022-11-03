@@ -41,10 +41,6 @@ type IExIbcTxRepo interface {
 	GetLatestTxTime() (int64, error)
 	GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
-	CountHistoryRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
-	CountRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
-	CountHistoryRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error)
-	CountRelayerPacketTxsAndAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error)
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	Aggr24hActiveChannels(startTime int64) ([]*dto.Aggr24hActiveChannelsDTO, error)
@@ -584,27 +580,6 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	var pipe []bson.M
 	pipe = append(pipe, match, group, project)
 	return pipe
-}
-
-func (repo *ExIbcTxRepo) CountHistoryRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error) {
-	pipe := repo.relayerSuccessPacketCond(startTime, endTime)
-	var res []*dto.CountRelayerPacketTxsCntDTO
-	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) CountRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error) {
-	pipe := repo.relayerSuccessPacketCond(startTime, endTime)
-	var res []*dto.CountRelayerPacketTxsCntDTO
-	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) CountRelayerPacketTxsAndAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error) {
-	pipe := repo.relayerPacketAmountCond(startTime, endTime)
-	var res []*dto.CountRelayerPacketAmountDTO
-	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
 }
 
 func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error) {

@@ -810,10 +810,10 @@ func (t *IbcRelayerCronTask) todayStatistics() error {
 			EndTime:   endTime,
 		},
 	}
-	if err := relayerStatisticsTask.deal(segments, opUpdate); err != nil {
-		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
-		return err
-	}
+	//if err := relayerStatisticsTask.deal(segments, opUpdate); err != nil {
+	//	logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+	//	return err
+	//}
 	relayerDataTask.handleNewRelayerOnce(segments, false)
 
 	return nil
@@ -834,10 +834,10 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 			EndTime:   endTime,
 		},
 	}
-	if err := relayerStatisticsTask.deal(segments, opUpdate); err != nil {
-		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
-		return err
-	}
+	//if err := relayerStatisticsTask.deal(segments, opUpdate); err != nil {
+	//	logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+	//	return err
+	//}
 	relayerDataTask.handleNewRelayerOnce(segments, false)
 
 	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)

@@ -7,6 +7,9 @@ const (
 	TxTypeRecvPacket    TxType = "recv_packet"
 	TxTypeTimeoutPacket TxType = "timeout_packet"
 	TxTypeAckPacket     TxType = "acknowledge_packet"
+
+	IBCRelayerDenomStatisticsCollName    = "ibc_relayer_denom_statistics"
+	IBCRelayerDenomStatisticsNewCollName = "ibc_relayer_denom_statistics_new"
 )
 
 type IBCRelayerDenomStatistics struct {
@@ -24,6 +27,9 @@ type IBCRelayerDenomStatistics struct {
 	UpdateAt         int64    `bson:"update_at"`
 }
 
-func (i IBCRelayerDenomStatistics) CollectionName() string {
-	return "ibc_relayer_denom_statistics"
+func (i IBCRelayerDenomStatistics) CollectionName(isNew bool) string {
+	if isNew {
+		return IBCRelayerDenomStatisticsNewCollName
+	}
+	return IBCRelayerDenomStatisticsCollName
 }
