@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type ITxRepo interface {
+	GetFirstTx(chainId string) (*entity.Tx, error)
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
 	GetTimePeriodByUpdateClient(chainId, address, clientId string, startTime int64) (int64, int64, error)
 	GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error)
@@ -24,6 +26,8 @@ type ITxRepo interface {
 	FindAllAckTxs(chainId string, height int64) ([]*entity.Tx, error)
 	FindHeight(chainId string, min bool) (entity.Tx, error)
 	UpdateAckPacketId(chainId string, height int64, txHash string, msgs []interface{}) error
+	RelayerDenomStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error)
+	RelayerFeeStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -33,6 +37,12 @@ type TxRepo struct {
 
 func (repo *TxRepo) coll(chainId string) *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.Tx{}.CollectionName(chainId))
+}
+
+func (repo *TxRepo) GetFirstTx(chainId string) (*entity.Tx, error) {
+	var res entity.Tx
+	err := repo.coll(chainId).Find(context.Background(), bson.M{}).Sort("time").One(&res)
+	return &res, err
 }
 
 func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, error) {
@@ -239,4 +249,108 @@ func (repo *TxRepo) UpdateAckPacketId(chainId string, height int64, txHash strin
 	}
 	err := repo.coll(chainId).UpdateOne(context.Background(), filter, update)
 	return err
+}
+
+func (repo *TxRepo) RelayerDenomStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"time": bson.M{
+				"$lte": endTime,
+				"$gte": startTime,
+			},
+			"msgs.type": bson.M{
+				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+			},
+		},
+	}
+
+	unwind := bson.M{
+		"$unwind": "$msgs",
+	}
+
+	match2 := bson.M{
+		"msgs.type": bson.M{
+			"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+		},
+	}
+
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"signer":     "$msgs.msg.signer",
+				"status":     "$status",
+				"tx_type":    "$msgs.type",
+				"denom":      "$msgs.msg.packet.data.denom",
+				"sc_channel": "$msgs.msg.packet.source_channel",
+				"dc_channel": "$msgs.msg.packet.destination_channel",
+			},
+			"denom_amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$msgs.msg.packet.data.amount",
+				},
+			},
+			"txs_count": bson.M{
+				"$sum": 1,
+			},
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, unwind, match2, group)
+	var res []*dto.RelayerDenomStatisticsDTO
+	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *TxRepo) RelayerFeeStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"time": bson.M{
+				"$lte": endTime,
+				"$gte": startTime,
+			},
+			"msgs.type": bson.M{
+				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+			},
+		},
+	}
+
+	unwind := bson.M{
+		"$unwind": "$msgs",
+	}
+
+	match2 := bson.M{
+		"msgs.type": bson.M{
+			"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+		},
+	}
+
+	unwind2 := bson.M{
+		"$unwind": "$fee.amount",
+	}
+
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"signer":  "$msgs.msg.signer",
+				"status":  "$status",
+				"tx_type": "$msgs.type",
+				"denom":   "$fee.amount.denom",
+			},
+			"denom_amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$fee.amount.amount",
+				},
+			},
+			"txs_count": bson.M{
+				"$sum": 1,
+			},
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, unwind, match2, unwind2, group)
+	var res []*dto.RelayerFeeStatisticsDTO
+	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
+	return res, err
 }

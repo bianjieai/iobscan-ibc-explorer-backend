@@ -68,7 +68,22 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		case channelStatisticsTask.Name():
 			res = channelStatisticsTask.Run()
 		case relayerStatisticsTask.Name():
-			res = relayerStatisticsTask.Run()
+			chain := c.PostForm("chain")
+			if chain == "" {
+				res = relayerStatisticsTask.Run()
+			} else {
+				startTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
+				if err != nil {
+					logrus.Errorf("TaskController run %s err, %v", taskName, err)
+					return
+				}
+				endTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
+				if err != nil {
+					logrus.Errorf("TaskController run %s err, %v", taskName, err)
+					return
+				}
+				res = relayerStatisticsTask.RunWithParam(chain, startTime, endTime)
+			}
 		case relayerDataTask.Name():
 			res = relayerDataTask.Run()
 		case fixFailRecvPacketTask.Name():
