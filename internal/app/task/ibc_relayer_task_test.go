@@ -77,7 +77,7 @@ func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
 
 func Test_caculateRelayerTotalValue(t *testing.T) {
 	denomPrice := getTokenPriceMap()
-	one, err := relayerRepo.FindOneByRelayerId("")
+	one, err := relayerRepo.FindOneByRelayerId("6364e39e50255e66b989c04d")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -87,6 +87,6 @@ func Test_caculateRelayerTotalValue(t *testing.T) {
 	caculateRelayerTotalValue(denomPrice, feeAmt)
 }
 
-func TestIbcRelayerCronTask_checkAndUpdateEmptyAddr(t *testing.T) {
-	checkAndUpdateRelayerSrcChainAddr()
-}
+//func TestIbcRelayerCronTask_checkAndUpdateEmptyAddr(t *testing.T) {
+//	checkAndUpdateRelayerSrcChainAddr()
+//}

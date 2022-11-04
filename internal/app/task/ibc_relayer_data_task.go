@@ -156,11 +156,11 @@ func handleRegisterStatistic(denomPriceMap map[string]CoinItem, relayer *entity.
 
 func (t *RelayerDataTask) handleNewRelayerOnce(segments []*segment, historyData bool) {
 	t.initdistRelayerMap()
-	doHandleSegments(t.Name(), 3, segments, historyData, t.doOneSegment)
+	doHandleSegments(t.Name(), 5, segments, historyData, t.doOneSegment)
 }
 
 func (t *RelayerDataTask) doOneSegment(v *segment, historyData bool) {
-	var channelPairInfos []entity.ChannelPairInfo
+	var channelPairInfos []*entity.ChannelPairInfo
 	if historyData {
 		channelPairInfos = t.handleIbcTxHistory(v.StartTime, v.EndTime)
 	} else {
@@ -253,33 +253,33 @@ func removeEmptyChannelData(addrPairInfo []entity.ChannelPairInfo) []entity.Chan
 	return addrPairInfo
 }
 
-func (t *RelayerDataTask) handleIbcTxLatest(startTime, endTime int64) []entity.ChannelPairInfo {
+func (t *RelayerDataTask) handleIbcTxLatest(startTime, endTime int64) []*entity.ChannelPairInfo {
 	relayerDtos, err := ibcTxRepo.GetRelayerInfo(startTime, endTime)
 	if err != nil {
 		logrus.Errorf("get relayer info fail, %s", err.Error())
 		return nil
 	}
-	var relayers []entity.ChannelPairInfo
+	var relayers []*entity.ChannelPairInfo
 	for _, val := range relayerDtos {
 		item := t.createChannelPairInfoData(val)
 		if item.Valid() {
-			relayers = append(relayers, item)
+			relayers = append(relayers, &item)
 		}
 	}
 	return relayers
 }
 
-func (t *RelayerDataTask) handleIbcTxHistory(startTime, endTime int64) []entity.ChannelPairInfo {
+func (t *RelayerDataTask) handleIbcTxHistory(startTime, endTime int64) []*entity.ChannelPairInfo {
 	relayerDtos, err := ibcTxRepo.GetHistoryRelayerInfo(startTime, endTime)
 	if err != nil {
 		logrus.Errorf("get relayer info fail, %s", err.Error())
 		return nil
 	}
-	var relayers []entity.ChannelPairInfo
+	var relayers []*entity.ChannelPairInfo
 	for _, val := range relayerDtos {
 		item := t.createChannelPairInfoData(val)
 		if item.Valid() {
-			relayers = append(relayers, item)
+			relayers = append(relayers, &item)
 		}
 	}
 	return relayers
@@ -305,17 +305,38 @@ func checkNoExist(pairId string, data entity.IBCRelayerNew) bool {
 	return true
 }
 
-func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []entity.ChannelPairInfo) (map[string]entity.IBCRelayerNew, map[string]entity.IBCRelayerNew) {
+func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.ChannelPairInfo) (map[string]entity.IBCRelayerNew, map[string]entity.IBCRelayerNew) {
+	//并发处理根据目标地址反查发起地址
+	dochannelPairInfos := func(workNum int, pairInfos []*entity.ChannelPairInfo, dowork func(one *entity.ChannelPairInfo) *entity.ChannelPairInfo) {
+		var wg sync.WaitGroup
+		wg.Add(workNum)
+		for i := 0; i < workNum; i++ {
+			num := i
+			go func(num int, pairInfos []*entity.ChannelPairInfo) {
+				defer wg.Done()
+				for id, v := range pairInfos {
+					if id%workNum != num {
+						continue
+					}
+					pairInfos[id] = dowork(v)
+				}
+			}(num, pairInfos)
+		}
+		wg.Wait()
+	}
+
+	dochannelPairInfos(5, channelPairInfos, func(one *entity.ChannelPairInfo) *entity.ChannelPairInfo {
+		addrs := getChannalPairInfo(*one)
+		if len(addrs) > 0 {
+			addrs = utils.DistinctSliceStr(addrs)
+			one.ChainAAddress = addrs[0]
+		}
+		return one
+	})
+
 	newRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	dbRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	for i := range channelPairInfos {
-		//根据目标地址反查发起地址
-		addrs := getChannalPairInfo(channelPairInfos[i])
-		if len(addrs) > 0 {
-			addrs = utils.DistinctSliceStr(addrs)
-			channelPairInfos[i].ChainAAddress = addrs[0]
-		}
-
 		key := GenerateDistRelayerId(channelPairInfos[i].ChainA, channelPairInfos[i].ChainAAddress,
 			channelPairInfos[i].ChainB, channelPairInfos[i].ChainBAddress)
 		pairId := entity.GenerateRelayerPairId(channelPairInfos[i].ChainA, channelPairInfos[i].ChannelA,
@@ -332,14 +353,14 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []entity.Channe
 				channelpairNoExist := checkNoExist(pairId, *data)
 				if channelpairNoExist {
 					channelPairInfos[i].PairId = pairId
-					data.ChannelPairInfo = append(data.ChannelPairInfo, channelPairInfos[i])
+					data.ChannelPairInfo = append(data.ChannelPairInfo, *channelPairInfos[i])
 				}
 				dbRelayerMap[key] = *data
 			} else {
 				channelpairNoExist := checkNoExist(pairId, dbData)
 				if channelpairNoExist {
 					channelPairInfos[i].PairId = pairId
-					dbData.ChannelPairInfo = append(dbData.ChannelPairInfo, channelPairInfos[i])
+					dbData.ChannelPairInfo = append(dbData.ChannelPairInfo, *channelPairInfos[i])
 				}
 				dbRelayerMap[key] = dbData
 			}
@@ -350,7 +371,7 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []entity.Channe
 				channelpairNoExist := checkNoExist(pairId, data)
 				if channelpairNoExist {
 					channelPairInfos[i].PairId = pairId
-					data.ChannelPairInfo = append(data.ChannelPairInfo, channelPairInfos[i])
+					data.ChannelPairInfo = append(data.ChannelPairInfo, *channelPairInfos[i])
 					newRelayerMap[key] = data
 				}
 			} else {
@@ -358,7 +379,7 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []entity.Channe
 				newRelayerMap[key] = entity.IBCRelayerNew{
 					RelayerId:       primitive.NewObjectID().Hex(),
 					ServedChains:    2,
-					ChannelPairInfo: []entity.ChannelPairInfo{channelPairInfos[i]},
+					ChannelPairInfo: []entity.ChannelPairInfo{*channelPairInfos[i]},
 					CreateAt:        time.Now().Unix(),
 					UpdateAt:        time.Now().Unix(),
 				}
@@ -503,11 +524,6 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 							data.ChannelPairInfo = append(data.ChannelPairInfo, relayer.ChannelPairInfo[i])
 						}
 					}
-					data.TotalFeeValue += relayer.TotalFeeValue
-					data.RelayedTotalTxsValue += relayer.RelayedTotalTxsValue
-					data.RelayedTotalTxs += relayer.RelayedTotalTxs
-					data.RelayedSuccessTxs += relayer.RelayedSuccessTxs
-
 					distRelayerMap[key] = data
 				} else {
 					distRelayerMap[key] = relayer

@@ -190,7 +190,12 @@ func getRelayerAddrAndChains(channelPairInfo []entity.ChannelPairInfo) (addrs []
 	addrs = make([]string, 0, len(channelPairInfo))
 	chains = make([]string, 0, len(channelPairInfo))
 	for i := range channelPairInfo {
-		addrs = append(addrs, channelPairInfo[i].ChainAAddress, channelPairInfo[i].ChainBAddress)
+		if len(channelPairInfo[i].ChainAAddress) > 0 {
+			addrs = append(addrs, channelPairInfo[i].ChainAAddress)
+		}
+		if len(channelPairInfo[i].ChainBAddress) > 0 {
+			addrs = append(addrs, channelPairInfo[i].ChainBAddress)
+		}
 		chains = append(chains, channelPairInfo[i].ChainA, channelPairInfo[i].ChainB)
 	}
 	addrs = utils.DistinctSliceStr(addrs)
@@ -347,7 +352,7 @@ func (t *IbcRelayerCronTask) getUpdateTime(relayer *entity.IBCRelayerNew) int64 
 		//	}
 	}
 
-	getChannelPairUpdateTime := func(channelPair *entity.ChannelPairInfo) (int64, string) {
+	getChannelPairUpdateTime := func(channelPair entity.ChannelPairInfo) (int64, string) {
 		var updateTimeA, updateTimeB int64
 		var clientIdA, clientIdB string
 		var err error
@@ -387,22 +392,31 @@ func (t *IbcRelayerCronTask) getUpdateTime(relayer *entity.IBCRelayerNew) int64 
 		return updateTimeB, channelId
 	}
 
-	updateTimes := make([]int64, len(relayer.ChannelPairInfo))
-	//获取最新的updateTime
-	if len(relayer.ChannelPairInfo) > 0 {
-		wg := sync.WaitGroup{}
-		wg.Add(len(relayer.ChannelPairInfo))
-		for i, val := range relayer.ChannelPairInfo {
-			go func(info entity.ChannelPairInfo, pos int) {
+	//并发处理获取最新的updateTime
+	dochannelPairInfos := func(workNum int, pairInfos []entity.ChannelPairInfo, dowork func(one entity.ChannelPairInfo, pos int)) {
+		var wg sync.WaitGroup
+		wg.Add(workNum)
+		for i := 0; i < workNum; i++ {
+			num := i
+			go func(num int) {
 				defer wg.Done()
-				updateTime, channelId := getChannelPairUpdateTime(&info)
-				t.channelUpdateTimeMap.Store(channelId, updateTime)
-				updateTimes[pos] = updateTime
-			}(val, i)
+				for id, v := range pairInfos {
+					if id%workNum != num {
+						continue
+					}
+					dowork(v, id)
+				}
+			}(num)
 		}
 		wg.Wait()
-
 	}
+
+	updateTimes := make([]int64, len(relayer.ChannelPairInfo))
+	dochannelPairInfos(3, relayer.ChannelPairInfo, func(one entity.ChannelPairInfo, pos int) {
+		updateTime, channelId := getChannelPairUpdateTime(one)
+		t.channelUpdateTimeMap.Store(channelId, updateTime)
+		updateTimes[pos] = updateTime
+	})
 	var relayerUpdateTime int64
 	for i := range updateTimes {
 		if updateTimes[i] > relayerUpdateTime {
@@ -471,73 +485,66 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 	return nil
 }
 
-func checkAndUpdateRelayerSrcChainAddr() {
-	skip := int64(0)
-	limit := int64(500)
-	startTimeA := time.Now().Unix()
-	for {
-		relayers, err := relayerRepo.FindEmptyAddrAll(skip, limit)
-		if err != nil {
-			logrus.Error("find relayer by page fail, ", err.Error())
-			return
-		}
-		for _, relayer := range relayers {
-			for i, val := range relayer.ChannelPairInfo {
-				if val.ChainAAddress == "" {
-					addrs := getChannalPairInfo(val)
-					if len(addrs) > 0 {
-						addrs = utils.DistinctSliceStr(addrs)
-						val.ChainAAddress = addrs[0]
-					}
-				}
-				relayer.ChannelPairInfo[i] = val
-			}
-			if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil && !qmgo.IsDup(err) {
-				logrus.Error("Update Src Address failed, " + err.Error())
-			}
-		}
-		if len(relayers) < int(limit) {
-			break
-		}
-		skip += limit
-	}
-	logrus.Infof("cronjob execute checkAndUpdateRelayerSrcChainAddr finished, time use %d(s)", time.Now().Unix()-startTimeA)
-}
+//func checkAndUpdateRelayerSrcChainAddr() {
+//	skip := int64(0)
+//	limit := int64(500)
+//	startTimeA := time.Now().Unix()
+//	for {
+//		relayers, err := relayerRepo.FindEmptyAddrAll(skip, limit)
+//		if err != nil {
+//			logrus.Error("find relayer by page fail, ", err.Error())
+//			return
+//		}
+//		for _, relayer := range relayers {
+//			for i, val := range relayer.ChannelPairInfo {
+//				if val.ChainAAddress == "" {
+//					addrs := getChannalPairInfo(val)
+//					if len(addrs) > 0 {
+//						addrs = utils.DistinctSliceStr(addrs)
+//						val.ChainAAddress = addrs[0]
+//					}
+//				}
+//				relayer.ChannelPairInfo[i] = val
+//			}
+//			if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil && !qmgo.IsDup(err) {
+//				logrus.Error("Update Src Address failed, " + err.Error())
+//			}
+//		}
+//		if len(relayers) < int(limit) {
+//			break
+//		}
+//		skip += limit
+//	}
+//	logrus.Infof("cronjob execute checkAndUpdateRelayerSrcChainAddr finished, time use %d(s)", time.Now().Unix()-startTimeA)
+//}
 
 //根据目标地址反查发起地址
 func getChannalPairInfo(pair entity.ChannelPairInfo) []string {
 	var (
 		addrs, historyAddrs []string
 	)
-	gw := sync.WaitGroup{}
-	gw.Add(2)
-	go func() {
-		defer gw.Done()
-		addrs = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-			ScChainId:      pair.ChainA,
-			ScChannel:      pair.ChannelA,
-			DcChainId:      pair.ChainB,
-			DcChannel:      pair.ChannelB,
-			DcChainAddress: pair.ChainBAddress,
-		}, false)
-	}()
-
-	go func() {
-		defer gw.Done()
-		historyAddrs = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-			ScChainId:      pair.ChainA,
-			ScChannel:      pair.ChannelA,
-			DcChainId:      pair.ChainB,
-			DcChannel:      pair.ChannelB,
-			DcChainAddress: pair.ChainBAddress,
-		}, true)
-	}()
-
-	gw.Wait()
-
-	addrs = append(addrs, historyAddrs...)
+	addrs = getSrcChainAddress(&dto.GetRelayerInfoDTO{
+		ScChainId:      pair.ChainA,
+		ScChannel:      pair.ChannelA,
+		DcChainId:      pair.ChainB,
+		DcChannel:      pair.ChannelB,
+		DcChainAddress: pair.ChainBAddress,
+	}, false)
 	if len(addrs) > 0 {
 		addrs = utils.DistinctSliceStr(addrs)
+		return addrs
+	}
+
+	historyAddrs = getSrcChainAddress(&dto.GetRelayerInfoDTO{
+		ScChainId:      pair.ChainA,
+		ScChannel:      pair.ChannelA,
+		DcChainId:      pair.ChainB,
+		DcChannel:      pair.ChannelB,
+		DcChainAddress: pair.ChainBAddress,
+	}, true)
+
+	if len(historyAddrs) > 0 {
+		historyAddrs = utils.DistinctSliceStr(historyAddrs)
 	}
 	return addrs
 }
