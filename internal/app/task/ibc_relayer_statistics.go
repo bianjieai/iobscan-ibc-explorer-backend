@@ -102,7 +102,7 @@ func (t *RelayerStatisticsTask) RunWithParam(chainId string, startTime, endTime 
 	segments := segmentTool(segmentStepLatest, startTime, endTime)
 	chainMap, err := getAllChainMap()
 	if err != nil {
-		logrus.Errorf("task %s IncrementRun getAllChainMap err, %v", t.Name(), err)
+		logrus.Errorf("task %s RunWithParam getAllChainMap err, %v", t.Name(), err)
 		return -1
 	}
 
@@ -160,13 +160,14 @@ func (w *relayerStatisticsWorker) exec() {
 		}
 
 		segments := segmentTool(segmentStepLatest, firstTx.Time, time.Now().Unix())
-		startTime := time.Now().Unix()
 		w.statistics(chainId, segments, opInsert)
-		logrus.Infof("task %s worker %s statistics chain %s end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
 	}
 }
 
 func (w *relayerStatisticsWorker) statistics(chainId string, segments []*segment, op int) {
+	startTime := time.Now().Unix()
+	logrus.Infof("task %s worker %s statistics chain: %s, total segments: %d", w.taskName, w.workerName, chainId, len(segments))
+
 	for _, v := range segments {
 		// denom statistics
 		denomStats, err := txRepo.RelayerDenomStatistics(chainId, v.StartTime, v.EndTime)
@@ -174,7 +175,7 @@ func (w *relayerStatisticsWorker) statistics(chainId string, segments []*segment
 			logrus.Errorf("task %s worker %s RelayerDenomStatistics err, %s-%d-%d, %v", w.taskName, w.workerName, chainId, v.StartTime, v.EndTime, err)
 		} else {
 			denomStatMap, addrChannelMap := w.aggrDenomStat(chainId, v, denomStats)
-			_ = w.saveDenomStat(denomStatMap, v, op)
+			_ = w.saveDenomStat(chainId, denomStatMap, v, op)
 			_ = w.saveAddrChannel(addrChannelMap)
 		}
 
@@ -186,6 +187,8 @@ func (w *relayerStatisticsWorker) statistics(chainId string, segments []*segment
 			_ = w.saveFeeStat(chainId, feeStats, v, op)
 		}
 	}
+
+	logrus.Infof("task %s worker %s statistics chain %s end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
 }
 
 func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment, stats []*dto.RelayerDenomStatisticsDTO) (map[string]*entity.IBCRelayerDenomStatistics, map[string]*entity.IBCRelayerAddressChannel) {
@@ -256,8 +259,8 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 	return denomStatMap, addrChannelMap
 }
 
-func (w *relayerStatisticsWorker) saveDenomStat(denomStatMap map[string]*entity.IBCRelayerDenomStatistics, segment *segment, op int) error {
-	if denomStatMap == nil {
+func (w *relayerStatisticsWorker) saveDenomStat(chainId string, denomStatMap map[string]*entity.IBCRelayerDenomStatistics, segment *segment, op int) error {
+	if len(denomStatMap) == 0 {
 		return nil
 	}
 	denomStats := make([]*entity.IBCRelayerDenomStatistics, 0, len(denomStatMap))
@@ -268,11 +271,11 @@ func (w *relayerStatisticsWorker) saveDenomStat(denomStatMap map[string]*entity.
 	var err error
 	if op == opInsert {
 		if err = relayerDenomStatisticsRepo.InsertManyToNew(denomStats); err != nil {
-			logrus.Errorf("task %s relayerDenomStatisticsRepo.InsertManyToNew err, %v", w.taskName, err)
+			logrus.Errorf("task %s relayerDenomStatisticsRepo.InsertManyToNew chain: %s err, %v", w.taskName, chainId, err)
 		}
 	} else {
-		if err = relayerDenomStatisticsRepo.BatchSwap(segment.StartTime, segment.EndTime, denomStats); err != nil {
-			logrus.Errorf("task %s relayerDenomStatisticsRepo.BatchSwap err, %v", w.taskName, err)
+		if err = relayerDenomStatisticsRepo.BatchSwap(chainId, segment.StartTime, segment.EndTime, denomStats); err != nil {
+			logrus.Errorf("task %s relayerDenomStatisticsRepo.BatchSwap chain: %s, err, %v", w.taskName, chainId, err)
 		}
 	}
 
@@ -303,11 +306,11 @@ func (w *relayerStatisticsWorker) saveFeeStat(chainId string, feeStats []*dto.Re
 	var err error
 	if op == opInsert {
 		if err = relayerFeeStatisticsRepo.InsertManyToNew(feeStatList); err != nil {
-			logrus.Errorf("task %s relayerFeeStatisticsRepo.InsertManyToNew err, %v", w.taskName, err)
+			logrus.Errorf("task %s relayerFeeStatisticsRepo.InsertManyToNew chain: %s err, %v", w.taskName, chainId, err)
 		}
 	} else {
-		if err = relayerFeeStatisticsRepo.BatchSwap(segment.StartTime, segment.EndTime, feeStatList); err != nil {
-			logrus.Errorf("task %s relayerFeeStatisticsRepo.BatchSwap err, %v", w.taskName, err)
+		if err = relayerFeeStatisticsRepo.BatchSwap(chainId, segment.StartTime, segment.EndTime, feeStatList); err != nil {
+			logrus.Errorf("task %s relayerFeeStatisticsRepo.BatchSwap chain: %s err, %v", w.taskName, chainId, err)
 		}
 	}
 
@@ -315,7 +318,7 @@ func (w *relayerStatisticsWorker) saveFeeStat(chainId string, feeStats []*dto.Re
 }
 
 func (w *relayerStatisticsWorker) saveAddrChannel(addrChannelMap map[string]*entity.IBCRelayerAddressChannel) error {
-	if addrChannelMap == nil {
+	if len(addrChannelMap) == 0 {
 		return nil
 	}
 

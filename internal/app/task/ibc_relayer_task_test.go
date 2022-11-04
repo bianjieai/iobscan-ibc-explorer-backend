@@ -23,6 +23,18 @@ func Test_RelayerStatisticsTask(t *testing.T) {
 	relayerStatisticsTask.Run()
 }
 
+func Test_RelayerStatisticRunIncrement(t *testing.T) {
+	seg := segment{
+		StartTime: 1636761600,
+		EndTime:   1636847999,
+	}
+	_ = relayerStatisticsTask.RunIncrement(&seg)
+}
+
+func Test_RelayerStatisticsRunWithParam(t *testing.T) {
+	relayerStatisticsTask.RunWithParam("kichain_2", 1636761600, 1636847999)
+}
+
 func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
 	data, data1, _ := task.getTimePeriodAndupdateTime(&entity.IBCRelayer{
 		ChainA:        "bigbang",

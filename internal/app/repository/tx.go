@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -269,8 +268,10 @@ func (repo *TxRepo) RelayerDenomStatistics(chainId string, startTime, endTime in
 	}
 
 	match2 := bson.M{
-		"msgs.type": bson.M{
-			"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+		"$match": bson.M{
+			"msgs.type": bson.M{
+				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+			},
 		},
 	}
 
@@ -295,8 +296,22 @@ func (repo *TxRepo) RelayerDenomStatistics(chainId string, startTime, endTime in
 		},
 	}
 
+	project := bson.M{
+		"$project": bson.M{
+			"_id":          0,
+			"signer":       "$_id.signer",
+			"status":       "$_id.status",
+			"tx_type":      "$_id.tx_type",
+			"denom":        "$_id.denom",
+			"sc_channel":   "$_id.sc_channel",
+			"dc_channel":   "$_id.dc_channel",
+			"denom_amount": "$denom_amount",
+			"txs_count":    "$txs_count",
+		},
+	}
+
 	var pipe []bson.M
-	pipe = append(pipe, match, unwind, match2, group)
+	pipe = append(pipe, match, unwind, match2, group, project)
 	var res []*dto.RelayerDenomStatisticsDTO
 	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
 	return res, err
@@ -320,8 +335,10 @@ func (repo *TxRepo) RelayerFeeStatistics(chainId string, startTime, endTime int6
 	}
 
 	match2 := bson.M{
-		"msgs.type": bson.M{
-			"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+		"$match": bson.M{
+			"msgs.type": bson.M{
+				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+			},
 		},
 	}
 
@@ -348,8 +365,20 @@ func (repo *TxRepo) RelayerFeeStatistics(chainId string, startTime, endTime int6
 		},
 	}
 
+	project := bson.M{
+		"$project": bson.M{
+			"_id":          0,
+			"signer":       "$_id.signer",
+			"status":       "$_id.status",
+			"tx_type":      "$_id.tx_type",
+			"denom":        "$_id.denom",
+			"denom_amount": "$denom_amount",
+			"txs_count":    "$txs_count",
+		},
+	}
+
 	var pipe []bson.M
-	pipe = append(pipe, match, unwind, match2, unwind2, group)
+	pipe = append(pipe, match, unwind, match2, unwind2, group, project)
 	var res []*dto.RelayerFeeStatisticsDTO
 	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
 	return res, err

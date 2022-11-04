@@ -16,7 +16,7 @@ type IRelayerFeeStatisticsRepo interface {
 	SwitchColl() error
 	InsertMany(batch []*entity.IBCRelayerFeeStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerFeeStatistics) error
-	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
+	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
 }
 
 var _ IRelayerFeeStatisticsRepo = new(RelayerFeeStatisticsRepo)
@@ -33,9 +33,19 @@ func (repo *RelayerFeeStatisticsRepo) collNew() *qmgo.Collection {
 }
 
 func (repo *RelayerFeeStatisticsRepo) CreateNew() error {
-	indexOpts := officialOpts.Index().SetUnique(true).SetName("relayer_statistics_unique")
-	key := []string{"relayer_address", "tx_type", "tx_status", "fee_denom", "segment_start_time", "segment_end_time"}
-	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+	ukOpts := officialOpts.Index().SetUnique(true).SetName("statistics_unique")
+	uk := []string{"relayer_address", "tx_type", "tx_status", "fee_denom", "segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: uk, IndexOptions: ukOpts}); err != nil {
+		return err
+	}
+
+	indexOpts := officialOpts.Index()
+	key := []string{"statistics_chain", "segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (repo *RelayerFeeStatisticsRepo) SwitchColl() error {
@@ -59,9 +69,10 @@ func (repo *RelayerFeeStatisticsRepo) InsertManyToNew(batch []*entity.IBCRelayer
 	return nil
 }
 
-func (repo *RelayerFeeStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error {
+func (repo *RelayerFeeStatisticsRepo) BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error {
 	callback := func(sessCtx context.Context) (interface{}, error) {
 		query := bson.M{
+			"statistics_chain":   chain,
 			"segment_start_time": segmentStartTime,
 			"segment_end_time":   segmentEndTime,
 		}

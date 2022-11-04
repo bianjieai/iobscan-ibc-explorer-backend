@@ -16,7 +16,7 @@ type IRelayerDenomStatisticsRepo interface {
 	SwitchColl() error
 	InsertMany(batch []*entity.IBCRelayerDenomStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerDenomStatistics) error
-	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
+	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
 }
 
 var _ IRelayerDenomStatisticsRepo = new(RelayerDenomStatisticsRepo)
@@ -33,10 +33,19 @@ func (repo *RelayerDenomStatisticsRepo) collNew() *qmgo.Collection {
 }
 
 func (repo *RelayerDenomStatisticsRepo) CreateNew() error {
-	indexOpts := officialOpts.Index().SetUnique(true).SetName("relayer_statistics_unique")
-	key := []string{"relayer_address", "tx_type", "tx_status", "base_denom", "base_denom_chain_id", "segment_start_time", "segment_end_time"}
-	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+	ukOpts := officialOpts.Index().SetUnique(true).SetName("statistics_unique")
+	uk := []string{"relayer_address", "tx_type", "tx_status", "base_denom", "base_denom_chain_id", "segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: uk, IndexOptions: ukOpts}); err != nil {
+		return err
+	}
 
+	indexOpts := officialOpts.Index()
+	key := []string{"statistics_chain", "segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts}); err != nil {
+		return err
+	}
+
+	return nil
 }
 func (repo *RelayerDenomStatisticsRepo) SwitchColl() error {
 	command := bson.D{{"renameCollection", fmt.Sprintf("%s.%s", ibcDatabase, entity.IBCRelayerDenomStatisticsNewCollName)},
@@ -58,9 +67,10 @@ func (repo *RelayerDenomStatisticsRepo) InsertManyToNew(batch []*entity.IBCRelay
 	return nil
 }
 
-func (repo *RelayerDenomStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error {
+func (repo *RelayerDenomStatisticsRepo) BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error {
 	callback := func(sessCtx context.Context) (interface{}, error) {
 		query := bson.M{
+			"statistics_chain":   chain,
 			"segment_start_time": segmentStartTime,
 			"segment_end_time":   segmentEndTime,
 		}
