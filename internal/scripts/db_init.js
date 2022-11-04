@@ -11,15 +11,11 @@ db.chain_registry.createIndex({
 
 // ibc_relayer表
 db.ibc_relayer.createIndex({
-    "chain_a": -1,
-    "channel_a": -1,
-    "chain_a_address": -1
+    "channel_pair_info.pair_id": -1,
 }, {background: true, unique: true});
 
 db.ibc_relayer.createIndex({
-    "chain_b": -1,
-    "channel_b": -1,
-    "chain_b_address": -1
+    "relayer_id": -1,
 }, {background: true, unique: true});
 
 // ibc_relayer_config表

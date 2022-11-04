@@ -65,3 +65,7 @@ type ChannelPairInfo struct {
 func (i IBCRelayerNew) CollectionName() string {
 	return "ibc_relayer"
 }
+
+func (i ChannelPairInfo) Valid() bool {
+	return i.ChainA != "" && i.ChainB != "" && i.ChannelA != "" && i.ChannelB != "" && (i.ChainBAddress != "" || i.ChainAAddress != "")
+}

@@ -79,18 +79,6 @@ func NewMetricLcdStatus() metrics.Guage {
 	return connectionStatus
 }
 
-func NewMetricRelayerStatusCheck() metrics.Guage {
-	lcdConnectionStatusMetric := metrics.NewGuage(
-		"ibc_explorer_backend",
-		"relayer",
-		"status_check",
-		"ibc_explorer_backend relayer status check result(1:Normal  -1:UNormal)",
-		[]string{relayerTag},
-	)
-	connectionStatus, _ := metrics.CovertGuage(lcdConnectionStatusMetric)
-	return connectionStatus
-}
-
 func SetCronTaskStatusMetricValue(taskName string, value float64) {
 	if cronTaskStatusMetric != nil {
 		cronTaskStatusMetric.With(TagName, taskName).Set(value)
@@ -208,56 +196,6 @@ func redisClientStatus(quit chan bool) {
 	}
 }
 
-func relayerStatusCheck(quit chan bool) {
-	for {
-		t := time.NewTimer(time.Duration(600) * time.Second)
-		select {
-		case <-t.C:
-			logrus.Info("monitor relayer start")
-			relayerStatusCheckHandler()
-		case <-quit:
-			logrus.Debug("quit signal recv relayerStatusCheck")
-			return
-		}
-	}
-}
-
-func relayerStatusCheckHandler() {
-	var skip int64 = 0
-	var limit int64 = 1000
-	var timeOffset int64 = 1800
-	for {
-		relayerList, err := relayerRepo.FindAll(skip, limit)
-		if err != nil {
-			logrus.Errorf("monitor relayerStatusCheck relayerRepo.FindAll err, %v", err)
-			return
-		}
-
-		for _, v := range relayerList {
-			if v.Status == entity.RelayerRunning { // running
-				if time.Now().Unix()-v.UpdateTime < v.TimePeriod+timeOffset {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(1))
-				} else {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(-1))
-					logrus.Warnf("monitor relayerStatusCheck relayer(%s) status(%d) may be incorrect", v.RelayerId, v.Status)
-				}
-			} else { // stop
-				if time.Now().Unix()-v.UpdateTime > v.TimePeriod {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(1))
-				} else {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(-1))
-					logrus.Warnf("monitor relayerStatusCheck relayer(%s) status(%d) may be incorrect", v.RelayerId, v.Status)
-				}
-			}
-		}
-
-		if len(relayerList) < int(limit) {
-			break
-		}
-		skip += limit
-	}
-}
-
 func Start(port string) {
 	quit := make(chan bool)
 	defer func() {
@@ -273,10 +211,8 @@ func Start(port string) {
 	cronTaskStatusMetric = NewMetricCronWorkStatus()
 	redisStatusMetric = NewMetricRedisStatus()
 	lcdConnectStatsMetric = NewMetricLcdStatus()
-	relayerStatusCheckMetric = NewMetricRelayerStatusCheck()
 	server.Report(func() {
 		go redisClientStatus(quit)
 		go lcdConnectionStatus(quit)
-		go relayerStatusCheck(quit)
 	})
 }

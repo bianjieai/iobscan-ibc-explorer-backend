@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
-
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	opts "github.com/qiniu/qmgo/options"
@@ -17,6 +17,7 @@ type IRelayerDenomStatisticsRepo interface {
 	InsertMany(batch []*entity.IBCRelayerDenomStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerDenomStatistics) error
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
+	CountRelayerBaseDenomAmtAndTxs(relayAddrs []string, servedChains []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
 }
 
 var _ IRelayerDenomStatisticsRepo = new(RelayerDenomStatisticsRepo)
@@ -80,4 +81,42 @@ func (repo *RelayerDenomStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTi
 	}
 	_, err := mgo.DoTransaction(context.Background(), callback)
 	return err
+}
+
+func (repo *RelayerDenomStatisticsRepo) CountRelayerBaseDenomAmtAndTxs(relayAddrs []string, servedChains []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"relayer_address":  bson.M{"$in": relayAddrs},
+			"statistics_chain": bson.M{"$in": servedChains},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
+				"tx_status":           "$tx_status",
+			},
+			"amount": bson.M{
+				"$sum": bson.M{"$toDouble": "$relayed_amount"},
+			},
+			"relayed_txs": bson.M{
+				"$sum": "$relayed_txs",
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":                 0,
+			"base_denom":          "$_id.base_denom",
+			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"amount":              "$amount",
+			"total_txs":           "$relayed_txs",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	var res []*dto.CountRelayerBaseDenomAmtDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
 }
