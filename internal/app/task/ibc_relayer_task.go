@@ -66,6 +66,7 @@ func (t *IbcRelayerCronTask) Run() int {
 	}
 
 	t.denomPriceMap = getTokenPriceMap()
+	doRegisterRelayer(t.denomPriceMap)
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
 	t.CheckAndChangeRelayer()
@@ -135,7 +136,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		handleRelayers(5, relayers, t.handleOneRelayer)
+		handleRelayers(5, relayers, t.updateOneRelayerUpdateTime)
 
 		if len(relayers) < int(limit) {
 			break
@@ -144,32 +145,13 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	}
 }
 
-//================handle one relayer logic===============//
-func (t *IbcRelayerCronTask) handleOneRelayer(one *entity.IBCRelayerNew) {
-	//更新relayer的channelPairInfo
-	//if one.RelayerName != "" {
-	//	err := t.updateRegisterRelayerChannelPairInfo(one)
-	//	if err != nil {
-	//		logrus.Error("update register relayer channel pair info fail, ", err.Error(),
-	//			" relayer_id:", one.RelayerId, " relayer_name:", one.RelayerName)
-	//	}
-	//} else {
-	//	updateUnknowRelayerChannelPairInfo(one)
-	//}
-
+func (t *IbcRelayerCronTask) updateOneRelayerUpdateTime(one *entity.IBCRelayerNew) {
 	//更新relayer的updateTime
 	t.updateRelayerUpdateTime(one)
 	//更新channel的updateTime
 	for _, channelPair := range one.ChannelPairInfo {
 		channelId := generateChannelId(channelPair.ChainA, channelPair.ChannelA, channelPair.ChainB, channelPair.ChannelB)
 		t.updateIbcChannelRelayerInfo(channelId)
-	}
-
-	//更新relayer的统计信息(txs,success_txs,txs_value,fee_value)
-	item := getRelayerStatisticData(t.denomPriceMap, one)
-	if err := relayerRepo.Update(item); err != nil {
-		logrus.Error("update relayer statistic data fail, ", err.Error(),
-			" relayer_id:", one.RelayerId, " relayer_name:", one.RelayerName)
 	}
 }
 

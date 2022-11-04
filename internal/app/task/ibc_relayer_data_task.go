@@ -44,7 +44,7 @@ func (t *RelayerDataTask) Run() int {
 	t.denomPriceMap = getTokenPriceMap()
 	startTime := time.Now().Unix()
 
-	t.handleRegisterRelayer()
+	doRegisterRelayer(t.denomPriceMap)
 
 	historySegments, err := getHistorySegment(segmentStepHistory)
 	if err != nil {
@@ -109,7 +109,7 @@ func getRelayerPairIds(relayerChannelPairInfo []entity.ChannelPairInfo) []string
 	return pairIds
 }
 
-func (t *RelayerDataTask) handleRegisterRelayer() {
+func doRegisterRelayer(denomPriceMap map[string]CoinItem) {
 
 	skip := int64(0)
 	limit := int64(1000)
@@ -120,27 +120,37 @@ func (t *RelayerDataTask) handleRegisterRelayer() {
 			return
 		}
 		for _, relayer := range relayers {
-			item := getRelayerStatisticData(t.denomPriceMap, relayer)
-
-			if channelPairs, change, err := t.matchRegisterRelayerChannelPairInfo(item.ChannelPairInfo); err == nil {
-				if change {
-					item.ChannelPairInfo = channelPairs
-					if err := relayerRepo.Update(item); err != nil {
-						logrus.Error("update register relayer statistic fail, ", err.Error())
-					}
-					continue
-				}
-			}
-
-			if err := relayerRepo.UpdateTxsInfo(item.RelayerId, item.RelayedTotalTxs, item.RelayedSuccessTxs,
-				item.RelayedTotalTxsValue, item.TotalFeeValue); err != nil {
-				logrus.Error("update register relayer statistic fail, ", err.Error())
-			}
+			handleRegisterRelayerChannelPair(relayer)
+			handleRegisterStatistic(denomPriceMap, relayer)
 		}
 		if len(relayers) < int(limit) {
 			break
 		}
 		skip += limit
+	}
+}
+
+func handleRegisterRelayerChannelPair(relayer *entity.IBCRelayerNew) {
+
+	channelPairs, change, err := matchRegisterRelayerChannelPairInfo(relayer.ChannelPairInfo)
+	if err != nil {
+		logrus.Error("match register relayer channel pair fail, ", err.Error())
+		return
+	}
+	if change {
+		relayer.ChannelPairInfo = channelPairs
+		if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil {
+			logrus.Error("update register relayer statistic fail, ", err.Error())
+		}
+	}
+	return
+}
+
+func handleRegisterStatistic(denomPriceMap map[string]CoinItem, relayer *entity.IBCRelayerNew) {
+	item := getRelayerStatisticData(denomPriceMap, relayer)
+	if err := relayerRepo.UpdateTxsInfo(item.RelayerId, item.RelayedTotalTxs, item.RelayedSuccessTxs,
+		item.RelayedTotalTxsValue, item.TotalFeeValue); err != nil {
+		logrus.Error("update register relayer statistic fail, ", err.Error())
 	}
 }
 
@@ -212,6 +222,35 @@ func distinctRelayerArr(data map[string]entity.IBCRelayerNew, existInDb bool) []
 		}
 	}
 	return retData
+}
+
+func removeEmptyChannelData(addrPairInfo []entity.ChannelPairInfo) []entity.ChannelPairInfo {
+	pairIds := getRelayerPairIds(addrPairInfo)
+	addrPairInfoPairIdsLen := len(pairIds)
+	if addrPairInfoPairIdsLen != len(addrPairInfo) {
+		//需要清除chain,address在列表里已经存在但channel为空的数据
+		dataMap := make(map[string]struct{}, len(addrPairInfo))
+		channelPairArrs := make([]entity.ChannelPairInfo, 0, len(addrPairInfo))
+		for _, val := range addrPairInfo {
+			if val.PairId != "" {
+				key := GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+				dataMap[key] = struct{}{}
+				channelPairArrs = append(channelPairArrs, val)
+			}
+		}
+
+		for _, val := range addrPairInfo {
+			if val.PairId == "" {
+				key := GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+				if _, ok := dataMap[key]; !ok {
+					channelPairArrs = append(channelPairArrs, val)
+				}
+			}
+		}
+
+		return channelPairArrs
+	}
+	return addrPairInfo
 }
 
 func (t *RelayerDataTask) handleIbcTxLatest(startTime, endTime int64) []entity.ChannelPairInfo {
@@ -351,7 +390,7 @@ func (t *RelayerDataTask) saveAndUpdateRelayer(newRelayerMap, dbRelayerMap []ent
 }
 
 //根据已注册的relayer的地址和链更新channel_pair_info
-func (t *RelayerDataTask) matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
+func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
 	addrs, chains := getRelayerAddrAndChains(addrPairInfo)
 	channelAddrs, err := relayerAddrChannelRepo.FindChannels(chains, addrs)
 	if err != nil {
@@ -387,9 +426,11 @@ func (t *RelayerDataTask) matchRegisterRelayerChannelPairInfo(addrPairInfo []ent
 			}
 		}
 	}
+	addrPairInfoLen := len(addrPairInfo)
+	addrPairInfo = removeEmptyChannelData(addrPairInfo)
 
 	if len(channelPairInfos) == 0 {
-		return addrPairInfo, false, nil
+		return addrPairInfo, addrPairInfoLen != len(addrPairInfo), nil
 	}
 
 	setMap := make(map[string]entity.ChannelPairInfo)

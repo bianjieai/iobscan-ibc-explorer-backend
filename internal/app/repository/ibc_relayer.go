@@ -47,7 +47,7 @@ type IRelayerRepo interface {
 	FindRelayer(chainId, relayerAddr, channel string) ([]*entity.IBCRelayerNew, error)
 	FindOneByRelayerId(relayerId string) (*entity.IBCRelayerNew, error)
 	FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRelayerNew, error)
-	UpdateSrcAddress(relayerId string, addrs []string) error
+	//UpdateSrcAddress(relayerId string, addrs []string) error
 	UpdateChannelPairInfo(relayerId string, infos []entity.ChannelPairInfo) error
 	Update(relayer *entity.IBCRelayerNew) error
 	RemoveDumpData(ids []string) error
@@ -251,21 +251,21 @@ func (repo *IbcRelayerRepo) UpdateRelayerTime(relayerId string, updateTime int64
 		}})
 }
 
-func (repo *IbcRelayerRepo) UpdateSrcAddress(relayerId string, addrs []string) error {
-
-	if len(addrs) == 0 {
-		return nil
-	}
-	update := bson.M{
-		RelayerFieldUpdateAt:      time.Now().Unix(),
-		RelayerFieldChainAAddress: addrs[0],
-	}
-	return repo.coll().UpdateOne(context.Background(), bson.M{
-		RelayerFieldelayerId:      relayerId,
-		RelayerFieldChainAAddress: "",
-	}, bson.M{
-		"$set": update})
-}
+//func (repo *IbcRelayerRepo) UpdateSrcAddress(relayerId string, addrs []string) error {
+//
+//	if len(addrs) == 0 {
+//		return nil
+//	}
+//	update := bson.M{
+//		RelayerFieldUpdateAt:      time.Now().Unix(),
+//		RelayerFieldChainAAddress: addrs[0],
+//	}
+//	return repo.coll().UpdateOne(context.Background(), bson.M{
+//		RelayerFieldelayerId:      relayerId,
+//		RelayerFieldChainAAddress: "",
+//	}, bson.M{
+//		"$set": update})
+//}
 
 func (repo *IbcRelayerRepo) CountChainRelayers(chainId string) (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{
