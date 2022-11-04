@@ -1,5 +1,6 @@
 package entity
 
+// TODO remove this
 const (
 	IBCRelayerStatisticsCollName    = "ibc_relayer_statistics"
 	IBCRelayerStatisticsNewCollName = "ibc_relayer_statistics_new"

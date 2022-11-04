@@ -58,6 +58,18 @@ func (c ChainConfig) CollectionName() string {
 	return "chain_config"
 }
 
+func (c *ChainConfig) GetDcChainId(scChannel, dcChannel string) string {
+	for _, ibcInfo := range c.IbcInfo {
+		for _, path := range ibcInfo.Paths {
+			if path.ChannelId == scChannel && path.Counterparty.ChannelId == dcChannel {
+				return path.ChainId
+			}
+		}
+	}
+
+	return ""
+}
+
 func (c *ChainConfig) GetChannelClient(port, channel string) string {
 	if port == "" {
 		port = constant.PortTransfer

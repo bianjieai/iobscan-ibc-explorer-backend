@@ -2,190 +2,332 @@ package task
 
 import (
 	"fmt"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/qiniu/qmgo"
-	"github.com/shopspring/decimal"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
 
-type (
-	RelayerStatisticsTask struct {
-	}
-	Statistic struct {
-		*entity.IBCRelayer
-		Amounts    decimal.Decimal
-		Txs        int64
-		TxsSuccess int64
-		BaseDenom  string
-	}
-)
+type RelayerStatisticsTask struct {
+}
+
+var relayerStatisticsCoordinator *chainQueueCoordinator
 
 func (t *RelayerStatisticsTask) Name() string {
 	return "ibc_relayer_statistics_task"
-}
-
-func (t *RelayerStatisticsTask) relayerTxsMapKey(statisticId, address, baseDenom string) string {
-	return fmt.Sprintf("%s:%s:%s", statisticId, address, baseDenom)
 }
 
 func (t *RelayerStatisticsTask) Switch() bool {
 	return global.Config.Task.SwitchIbcRelayerStatisticsTask
 }
 
+// Run 全量更新
 func (t *RelayerStatisticsTask) Run() int {
-	if err := relayerStatisticsRepo.CreateNew(); err != nil {
-		logrus.Errorf("task %s CreateNew err, %v", t.Name(), err)
-		return -1
-	}
-
-	historySegments, err := getHistorySegment(segmentStepHistory)
+	chainMap, err := getAllChainMap()
 	if err != nil {
-		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
+		logrus.Errorf("task %s getAllChainMap err, %v", t.Name(), err)
 		return -1
 	}
-	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
-	startTime := time.Now().Unix()
-	if err = t.dealHistory(historySegments); err != nil {
-		logrus.Errorf("task %s dealHistory err, %v", t.Name(), err)
-		return -1
-	}
-	logrus.Infof("task %s finish dealHistory, time use %d(s)", t.Name(), time.Now().Unix()-startTime)
 
-	segments, err := getSegment(segmentStepLatest)
-	if err != nil {
-		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
-		return -1
+	// init coordinator
+	chainQueue := new(utils.QueueString)
+	for _, v := range chainMap {
+		chainQueue.Push(v.ChainId)
 	}
-	startTime = time.Now().Unix()
-	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
-	if err = t.deal(segments, opInsert); err != nil {
-		logrus.Errorf("task %s deal err, %v", t.Name(), err)
-		return -1
+	relayerStatisticsCoordinator = &chainQueueCoordinator{
+		chainQueue: chainQueue,
 	}
-	logrus.Infof("task %s finish deal, time use %d(s)", t.Name(), time.Now().Unix()-startTime)
 
-	if err = relayerStatisticsRepo.SwitchColl(); err != nil {
-		logrus.Errorf("task %s SwitchColl err, %v", t.Name(), err)
+	if err = relayerDenomStatisticsRepo.CreateNew(); err != nil {
+		logrus.Errorf("task %s relayerDenomStatisticsRepo.CreateNew err, %v", t.Name(), err)
+		return -1
+	}
+
+	if err = relayerFeeStatisticsRepo.CreateNew(); err != nil {
+		logrus.Errorf("task %s relayerFeeStatisticsRepo.CreateNew err, %v", t.Name(), err)
+		return -1
+	}
+
+	workerNum := len(chainMap)
+	if workerNum > relayerStatisticsWorkerNum {
+		workerNum = relayerStatisticsWorkerNum
+	}
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(workerNum)
+	for i := 1; i <= workerNum; i++ {
+		workName := fmt.Sprintf("worker-%d", i)
+		go func(wn string) {
+			defer waitGroup.Done()
+			newRelayerStatisticsWorker(t.Name(), wn, chainMap).exec()
+		}(workName)
+	}
+	waitGroup.Wait()
+
+	if err = relayerDenomStatisticsRepo.SwitchColl(); err != nil {
+		logrus.Errorf("task %s relayerDenomStatisticsRepo.SwitchColl() err, %v", t.Name(), err)
+		return -1
+	}
+
+	if err = relayerFeeStatisticsRepo.SwitchColl(); err != nil {
+		logrus.Errorf("task %s relayerFeeStatisticsRepo.SwitchColl() err, %v", t.Name(), err)
 		return -1
 	}
 
 	return 1
 }
 
-func (t *RelayerStatisticsTask) saveData(relayerStaticsMap map[string]Statistic, startTime, endTime int64, op int) error {
-	var relayerStatics []entity.IBCRelayerStatistics
-	for key, value := range relayerStaticsMap {
-		if arrs := strings.Split(key, ":"); len(arrs) == 4 {
-			statisticId, address, baseDenom, baseDenomChainId := arrs[0], arrs[1], arrs[2], arrs[3]
-			item := createIBCRelayerStatistics(address, baseDenom, baseDenomChainId, value.Amounts,
-				value.TxsSuccess, value.Txs, startTime, endTime)
-			item.StatisticId = statisticId
-			relayerStatics = append(relayerStatics, item)
-		}
+// RunIncrement 增量统计
+func (t *RelayerStatisticsTask) RunIncrement(seg *segment) error {
+	chainMap, err := getAllChainMap()
+	if err != nil {
+		logrus.Errorf("task %s IncrementRun getAllChainMap err, %v", t.Name(), err)
+		return err
 	}
-	if len(relayerStatics) > 0 {
-		switch op {
-		case opInsert:
-			if err := relayerStatisticsRepo.InsertToNew(relayerStatics); err != nil && !qmgo.IsDup(err) {
-				return err
-			}
-		case opUpdate:
-			for _, val := range relayerStatics {
-				if err := relayerStatisticsRepo.InserOrUpdate(val); err != nil && err != qmgo.ErrNoSuchDocuments {
-					logrus.Error("relayer statistic update fail, ", err.Error())
-				}
-			}
-		}
+
+	segs := []*segment{seg}
+	worker := newRelayerStatisticsWorker(t.Name(), "increment", chainMap)
+	for chainId, _ := range chainMap {
+		worker.statistics(chainId, segs, opUpdate)
 	}
+
 	return nil
 }
 
-// dealHistory 处理历史记录，针对ex_ibc_tx
-func (t *RelayerStatisticsTask) dealHistory(segments []*segment) error {
+// RunWithParam 自定义统计
+func (t *RelayerStatisticsTask) RunWithParam(chainId string, startTime, endTime int64) int {
+	segments := segmentTool(segmentStepLatest, startTime, endTime)
+	chainMap, err := getAllChainMap()
+	if err != nil {
+		logrus.Errorf("task %s IncrementRun getAllChainMap err, %v", t.Name(), err)
+		return -1
+	}
+
+	workerName := fmt.Sprintf("%s-%s", "cus", chainId)
+	if len(workerName) > 7 {
+		workerName = workerName[:7]
+	}
+	worker := newRelayerStatisticsWorker(t.Name(), workerName, chainMap)
+	worker.statistics(chainId, segments, opUpdate)
+	return 1
+}
+
+// =========================================================================
+// =========================================================================
+// worker
+
+func newRelayerStatisticsWorker(taskName, workerName string, chainMap map[string]*entity.ChainConfig) *relayerStatisticsWorker {
+	return &relayerStatisticsWorker{
+		taskName:   taskName,
+		workerName: workerName,
+		chainMap:   chainMap,
+	}
+}
+
+type relayerStatisticsWorker struct {
+	taskName   string
+	workerName string
+	chainMap   map[string]*entity.ChainConfig
+}
+
+func (w *relayerStatisticsWorker) getChain() (string, error) {
+	return relayerStatisticsCoordinator.getChain()
+}
+
+// exec 全量统计
+func (w *relayerStatisticsWorker) exec() {
+	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
+	for {
+		chainId, err := w.getChain()
+		if err != nil {
+			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
+			break
+		}
+
+		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+			continue
+		}
+
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
+		firstTx, err := txRepo.GetFirstTx(chainId)
+		if err != nil {
+			logrus.Errorf("task %s worker %s chain %s GetFirstTx err, %v", w.taskName, w.workerName, chainId, err)
+			continue
+		}
+
+		segments := segmentTool(segmentStepLatest, firstTx.Time, time.Now().Unix())
+		startTime := time.Now().Unix()
+		w.statistics(chainId, segments, opInsert)
+		logrus.Infof("task %s worker %s statistics chain %s end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
+	}
+}
+
+func (w *relayerStatisticsWorker) statistics(chainId string, segments []*segment, op int) {
 	for _, v := range segments {
-		relayerSuccessTxs, err := ibcTxRepo.CountHistoryRelayerSuccessPacketTxs(v.StartTime, v.EndTime)
+		// denom statistics
+		denomStats, err := txRepo.RelayerDenomStatistics(chainId, v.StartTime, v.EndTime)
 		if err != nil {
-			logrus.Error("Count History RelayerSuccessPacketTxs  have fail, ", err.Error())
-			continue
+			logrus.Errorf("task %s worker %s RelayerDenomStatistics err, %s-%d-%d, %v", w.taskName, w.workerName, chainId, v.StartTime, v.EndTime, err)
+		} else {
+			denomStatMap, addrChannelMap := w.aggrDenomStat(chainId, v, denomStats)
+			_ = w.saveDenomStat(denomStatMap, v, op)
+			_ = w.saveAddrChannel(addrChannelMap)
 		}
-		relayerAmounts, err := ibcTxRepo.CountHistoryRelayerPacketAmount(v.StartTime, v.EndTime)
+
+		// fee statistics
+		feeStats, err := txRepo.RelayerFeeStatistics(chainId, v.StartTime, v.EndTime)
 		if err != nil {
-			logrus.Error("Count History RelayerPacketAmount  have fail, ", err.Error())
-			continue
+			logrus.Errorf("task %s worker %s RelayerFeeStatistics err, %s-%d-%d, %v", w.taskName, w.workerName, chainId, v.StartTime, v.EndTime, err)
+		} else {
+			_ = w.saveFeeStat(chainId, feeStats, v, op)
 		}
-		aggr := t.aggr(relayerSuccessTxs, relayerAmounts)
-		if err = t.saveData(aggr, v.StartTime, v.EndTime, opInsert); err != nil {
-			return err
-		}
-		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
-	return nil
 }
 
-// deal 处理最新的记录，针对ex_ibc_tx_latest
-func (t *RelayerStatisticsTask) deal(segments []*segment, op int) error {
-	for _, v := range segments {
-		relayerSuccessTxs, err := ibcTxRepo.CountRelayerSuccessPacketTxs(v.StartTime, v.EndTime)
-		if err != nil {
-			logrus.Error("collectTx  have fail, ", err.Error())
-			continue
+func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment, stats []*dto.RelayerDenomStatisticsDTO) (map[string]*entity.IBCRelayerDenomStatistics, map[string]*entity.IBCRelayerAddressChannel) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Errorf("task %s aggrDenomStatistics err, %s-%d-%d, %v", w.taskName, chainId, segment.StartTime, segment.EndTime, r)
 		}
-		relayerAmounts, err := ibcTxRepo.CountRelayerPacketTxsAndAmount(v.StartTime, v.EndTime)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-		aggr := t.aggr(relayerSuccessTxs, relayerAmounts)
-		if err := t.saveData(aggr, v.StartTime, v.EndTime, op); err != nil {
-			return err
-		}
-		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
-	}
-	return nil
-}
+	}()
 
-func (t *RelayerStatisticsTask) aggr(relayerSuccessTxs []*dto.CountRelayerPacketTxsCntDTO, relayerAmounts []*dto.CountRelayerPacketAmountDTO) map[string]Statistic {
-	relayerTxsMap := make(map[string]TxsItem, 20)
-
-	for _, tx := range relayerSuccessTxs {
-		if !tx.Valid() {
-			continue
+	// aggr denom statistics
+	denomStatMap := make(map[string]*entity.IBCRelayerDenomStatistics)
+	for _, v := range stats {
+		var denomChain string
+		if v.TxType == string(entity.TxTypeAckPacket) || v.TxType == string(entity.TxTypeTimeoutPacket) {
+			denomChain = chainId
+		} else {
+			denomChain = w.chainMap[chainId].GetDcChainId(v.DcChannel, v.ScChannel)
 		}
-		statisticId, _ := relayerStatisticsRepo.CreateStatisticId(tx.ScChainId, tx.DcChainId, tx.ScChannel, tx.DcChannel)
-		key := t.relayerTxsMapKey(statisticId, tx.DcChainAddress, tx.BaseDenom)
-		relayerTxsMap[key] = TxsItem{
-			TxsSuccess: tx.Count,
-		}
-	}
 
-	relayerAmtsMap := createAmounts(relayerAmounts)
-	relayerStaticsMap := make(map[string]Statistic, 20)
-	for key, val := range relayerAmtsMap {
-		if _, exist := relayerStaticsMap[key]; exist {
-			continue
-		}
-		arrs := strings.Split(key, ":")
-		statisticId, relayerAddr, denom := arrs[0], arrs[1], arrs[2]
-		datas := strings.Split(statisticId, "|")
-		srcInfo := strings.Join([]string{datas[0], datas[1]}, "|")
-		dscInfo := strings.Join([]string{datas[2], datas[3]}, "|")
-
-		key1 := strings.Join([]string{srcInfo, dscInfo}, "|")
-		key2 := strings.Join([]string{dscInfo, srcInfo}, "|")
-		var one Statistic
-		for key, value := range relayerTxsMap {
-			if strings.Contains(key, relayerAddr) && strings.Contains(key, denom) && (strings.Contains(key, key1) || strings.Contains(key, key2)) {
-				one.TxsSuccess = value.TxsSuccess
+		denomEntity := traceDenom(v.Denom, denomChain, w.chainMap)
+		dsmk := fmt.Sprintf("%s%s%d%s%s", v.Signer, v.TxType, v.Status, denomEntity.BaseDenom, denomEntity.BaseDenomChainId)
+		if _, ok := denomStatMap[dsmk]; ok {
+			denomStatMap[dsmk].RelayedAmount += v.DenomAmount
+			denomStatMap[dsmk].RelayedTxs += v.TxsCount
+		} else {
+			denomStatMap[dsmk] = &entity.IBCRelayerDenomStatistics{
+				StatisticChain:   chainId,
+				RelayerAddress:   v.Signer,
+				TxStatus:         entity.TxStatus(v.Status),
+				TxType:           entity.TxType(v.TxType),
+				BaseDenom:        denomEntity.BaseDenom,
+				BaseDenomChainId: denomEntity.BaseDenomChainId,
+				RelayedAmount:    v.DenomAmount,
+				RelayedTxs:       v.TxsCount,
+				SegmentStartTime: segment.StartTime,
+				SegmentEndTime:   segment.EndTime,
+				CreateAt:         time.Now().Unix(),
+				UpdateAt:         time.Now().Unix(),
 			}
 		}
-		one.Amounts = val.Amt
-		one.Txs = val.Txs
-		relayerStaticsMap[key] = one
 	}
 
-	return relayerStaticsMap
+	// aggr relayer address channel
+	addrChannelMap := make(map[string]*entity.IBCRelayerAddressChannel)
+	for _, v := range stats {
+		addrChannel := entity.IBCRelayerAddressChannel{
+			RelayerAddress:      v.Signer,
+			Channel:             "",
+			Chain:               chainId,
+			CounterPartyChannel: "",
+			CreateAt:            time.Now().Unix(),
+			UpdateAt:            time.Now().Unix(),
+		}
+		if v.TxType == string(entity.TxTypeAckPacket) || v.TxType == string(entity.TxTypeTimeoutPacket) {
+			addrChannel.Channel = v.ScChannel
+			addrChannel.CounterPartyChannel = v.DcChannel
+		} else {
+			addrChannel.Channel = v.DcChannel
+			addrChannel.CounterPartyChannel = v.ScChannel
+		}
+
+		acmk := fmt.Sprintf("%s%s%s", addrChannel.RelayerAddress, addrChannel.Chain, addrChannel.Channel)
+		if _, ok := addrChannelMap[acmk]; !ok {
+			addrChannelMap[acmk] = &addrChannel
+		}
+	}
+
+	return denomStatMap, addrChannelMap
+}
+
+func (w *relayerStatisticsWorker) saveDenomStat(denomStatMap map[string]*entity.IBCRelayerDenomStatistics, segment *segment, op int) error {
+	if denomStatMap == nil {
+		return nil
+	}
+	denomStats := make([]*entity.IBCRelayerDenomStatistics, 0, len(denomStatMap))
+	for _, v := range denomStatMap {
+		denomStats = append(denomStats, v)
+	}
+
+	var err error
+	if op == opInsert {
+		if err = relayerDenomStatisticsRepo.InsertManyToNew(denomStats); err != nil {
+			logrus.Errorf("task %s relayerDenomStatisticsRepo.InsertManyToNew err, %v", w.taskName, err)
+		}
+	} else {
+		if err = relayerDenomStatisticsRepo.BatchSwap(segment.StartTime, segment.EndTime, denomStats); err != nil {
+			logrus.Errorf("task %s relayerDenomStatisticsRepo.BatchSwap err, %v", w.taskName, err)
+		}
+	}
+
+	return err
+}
+
+func (w *relayerStatisticsWorker) saveFeeStat(chainId string, feeStats []*dto.RelayerFeeStatisticsDTO, segment *segment, op int) error {
+	if len(feeStats) == 0 {
+		return nil
+	}
+	feeStatList := make([]*entity.IBCRelayerFeeStatistics, 0, len(feeStats))
+	for _, v := range feeStats {
+		feeStatList = append(feeStatList, &entity.IBCRelayerFeeStatistics{
+			StatisticChain:   chainId,
+			RelayerAddress:   v.Signer,
+			TxStatus:         entity.TxStatus(v.Status),
+			TxType:           entity.TxType(v.TxType),
+			FeeDenom:         v.Denom,
+			FeeAmount:        v.DenomAmount,
+			RelayedTxs:       v.TxsCount,
+			SegmentStartTime: segment.StartTime,
+			SegmentEndTime:   segment.EndTime,
+			CreateAt:         time.Now().Unix(),
+			UpdateAt:         time.Now().Unix(),
+		})
+	}
+
+	var err error
+	if op == opInsert {
+		if err = relayerFeeStatisticsRepo.InsertManyToNew(feeStatList); err != nil {
+			logrus.Errorf("task %s relayerFeeStatisticsRepo.InsertManyToNew err, %v", w.taskName, err)
+		}
+	} else {
+		if err = relayerFeeStatisticsRepo.BatchSwap(segment.StartTime, segment.EndTime, feeStatList); err != nil {
+			logrus.Errorf("task %s relayerFeeStatisticsRepo.BatchSwap err, %v", w.taskName, err)
+		}
+	}
+
+	return err
+}
+
+func (w *relayerStatisticsWorker) saveAddrChannel(addrChannelMap map[string]*entity.IBCRelayerAddressChannel) error {
+	if addrChannelMap == nil {
+		return nil
+	}
+
+	addrChanList := make([]*entity.IBCRelayerAddressChannel, 0, len(addrChannelMap))
+	for _, v := range addrChannelMap {
+		addrChanList = append(addrChanList, v)
+	}
+
+	if err := relayerAddressChannelRepo.InsertMany(addrChanList); err != nil {
+		logrus.Errorf("task %s relayerAddressChannelRepo.InsertMany err, %v", w.taskName, err)
+		return err
+	}
+
+	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
+// todo remove this
 type IBCRelayerConfig struct {
 	RelayerPairId string `bson:"relayer_pair_id"`
 	ChainA        string `bson:"chain_a"`

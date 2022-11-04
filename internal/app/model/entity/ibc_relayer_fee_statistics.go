@@ -1,5 +1,10 @@
 package entity
 
+const (
+	IBCRelayerFeeStatisticsCollName    = "ibc_relayer_fee_statistics"
+	IBCRelayerFeeStatisticsNewCollName = "ibc_relayer_fee_statistics_new"
+)
+
 type IBCRelayerFeeStatistics struct {
 	StatisticChain   string   `bson:"statistics_chain"`
 	RelayerAddress   string   `bson:"relayer_address"`
@@ -14,6 +19,9 @@ type IBCRelayerFeeStatistics struct {
 	UpdateAt         int64    `bson:"update_at"`
 }
 
-func (i IBCRelayerFeeStatistics) CollectionName() string {
-	return "ibc_relayer_fee_statistics"
+func (i IBCRelayerFeeStatistics) CollectionName(isNew bool) string {
+	if isNew {
+		return IBCRelayerFeeStatisticsNewCollName
+	}
+	return IBCRelayerFeeStatisticsCollName
 }
