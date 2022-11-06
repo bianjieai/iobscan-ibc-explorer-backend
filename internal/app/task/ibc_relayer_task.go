@@ -271,10 +271,22 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtItem {
 //dependence: AggrRelayerFeeAmt or AggrRelayerTxsAndAmt
 func caculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsDataMap map[string]TxsAmtItem) decimal.Decimal {
 	totalValue := decimal.NewFromFloat(0)
+	denomAmtMap := make(map[string]TxsAmtItem, len(relayerTxsDataMap))
+
 	for _, data := range relayerTxsDataMap {
+		key := data.Denom + data.ChainId
+		if value, ok := denomAmtMap[key]; ok {
+			value.Amt = value.Amt.Add(data.Amt)
+			denomAmtMap[key] = value
+		} else {
+			denomAmtMap[key] = data
+		}
+	}
+
+	for key, data := range denomAmtMap {
 		baseDenomValue := decimal.NewFromFloat(0)
 		decAmt := data.Amt
-		if coin, ok := denomPriceMap[data.Denom+data.ChainId]; ok {
+		if coin, ok := denomPriceMap[key]; ok {
 			if coin.Scale > 0 {
 				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
 			}

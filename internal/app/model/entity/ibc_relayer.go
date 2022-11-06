@@ -46,8 +46,8 @@ type IBCRelayerNew struct {
 	UpdateTime           int64             `bson:"update_time"`
 	RelayedTotalTxs      int64             `bson:"relayed_total_txs"`
 	RelayedSuccessTxs    int64             `bson:"relayed_success_txs"`
-	RelayedTotalTxsValue int64             `bson:"relayed_total_txs_value"`
-	TotalFeeValue        int64             `bson:"total_fee_value"`
+	RelayedTotalTxsValue string            `bson:"relayed_total_txs_value"`
+	TotalFeeValue        string            `bson:"total_fee_value"`
 	CreateAt             int64             `bson:"create_at"`
 	UpdateAt             int64             `bson:"update_at"`
 }

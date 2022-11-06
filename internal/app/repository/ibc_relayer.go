@@ -38,7 +38,7 @@ const (
 type IRelayerRepo interface {
 	InsertBatch(relayer []entity.IBCRelayerNew) error
 	UpdateRelayerTime(relayerId string, updateTime int64) error
-	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue int64) error
+	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue string) error
 	FindAll(skip, limit int64, relayType int) ([]*entity.IBCRelayerNew, error)
 	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
 	CountBycond(chainId string, status int) (int64, error)
@@ -65,10 +65,10 @@ func (repo *IbcRelayerRepo) Update(relayer *entity.IBCRelayerNew) error {
 	if len(relayer.ChannelPairInfo) > 0 {
 		updateData["channel_pair_info"] = relayer.ChannelPairInfo
 	}
-	if relayer.RelayedTotalTxsValue > 0 {
+	if relayer.RelayedTotalTxsValue != "" {
 		updateData[RelayerFieldTotalTxsValue] = relayer.RelayedTotalTxsValue
 	}
-	if relayer.TotalFeeValue > 0 {
+	if relayer.TotalFeeValue != "" {
 		updateData[RelayerFieldTotalFeeValue] = relayer.TotalFeeValue
 	}
 	if relayer.RelayedTotalTxs > 0 {
@@ -223,14 +223,14 @@ func (repo *IbcRelayerRepo) UpdateChannelPairInfo(relayerId string, infos []enti
 		"$set": updateData})
 }
 
-func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue int64) error {
+func (repo *IbcRelayerRepo) UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue string) error {
 	updateData := bson.M{
 		RelayerFieldUpdateAt: time.Now().Unix(),
 	}
-	if totalValue > 0 {
+	if totalValue != "" {
 		updateData[RelayerFieldTotalTxsValue] = totalValue
 	}
-	if totalFeeValue > 0 {
+	if totalFeeValue != "" {
 		updateData[RelayerFieldTotalFeeValue] = totalFeeValue
 	}
 	if txs > 0 {
