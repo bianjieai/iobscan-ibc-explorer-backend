@@ -12,7 +12,7 @@ import (
 type ITxRepo interface {
 	GetFirstTx(chainId string) (*entity.Tx, error)
 	GetRelayerScChainAddr(packetId, chainId string) (string, error)
-	GetTimePeriodByUpdateClient(chainId, address, clientId string, startTime int64) (int64, int64, error)
+	GetUpdateTimeByUpdateClient(chainId, address, clientId string, startTime int64) (int64, error)
 	GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error)
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
 	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
@@ -66,10 +66,9 @@ func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, err
 
 // return value description
 //1: latest update_client tx_time
-//2: time_period
-//3: error
-func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address, clientId string, startTime int64) (int64, int64, error) {
-	var res []*entity.Tx
+//2: error
+func (repo *TxRepo) GetUpdateTimeByUpdateClient(chainId, address, clientId string, startTime int64) (int64, error) {
+	var res *entity.Tx
 	query := bson.M{
 		"msgs.type":          constant.MsgTypeUpdateClient,
 		"msgs.msg.signer":    address,
@@ -79,18 +78,15 @@ func (repo *TxRepo) GetTimePeriodByUpdateClient(chainId, address, clientId strin
 		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1, "msgs.type": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(2).All(&res)
+		Select(bson.M{"time": 1, "msgs.type": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(1).One(&res)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 
-	if len(res) == 2 {
-		return res[0].Time, res[0].Time - res[1].Time, nil
+	if res != nil {
+		return res.Time, nil
 	}
-	if len(res) == 1 {
-		return res[0].Time, -1, nil
-	}
-	return 0, -1, nil
+	return 0, nil
 }
 
 func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error) {

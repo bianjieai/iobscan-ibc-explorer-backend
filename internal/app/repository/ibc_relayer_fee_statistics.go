@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	opts "github.com/qiniu/qmgo/options"
@@ -17,6 +18,7 @@ type IRelayerFeeStatisticsRepo interface {
 	InsertMany(batch []*entity.IBCRelayerFeeStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerFeeStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
+	CountRelayerFeeDenomAmt(relayAddrs []string, servedChains []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error)
 }
 
 var _ IRelayerFeeStatisticsRepo = new(RelayerFeeStatisticsRepo)
@@ -92,4 +94,37 @@ func (repo *RelayerFeeStatisticsRepo) BatchSwap(chain string, segmentStartTime, 
 	}
 	_, err := mgo.DoTransaction(context.Background(), callback)
 	return err
+}
+
+func (repo *RelayerFeeStatisticsRepo) CountRelayerFeeDenomAmt(relayAddrs []string, servedChains []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"relayer_address":  bson.M{"$in": relayAddrs},
+			"statistics_chain": bson.M{"$in": servedChains},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"fee_denom":        "$fee_denom",
+				"statistics_chain": "$statistics_chain",
+			},
+			"amount": bson.M{
+				"$sum": bson.M{"$toDouble": "$fee_amount"},
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":       0,
+			"fee_denom": "$_id.fee_denom",
+			"chain_id":  "$_id.statistics_chain",
+			"amount":    "$amount",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	var res []*dto.CountRelayerFeeDenomAmtDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
 }

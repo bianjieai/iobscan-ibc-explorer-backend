@@ -1,5 +1,6 @@
 package cache
 
+//no use code
 type UnbondTimeCacheRepo struct {
 }
 

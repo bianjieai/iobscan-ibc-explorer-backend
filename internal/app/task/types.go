@@ -51,16 +51,14 @@ const (
 
 var (
 	//cache
-	tokenPriceRepo      cache.TokenPriceCacheRepo
-	denomDataRepo       cache.DenomDataCacheRepo
-	unbondTimeCache     cache.UnbondTimeCacheRepo
-	statisticsCheckRepo cache.StatisticsCheckCacheRepo
-	chainCache          cache.ChainCacheRepo
-	baseDenomCache      cache.BaseDenomCacheRepo
-	storageCache        cache.StorageCacheRepo
-	lcdTxDataCacheRepo  cache.LcdTxDataCacheRepo
-
-	// mongo
+	tokenPriceRepo             cache.TokenPriceCacheRepo
+	denomDataRepo              cache.DenomDataCacheRepo
+	unbondTimeCache            cache.UnbondTimeCacheRepo
+	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
+	chainCache                 cache.ChainCacheRepo
+	baseDenomCache             cache.BaseDenomCacheRepo
+	storageCache               cache.StorageCacheRepo
+	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
 	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
 	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
 	tokenStatisticsRepo        repository.ITokenStatisticsRepo        = new(repository.TokenStatisticsRepo)
@@ -86,6 +84,7 @@ var (
 	syncBlockRepo              repository.ISyncBlockRepo              = new(repository.SyncBlockRepo)
 	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
 	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
+	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 

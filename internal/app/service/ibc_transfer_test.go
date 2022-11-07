@@ -27,3 +27,18 @@ func TestGetTxDataFromChain(t *testing.T) {
 	}
 	t.Log(string(utils.MarshalJsonIgnoreErr(data)))
 }
+
+func TestTransferService_TransferTxsCount(t *testing.T) {
+	data, err := new(TransferService).TransferTxsCount(&vo.TranaferTxsReq{
+		Page: vo.Page{
+			PageNum:  1,
+			PageSize: 10,
+		},
+		UseCount:  true,
+		DateRange: "0,1667288334",
+	})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(data)
+}

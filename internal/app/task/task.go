@@ -8,7 +8,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,15 +48,15 @@ func Start() {
 		RunOnce(task)
 	}
 
-	c := cron.New(cron.WithSeconds())
-	if taskConf.CronJobRelayerAddr == "" {
-		taskConf.CronJobRelayerAddr = ThreeHourCronJobTime
-	}
-	_, err := c.AddFunc(taskConf.CronJobRelayerAddr, checkAndUpdateRelayerSrcChainAddr)
-	if err != nil {
-		logrus.Fatal("cron job err", err)
-	}
-	c.Start()
+	//c := cron.New(cron.WithSeconds())
+	//if taskConf.CronJobRelayerAddr == "" {
+	//	taskConf.CronJobRelayerAddr = ThreeHourCronJobTime
+	//}
+	//_, err := c.AddFunc(taskConf.CronJobRelayerAddr, checkAndUpdateRelayerSrcChainAddr)
+	//if err != nil {
+	//	logrus.Fatal("cron job err", err)
+	//}
+	//c.Start()
 }
 
 func RunOnce(task Task) {
