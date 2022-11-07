@@ -11,6 +11,7 @@ type IRelayerService interface {
 	List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error)
 	ListCount(req *vo.RelayerListReq) (int64, errors.Error)
 	Collect(OperatorFile string) errors.Error
+	Detail(relayerId string) (vo.RelayerDetailResp, errors.Error)
 }
 
 type RelayerService struct {
@@ -49,4 +50,26 @@ func (svc *RelayerService) ListCount(req *vo.RelayerListReq) (int64, errors.Erro
 func (svc *RelayerService) Collect(OperatorFile string) errors.Error {
 	go svc.relayerHandler.Collect(OperatorFile)
 	return nil
+}
+
+func (svc *RelayerService) Detail(relayerId string) (vo.RelayerDetailResp, errors.Error) {
+	var resp vo.RelayerDetailResp
+	one, err := relayerRepo.FindOneByRelayerId(relayerId)
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+
+	channelPairs, err := channelRepo.FindAll()
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+	channelPairStatusMap := make(map[string]int, len(channelPairs))
+	for _, val := range channelPairs {
+		channelPairStatusMap[val.ChainA+val.ChannelA+val.ChainB+val.ChannelB] = int(val.Status)
+	}
+
+	resp = vo.LoadRelayerDetailDto(one, channelPairStatusMap)
+
+	resp.TimeStamp = time.Now().Unix()
+	return resp, nil
 }

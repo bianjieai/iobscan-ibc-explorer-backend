@@ -42,3 +42,15 @@ func (ctl *RelayerController) Collect(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(nil))
 }
+
+func (ctl *RelayerController) Detail(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	var res interface{}
+	var err errors.Error
+	res, err = relayerService.Detail(relayerId)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}

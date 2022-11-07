@@ -127,3 +127,91 @@ type IobRegistryRelayerPairResp struct {
 		Version   string `json:"version"`
 	} `json:"chain-2"`
 }
+
+type (
+	ChannelPairInfoDto struct {
+		ChainA            string   `json:"chain_a"`
+		ChainB            string   `json:"chain_b"`
+		ChannelA          string   `json:"channel_a"`
+		ChannelB          string   `json:"channel_b"`
+		ChainAAddresses   []string `json:"chain_a_addresses"`
+		ChainBAddresses   []string `json:"chain_b_addresses"`
+		ChannelPairStatus int      `json:"channel_pair_status"`
+	}
+	RelayerDetailResp struct {
+		RelayerId            string               `json:"relayer_id"`
+		RelayerName          string               `json:"relayer_name"`
+		RelayerIcon          string               `json:"relayer_icon"`
+		ServedChains         int64                `json:"served_chains"`
+		ChannelPairInfo      []ChannelPairInfoDto `json:"channel_pair_info"`
+		UpdateTime           int64                `json:"update_time"`
+		RelayedTotalTxs      int64                `json:"relayed_total_txs"`
+		RelayedSuccessTxs    int64                `json:"relayed_success_txs"`
+		RelayedTotalTxsValue string               `json:"relayed_total_txs_value"`
+		TotalFeeValue        string               `json:"total_fee_value"`
+
+		TimeStamp int64 `json:"time_stamp"`
+	}
+)
+
+func LoadRelayerDetailDto(relayer *entity.IBCRelayerNew, statusMap map[string]int) RelayerDetailResp {
+
+	getChannelPairInfo := func() []ChannelPairInfoDto {
+
+		setMap := make(map[string]ChannelPairInfoDto, len(relayer.ChannelPairInfo))
+
+		for _, val := range relayer.ChannelPairInfo {
+			key := val.ChainA + val.ChannelA + val.ChainB + val.ChannelB
+			if cacheValue, ok := setMap[key]; ok {
+				if val.ChainAAddress != "" {
+					cacheValue.ChainAAddresses = append(cacheValue.ChainAAddresses, val.ChainAAddress)
+				}
+				if val.ChainBAddress != "" {
+					cacheValue.ChainBAddresses = append(cacheValue.ChainBAddresses, val.ChainBAddress)
+				}
+
+				cacheValue.ChainAAddresses = utils.DistinctSliceStr(cacheValue.ChainAAddresses)
+				cacheValue.ChainBAddresses = utils.DistinctSliceStr(cacheValue.ChainBAddresses)
+
+				setMap[key] = cacheValue
+
+			} else {
+				item := ChannelPairInfoDto{
+					ChainA:   val.ChainA,
+					ChainB:   val.ChainB,
+					ChannelA: val.ChannelA,
+					ChannelB: val.ChannelB,
+				}
+
+				if val.ChainAAddress != "" {
+					item.ChainAAddresses = []string{val.ChainAAddress}
+				}
+				if val.ChainBAddress != "" {
+					item.ChainBAddresses = []string{val.ChainBAddress}
+				}
+
+				setMap[key] = item
+			}
+
+		}
+		retData := make([]ChannelPairInfoDto, 0, len(setMap))
+		for key, info := range setMap {
+			info.ChannelPairStatus = statusMap[key]
+			retData = append(retData, info)
+		}
+		return retData
+	}
+
+	return RelayerDetailResp{
+		RelayerId:            relayer.RelayerId,
+		RelayerName:          relayer.RelayerName,
+		RelayerIcon:          relayer.RelayerIcon,
+		ServedChains:         relayer.ServedChains,
+		ChannelPairInfo:      getChannelPairInfo(),
+		UpdateTime:           relayer.UpdateTime,
+		RelayedTotalTxs:      relayer.RelayedTotalTxs,
+		RelayedSuccessTxs:    relayer.RelayedSuccessTxs,
+		RelayedTotalTxsValue: relayer.RelayedTotalTxsValue,
+		TotalFeeValue:        relayer.TotalFeeValue,
+	}
+}
