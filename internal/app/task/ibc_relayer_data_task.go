@@ -337,6 +337,10 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 	newRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	dbRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	for i := range channelPairInfos {
+		//忽略地址为空的channel_pair
+		if channelPairInfos[i].ChainAAddress == "" || channelPairInfos[i].ChainBAddress == "" {
+			continue
+		}
 		key := GenerateDistRelayerId(channelPairInfos[i].ChainA, channelPairInfos[i].ChainAAddress,
 			channelPairInfos[i].ChainB, channelPairInfos[i].ChainBAddress)
 		pairId := entity.GenerateRelayerPairId(channelPairInfos[i].ChainA, channelPairInfos[i].ChannelA,
