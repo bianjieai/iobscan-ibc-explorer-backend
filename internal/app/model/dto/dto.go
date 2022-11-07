@@ -89,11 +89,17 @@ func (dto *CountRelayerPacketAmountDTO) Valid() bool {
 }
 
 type CountRelayerBaseDenomAmtDTO struct {
-	StatisticId      string  `bson:"statistic_id"`
-	Address          string  `bson:"address"`
-	Amount           float64 `bson:"amount"`
 	BaseDenom        string  `bson:"base_denom"`
 	BaseDenomChainId string  `bson:"base_denom_chain_id"`
+	TxStatus         int     `bson:"tx_status"`
+	Amount           float64 `bson:"amount"`
+	TotalTxs         int64   `bson:"total_txs"`
+}
+
+type CountRelayerFeeDenomAmtDTO struct {
+	FeeDenom string  `bson:"fee_denom"`
+	ChainId  string  `bson:"chain_id"`
+	Amount   float64 `bson:"amount"`
 }
 
 type AggRelayerTxsDTO struct {

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -11,6 +12,7 @@ import (
 type IRelayerAddressChannelRepo interface {
 	InsertOne(ac *entity.IBCRelayerAddressChannel) error
 	InsertMany(batch []*entity.IBCRelayerAddressChannel) error
+	FindChannels(chains, arrs []string) ([]*entity.IBCRelayerAddressChannel, error)
 }
 
 var _ IRelayerAddressChannelRepo = new(RelayerAddressChannelRepo)
@@ -33,4 +35,14 @@ func (repo *RelayerAddressChannelRepo) InsertMany(batch []*entity.IBCRelayerAddr
 		return nil
 	}
 	return err
+}
+
+func (repo *RelayerAddressChannelRepo) FindChannels(chains, arrs []string) ([]*entity.IBCRelayerAddressChannel, error) {
+	var res []*entity.IBCRelayerAddressChannel
+	query := bson.M{
+		"relayer_address": bson.M{"$in": arrs},
+		"chain":           bson.M{"$in": chains},
+	}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
 }

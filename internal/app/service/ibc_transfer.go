@@ -99,7 +99,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors
 		return count
 	}
 	//default cond
-	if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
+	if len(query.ChainId) == 0 && (len(query.Status) == 4 || len(query.Status) == 0) && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
 		data, err := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
 		if err != nil {
 			return 0, errors.Wrap(err)

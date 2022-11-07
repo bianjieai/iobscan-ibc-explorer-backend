@@ -11,7 +11,8 @@ import (
 )
 
 type IChannelRepo interface {
-	UpdateOne(channelId string, updateTime, relayerCnt int64) error
+	UpdateOneUpdateTime(channelId string, updateTime int64) error
+	UpdateRelayers(channelId string, relayerCnt int64) error
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
 	DeleteByChannelIds(channelIds []string) error
@@ -30,15 +31,23 @@ func (repo *ChannelRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChannel{}.CollectionName())
 }
 
-func (repo *ChannelRepo) UpdateOne(channelId string, updateTime, relayerCnt int64) error {
+func (repo *ChannelRepo) UpdateOneUpdateTime(channelId string, updateTime int64) error {
+	filter := bson.M{
+		"channel_id": channelId,
+	}
+	return repo.coll().UpdateOne(context.Background(), filter, bson.M{
+		"$set": bson.M{
+			"channel_update_at": updateTime,
+		},
+	})
+}
+
+func (repo *ChannelRepo) UpdateRelayers(channelId string, relayerCnt int64) error {
 	filter := bson.M{
 		"channel_id": channelId,
 	}
 	updateData := bson.M{
 		"relayers": relayerCnt,
-	}
-	if updateTime > 0 {
-		updateData["channel_update_at"] = updateTime
 	}
 	return repo.coll().UpdateOne(context.Background(), filter, bson.M{
 		"$set": updateData,

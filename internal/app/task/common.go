@@ -373,9 +373,9 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, isTarge
 		return
 	}
 	st := time.Now().Unix()
-	logrus.Infof("task %s worker group start, target hirtoty: %t", taskName, isTargetHistory)
+	logrus.Infof("task %s worker group start, target history: %t", taskName, isTargetHistory)
 	defer func() {
-		logrus.Infof("task %s worker group end, target hirtoty: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
+		logrus.Infof("task %s worker group end, target history: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
 	}()
 	var wg sync.WaitGroup
 	wg.Add(workNum)
@@ -397,3 +397,16 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, isTarge
 }
 
 type WorkerExecHandler func(seg *segment, isTargetHistory bool)
+
+func GenerateDistRelayerId(chain1, chain1Address, chain2, chain2Address string) string {
+	chainA, _ := entity.ConfirmRelayerPair(chain1, chain2)
+	var pairStr string
+	if chainA == chain1 {
+		pairStr = fmt.Sprintf("%s:%s:%s:%s", chain1, chain1Address, chain2, chain2Address)
+	} else {
+		pairStr = fmt.Sprintf("%s:%s:%s:%s", chain2, chain2Address, chain1, chain1Address)
+	}
+
+	//return utils.Md5(pairStr)
+	return pairStr
+}
