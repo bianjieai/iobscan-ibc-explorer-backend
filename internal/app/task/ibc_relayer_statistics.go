@@ -77,6 +77,8 @@ func (t *RelayerStatisticsTask) Run() int {
 		return -1
 	}
 
+	// todo 清除缓存，RunIncrement，RunWithParam中同样需要清除操作
+
 	return 1
 }
 
