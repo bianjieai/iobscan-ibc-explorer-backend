@@ -1,35 +1,35 @@
 package vo
 
 import (
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
 type RelayerListReq struct {
 	Page
-	Chain    string `json:"chain" form:"chain"`
-	Status   int    `json:"status" form:"status"`
-	UseCount bool   `json:"use_count" form:"use_count"`
+	RelayerName    string `json:"relayer_name" form:"relayer_name"`
+	RelayerAddress string `json:"relayer_address" form:"relayer_address"`
+	UseCount       bool   `json:"use_count" form:"use_count"`
 }
 
-type RelayerDto struct {
-	RelayerId             string `json:"relayer_id"`
-	RelayerName           string `json:"relayer_name"`
-	RelayerIcon           string `json:"relayer_icon"`
-	ChainA                string `json:"chain_a"`
-	ChainB                string `json:"chain_b"`
-	ChannelA              string `json:"channel_a"`
-	ChannelB              string `json:"channel_b"`
-	ChainAAddress         string `json:"chain_a_address"`
-	ChainBAddress         string `json:"chain_b_address"`
-	TimePeriod            int64  `json:"time_period"`
-	Status                int    `json:"status"`
-	UpdateTime            int64  `json:"update_time"`
-	TransferTotalTxs      int64  `json:"transfer_total_txs"`
-	TransferSuccessTxs    int64  `json:"transfer_success_txs"`
-	TransferTotalTxsValue string `json:"transfer_total_txs_value"`
-	Currency              string `json:"currency"`
-}
+type (
+	RelayerDto struct {
+		RelayerId            string            `json:"relayer_id"`
+		RelayerName          string            `json:"relayer_name"`
+		RelayerIcon          string            `json:"relayer_icon"`
+		ServedChains         int64             `json:"served_chains"`
+		ServedChainsInfo     []ServedChainInfo `json:"served_chains_info"`
+		UpdateTime           int64             `json:"update_time"`
+		RelayedTotalTxs      int64             `json:"relayed_total_txs"`
+		RelayedSuccessTxs    int64             `json:"relayed_success_txs"`
+		RelayedTotalTxsValue string            `json:"relayed_total_txs_value"`
+		TotalFeeValue        string            `json:"total_fee_value"`
+	}
+	ServedChainInfo struct {
+		Chain     string   `json:"chain"`
+		Addresses []string `json:"addresses"`
+	}
+)
 
 type RelayerListResp struct {
 	Items     []RelayerDto `json:"items"`
@@ -37,22 +37,66 @@ type RelayerListResp struct {
 	TimeStamp int64        `json:"time_stamp"`
 }
 
-func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayer) RelayerDto {
+func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayerNew) RelayerDto {
+
+	getServedChainInfo := func() []ServedChainInfo {
+
+		setMap := make(map[string]ServedChainInfo, len(relayer.ChannelPairInfo))
+
+		for _, val := range relayer.ChannelPairInfo {
+
+			if cacheValue, ok := setMap[val.ChainA]; ok {
+				if val.ChainAAddress != "" {
+					cacheValue.Addresses = append(cacheValue.Addresses, val.ChainAAddress)
+				}
+				cacheValue.Addresses = utils.DistinctSliceStr(cacheValue.Addresses)
+				setMap[val.ChainA] = cacheValue
+
+			} else {
+				item := ServedChainInfo{
+					Chain: val.ChainA,
+				}
+				if val.ChainAAddress != "" {
+					item.Addresses = []string{val.ChainAAddress}
+				}
+				setMap[val.ChainA] = item
+			}
+
+			if cacheValue, ok := setMap[val.ChainB]; ok {
+				if val.ChainBAddress != "" {
+					cacheValue.Addresses = append(cacheValue.Addresses, val.ChainBAddress)
+				}
+				cacheValue.Addresses = utils.DistinctSliceStr(cacheValue.Addresses)
+				setMap[val.ChainB] = cacheValue
+			} else {
+				item := ServedChainInfo{
+					Chain: val.ChainB,
+				}
+				if val.ChainBAddress != "" {
+					item.Addresses = []string{val.ChainBAddress}
+				}
+				setMap[val.ChainB] = item
+			}
+
+		}
+		retData := make([]ServedChainInfo, 0, len(setMap))
+		for _, info := range setMap {
+			retData = append(retData, info)
+		}
+		return retData
+	}
+
 	return RelayerDto{
-		RelayerId:             relayer.RelayerId,
-		ChainA:                relayer.ChainA,
-		ChainB:                relayer.ChainB,
-		ChannelA:              relayer.ChannelA,
-		ChannelB:              relayer.ChannelB,
-		ChainAAddress:         relayer.ChainAAddress,
-		ChainBAddress:         relayer.ChainBAddress,
-		TimePeriod:            relayer.TimePeriod,
-		Status:                int(relayer.Status),
-		UpdateTime:            relayer.UpdateTime,
-		TransferTotalTxs:      relayer.TransferTotalTxs,
-		TransferSuccessTxs:    relayer.TransferSuccessTxs,
-		TransferTotalTxsValue: relayer.TransferTotalTxsValue,
-		Currency:              constant.DefaultCurrency,
+		RelayerId:            relayer.RelayerId,
+		RelayerName:          relayer.RelayerName,
+		RelayerIcon:          relayer.RelayerIcon,
+		ServedChains:         relayer.ServedChains,
+		ServedChainsInfo:     getServedChainInfo(),
+		UpdateTime:           relayer.UpdateTime,
+		RelayedTotalTxs:      relayer.RelayedTotalTxs,
+		RelayedSuccessTxs:    relayer.RelayedSuccessTxs,
+		RelayedTotalTxsValue: relayer.RelayedTotalTxsValue,
+		TotalFeeValue:        relayer.TotalFeeValue,
 	}
 }
 

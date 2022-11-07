@@ -2,10 +2,8 @@ package repository
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,7 +18,6 @@ const (
 	RelayerFieldTotalFeeValue    = "total_fee_value"
 	RelayerFieldServedChains     = "served_chains"
 	RelayerFieldName             = "relayer_name"
-	RelayerFieldStatus           = "status"
 	RelayerFieldUpdateTime       = "update_time"
 	RelayerFieldChainA           = "channel_pair_info.chain_a"
 	RelayerFieldChainB           = "channel_pair_info.chain_b"
@@ -40,8 +37,8 @@ type IRelayerRepo interface {
 	UpdateRelayerTime(relayerId string, updateTime int64) error
 	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue string) error
 	FindAll(skip, limit int64, relayType int) ([]*entity.IBCRelayerNew, error)
-	FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error)
-	CountBycond(chainId string, status int) (int64, error)
+	FindAllBycond(relayerName, relayerAddr string, skip, limit int64, useCount bool) ([]*entity.IBCRelayerNew, int64, error)
+	CountBycond(relayerName, relayerAddr string) (int64, error)
 	CountChainRelayers(chainId string) (int64, error)
 	CountChannelRelayers(chainA, channelA, chainB, channelB string) (int64, error)
 	//FindRelayer(chainId, relayerAddr, channel string) ([]*entity.IBCRelayerNew, error)
@@ -139,60 +136,28 @@ func (repo *IbcRelayerRepo) FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRe
 	return res, err
 }
 
-func (repo *IbcRelayerRepo) analyzeCond(chainId string, status int) bson.M {
+func (repo *IbcRelayerRepo) analyzeCond(relayerName, relayerAddr string) bson.M {
 	filter := bson.M{}
-	if chainId != "" {
-		chains := strings.Split(chainId, ",")
-		if length := len(chains); length <= 2 {
-			switch length {
-			case 1:
-				if !strings.Contains(chainId, constant.AllChain) {
-					filter["$or"] = []bson.M{
-						{RelayerFieldChainA: chains[0]},
-						{RelayerFieldChainB: chains[0]},
-					}
-				}
-				break
-			case 2:
-				if strings.Contains(chainId, constant.AllChain) {
-					if chains[0] == chains[1] && chains[0] == constant.AllChain {
-						//nothing to do
-					} else {
-						index := strings.Index(chainId, constant.AllChain)
-						if index > 0 {
-							filter["$or"] = []bson.M{
-								{RelayerFieldChainA: chains[0]},
-								{RelayerFieldChainB: chains[0]},
-							}
-						} else {
-							filter["$or"] = []bson.M{
-								{RelayerFieldChainA: chains[1]},
-								{RelayerFieldChainB: chains[1]},
-							}
-						}
-					}
-				} else {
-					filter["$or"] = []bson.M{
-						{RelayerFieldChainA: chains[0], RelayerFieldChainB: chains[1]},
-						{RelayerFieldChainA: chains[1], RelayerFieldChainB: chains[0]},
-					}
-				}
-				break
-			}
+	if relayerName != "" {
+		filter[RelayerFieldName] = bson.M{
+			"$regex": relayerName + "*",
 		}
 	}
-	if status > 0 {
-		filter[RelayerFieldStatus] = status
+	if relayerAddr != "" {
+		filter["$or"] = []bson.M{
+			{RelayerFieldChainAAddress: relayerAddr},
+			{RelayerFieldChainBAddress: relayerAddr},
+		}
 	}
 	return filter
 }
 
-func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limit int64, useCount bool) ([]*entity.IBCRelayer, int64, error) {
+func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip, limit int64, useCount bool) ([]*entity.IBCRelayerNew, int64, error) {
 	var (
-		res   []*entity.IBCRelayer
+		res   []*entity.IBCRelayerNew
 		total int64
 	)
-	filter := repo.analyzeCond(chainId, status)
+	filter := repo.analyzeCond(relayerName, relayerAddr)
 	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-" + RelayerFieldTransferTotalTxs).All(&res)
 	if useCount {
 		total, err = repo.coll().Find(context.Background(), filter).Count()
@@ -200,8 +165,8 @@ func (repo *IbcRelayerRepo) FindAllBycond(chainId string, status int, skip, limi
 	return res, total, err
 }
 
-func (repo *IbcRelayerRepo) CountBycond(chainId string, status int) (int64, error) {
-	filter := repo.analyzeCond(chainId, status)
+func (repo *IbcRelayerRepo) CountBycond(relayerName, relayerAddr string) (int64, error) {
+	filter := repo.analyzeCond(relayerName, relayerAddr)
 	return repo.coll().Find(context.Background(), filter).Count()
 }
 

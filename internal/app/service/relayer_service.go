@@ -1,11 +1,9 @@
 package service
 
 import (
-	"strings"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 )
 
@@ -25,31 +23,12 @@ var _ IRelayerService = new(RelayerService)
 func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error) {
 	var resp vo.RelayerListResp
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	chains := strings.Split(req.Chain, ",")
-	//unsupport more than two chains
-	if len(chains) > 2 {
-		return resp, nil
-	}
-	rets, total, err := relayerRepo.FindAllBycond(req.Chain, req.Status, skip, limit, req.UseCount)
+	rets, total, err := relayerRepo.FindAllBycond(req.RelayerName, req.RelayerAddress, skip, limit, req.UseCount)
 	if err != nil {
 		return resp, errors.Wrap(err)
-	}
-	relayerCfgs, err := relayerCfgRepo.FindAll()
-	if err != nil {
-		return resp, errors.Wrap(err)
-	}
-	relayerCfgMap := make(map[string]*entity.IBCRelayerConfig, len(relayerCfgs))
-	for _, val := range relayerCfgs {
-		relayerCfgMap[val.RelayerPairId] = val
 	}
 	for _, val := range rets {
 		item := svc.dto.LoadDto(val)
-		pairId := entity.GenerateRelayerPairId(val.ChainA, val.ChannelA, val.ChainAAddress, val.ChainB, val.ChannelB, val.ChainBAddress)
-		config, ok := relayerCfgMap[pairId]
-		if ok {
-			item.RelayerName = config.RelayerName
-			item.RelayerIcon = config.Icon
-		}
 		resp.Items = append(resp.Items, item)
 	}
 	page := vo.BuildPageInfo(total, req.PageNum, req.PageSize)
@@ -59,7 +38,7 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 }
 
 func (svc *RelayerService) ListCount(req *vo.RelayerListReq) (int64, errors.Error) {
-	total, err := relayerRepo.CountBycond(req.Chain, req.Status)
+	total, err := relayerRepo.CountBycond(req.RelayerName, req.RelayerAddress)
 	if err != nil {
 		return 0, errors.Wrap(err)
 	}
