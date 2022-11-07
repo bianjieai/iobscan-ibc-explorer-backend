@@ -56,10 +56,10 @@ type (
 		DestinationPort    string `json:"destination_port" bson:"destination_port"`
 		DestinationChannel string `json:"destination_channel" bson:"destination_channel"`
 		Data               struct {
-			Denom    string `json:"denom" bson:"denom"`
-			Amount   int64  `json:"amount" bson:"amount"`
-			Sender   string `json:"sender" bson:"sender"`
-			Receiver string `json:"receiver" bson:"receiver"`
+			Denom    string      `json:"denom" bson:"denom"`
+			Amount   interface{} `json:"amount" bson:"amount"`
+			Sender   string      `json:"sender" bson:"sender"`
+			Receiver string      `json:"receiver" bson:"receiver"`
 		} `json:"data" bson:"data"`
 		TimeoutHeight    TimeoutHeight `json:"timeout_height" bson:"timeout_height"`
 		TimeoutTimestamp int64         `json:"timeout_timestamp" bson:"timeout_timestamp"`

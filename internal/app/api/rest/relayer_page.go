@@ -54,3 +54,31 @@ func (ctl *RelayerController) Detail(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(res))
 }
+
+func (ctl *RelayerController) DetailRelayerTxs(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	var req vo.DetailRelayerTxsReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, response.FailBadRequest(err))
+		return
+	}
+
+	chainInfo, err := relayerService.CheckRelayerParams(relayerId, req.Chain)
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, response.FailBadRequest(err))
+		return
+	}
+	req.Addresses = chainInfo.Addresses
+	var res interface{}
+	if req.UseCount {
+		res, err = relayerService.DetailRelayerTxsCount(&req)
+	} else {
+		res, err = relayerService.DetailRelayerTxs(&req)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}

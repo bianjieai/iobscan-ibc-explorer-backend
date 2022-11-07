@@ -78,6 +78,7 @@ func relayerPage(r *gin.RouterGroup) {
 	ctl := rest.RelayerController{}
 	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
 	r.GET("/relayer/:relayer_id", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Detail))
+	r.GET("/relayer/:relayer_id/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.DetailRelayerTxs))
 	r.POST("/relayerCollect", ctl.Collect)
 }
 

@@ -14,7 +14,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
 	"sync"
@@ -526,13 +525,13 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 						}
 					}
 
-					data.TotalFeeValue, err = computeValue(data.TotalFeeValue, relayer.TotalFeeValue)
+					data.TotalFeeValue, err = utils.AddByDecimal(data.TotalFeeValue, relayer.TotalFeeValue)
 					if err != nil {
 						logrus.Error("computeValue  about Relayed Total FeeValue fail, ", err.Error(),
 							" relayer_id:", relayer.RelayerId)
 						return
 					}
-					data.RelayedTotalTxsValue, err = computeValue(data.RelayedTotalTxsValue, relayer.RelayedTotalTxsValue)
+					data.RelayedTotalTxsValue, err = utils.AddByDecimal(data.RelayedTotalTxsValue, relayer.RelayedTotalTxsValue)
 					if err != nil {
 						logrus.Error("computeValue about Relayed Total TxsValue fail, ", err.Error(),
 							" relayer_id:", relayer.RelayerId)
@@ -565,31 +564,4 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 		}
 	}
 
-}
-
-func computeValue(value1, value2 string) (string, error) {
-	var (
-		totalValue, itemValue decimal.Decimal
-		err                   error
-	)
-	if value1 == "" {
-		totalValue = decimal.NewFromInt(0)
-	} else {
-		totalValue, err = decimal.NewFromString(value1)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	if value2 == "" {
-		return totalValue.String(), nil
-	} else {
-		itemValue, err = decimal.NewFromString(value2)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	totalValue = totalValue.Add(itemValue)
-	return totalValue.String(), nil
 }

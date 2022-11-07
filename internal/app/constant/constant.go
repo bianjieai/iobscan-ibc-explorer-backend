@@ -60,6 +60,8 @@ var HomeStatistics = []string{
 	BaseDenomAllStatisticName, DenomAllStatisticName,
 }
 
+var RelayerDetailTxsType = []string{MsgTypeRecvPacket, MsgTypeAcknowledgement, MsgTypeTimeoutPacket}
+
 const (
 	UnAuth = "Others"
 	//AllChain = "allchain"

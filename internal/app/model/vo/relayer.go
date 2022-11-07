@@ -1,6 +1,7 @@
 package vo
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
@@ -40,47 +41,9 @@ type RelayerListResp struct {
 func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayerNew) RelayerDto {
 
 	getServedChainInfo := func() []ServedChainInfo {
-
-		setMap := make(map[string]ServedChainInfo, len(relayer.ChannelPairInfo))
-
-		for _, val := range relayer.ChannelPairInfo {
-
-			if cacheValue, ok := setMap[val.ChainA]; ok {
-				if val.ChainAAddress != "" {
-					cacheValue.Addresses = append(cacheValue.Addresses, val.ChainAAddress)
-				}
-				cacheValue.Addresses = utils.DistinctSliceStr(cacheValue.Addresses)
-				setMap[val.ChainA] = cacheValue
-
-			} else {
-				item := ServedChainInfo{
-					Chain: val.ChainA,
-				}
-				if val.ChainAAddress != "" {
-					item.Addresses = []string{val.ChainAAddress}
-				}
-				setMap[val.ChainA] = item
-			}
-
-			if cacheValue, ok := setMap[val.ChainB]; ok {
-				if val.ChainBAddress != "" {
-					cacheValue.Addresses = append(cacheValue.Addresses, val.ChainBAddress)
-				}
-				cacheValue.Addresses = utils.DistinctSliceStr(cacheValue.Addresses)
-				setMap[val.ChainB] = cacheValue
-			} else {
-				item := ServedChainInfo{
-					Chain: val.ChainB,
-				}
-				if val.ChainBAddress != "" {
-					item.Addresses = []string{val.ChainBAddress}
-				}
-				setMap[val.ChainB] = item
-			}
-
-		}
-		retData := make([]ServedChainInfo, 0, len(setMap))
-		for _, info := range setMap {
+		chainSetMap := GetChainInfoFromChannelPair(relayer.ChannelPairInfo)
+		retData := make([]ServedChainInfo, 0, len(chainSetMap))
+		for _, info := range chainSetMap {
 			retData = append(retData, info)
 		}
 		return retData
@@ -214,4 +177,124 @@ func LoadRelayerDetailDto(relayer *entity.IBCRelayerNew, statusMap map[string]in
 		RelayedTotalTxsValue: relayer.RelayedTotalTxsValue,
 		TotalFeeValue:        relayer.TotalFeeValue,
 	}
+}
+
+type DetailRelayerTxsReq struct {
+	Page
+	Chain       string `json:"chain" form:"chain" binding:"required"`
+	TxTimeStart int64  `json:"tx_time_start" form:"tx_time_start"`
+	TxTimeEnd   int64  `json:"tx_time_end" form:"tx_time_end"`
+	UseCount    bool   `json:"use_count" form:"use_count"`
+	Addresses   []string
+}
+
+type (
+	RelayerTxsDto struct {
+		TxHash    string          `json:"tx_hash"`
+		TxType    string          `json:"tx_type"`
+		Chain     string          `json:"chain"`
+		DenomInfo DenomInfo       `json:"denom_info"`
+		FeeInfo   CommonInfo      `json:"fee_info"`
+		TxStatus  entity.TxStatus `json:"tx_status"`
+		Signer    string          `json:"signer"`
+		TxTime    int64           `json:"tx_time"`
+	}
+	CommonInfo struct {
+		Denom      string `json:"denom"`
+		Amount     string `json:"amount"`
+		DenomChain string `json:"denom_chain"`
+	}
+	DenomInfo struct {
+		CommonInfo
+		BaseDenom      string `json:"base_denom"`
+		BaseDenomChain string `json:"base_denom_chain"`
+	}
+	DetailRelayerTxsResp struct {
+		Items     []RelayerTxsDto `json:"items"`
+		PageInfo  PageInfo        `json:"page_info"`
+		TimeStamp int64           `json:"time_stamp"`
+	}
+)
+
+func LoadRelayerTxsDto(tx *entity.Tx, chain string) RelayerTxsDto {
+	supportTypes := []string{constant.MsgTypeRecvPacket, constant.MsgTypeAcknowledgement, constant.MsgTypeTimeoutPacket}
+	getTxType := func() string {
+		if utils.InArray(supportTypes, tx.Type) {
+			return tx.Type
+		}
+		for _, val := range tx.Types {
+			if utils.InArray(supportTypes, val) {
+				return val
+			}
+		}
+		return tx.Type
+	}
+
+	getFeeInfo := func() CommonInfo {
+		if tx.Fee != nil {
+			return CommonInfo{
+				Denom:      tx.Fee.Amount[0].Denom,
+				Amount:     tx.Fee.Amount[0].Amount,
+				DenomChain: chain,
+			}
+		}
+		return CommonInfo{}
+	}
+
+	getSigner := func() string {
+		if len(tx.Signers) > 0 {
+			return tx.Signers[0]
+		}
+		return ""
+	}
+
+	return RelayerTxsDto{
+		TxHash:   tx.TxHash,
+		TxTime:   tx.Time,
+		TxType:   getTxType(),
+		Chain:    chain,
+		TxStatus: tx.Status,
+		FeeInfo:  getFeeInfo(),
+		Signer:   getSigner(),
+	}
+}
+func GetChainInfoFromChannelPair(channelPairInfo []entity.ChannelPairInfo) map[string]ServedChainInfo {
+	chainSetMap := make(map[string]ServedChainInfo, len(channelPairInfo))
+	for _, val := range channelPairInfo {
+
+		if cacheValue, ok := chainSetMap[val.ChainA]; ok {
+			if val.ChainAAddress != "" {
+				cacheValue.Addresses = append(cacheValue.Addresses, val.ChainAAddress)
+			}
+			cacheValue.Addresses = utils.DistinctSliceStr(cacheValue.Addresses)
+			chainSetMap[val.ChainA] = cacheValue
+
+		} else {
+			item := ServedChainInfo{
+				Chain: val.ChainA,
+			}
+			if val.ChainAAddress != "" {
+				item.Addresses = []string{val.ChainAAddress}
+			}
+			chainSetMap[val.ChainA] = item
+		}
+
+		if cacheValue, ok := chainSetMap[val.ChainB]; ok {
+			if val.ChainBAddress != "" {
+				cacheValue.Addresses = append(cacheValue.Addresses, val.ChainBAddress)
+			}
+			cacheValue.Addresses = utils.DistinctSliceStr(cacheValue.Addresses)
+			chainSetMap[val.ChainB] = cacheValue
+		} else {
+			item := ServedChainInfo{
+				Chain: val.ChainB,
+			}
+			if val.ChainBAddress != "" {
+				item.Addresses = []string{val.ChainBAddress}
+			}
+			chainSetMap[val.ChainB] = item
+		}
+
+	}
+	return chainSetMap
 }
