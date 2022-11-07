@@ -62,18 +62,12 @@ func (ctl *RelayerController) DetailRelayerTxs(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailBadRequest(err))
 		return
 	}
-
-	chainInfo, err := relayerService.CheckRelayerParams(relayerId, req.Chain)
-	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusOK, response.FailBadRequest(err))
-		return
-	}
-	req.Addresses = chainInfo.Addresses
 	var res interface{}
+	var err errors.Error
 	if req.UseCount {
-		res, err = relayerService.DetailRelayerTxsCount(&req)
+		res, err = relayerService.DetailRelayerTxsCount(relayerId, &req)
 	} else {
-		res, err = relayerService.DetailRelayerTxs(&req)
+		res, err = relayerService.DetailRelayerTxs(relayerId, &req)
 	}
 
 	if err != nil {

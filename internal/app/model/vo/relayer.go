@@ -185,7 +185,6 @@ type DetailRelayerTxsReq struct {
 	TxTimeStart int64  `json:"tx_time_start" form:"tx_time_start"`
 	TxTimeEnd   int64  `json:"tx_time_end" form:"tx_time_end"`
 	UseCount    bool   `json:"use_count" form:"use_count"`
-	Addresses   []string
 }
 
 type (

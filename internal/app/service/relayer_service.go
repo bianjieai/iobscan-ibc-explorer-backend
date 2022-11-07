@@ -18,9 +18,8 @@ type IRelayerService interface {
 	ListCount(req *vo.RelayerListReq) (int64, errors.Error)
 	Collect(OperatorFile string) errors.Error
 	Detail(relayerId string) (vo.RelayerDetailResp, errors.Error)
-	DetailRelayerTxsCount(req *vo.DetailRelayerTxsReq) (int64, errors.Error)
-	DetailRelayerTxs(req *vo.DetailRelayerTxsReq) (vo.DetailRelayerTxsResp, errors.Error)
-	CheckRelayerParams(relayerId, chain string) (vo.ServedChainInfo, errors.Error)
+	DetailRelayerTxsCount(relayerId string, req *vo.DetailRelayerTxsReq) (int64, errors.Error)
+	DetailRelayerTxs(relayerId string, req *vo.DetailRelayerTxsReq) (vo.DetailRelayerTxsResp, errors.Error)
 }
 
 type RelayerService struct {
@@ -83,10 +82,14 @@ func (svc *RelayerService) Detail(relayerId string) (vo.RelayerDetailResp, error
 	return resp, nil
 }
 
-func (svc *RelayerService) DetailRelayerTxs(req *vo.DetailRelayerTxsReq) (vo.DetailRelayerTxsResp, errors.Error) {
+func (svc *RelayerService) DetailRelayerTxs(relayerId string, req *vo.DetailRelayerTxsReq) (vo.DetailRelayerTxsResp, errors.Error) {
 	var resp vo.DetailRelayerTxsResp
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	txs, err := txRepo.GetRelayerTxs(req.Chain, req.Addresses, constant.RelayerDetailTxsType, req.TxTimeStart, req.TxTimeEnd, skip, limit)
+	chainInfo, err0 := svc.checkRelayerParams(relayerId, req.Chain)
+	if err0 != nil {
+		return resp, err0
+	}
+	txs, err := txRepo.GetRelayerTxs(req.Chain, chainInfo.Addresses, constant.RelayerDetailTxsType, req.TxTimeStart, req.TxTimeEnd, skip, limit)
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
@@ -112,10 +115,23 @@ func (svc *RelayerService) DetailRelayerTxs(req *vo.DetailRelayerTxsReq) (vo.Det
 	return resp, nil
 }
 
-func (svc *RelayerService) DetailRelayerTxsCount(req *vo.DetailRelayerTxsReq) (int64, errors.Error) {
-	count, err := txRepo.CountRelayerTxs(req.Chain, req.Addresses, constant.RelayerDetailTxsType, req.TxTimeStart, req.TxTimeEnd)
+func (svc *RelayerService) DetailRelayerTxsCount(relayerId string, req *vo.DetailRelayerTxsReq) (int64, errors.Error) {
+	//默认情况下chain查询交易
+	if req.TxTimeStart == 0 && req.TxTimeEnd == 0 {
+		if value, err := relayerTxsCache.Get(relayerId, req.Chain); err == nil {
+			return value, nil
+		}
+	}
+	chainInfo, err0 := svc.checkRelayerParams(relayerId, req.Chain)
+	if err0 != nil {
+		return 0, err0
+	}
+	count, err := txRepo.CountRelayerTxs(req.Chain, chainInfo.Addresses, constant.RelayerDetailTxsType, req.TxTimeStart, req.TxTimeEnd)
 	if err != nil {
 		return 0, errors.Wrap(err)
+	}
+	if req.TxTimeStart == 0 && req.TxTimeEnd == 0 {
+		_ = relayerTxsCache.Set(relayerId, req.Chain, count)
 	}
 	return count, nil
 }
@@ -201,7 +217,7 @@ func getTxDenomInfo(tx *entity.Tx, chain string, denomMap map[string]*entity.IBC
 	return vo.DenomInfo{}
 }
 
-func (svc *RelayerService) CheckRelayerParams(relayerId, chain string) (vo.ServedChainInfo, errors.Error) {
+func (svc *RelayerService) checkRelayerParams(relayerId, chain string) (vo.ServedChainInfo, errors.Error) {
 	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
 	if err != nil {
 		return vo.ServedChainInfo{}, errors.Wrap(err)

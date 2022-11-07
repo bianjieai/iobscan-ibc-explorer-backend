@@ -21,6 +21,7 @@ var (
 	exSearchRecordRepo  repository.IExSearchRecordRepo = new(repository.ExSearchRecordRepo)
 	lcdTxDataCache      cache.LcdTxDataCacheRepo
 	lcdAddrCache        cache.LcdAddrCacheRepo
+	relayerTxsCache     cache.RelayerTotalTxsCacheRepo
 	relayerCfgRepo      repository.IRelayerConfigRepo = new(cache.RelayerConfigCacheRepo)
 	baseDenomRepo       cache.BaseDenomCacheRepo
 )
