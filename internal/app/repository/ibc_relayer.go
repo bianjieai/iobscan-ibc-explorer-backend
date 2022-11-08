@@ -16,7 +16,7 @@ const (
 	RelayerFieldTotalTxsValue = "relayed_total_txs_value"
 	RelayerFieldTotalFeeValue = "total_fee_value"
 	RelayerFieldServedChains  = "served_chains"
-	RelayerFieldName          = "relayer_name"
+	RelayerFieldeRelayerName  = "relayer_name"
 	RelayerFieldUpdateTime    = "update_time"
 	RelayerFieldChainA        = "channel_pair_info.chain_a"
 	RelayerFieldChainB        = "channel_pair_info.chain_b"
@@ -91,9 +91,9 @@ func (repo *IbcRelayerRepo) FindAll(skip, limit int64, relayType int) ([]*entity
 	cond := bson.M{}
 	switch relayType {
 	case RelayerRegisterType:
-		cond = bson.M{RelayerFieldName: bson.M{"$ne": ""}}
+		cond = bson.M{RelayerFieldeRelayerName: bson.M{"$ne": ""}}
 	case RelayerUnknowType:
-		cond = bson.M{RelayerFieldName: ""}
+		cond = bson.M{RelayerFieldeRelayerName: ""}
 	}
 	err := repo.coll().Find(context.Background(), cond).Skip(skip).Limit(limit).All(&res)
 	return res, err
@@ -121,7 +121,7 @@ func (repo *IbcRelayerRepo) FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRe
 func (repo *IbcRelayerRepo) analyzeCond(relayerName, relayerAddr string) bson.M {
 	filter := bson.M{}
 	if relayerName != "" {
-		filter[RelayerFieldName] = bson.M{
+		filter[RelayerFieldeRelayerName] = bson.M{
 			"$regex": relayerName + "*",
 		}
 	}
@@ -140,7 +140,7 @@ func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip,
 		total int64
 	)
 	filter := repo.analyzeCond(relayerName, relayerAddr)
-	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-"+RelayerFieldName, "-"+RelayerFieldTotalTxs).All(&res)
+	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-"+RelayerFieldeRelayerName, "-"+RelayerFieldTotalTxs).All(&res)
 	if useCount {
 		total, err = repo.coll().Find(context.Background(), filter).Count()
 	}
