@@ -1,5 +1,11 @@
 package entity
+import (
+	"fmt"
+	"strings"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+)
 type IBCRelayerNew struct {
 	RelayerId            string            `bson:"relayer_id"`
 	RelayerName          string            `bson:"relayer_name"`
@@ -31,4 +37,90 @@ func (i IBCRelayerNew) CollectionName() string {
 
 func (i ChannelPairInfo) Valid() bool {
 	return i.ChainA != "" && i.ChainB != "" && i.ChannelA != "" && i.ChannelB != "" && (i.ChainBAddress != "" || i.ChainAAddress != "")
+}
+
+func GenerateChannelPairInfo(chain1, channel1, chain1Address, chain2, channel2, chain2Address string) ChannelPairInfo {
+	chainA, _ := ConfirmRelayerPair(chain1, chain2)
+	var res ChannelPairInfo
+	if chainA == chain1 {
+		res = ChannelPairInfo{
+			ChainA:        chain1,
+			ChainB:        chain2,
+			ChannelA:      channel1,
+			ChannelB:      channel2,
+			ChainAAddress: chain1Address,
+			ChainBAddress: chain2Address,
+		}
+	} else {
+		res = ChannelPairInfo{
+			ChainA:        chain2,
+			ChainB:        chain1,
+			ChannelA:      channel2,
+			ChannelB:      channel1,
+			ChainAAddress: chain2Address,
+			ChainBAddress: chain1Address,
+		}
+	}
+
+	pairId := GenerateRelayerPairId(chain1, channel1, chain1Address, chain2, channel2, chain2Address)
+	res.PairId = pairId
+	return res
+}
+
+func GenerateRelayerPairId(chain1, channel1, chain1Address, chain2, channel2, chain2Address string) string {
+	chainA, _ := ConfirmRelayerPair(chain1, chain2)
+	var pairStr string
+	if chainA == chain1 {
+		pairStr = fmt.Sprintf("%s%s%s%s%s%s", chain1, channel1, chain1Address, chain2, channel2, chain2Address)
+	} else {
+		pairStr = fmt.Sprintf("%s%s%s%s%s%s", chain2, channel2, chain2Address, chain1, channel1, chain1Address)
+	}
+
+	return utils.Md5(pairStr)
+}
+
+func ConfirmRelayerPair(chainA, chainB string) (string, string) {
+	if strings.HasPrefix(strings.ToLower(chainA), constant.Cosmos) {
+		return chainA, chainB
+	}
+
+	if strings.HasPrefix(strings.ToLower(chainB), constant.Cosmos) {
+		return chainB, chainA
+	}
+
+	if strings.HasPrefix(strings.ToLower(chainA), constant.Iris) {
+		return chainA, chainB
+	}
+
+	if strings.HasPrefix(strings.ToLower(chainB), constant.Iris) {
+		return chainB, chainA
+	}
+
+	compare := strings.Compare(strings.ToLower(chainA), strings.ToLower(chainB))
+	if compare < 0 {
+		return chainA, chainB
+	} else {
+		return chainB, chainA
+	}
+}
+
+func GenerateDistRelayerId(chain1, chain1Address, chain2, chain2Address string) string {
+	chainA, _ := ConfirmRelayerPair(chain1, chain2)
+	var pairStr string
+	if chainA == chain1 {
+		pairStr = fmt.Sprintf("%s:%s:%s:%s", chain1, chain1Address, chain2, chain2Address)
+	} else {
+		pairStr = fmt.Sprintf("%s:%s:%s:%s", chain2, chain2Address, chain1, chain1Address)
+	}
+
+	return pairStr
+}
+
+func ParseDistRelayerId(DistRelayerId string) (chain1, chain1Address, chain2, chain2Address string) {
+	split := strings.Split(DistRelayerId, ":")
+	chain1 = split[0]
+	chain1Address = split[1]
+	chain2 = split[2]
+	chain2Address = split[3]
+	return
 }

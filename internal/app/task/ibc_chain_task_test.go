@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
@@ -16,6 +17,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	logrus.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat:   constant.DefaultTimeFormat,
+		DisableHTMLEscape: true,
+	})
 	cache.InitRedisClient(conf.Redis{
 		Addrs:    "127.0.0.1:6379",
 		User:     "",

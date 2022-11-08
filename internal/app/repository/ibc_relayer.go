@@ -32,6 +32,7 @@ const (
 )
 
 type IRelayerRepo interface {
+	InsertOne(relayer *entity.IBCRelayerNew) error
 	InsertBatch(relayer []entity.IBCRelayerNew) error
 	UpdateRelayerTime(relayerId string, updateTime int64) error
 	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue string) error
@@ -42,11 +43,13 @@ type IRelayerRepo interface {
 	CountChannelRelayers(chainA, channelA, chainB, channelB string) (int64, error)
 	//FindRelayer(chainId, relayerAddr, channel string) ([]*entity.IBCRelayerNew, error)
 	FindOneByRelayerId(relayerId string) (*entity.IBCRelayerNew, error)
+	FindOneByRelayerName(name string) (*entity.IBCRelayerNew, error)
 	FindEmptyAddrAll(skip, limit int64) ([]*entity.IBCRelayerNew, error)
 	//UpdateSrcAddress(relayerId string, addrs []string) error
 	UpdateChannelPairInfo(relayerId string, infos []entity.ChannelPairInfo) error
 	Update(relayer *entity.IBCRelayerNew) error
 	RemoveDumpData(ids []string) error
+	FindUnknownByAddrPair(addrA, addrB string) ([]*entity.IBCRelayerNew, error)
 }
 
 var _ IRelayerRepo = new(IbcRelayerRepo)
@@ -78,26 +81,6 @@ func (repo *IbcRelayerRepo) Update(relayer *entity.IBCRelayerNew) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayer.RelayerId}, bson.M{
 		"$set": updateData})
 }
-
-//func (repo *IbcRelayerRepo) EnsureIndexes() {
-//	var indexes []options.IndexModel
-//	indexes = append(indexes, options.IndexModel{
-//		Key:          []string{"-" + RelayerFieldChainA, "-" + RelayerFieldChannelA, "-" + RelayerFieldChainAAddress},
-//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-//	})
-//	indexes = append(indexes, options.IndexModel{
-//		Key:          []string{"-" + RelayerFieldChainB, "-" + RelayerFieldChannelB, "-" + RelayerFieldChainBAddress},
-//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-//	})
-//	indexes = append(indexes, options.IndexModel{
-//		Key: []string{"-" + RelayerFieldChainBAddress, "-" + RelayerFieldChainB},
-//	})
-//	indexes = append(indexes, options.IndexModel{
-//		Key: []string{"-" + RelayerFieldChainAAddress, "-" + RelayerFieldChainA},
-//	})
-//
-//	ensureIndexes(entity.IBCRelayer{}.CollectionName(), indexes)
-//}
 
 func (repo *IbcRelayerRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCRelayerNew{}.CollectionName())
@@ -167,6 +150,13 @@ func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip,
 func (repo *IbcRelayerRepo) CountBycond(relayerName, relayerAddr string) (int64, error) {
 	filter := repo.analyzeCond(relayerName, relayerAddr)
 	return repo.coll().Find(context.Background(), filter).Count()
+}
+
+func (repo *IbcRelayerRepo) InsertOne(relayer *entity.IBCRelayerNew) error {
+	if _, err := repo.coll().InsertOne(context.Background(), relayer); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (repo *IbcRelayerRepo) InsertBatch(relayer []entity.IBCRelayerNew) error {
@@ -261,5 +251,17 @@ func (repo *IbcRelayerRepo) CountChannelRelayers(chainA, channelA, chainB, chann
 func (repo *IbcRelayerRepo) FindOneByRelayerId(relayerId string) (*entity.IBCRelayerNew, error) {
 	var res *entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldelayerId: relayerId}).One(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindOneByRelayerName(name string) (*entity.IBCRelayerNew, error) {
+	var res *entity.IBCRelayerNew
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldeRelayerName: name}).One(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindUnknownByAddrPair(addrA, addrB string) ([]*entity.IBCRelayerNew, error) {
+	var res []*entity.IBCRelayerNew
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainAAddress: addrA, RelayerFieldChainBAddress: addrB, RelayerFieldeRelayerName: ""}).All(&res)
 	return res, err
 }

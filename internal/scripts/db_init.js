@@ -249,3 +249,41 @@ db.ex_search_record.createIndex({
 }, {
     expireAfterSeconds: 31536000
 })
+
+// relayer statistics
+db.ibc_relayer_fee_statistics.createIndex({
+    "relayer_address": 1,
+    "tx_type": 1,
+    "tx_status": 1,
+    "fee_denom": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {background: true, unique: true});
+
+db.ibc_relayer_fee_statistics.createIndex({
+    "statistics_chain": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {background: true});
+
+db.ibc_relayer_denom_statistics.createIndex({
+    "relayer_address": 1,
+    "tx_type": 1,
+    "tx_status": 1,
+    "base_denom": 1,
+    "base_denom_chain_id": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {background: true, unique: true});
+
+db.ibc_relayer_denom_statistics.createIndex({
+    "statistics_chain": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {background: true});
+
+db.ibc_relayer_address_channel.createIndex({
+    "relayer_address": 1,
+    "chain": 1,
+    "channel": 1
+}, {background: true, unique: true});

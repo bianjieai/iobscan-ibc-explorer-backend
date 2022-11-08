@@ -4,28 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/antchfx/htmlquery"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
 	mainPageUrl           = "https://github.com/irisnet/iob-registry/tree/main/relayers"
-	subPageUrl            = "https://github.com/irisnet/iob-registry/tree/main/relayers/%s"
 	xpathRowHeader        = "//div[@role=\"rowheader\"]"
-	rawJsonUrl            = "https://raw.githubusercontent.com/irisnet/iob-registry/main/relayers/%s/%s"
-	rawInformationJsonUrl = "https://raw.githubusercontent.com/irisnet/iob-registry/main/relayers/%s/information.json"
-	informationFileName   = "information.json"
+	rawInformationJsonUrl = "https://raw.githubusercontent.com/irisnet/iob-registry/main/relayers/%s/relayer_info.json"
 	iconUrl               = "https://iobscan.io/resources/ibc-relayer/%s.png"
-	concurrentNum         = 3
 	parentPath            = ". ."
-	imagesFileName        = "images"
 )
 
 type RelayerHandler struct {
@@ -55,24 +50,9 @@ func (h *RelayerHandler) Collect(filepath string) {
 	if filepath == "" {
 		h.xPathMainPage()
 	} else {
-		h.xPathSubPage(filepath)
+		h.fetchSave(filepath)
 	}
 
-	if len(h.jsonFileList) > 0 {
-		var wg sync.WaitGroup
-		wg.Add(concurrentNum)
-		for i := 0; i < concurrentNum; i++ {
-			seq := i
-			go func() {
-				defer wg.Done()
-				h.fetchAndSave(seq)
-			}()
-		}
-		wg.Wait()
-	}
-
-	_, _ = relayerCfgRepo.(*cache.RelayerConfigCacheRepo).DelCacheFindRelayerPairIds()
-	_, _ = relayerCfgRepo.(*cache.RelayerConfigCacheRepo).DelCacheFindAll()
 	logrus.Infof("RelayerHandler collect %s end, time use: %d(s)", filepath, time.Now().Unix()-st)
 }
 
@@ -94,93 +74,209 @@ func (h *RelayerHandler) xPathMainPage() {
 			continue
 		}
 
-		h.xPathSubPage(filepath)
+		h.fetchSave(filepath)
 	}
 }
 
-func (h *RelayerHandler) xPathSubPage(filepath string) {
-	if _, err := h.queryInfoJson(filepath); err != nil {
+func (h *RelayerHandler) fetchSave(filepath string) {
+	logrus.Infof("RelayerHandler fetchSave %s", filepath)
+	relayerInfoResp, err := h.queryInfoJson(filepath)
+	if err != nil {
+		logrus.Infof("RelayerHandler queryInfoJson %s err, %v", filepath, err)
 		return
 	}
 
-	doc, err := htmlquery.LoadURL(fmt.Sprintf(subPageUrl, filepath))
-	if err != nil {
-		logrus.Errorf("RelayerHandler xPathSubPage err, %v", err)
+	var distRelayerIds []string
+	for _, addrMap := range relayerInfoResp.Addresses {
+		index := 0
+		var chainA, chainAAddress, chainB, chainBAddress string
+		for k, v := range addrMap {
+			if index == 0 {
+				chainA = k
+				chainAAddress = v
+			} else {
+				chainB = k
+				chainBAddress = v
+			}
+
+			index++
+		}
+		distRelayerIds = append(distRelayerIds, entity.GenerateDistRelayerId(chainA, chainAAddress, chainB, chainBAddress))
+	}
+
+	if err = h.saveRegistryRelayer(relayerInfoResp.TeamName, distRelayerIds); err != nil {
+		logrus.Errorf("RelayerHandler saveRegistryRelayer %s err, %v", relayerInfoResp.TeamName, err)
 		return
 	}
 
-	nodes, err := htmlquery.QueryAll(doc, xpathRowHeader)
+	if err = h.removeDumpChannelPairs(distRelayerIds); err != nil {
+		logrus.Errorf("RelayerHandler removeDumpChannelPairs %s err, %v", relayerInfoResp.TeamName, err)
+		return
+	}
+}
+
+func (h *RelayerHandler) saveRegistryRelayer(relayerName string, nowDistRelayerIds []string) error {
+	relayer, err := relayerRepo.FindOneByRelayerName(relayerName)
 	if err != nil {
-		logrus.Errorf("RelayerHandler xPathSubPage xpath err, %v", err)
+		if err == qmgo.ErrNoSuchDocuments {
+			return h.insertNewRelayer(relayerName, nowDistRelayerIds)
+		}
+		return err
 	}
 
-	for _, v := range nodes {
-		jsonFile := strings.TrimSpace(htmlquery.InnerText(v))
-		if strings.HasSuffix(jsonFile, ".json") && jsonFile != informationFileName {
-			h.jsonFileList = append(h.jsonFileList, fmt.Sprintf("%s|%s", filepath, jsonFile))
+	return h.updateRelayer(relayer, nowDistRelayerIds)
+}
+
+func (h *RelayerHandler) removeDumpChannelPairs(nowDistRelayerIds []string) error {
+	for _, v := range nowDistRelayerIds {
+		_, addressA, _, addressB := entity.ParseDistRelayerId(v)
+		relayerList, err := relayerRepo.FindUnknownByAddrPair(addressA, addressB)
+		if err != nil {
+			return err
 		}
 
-		if jsonFile == imagesFileName {
-			h.imageMap[filepath] = true
+		if len(relayerList) == 0 {
+			continue
+		}
+
+		removeRelayerIds := make([]string, 0, len(relayerList))
+		for _, re := range relayerList {
+			removeRelayerIds = append(removeRelayerIds, re.RelayerId)
+		}
+
+		if err = relayerRepo.RemoveDumpData(removeRelayerIds); err != nil {
+			return err
 		}
 	}
+	return nil
+}
+
+func (h *RelayerHandler) insertNewRelayer(relayerName string, nowDistRelayerIds []string) error {
+	nowChannelPairInfo := make([]entity.ChannelPairInfo, 0, len(nowDistRelayerIds))
+	servedChainSet := utils.NewStringSet()
+	for _, v := range nowDistRelayerIds {
+		chainA, addressA, chainB, addressB := entity.ParseDistRelayerId(v)
+		pairs, err := getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
+		if err != nil {
+			return err
+		}
+		nowChannelPairInfo = append(nowChannelPairInfo, pairs...)
+		servedChainSet.AddAll(chainA, chainB)
+	}
+
+	err := relayerRepo.InsertOne(&entity.IBCRelayerNew{
+		RelayerId:       primitive.NewObjectID().Hex(),
+		RelayerName:     relayerName,
+		RelayerIcon:     strings.ReplaceAll(relayerName, " ", "_"),
+		ServedChains:    int64(servedChainSet.Len()),
+		ChannelPairInfo: nowChannelPairInfo,
+		CreateAt:        time.Now().Unix(),
+		UpdateAt:        time.Now().Unix(),
+	})
+
+	if err != nil {
+		logrus.Errorf("RelayerHandler insert relayer %s err, %v", relayerName, err)
+		return err
+	}
+	logrus.Infof("RelayerHandler insert relayer %s succeed", relayerName)
+	return nil
+}
+
+func (h *RelayerHandler) updateRelayer(relayer *entity.IBCRelayerNew, nowDistRelayerIds []string) error {
+	var existedDistRelayerIds []string
+	nowChannelPairInfoMap := make(map[string]entity.ChannelPairInfo, len(relayer.ChannelPairInfo))
+	var needUpdate bool
+	for _, v := range relayer.ChannelPairInfo {
+		distRelayerId := entity.GenerateDistRelayerId(v.ChainA, v.ChainAAddress, v.ChainB, v.ChainBAddress)
+		existedDistRelayerIds = append(existedDistRelayerIds, distRelayerId)
+		if utils.InArray(nowDistRelayerIds, distRelayerId) {
+			nowChannelPairInfoMap[v.PairId] = v
+		} else { // pair removed
+			needUpdate = true
+		}
+	}
+
+	for _, v := range nowDistRelayerIds {
+		if utils.InArray(existedDistRelayerIds, v) {
+			continue
+		}
+
+		// 新增pair
+		needUpdate = true
+		chainA, addressA, chainB, addressB := entity.ParseDistRelayerId(v)
+		pairs, err := getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
+		if err != nil {
+			return err
+		}
+
+		for _, p := range pairs {
+			nowChannelPairInfoMap[p.PairId] = p
+		}
+	}
+
+	if !needUpdate {
+		logrus.Infof("RelayerHandler relayer %s don't chang", relayer.RelayerName)
+		return nil
+	}
+
+	pairs := make([]entity.ChannelPairInfo, 0, len(nowChannelPairInfoMap))
+	for _, v := range nowChannelPairInfoMap {
+		pairs = append(pairs, v)
+	}
+	if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, pairs); err != nil {
+		logrus.Errorf("RelayerHandler update relayer %s err, %v", relayer.RelayerName, err)
+		return err
+	} else {
+		logrus.Infof("RelayerHandler update relayer %s succeed, %v", relayer.RelayerName, err)
+		return nil
+	}
+}
+
+// getChannelPairInfoByAddressPair 获取一对地址上的所有channel pair
+func getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB string) ([]entity.ChannelPairInfo, error) {
+	addrChannels, err := relayerAddrChannelRepo.FindChannels([]string{addressA, addressB})
+	if err != nil {
+		return nil, err
+	}
+
+	chainAChannelMap := make(map[string]string)
+	chainBChannelMap := make(map[string]string)
+	for _, c := range addrChannels {
+		if c.RelayerAddress == addressA && c.Chain == chainA {
+			chainAChannelMap[c.Channel] = c.CounterPartyChannel
+		} else if c.RelayerAddress == addressB && c.Chain == chainB {
+			chainBChannelMap[c.Channel] = c.CounterPartyChannel
+		}
+	}
+
+	var res []entity.ChannelPairInfo
+	var channelMatched bool
+	for ch, cpch := range chainAChannelMap {
+		if ch2, _ := chainBChannelMap[cpch]; ch == ch2 { // channel match success
+			pairInfo := entity.GenerateChannelPairInfo(chainA, ch, addressA, chainB, cpch, addressB)
+			channelMatched = true
+			res = append(res, pairInfo)
+		}
+	}
+
+	if !channelMatched {
+		pairInfo := entity.GenerateChannelPairInfo(chainA, "", addressA, chainB, "", addressB)
+		res = append(res, pairInfo)
+	}
+
+	return res, nil
 }
 
 func (h *RelayerHandler) queryInfoJson(filepath string) (*vo.IobRegistryRelayerInfoResp, error) {
 	url := fmt.Sprintf(rawInformationJsonUrl, filepath)
 	bz, err := utils.HttpGet(url)
 	if err != nil {
-		logrus.Errorf("RelayerHandler queryInfoJson err, %v", err)
-		return nil, nil
+		return nil, err
 	}
 
 	var res vo.IobRegistryRelayerInfoResp
-	_ = json.Unmarshal(bz, &res)
-	h.teamNameMap[filepath] = res.TeamName
-	return &res, nil
-}
-
-func (h *RelayerHandler) queryPairJson(filepath, filename string) (*vo.IobRegistryRelayerPairResp, error) {
-	url := fmt.Sprintf(rawJsonUrl, filepath, filename)
-	bz, err := utils.HttpGet(url)
-	if err != nil {
-		logrus.Errorf("RelayerHandler queryChannelPairJson(%s) err, %v", url, err)
-		return nil, nil
+	if err = json.Unmarshal(bz, &res); err != nil {
+		return nil, err
 	}
-
-	var res vo.IobRegistryRelayerPairResp
-	_ = json.Unmarshal(bz, &res)
 	return &res, nil
-}
-
-func (h *RelayerHandler) fetchAndSave(seq int) {
-	logrus.Infof("RelayerHandler coroutine-%d start", seq)
-	st := time.Now().Unix()
-	for i, file := range h.jsonFileList {
-		if i%concurrentNum != seq {
-			continue
-		}
-
-		split := strings.Split(file, "|")
-		pairJson, err := h.queryPairJson(split[0], split[1]) // split[0]: filepath, split[1]: json file name
-		if err != nil {
-			continue
-		}
-
-		chain1 := strings.ReplaceAll(pairJson.Chain1.ChainId, "-", "_")
-		chain2 := strings.ReplaceAll(pairJson.Chain2.ChainId, "-", "_")
-		cfgEntity := entity.GenerateRelayerConfigEntity(chain1, pairJson.Chain1.ChannelId, pairJson.Chain1.Address, chain2, pairJson.Chain2.ChannelId, pairJson.Chain2.Address)
-		if _, ok := h.pairIdMap[cfgEntity.RelayerPairId]; !ok {
-			cfgEntity.RelayerName = h.teamNameMap[split[0]]
-			if h.imageMap[split[0]] {
-				iconName := strings.ReplaceAll(cfgEntity.RelayerName, " ", "_")
-				cfgEntity.Icon = fmt.Sprintf(iconUrl, iconName)
-			}
-
-			if err = relayerCfgRepo.Insert(cfgEntity); err != nil {
-				logrus.Errorf("RelayerHandler insert relayer config error, %v", err)
-			}
-		}
-	}
-	logrus.Infof("RelayerHandler coroutine-%d end, time use: %d(s)", seq, time.Now().Unix()-st)
 }
