@@ -110,6 +110,7 @@ func (repo *RelayerDenomStatisticsRepo) CountRelayerBaseDenomAmtAndTxs(relayAddr
 			"_id":                 0,
 			"base_denom":          "$_id.base_denom",
 			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"tx_status":           "$_id.tx_status",
 			"amount":              "$amount",
 			"total_txs":           "$relayed_txs",
 		},
