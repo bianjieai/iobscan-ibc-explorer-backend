@@ -10,22 +10,21 @@ import (
 )
 
 const (
-	RelayerFieldelayerId         = "relayer_id"
-	RelayerFieldTransferTotalTxs = "transfer_total_txs"
-	RelayerFieldTotalTxs         = "relayed_total_txs"
-	RelayerFieldSuccessTxs       = "relayed_success_txs"
-	RelayerFieldTotalTxsValue    = "relayed_total_txs_value"
-	RelayerFieldTotalFeeValue    = "total_fee_value"
-	RelayerFieldServedChains     = "served_chains"
-	RelayerFieldName             = "relayer_name"
-	RelayerFieldUpdateTime       = "update_time"
-	RelayerFieldChainA           = "channel_pair_info.chain_a"
-	RelayerFieldChainB           = "channel_pair_info.chain_b"
-	RelayerFieldChannelA         = "channel_pair_info.channel_a"
-	RelayerFieldChannelB         = "channel_pair_info.channel_b"
-	RelayerFieldChainAAddress    = "channel_pair_info.chain_a_address"
-	RelayerFieldChainBAddress    = "channel_pair_info.chain_b_address"
-	RelayerFieldUpdateAt         = "update_at"
+	RelayerFieldelayerId      = "relayer_id"
+	RelayerFieldTotalTxs      = "relayed_total_txs"
+	RelayerFieldSuccessTxs    = "relayed_success_txs"
+	RelayerFieldTotalTxsValue = "relayed_total_txs_value"
+	RelayerFieldTotalFeeValue = "total_fee_value"
+	RelayerFieldServedChains  = "served_chains"
+	RelayerFieldName          = "relayer_name"
+	RelayerFieldUpdateTime    = "update_time"
+	RelayerFieldChainA        = "channel_pair_info.chain_a"
+	RelayerFieldChainB        = "channel_pair_info.chain_b"
+	RelayerFieldChannelA      = "channel_pair_info.channel_a"
+	RelayerFieldChannelB      = "channel_pair_info.channel_b"
+	RelayerFieldChainAAddress = "channel_pair_info.chain_a_address"
+	RelayerFieldChainBAddress = "channel_pair_info.chain_b_address"
+	RelayerFieldUpdateAt      = "update_at"
 
 	RelayerAllType      = 0
 	RelayerRegisterType = 1
@@ -158,7 +157,7 @@ func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip,
 		total int64
 	)
 	filter := repo.analyzeCond(relayerName, relayerAddr)
-	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-" + RelayerFieldTransferTotalTxs).All(&res)
+	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-"+RelayerFieldName, "-"+RelayerFieldTotalTxs).All(&res)
 	if useCount {
 		total, err = repo.coll().Find(context.Background(), filter).Count()
 	}
