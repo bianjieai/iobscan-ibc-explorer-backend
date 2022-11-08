@@ -67,6 +67,11 @@ func (svc *RelayerService) Detail(relayerId string) (vo.RelayerDetailResp, error
 		return resp, errors.Wrap(err)
 	}
 
+	//未注册的relayer的名字为空
+	if one.RelayerName == "" {
+		return resp, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
+	}
+
 	channelPairs, err := channelRepo.FindAll()
 	if err != nil {
 		return resp, errors.Wrap(err)
@@ -136,10 +141,14 @@ func (svc *RelayerService) DetailRelayerTxsCount(relayerId string, req *vo.Detai
 	return count, nil
 }
 
-func getRelayerChainsInfo(relayerId string) (map[string]vo.ServedChainInfo, error) {
+func getRelayerChainsInfo(relayerId string) (map[string]vo.ServedChainInfo, errors.Error) {
 	one, err := relayerRepo.FindOneByRelayerId(relayerId)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
+	}
+	//未注册的relayer的名字为空
+	if one.RelayerName == "" {
+		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
 	}
 	servedChainsInfoMap := vo.GetChainInfoFromChannelPair(one.ChannelPairInfo)
 	return servedChainsInfoMap, nil
@@ -220,7 +229,7 @@ func getTxDenomInfo(tx *entity.Tx, chain string, denomMap map[string]*entity.IBC
 func (svc *RelayerService) checkRelayerParams(relayerId, chain string) (vo.ServedChainInfo, errors.Error) {
 	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
 	if err != nil {
-		return vo.ServedChainInfo{}, errors.Wrap(err)
+		return vo.ServedChainInfo{}, err
 	}
 	chainInfo, ok := servedChainsInfoMap[chain]
 	if !ok {

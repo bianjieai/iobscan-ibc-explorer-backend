@@ -48,7 +48,7 @@ func Test_getMsgAmtDenom(t *testing.T) {
 
 func TestRelayerService_DetailRelayerTxs(t *testing.T) {
 	global.Config.App.MaxPageSize = 100
-	res, err := new(RelayerService).DetailRelayerTxs(&vo.DetailRelayerTxsReq{
+	res, err := new(RelayerService).DetailRelayerTxs("6364f740177ccd71260b3fa0", &vo.DetailRelayerTxsReq{
 		Page: vo.Page{
 			PageNum:  1,
 			PageSize: 10,
