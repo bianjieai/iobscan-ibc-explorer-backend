@@ -81,7 +81,7 @@ func (t *RelayerDataTask) initdistRelayerMap() {
 
 		for _, val := range dbRelayers {
 			for _, pairInfo := range val.ChannelPairInfo {
-				key := GenerateDistRelayerId(pairInfo.ChainA, pairInfo.ChainAAddress, pairInfo.ChainB, pairInfo.ChainBAddress)
+				key := entity.GenerateDistRelayerId(pairInfo.ChainA, pairInfo.ChainAAddress, pairInfo.ChainB, pairInfo.ChainBAddress)
 				t.distRelayerMap[key] = val.RelayerId
 				if val.RelayerName == "" {
 					break
@@ -234,7 +234,7 @@ func removeEmptyChannelData(addrPairInfo []entity.ChannelPairInfo) []entity.Chan
 		channelPairArrs := make([]entity.ChannelPairInfo, 0, len(addrPairInfo))
 		for _, val := range addrPairInfo {
 			if val.PairId != "" {
-				key := GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+				key := entity.GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
 				dataMap[key] = struct{}{}
 				channelPairArrs = append(channelPairArrs, val)
 			}
@@ -242,7 +242,7 @@ func removeEmptyChannelData(addrPairInfo []entity.ChannelPairInfo) []entity.Chan
 
 		for _, val := range addrPairInfo {
 			if val.PairId == "" {
-				key := GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+				key := entity.GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
 				if _, ok := dataMap[key]; !ok {
 					channelPairArrs = append(channelPairArrs, val)
 				}
@@ -338,7 +338,7 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 	newRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	dbRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	for i := range channelPairInfos {
-		key := GenerateDistRelayerId(channelPairInfos[i].ChainA, channelPairInfos[i].ChainAAddress,
+		key := entity.GenerateDistRelayerId(channelPairInfos[i].ChainA, channelPairInfos[i].ChainAAddress,
 			channelPairInfos[i].ChainB, channelPairInfos[i].ChainBAddress)
 		pairId := entity.GenerateRelayerPairId(channelPairInfos[i].ChainA, channelPairInfos[i].ChannelA,
 			channelPairInfos[i].ChainAAddress, channelPairInfos[i].ChainB, channelPairInfos[i].ChannelB, channelPairInfos[i].ChainBAddress)
@@ -413,8 +413,8 @@ func (t *RelayerDataTask) saveAndUpdateRelayer(newRelayerMap, dbRelayerMap []ent
 
 //根据已注册的relayer的地址和链更新channel_pair_info
 func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
-	addrs, chains := getRelayerAddrAndChains(addrPairInfo)
-	channelAddrs, err := relayerAddrChannelRepo.FindChannels(chains, addrs)
+	addrs, _ := getRelayerAddrAndChains(addrPairInfo)
+	channelAddrs, err := relayerAddrChannelRepo.FindChannels(addrs)
 	if err != nil {
 		return nil, false, err
 	}
@@ -515,7 +515,7 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 		for _, relayer := range relayers {
 			if len(relayer.ChannelPairInfo) > 0 {
 				oneChannelPair := relayer.ChannelPairInfo[0]
-				key := GenerateDistRelayerId(oneChannelPair.ChainA, oneChannelPair.ChainAAddress,
+				key := entity.GenerateDistRelayerId(oneChannelPair.ChainA, oneChannelPair.ChainAAddress,
 					oneChannelPair.ChainB, oneChannelPair.ChainBAddress)
 				if data, ok := distRelayerMap[key]; ok {
 					dumpData = append(dumpData, relayer.RelayerId)

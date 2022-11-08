@@ -30,21 +30,21 @@ type AggregateIBCChainDTO struct {
 }
 
 type RelayerDenomStatisticsDTO struct {
-	Signer      string  `bson:"_id.signer"`
-	Status      int64   `bson:"_id.status"`
-	TxType      string  `bson:"_id.tx_type"`
-	Denom       string  `bson:"_id.denom"`
-	ScChannel   string  `bson:"_id.sc_channel"`
-	DcChannel   string  `bson:"_id.dc_channel"`
+	Signer      string  `bson:"signer"`
+	Status      int64   `bson:"status"`
+	TxType      string  `bson:"tx_type"`
+	Denom       string  `bson:"denom"`
+	ScChannel   string  `bson:"sc_channel"`
+	DcChannel   string  `bson:"dc_channel"`
 	DenomAmount float64 `bson:"denom_amount"`
 	TxsCount    int64   `bson:"txs_count"`
 }
 
 type RelayerFeeStatisticsDTO struct {
-	Signer      string  `bson:"_id.signer"`
-	Status      int64   `bson:"_id.status"`
-	TxType      string  `bson:"_id.tx_type"`
-	Denom       string  `bson:"_id.denom"`
+	Signer      string  `bson:"signer"`
+	Status      int64   `bson:"status"`
+	TxType      string  `bson:"tx_type"`
+	Denom       string  `bson:"denom"`
 	DenomAmount float64 `bson:"denom_amount"`
 	TxsCount    int64   `bson:"txs_count"`
 }

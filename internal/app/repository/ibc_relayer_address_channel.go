@@ -12,7 +12,7 @@ import (
 type IRelayerAddressChannelRepo interface {
 	InsertOne(ac *entity.IBCRelayerAddressChannel) error
 	InsertMany(batch []*entity.IBCRelayerAddressChannel) error
-	FindChannels(chains, arrs []string) ([]*entity.IBCRelayerAddressChannel, error)
+	FindChannels(arrs []string) ([]*entity.IBCRelayerAddressChannel, error)
 }
 
 var _ IRelayerAddressChannelRepo = new(RelayerAddressChannelRepo)
@@ -37,11 +37,10 @@ func (repo *RelayerAddressChannelRepo) InsertMany(batch []*entity.IBCRelayerAddr
 	return err
 }
 
-func (repo *RelayerAddressChannelRepo) FindChannels(chains, arrs []string) ([]*entity.IBCRelayerAddressChannel, error) {
+func (repo *RelayerAddressChannelRepo) FindChannels(arrs []string) ([]*entity.IBCRelayerAddressChannel, error) {
 	var res []*entity.IBCRelayerAddressChannel
 	query := bson.M{
 		"relayer_address": bson.M{"$in": arrs},
-		"chain":           bson.M{"$in": chains},
 	}
 	err := repo.coll().Find(context.Background(), query).All(&res)
 	return res, err

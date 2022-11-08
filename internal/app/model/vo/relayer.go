@@ -58,28 +58,13 @@ func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayer) RelayerDto {
 
 type IobRegistryRelayerInfoResp struct {
 	TeamName string `json:"team name"`
+	TeamLogo string `json:"team logo"`
 	Contact  struct {
-		Website  string `json:"website"`
-		Github   string `json:"github"`
-		Telegram string `json:"telegram"`
-		Twitter  string `json:"twitter"`
-		Medium   string `json:"medium"`
-		Discord  string `json:"discord"`
+		Website string `json:"website"`
+		Github  string `json:"github"`
+		Twitter string `json:"twitter"`
+		Discord string `json:"discord"`
 	} `json:"contact"`
-	Introduction []string `json:"introduction"`
-}
-
-type IobRegistryRelayerPairResp struct {
-	Chain1 struct {
-		Address   string `json:"address"`
-		ChainId   string `json:"chain-id"`
-		ChannelId string `json:"channel-id"`
-		Version   string `json:"version"`
-	} `json:"chain-1"`
-	Chain2 struct {
-		Address   string `json:"address"`
-		ChainId   string `json:"chain-id"`
-		ChannelId string `json:"channel-id"`
-		Version   string `json:"version"`
-	} `json:"chain-2"`
+	Introduction []string            `json:"introduction"`
+	Addresses    []map[string]string `json:"addresses"`
 }

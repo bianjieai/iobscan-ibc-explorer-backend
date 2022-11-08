@@ -397,16 +397,3 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, isTarge
 }
 
 type WorkerExecHandler func(seg *segment, isTargetHistory bool)
-
-func GenerateDistRelayerId(chain1, chain1Address, chain2, chain2Address string) string {
-	chainA, _ := entity.ConfirmRelayerPair(chain1, chain2)
-	var pairStr string
-	if chainA == chain1 {
-		pairStr = fmt.Sprintf("%s:%s:%s:%s", chain1, chain1Address, chain2, chain2Address)
-	} else {
-		pairStr = fmt.Sprintf("%s:%s:%s:%s", chain2, chain2Address, chain1, chain1Address)
-	}
-
-	//return utils.Md5(pairStr)
-	return pairStr
-}
