@@ -37,7 +37,7 @@ type IRelayerRepo interface {
 	UpdateRelayerTime(relayerId string, updateTime int64) error
 	UpdateTxsInfo(relayerId string, txs, txsSuccess int64, totalValue, totalFeeValue string) error
 	FindAll(skip, limit int64, relayType int) ([]*entity.IBCRelayerNew, error)
-	FindAllBycond(relayerName, relayerAddr string, skip, limit int64, useCount bool) ([]*entity.IBCRelayerNew, int64, error)
+	FindAllBycond(relayerName, relayerAddr string, skip, limit int64) ([]*entity.IBCRelayerNew, error)
 	CountBycond(relayerName, relayerAddr string) (int64, error)
 	CountChainRelayers(chainId string) (int64, error)
 	CountChannelRelayers(chainA, channelA, chainB, channelB string) (int64, error)
@@ -114,7 +114,7 @@ func (repo *IbcRelayerRepo) analyzeCond(relayerName, relayerAddr string) bson.M 
 	filter := bson.M{}
 	if relayerName != "" {
 		filter[RelayerFieldeRelayerName] = bson.M{
-			"$regex": relayerName + "*",
+			"$regex": relayerName + ".*",
 		}
 	}
 	if relayerAddr != "" {
@@ -126,17 +126,13 @@ func (repo *IbcRelayerRepo) analyzeCond(relayerName, relayerAddr string) bson.M 
 	return filter
 }
 
-func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip, limit int64, useCount bool) ([]*entity.IBCRelayerNew, int64, error) {
+func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip, limit int64) ([]*entity.IBCRelayerNew, error) {
 	var (
-		res   []*entity.IBCRelayerNew
-		total int64
+		res []*entity.IBCRelayerNew
 	)
 	filter := repo.analyzeCond(relayerName, relayerAddr)
-	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-"+RelayerFieldeRelayerName, "-"+RelayerFieldTotalTxs).All(&res)
-	if useCount {
-		total, err = repo.coll().Find(context.Background(), filter).Count()
-	}
-	return res, total, err
+	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort(RelayerFieldeRelayerName, "-"+RelayerFieldTotalTxs).All(&res)
+	return res, err
 }
 
 func (repo *IbcRelayerRepo) CountBycond(relayerName, relayerAddr string) (int64, error) {
@@ -234,6 +230,6 @@ func (repo *IbcRelayerRepo) FindUnknownByAddrPair(addrA, addrB string) ([]*entit
 func (repo *IbcRelayerRepo) RelayerNameList() ([]*entity.IBCRelayerNew, error) {
 	var res []*entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldeRelayerName: bson.M{"$ne": ""}}).
-		Select(bson.M{RelayerFieldeRelayerName: 1}).Sort("-" + RelayerFieldeRelayerName).All(&res)
+		Select(bson.M{RelayerFieldeRelayerName: 1}).Sort(RelayerFieldeRelayerName).All(&res)
 	return res, err
 }

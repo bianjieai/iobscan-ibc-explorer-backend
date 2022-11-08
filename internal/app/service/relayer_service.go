@@ -41,7 +41,7 @@ var _ IRelayerService = new(RelayerService)
 func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error) {
 	var resp vo.RelayerListResp
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	rets, total, err := relayerRepo.FindAllBycond(req.RelayerName, req.RelayerAddress, skip, limit, req.UseCount)
+	rets, err := relayerRepo.FindAllBycond(req.RelayerName, req.RelayerAddress, skip, limit)
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
@@ -49,7 +49,7 @@ func (svc *RelayerService) List(req *vo.RelayerListReq) (vo.RelayerListResp, err
 		item := svc.dto.LoadDto(val)
 		resp.Items = append(resp.Items, item)
 	}
-	page := vo.BuildPageInfo(total, req.PageNum, req.PageSize)
+	page := vo.BuildPageInfo(int64(len(resp.Items)), req.PageNum, req.PageSize)
 	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
