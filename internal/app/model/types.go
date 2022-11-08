@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/json"
-
 	"go.mongodb.org/mongo-driver/bson"
 )
 

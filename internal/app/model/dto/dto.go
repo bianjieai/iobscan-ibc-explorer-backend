@@ -1,6 +1,9 @@
 package dto
 
-import "github.com/shopspring/decimal"
+import (
+	"github.com/shopspring/decimal"
+	"math"
+)
 
 type CountBaseDenomTxsDTO struct {
 	BaseDenom        string `bson:"base_denom"`
@@ -196,4 +199,35 @@ type IbcTxQuery struct {
 	BaseDenom        []string
 	BaseDenomChainId string
 	Denom            string
+}
+
+type (
+	TxsAmtItem struct {
+		Txs        int64
+		TxsSuccess int64
+		Denom      string
+		ChainId    string
+		Amt        decimal.Decimal
+	}
+
+	CoinItem struct {
+		Price float64
+		Scale int
+	}
+)
+
+func CaculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsDataMap map[string]TxsAmtItem) decimal.Decimal {
+	totalValue := decimal.NewFromFloat(0)
+
+	for key, data := range relayerTxsDataMap {
+		baseDenomValue := decimal.NewFromFloat(0)
+		decAmt := data.Amt
+		if coin, ok := denomPriceMap[key]; ok {
+			if coin.Scale > 0 {
+				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+			}
+		}
+		totalValue = totalValue.Add(baseDenomValue)
+	}
+	return totalValue
 }

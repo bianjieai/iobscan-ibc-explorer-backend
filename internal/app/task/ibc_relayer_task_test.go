@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"testing"
 )
 
@@ -88,7 +89,7 @@ func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
 //
 
 func Test_caculateRelayerTotalValue(t *testing.T) {
-	denomPrice := getTokenPriceMap()
+	denomPrice := cache.TokenPriceMap()
 	one, err := relayerRepo.FindOneByRelayerId("6364f740177ccd71260b3fa0")
 	if err != nil {
 		t.Fatal(err.Error())

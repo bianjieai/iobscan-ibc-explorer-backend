@@ -282,3 +282,21 @@ func GetChainInfoFromChannelPair(channelPairInfo []entity.ChannelPairInfo) map[s
 	}
 	return chainSetMap
 }
+
+type RelayerTrendReq struct {
+	Days int `json:"days" form:"days"`
+}
+
+type (
+	RelayerTrendResp []RelayerTrendDto
+	RelayerTrendDto  struct {
+		Date     string `json:"date"`
+		Txs      int64  `json:"txs"`
+		TxsValue string `json:"txs_value"`
+	}
+	DaySegment struct {
+		Date      string
+		StartTime int64
+		EndTime   int64
+	}
+)

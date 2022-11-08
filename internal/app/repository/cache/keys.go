@@ -27,6 +27,7 @@ const (
 	ibcRelayerCfg        = "ibc_relayer_config"
 	ibcRelayerCfgPairIds = "ibc_relayer_config_pair_ids"
 	ibcRelayerTotalTxs   = "relayer_total_txs"
+	relayerRelayedTrend  = "relayer_relayed_trend"
 	ibcRelayer           = "ibc_relayer"
 	baseDenom            = "base_denom"
 	ibcChain             = "ibc_chain"

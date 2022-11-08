@@ -68,3 +68,39 @@ func TestRelayerService_Detail(t *testing.T) {
 	}
 	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
 }
+
+func Test_getSegmentOfDay(t *testing.T) {
+	res := new(RelayerService).getSegmentOfDay(7)
+	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
+}
+
+func TestRelayerService_RelayerTrend(t *testing.T) {
+	res, err := new(RelayerService).RelayerTrend("6364f740177ccd71260b3fa0", &vo.RelayerTrendReq{
+		Days: 7,
+	})
+	if err != nil {
+		t.Fatal(err.Msg())
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
+}
+
+func TestRelayerService_RelayerNameList(t *testing.T) {
+	res, err := new(RelayerService).RelayerNameList()
+	if err != nil {
+		t.Fatal(err.Msg())
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
+}
+
+func TestRelayerService_doHandleDaySegments(t *testing.T) {
+	res := new(RelayerService).doHandleDaySegments(
+		[]string{
+			"iaa16mrml9n668a6ywxsxvtkdymy9kh5m59532rt20",
+			"cosmos1n9wuxk2d69xt0q996rdetewqg6uwd8rmz0z7lq",
+			"cosmos10dmsgzqj84ex0v7lv0qrmw70du0z949var2erg"},
+		[]*vo.DaySegment{
+			{StartTime: 1641859200, EndTime: 1641945599, Date: "2022-01-11"},
+			{StartTime: 1641916800, EndTime: 1642031999, Date: "2022-01-12"},
+		})
+	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
+}

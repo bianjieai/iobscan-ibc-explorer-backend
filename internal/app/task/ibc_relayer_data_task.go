@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
@@ -29,7 +30,7 @@ var _ OneOffTask = new(RelayerDataTask)
 
 type RelayerDataTask struct {
 	distRelayerMap map[string]string
-	denomPriceMap  map[string]CoinItem
+	denomPriceMap  map[string]dto.CoinItem
 }
 
 func (t *RelayerDataTask) Name() string {
@@ -41,7 +42,7 @@ func (t *RelayerDataTask) Switch() bool {
 }
 
 func (t *RelayerDataTask) Run() int {
-	t.denomPriceMap = getTokenPriceMap()
+	t.denomPriceMap = cache.TokenPriceMap()
 	startTime := time.Now().Unix()
 
 	doRegisterRelayer(t.denomPriceMap)
@@ -109,7 +110,7 @@ func getRelayerPairIds(relayerChannelPairInfo []entity.ChannelPairInfo) []string
 	return pairIds
 }
 
-func doRegisterRelayer(denomPriceMap map[string]CoinItem) {
+func doRegisterRelayer(denomPriceMap map[string]dto.CoinItem) {
 
 	skip := int64(0)
 	limit := int64(1000)
@@ -146,7 +147,7 @@ func handleRegisterRelayerChannelPair(relayer *entity.IBCRelayerNew) {
 	return
 }
 
-func handleRegisterStatistic(denomPriceMap map[string]CoinItem, relayer *entity.IBCRelayerNew) {
+func handleRegisterStatistic(denomPriceMap map[string]dto.CoinItem, relayer *entity.IBCRelayerNew) {
 	item := getRelayerStatisticData(denomPriceMap, relayer)
 	if err := relayerRepo.UpdateTxsInfo(item.RelayerId, item.RelayedTotalTxs, item.RelayedSuccessTxs,
 		item.RelayedTotalTxsValue, item.TotalFeeValue); err != nil {
@@ -480,7 +481,7 @@ func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) 
 	return retChannelPair, true, nil
 }
 
-func getRelayerStatisticData(denomPriceMap map[string]CoinItem, data *entity.IBCRelayerNew) *entity.IBCRelayerNew {
+func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity.IBCRelayerNew) *entity.IBCRelayerNew {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go func() {

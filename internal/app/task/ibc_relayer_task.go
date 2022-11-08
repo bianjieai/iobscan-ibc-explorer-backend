@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"go.mongodb.org/mongo-driver/mongo"
-	"math"
 	"sync"
 	"time"
 
@@ -28,27 +28,13 @@ import (
 type IbcRelayerCronTask struct {
 	chainConfigMap map[string]*entity.ChainConfig
 	//key:relayer_id
-	relayerTxsDataMap map[string]TxsAmtItem
+	relayerTxsDataMap map[string]dto.TxsAmtItem
 	//key:address+Chain+Channel
 	relayerValueMap map[string]decimal.Decimal
 	//key: BaseDenom+ChainId
-	denomPriceMap        map[string]CoinItem
+	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
 }
-type (
-	TxsAmtItem struct {
-		Txs        int64
-		TxsSuccess int64
-		Denom      string
-		ChainId    string
-		Amt        decimal.Decimal
-	}
-
-	CoinItem struct {
-		Price float64
-		Scale int
-	}
-)
 
 func (t *IbcRelayerCronTask) Name() string {
 	return "ibc_relayer_task"
@@ -65,7 +51,7 @@ func (t *IbcRelayerCronTask) Run() int {
 		return -1
 	}
 
-	t.denomPriceMap = getTokenPriceMap()
+	t.denomPriceMap = cache.TokenPriceMap()
 	doRegisterRelayer(t.denomPriceMap)
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
@@ -155,25 +141,6 @@ func (t *IbcRelayerCronTask) updateOneRelayerUpdateTime(one *entity.IBCRelayerNe
 	}
 }
 
-func getTokenPriceMap() map[string]CoinItem {
-	coinIdPriceMap, _ := tokenPriceRepo.GetAll()
-	baseDenoms, err := baseDenomCache.FindAll()
-	if err != nil {
-		logrus.Error("find base_denom fail, ", err.Error())
-		return nil
-	}
-	if len(coinIdPriceMap) == 0 {
-		return nil
-	}
-	denomPriceMap := make(map[string]CoinItem, len(baseDenoms))
-	for _, val := range baseDenoms {
-		if price, ok := coinIdPriceMap[val.CoinId]; ok {
-			denomPriceMap[val.Denom+val.ChainId] = CoinItem{Price: price, Scale: val.Scale}
-		}
-	}
-	return denomPriceMap
-}
-
 func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(channelId string) {
 	if channelId != "" {
 		value, ok := t.channelUpdateTimeMap.Load(channelId)
@@ -204,16 +171,16 @@ func getRelayerAddrAndChains(channelPairInfo []entity.ChannelPairInfo) (addrs []
 }
 
 //获取每个relayer的txs、txs_success、amount
-func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtItem {
-	addrs, chains := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
-	res, err := relayerDenomStatisticsRepo.CountRelayerBaseDenomAmtAndTxs(addrs, chains)
+func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
+	addrs, _ := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
+	res, err := relayerDenomStatisticsRepo.AggrRelayerBaseDenomAmtAndTxs(addrs)
 	if err != nil {
 		logrus.Error("aggregate relayer txs have fail, ", err.Error(),
 			" relayer_id: ", relayerNew.RelayerId,
 			" relayer_name: ", relayerNew.RelayerName)
 		return nil
 	}
-	relayerTxsAmtMap := make(map[string]TxsAmtItem, 20)
+	relayerTxsAmtMap := make(map[string]dto.TxsAmtItem, 20)
 	for _, item := range res {
 		key := fmt.Sprintf("%s%s", item.BaseDenom, item.BaseDenomChainId)
 		value, exist := relayerTxsAmtMap[key]
@@ -225,7 +192,7 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtIte
 			}
 			relayerTxsAmtMap[key] = value
 		} else {
-			data := TxsAmtItem{
+			data := dto.TxsAmtItem{
 				ChainId: item.BaseDenomChainId,
 				Denom:   item.BaseDenom,
 				Txs:     item.TotalTxs,
@@ -240,16 +207,16 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtIte
 	return relayerTxsAmtMap
 }
 
-func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtItem {
-	addrs, chains := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
-	res, err := relayerFeeStatisticsRepo.CountRelayerFeeDenomAmt(addrs, chains)
+func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
+	addrs, _ := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
+	res, err := relayerFeeStatisticsRepo.AggrRelayerFeeDenomAmt(addrs)
 	if err != nil {
 		logrus.Error("aggregate relayer txs have fail, ", err.Error(),
 			" relayer_id: ", relayerNew.RelayerId,
 			" relayer_name: ", relayerNew.RelayerName)
 		return nil
 	}
-	relayerTxsAmtMap := make(map[string]TxsAmtItem, 20)
+	relayerTxsAmtMap := make(map[string]dto.TxsAmtItem, 20)
 	for _, item := range res {
 		key := fmt.Sprintf("%s%s", item.FeeDenom, item.ChainId)
 		value, exist := relayerTxsAmtMap[key]
@@ -257,7 +224,7 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtItem {
 			value.Amt = value.Amt.Add(decimal.NewFromFloat(item.Amount))
 			relayerTxsAmtMap[key] = value
 		} else {
-			data := TxsAmtItem{
+			data := dto.TxsAmtItem{
 				ChainId: item.ChainId,
 				Denom:   item.FeeDenom,
 				Amt:     decimal.NewFromFloat(item.Amount),
@@ -269,31 +236,8 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]TxsAmtItem {
 }
 
 //dependence: AggrRelayerFeeAmt or AggrRelayerTxsAndAmt
-func caculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsDataMap map[string]TxsAmtItem) decimal.Decimal {
-	totalValue := decimal.NewFromFloat(0)
-	denomAmtMap := make(map[string]TxsAmtItem, len(relayerTxsDataMap))
-
-	for _, data := range relayerTxsDataMap {
-		key := data.Denom + data.ChainId
-		if value, ok := denomAmtMap[key]; ok {
-			value.Amt = value.Amt.Add(data.Amt)
-			denomAmtMap[key] = value
-		} else {
-			denomAmtMap[key] = data
-		}
-	}
-
-	for key, data := range denomAmtMap {
-		baseDenomValue := decimal.NewFromFloat(0)
-		decAmt := data.Amt
-		if coin, ok := denomPriceMap[key]; ok {
-			if coin.Scale > 0 {
-				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-			}
-		}
-		totalValue = totalValue.Add(baseDenomValue)
-	}
-	return totalValue
+func caculateRelayerTotalValue(denomPriceMap map[string]dto.CoinItem, relayerTxsDataMap map[string]dto.TxsAmtItem) decimal.Decimal {
+	return dto.CaculateRelayerTotalValue(denomPriceMap, relayerTxsDataMap)
 }
 
 func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*entity.ChannelPath {

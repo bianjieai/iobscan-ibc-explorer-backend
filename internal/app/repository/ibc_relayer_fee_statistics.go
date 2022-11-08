@@ -18,7 +18,7 @@ type IRelayerFeeStatisticsRepo interface {
 	InsertMany(batch []*entity.IBCRelayerFeeStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerFeeStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
-	CountRelayerFeeDenomAmt(relayAddrs []string, servedChains []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error)
+	AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error)
 }
 
 var _ IRelayerFeeStatisticsRepo = new(RelayerFeeStatisticsRepo)
@@ -96,11 +96,10 @@ func (repo *RelayerFeeStatisticsRepo) BatchSwap(chain string, segmentStartTime, 
 	return err
 }
 
-func (repo *RelayerFeeStatisticsRepo) CountRelayerFeeDenomAmt(relayAddrs []string, servedChains []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error) {
+func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"relayer_address":  bson.M{"$in": relayAddrs},
-			"statistics_chain": bson.M{"$in": servedChains},
+			"relayer_address": bson.M{"$in": relayAddrs},
 		},
 	}
 	group := bson.M{
