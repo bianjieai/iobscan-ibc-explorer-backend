@@ -298,9 +298,9 @@ func (svc *RelayerService) getSegmentOfDay(days int) []*vo.DaySegment {
 	end := time.Now()
 	endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.Local)
 	endUnix := endDay.Unix()
-	startDay := endDay.Add(time.Duration(-days) * 24 * time.Hour)
+	startDay := endDay.Add(time.Duration(-days+1) * 24 * time.Hour)
 	var segments []*vo.DaySegment
-	for temp := startDay.Unix(); temp < endUnix; temp += 24 * 3600 {
+	for temp := startDay.Unix(); temp <= endUnix; temp += 24 * 3600 {
 		segments = append(segments, &vo.DaySegment{
 			Date:      time.Unix(temp, 0).Format(constant.DateFormat),
 			StartTime: temp,
