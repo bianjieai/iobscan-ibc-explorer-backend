@@ -19,7 +19,7 @@ type IRelayerDenomStatisticsRepo interface {
 	InsertManyToNew(batch []*entity.IBCRelayerDenomStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
 	AggrRelayerBaseDenomAmtAndTxs(relayAddrs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
-	AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
+	AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error)
 }
 
 var _ IRelayerDenomStatisticsRepo = new(RelayerDenomStatisticsRepo)
@@ -140,7 +140,7 @@ db.ibc_relayer_denom_statistics.createIndex({
     "segment_end_time": 1,
 }, {background: true});
 */
-func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtDTO, error) {
+func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
 			"relayer_address":    bson.M{"$in": relayAddrs},
@@ -153,6 +153,7 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 			"_id": bson.M{
 				"base_denom":          "$base_denom",
 				"base_denom_chain_id": "$base_denom_chain_id",
+				"segment_start_time":  "$segment_start_time",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$relayed_amount"},
@@ -167,13 +168,14 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 			"_id":                 0,
 			"base_denom":          "$_id.base_denom",
 			"base_denom_chain_id": "$_id.base_denom_chain_id",
+			"segment_start_time":  "$_id.segment_start_time",
 			"amount":              "$amount",
 			"total_txs":           "$relayed_txs",
 		},
 	}
 	var pipe []bson.M
 	pipe = append(pipe, match, group, project)
-	var res []*dto.CountRelayerBaseDenomAmtDTO
+	var res []*dto.CountRelayerBaseDenomAmtBySegmentDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

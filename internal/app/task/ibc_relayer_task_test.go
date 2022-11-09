@@ -29,11 +29,13 @@ func Test_RelayerStatisticsRunWithParam(t *testing.T) {
 	relayerStatisticsTask.RunWithParam("kichain_2", 1636761600, 1636847999)
 }
 
-func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
-	//data := task.getUpdateTime(&entity.IBCRelayerNew{
-	//	UpdateTime:    1623218166,
-	//})
-	//t.Log( "updateTime:", data1)
+func TestIbcRelayerCronTask_getUpdateTime(t *testing.T) {
+	one, err := relayerRepo.FindOneByRelayerId("6364f740177ccd71260b3fa0")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	data := task.getUpdateTime(one)
+	t.Log("updateTime:", data)
 }
 
 //func TestIbcRelayerCronTask_getChannelsStatus(t *testing.T) {
@@ -70,21 +72,6 @@ func TestIbcRelayerCronTask_getTimePeriodAndupdateTime(t *testing.T) {
 //		TimePeriod: -1,
 //		UpdateTime: 0,
 //	}, 1656558771, 146, 0)
-//}
-//
-//func TestIbcRelayerCronTask_updateRelayerStatus(t *testing.T) {
-//	chainMap, _ := getAllChainMap()
-//	task.chainConfigMap = chainMap
-//	task.updateRelayerStatus(&entity.IBCRelayer{
-//		RelayerId:  "bf8d73cd76b3b6b4a53e1b8c956b7978",
-//		ChainA:     "irishub_qa",
-//		ChainB:     "bigbang",
-//		ChannelA:   "channel-115",
-//		ChannelB:   "channel-199",
-//		Status:     1,
-//		TimePeriod: -1,
-//		UpdateTime: 1660705368,
-//	})
 //}
 //
 
