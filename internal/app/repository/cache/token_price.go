@@ -1,6 +1,10 @@
 package cache
 
-import "strconv"
+import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/sirupsen/logrus"
+	"strconv"
+)
 
 type TokenPriceCacheRepo struct {
 }
@@ -33,4 +37,23 @@ func (repo *TokenPriceCacheRepo) GetAll() (map[string]float64, error) {
 	}
 
 	return res, nil
+}
+
+func TokenPriceMap() map[string]dto.CoinItem {
+	coinIdPriceMap, _ := new(TokenPriceCacheRepo).GetAll()
+	baseDenoms, err := new(BaseDenomCacheRepo).FindAll()
+	if err != nil {
+		logrus.Error("find base_denom fail, ", err.Error())
+		return nil
+	}
+	if len(coinIdPriceMap) == 0 {
+		return nil
+	}
+	denomPriceMap := make(map[string]dto.CoinItem, len(baseDenoms))
+	for _, val := range baseDenoms {
+		if price, ok := coinIdPriceMap[val.CoinId]; ok {
+			denomPriceMap[val.Denom+val.ChainId] = dto.CoinItem{Price: price, Scale: val.Scale}
+		}
+	}
+	return denomPriceMap
 }

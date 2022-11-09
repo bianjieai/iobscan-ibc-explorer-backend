@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
 	"sync"
@@ -30,7 +30,7 @@ var _ OneOffTask = new(RelayerDataTask)
 
 type RelayerDataTask struct {
 	distRelayerMap map[string]string
-	denomPriceMap  map[string]CoinItem
+	denomPriceMap  map[string]dto.CoinItem
 }
 
 func (t *RelayerDataTask) Name() string {
@@ -42,7 +42,7 @@ func (t *RelayerDataTask) Switch() bool {
 }
 
 func (t *RelayerDataTask) Run() int {
-	t.denomPriceMap = getTokenPriceMap()
+	t.denomPriceMap = cache.TokenPriceMap()
 	startTime := time.Now().Unix()
 
 	doRegisterRelayer(t.denomPriceMap)
@@ -110,7 +110,7 @@ func getRelayerPairIds(relayerChannelPairInfo []entity.ChannelPairInfo) []string
 	return pairIds
 }
 
-func doRegisterRelayer(denomPriceMap map[string]CoinItem) {
+func doRegisterRelayer(denomPriceMap map[string]dto.CoinItem) {
 
 	skip := int64(0)
 	limit := int64(1000)
@@ -147,7 +147,7 @@ func handleRegisterRelayerChannelPair(relayer *entity.IBCRelayerNew) {
 	return
 }
 
-func handleRegisterStatistic(denomPriceMap map[string]CoinItem, relayer *entity.IBCRelayerNew) {
+func handleRegisterStatistic(denomPriceMap map[string]dto.CoinItem, relayer *entity.IBCRelayerNew) {
 	item := getRelayerStatisticData(denomPriceMap, relayer)
 	if err := relayerRepo.UpdateTxsInfo(item.RelayerId, item.RelayedTotalTxs, item.RelayedSuccessTxs,
 		item.RelayedTotalTxsValue, item.TotalFeeValue); err != nil {
@@ -338,6 +338,10 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 	newRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	dbRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	for i := range channelPairInfos {
+		//忽略地址为空的channel_pair
+		if channelPairInfos[i].ChainAAddress == "" || channelPairInfos[i].ChainBAddress == "" {
+			continue
+		}
 		key := entity.GenerateDistRelayerId(channelPairInfos[i].ChainA, channelPairInfos[i].ChainAAddress,
 			channelPairInfos[i].ChainB, channelPairInfos[i].ChainBAddress)
 		pairId := entity.GenerateRelayerPairId(channelPairInfos[i].ChainA, channelPairInfos[i].ChannelA,
@@ -477,7 +481,7 @@ func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) 
 	return retChannelPair, true, nil
 }
 
-func getRelayerStatisticData(denomPriceMap map[string]CoinItem, data *entity.IBCRelayerNew) *entity.IBCRelayerNew {
+func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity.IBCRelayerNew) *entity.IBCRelayerNew {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
@@ -526,13 +530,13 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 						}
 					}
 
-					data.TotalFeeValue, err = computeValue(data.TotalFeeValue, relayer.TotalFeeValue)
+					data.TotalFeeValue, err = utils.AddByDecimal(data.TotalFeeValue, relayer.TotalFeeValue)
 					if err != nil {
 						logrus.Error("computeValue  about Relayed Total FeeValue fail, ", err.Error(),
 							" relayer_id:", relayer.RelayerId)
 						return
 					}
-					data.RelayedTotalTxsValue, err = computeValue(data.RelayedTotalTxsValue, relayer.RelayedTotalTxsValue)
+					data.RelayedTotalTxsValue, err = utils.AddByDecimal(data.RelayedTotalTxsValue, relayer.RelayedTotalTxsValue)
 					if err != nil {
 						logrus.Error("computeValue about Relayed Total TxsValue fail, ", err.Error(),
 							" relayer_id:", relayer.RelayerId)
@@ -565,31 +569,4 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 		}
 	}
 
-}
-
-func computeValue(value1, value2 string) (string, error) {
-	var (
-		totalValue, itemValue decimal.Decimal
-		err                   error
-	)
-	if value1 == "" {
-		totalValue = decimal.NewFromInt(0)
-	} else {
-		totalValue, err = decimal.NewFromString(value1)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	if value2 == "" {
-		return totalValue.String(), nil
-	} else {
-		itemValue, err = decimal.NewFromString(value2)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	totalValue = totalValue.Add(itemValue)
-	return totalValue.String(), nil
 }

@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
+	"github.com/shopspring/decimal"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -144,4 +146,42 @@ func ValidateDenom(denom string) error {
 		return fmt.Errorf("invalid denom: %s", denom)
 	}
 	return nil
+}
+
+// IbcHash calculate denom hash by denom path
+//   - fullPath full fullPath, eg："transfer/channel-1/uiris", "uatom"
+func IbcHash(fullPath string) string {
+	if len(strings.Split(fullPath, "/")) == 1 {
+		return fullPath
+	}
+
+	hash := Sha256(fullPath)
+	return fmt.Sprintf("%s/%s", constant.IBCTokenPrefix, strings.ToUpper(hash))
+}
+
+func AddByDecimal(total, item string) (string, error) {
+	var (
+		totalValue, itemValue decimal.Decimal
+		err                   error
+	)
+	if total == "" {
+		totalValue = decimal.NewFromInt(0)
+	} else {
+		totalValue, err = decimal.NewFromString(total)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if item == "" {
+		return totalValue.String(), nil
+	} else {
+		itemValue, err = decimal.NewFromString(item)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	totalValue = totalValue.Add(itemValue)
+	return totalValue.String(), nil
 }

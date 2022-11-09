@@ -2,6 +2,7 @@ package task
 
 import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"testing"
 )
 
@@ -38,7 +39,7 @@ func Test_getRelayerStatisticData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	item := getRelayerStatisticData(getTokenPriceMap(), one)
+	item := getRelayerStatisticData(cache.TokenPriceMap(), one)
 	t.Log(item.RelayedTotalTxsValue)
 	t.Log(item.TotalFeeValue)
 	t.Log(item.RelayedSuccessTxs)
@@ -46,5 +47,5 @@ func Test_getRelayerStatisticData(t *testing.T) {
 }
 
 func Test_doRegisterRelayer(t *testing.T) {
-	doRegisterRelayer(getTokenPriceMap())
+	doRegisterRelayer(cache.TokenPriceMap())
 }
