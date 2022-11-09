@@ -70,7 +70,7 @@ func TestRelayerService_Detail(t *testing.T) {
 }
 
 func Test_getSegmentOfDay(t *testing.T) {
-	res := new(RelayerService).getSegmentOfDay(7)
+	res := new(RelayerService).getSegmentOfDay(30)
 	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
 }
 

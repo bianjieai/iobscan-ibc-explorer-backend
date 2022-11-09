@@ -484,24 +484,31 @@ func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) 
 func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity.IBCRelayerNew) *entity.IBCRelayerNew {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
+	var (
+		totalFeeValue                      string
+		totalTxsValue                      string
+		relayedTotalTxs, relayedSuccessTxs int64
+	)
 	go func() {
 		defer wg.Done()
 		relayerFeeAmt := AggrRelayerFeeAmt(data)
-		feeValue := caculateRelayerTotalValue(denomPriceMap, relayerFeeAmt)
-		data.TotalFeeValue = feeValue.String()
+		totalFeeValue = caculateRelayerTotalValue(denomPriceMap, relayerFeeAmt).String()
 	}()
 
 	go func() {
 		defer wg.Done()
 		relayerTxsAmt := AggrRelayerTxsAndAmt(data)
-		totalTxsValue := caculateRelayerTotalValue(denomPriceMap, relayerTxsAmt)
-		data.TotalFeeValue = totalTxsValue.String()
+		totalTxsValue = caculateRelayerTotalValue(denomPriceMap, relayerTxsAmt).String()
 		for _, val := range relayerTxsAmt {
-			data.RelayedTotalTxs += val.Txs
-			data.RelayedSuccessTxs += val.TxsSuccess
+			relayedTotalTxs += val.Txs
+			relayedSuccessTxs += val.TxsSuccess
 		}
 	}()
 	wg.Wait()
+	data.RelayedTotalTxsValue = totalTxsValue
+	data.RelayedTotalTxs = relayedTotalTxs
+	data.RelayedSuccessTxs = relayedSuccessTxs
+	data.TotalFeeValue = totalFeeValue
 	return data
 }
 
@@ -529,21 +536,6 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 							data.ChannelPairInfo = append(data.ChannelPairInfo, relayer.ChannelPairInfo[i])
 						}
 					}
-
-					data.TotalFeeValue, err = utils.AddByDecimal(data.TotalFeeValue, relayer.TotalFeeValue)
-					if err != nil {
-						logrus.Error("computeValue  about Relayed Total FeeValue fail, ", err.Error(),
-							" relayer_id:", relayer.RelayerId)
-						return
-					}
-					data.RelayedTotalTxsValue, err = utils.AddByDecimal(data.RelayedTotalTxsValue, relayer.RelayedTotalTxsValue)
-					if err != nil {
-						logrus.Error("computeValue about Relayed Total TxsValue fail, ", err.Error(),
-							" relayer_id:", relayer.RelayerId)
-						return
-					}
-					data.RelayedTotalTxs += relayer.RelayedTotalTxs
-					data.RelayedSuccessTxs += relayer.RelayedSuccessTxs
 
 					distRelayerMap[key] = data
 				} else {

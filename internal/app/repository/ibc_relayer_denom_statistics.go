@@ -109,7 +109,7 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerBaseDenomAmtAndTxs(relayAddrs
 				"tx_status":           "$tx_status",
 			},
 			"amount": bson.M{
-				"$sum": bson.M{"$toDouble": "$relayed_amount"},
+				"$sum": "$relayed_amount",
 			},
 			"relayed_txs": bson.M{
 				"$sum": "$relayed_txs",
@@ -156,7 +156,7 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 				"segment_start_time":  "$segment_start_time",
 			},
 			"amount": bson.M{
-				"$sum": bson.M{"$toDouble": "$relayed_amount"},
+				"$sum": "$relayed_amount",
 			},
 			"relayed_txs": bson.M{
 				"$sum": "$relayed_txs",
