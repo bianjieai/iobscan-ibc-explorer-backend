@@ -42,3 +42,68 @@ func (ctl *RelayerController) Collect(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(nil))
 }
+
+func (ctl *RelayerController) Detail(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	var res interface{}
+	var err errors.Error
+	res, err = relayerService.Detail(relayerId)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}
+
+func (ctl *RelayerController) DetailRelayerTxs(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	var req vo.DetailRelayerTxsReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, response.FailBadRequest(err))
+		return
+	}
+	var res interface{}
+	var err errors.Error
+	if req.UseCount {
+		res, err = relayerService.DetailRelayerTxsCount(relayerId, &req)
+	} else {
+		res, err = relayerService.DetailRelayerTxs(relayerId, &req)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}
+
+func (ctl *RelayerController) RelayerNameList(c *gin.Context) {
+	var res interface{}
+	var err errors.Error
+	res, err = relayerService.RelayerNameList()
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}
+
+func (ctl *RelayerController) RelayerTrend(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	var req vo.RelayerTrendReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusOK, response.FailBadRequest(err))
+		return
+	}
+
+	var res interface{}
+	var err errors.Error
+
+	res, err = relayerService.RelayerTrend(relayerId, &req)
+
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}
