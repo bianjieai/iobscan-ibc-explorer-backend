@@ -21,6 +21,7 @@ var (
 	exSearchRecordRepo         repository.IExSearchRecordRepo         = new(repository.ExSearchRecordRepo)
 	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
+	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
 	relayerTxsCache            cache.RelayerTotalTxsCacheRepo
 	relayerTrendCache          cache.RelayerRelayedTrendCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
@@ -41,6 +42,51 @@ func (ctl *RelayerController) Collect(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(nil))
+}
+
+func (ctl *RelayerController) TransferTypeTxs(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	if relayerId == "" {
+		c.JSON(http.StatusOK, response.FailBadRequest(fmt.Errorf("invalid relayer id")))
+		return
+	}
+
+	res, err := relayerService.TransferTypeTxs(relayerId)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}
+
+func (ctl *RelayerController) TotalRelayedValue(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	if relayerId == "" {
+		c.JSON(http.StatusOK, response.FailBadRequest(fmt.Errorf("invalid relayer id")))
+		return
+	}
+
+	res, err := relayerService.TotalRelayedValue(relayerId)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
+}
+
+func (ctl *RelayerController) TotalFeeCost(c *gin.Context) {
+	relayerId := c.Param("relayer_id")
+	if relayerId == "" {
+		c.JSON(http.StatusOK, response.FailBadRequest(fmt.Errorf("invalid relayer id")))
+		return
+	}
+
+	res, err := relayerService.TotalFeeCost(relayerId)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(res))
 }
 
 func (ctl *RelayerController) Detail(c *gin.Context) {

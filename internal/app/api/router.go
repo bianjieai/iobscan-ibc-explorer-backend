@@ -82,6 +82,9 @@ func relayerPage(r *gin.RouterGroup) {
 	r.GET("/relayer/names", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerNameList))
 	r.GET("/relayer/:relayer_id/relayedTrend", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTrend))
 	r.POST("/relayerCollect", ctl.Collect)
+	r.GET("/relayer/:relayer_id/transferTypeTxs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTypeTxs))
+	r.GET("/relayer/:relayer_id/totalRelayedValue", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalRelayedValue))
+	r.GET("/relayer/:relayer_id/totalFeeCost", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalFeeCost))
 }
 
 func cacheTools(r *gin.RouterGroup) {

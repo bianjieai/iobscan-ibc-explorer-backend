@@ -1,4 +1,5 @@
 package entity
+
 import (
 	"fmt"
 	"strings"
@@ -6,6 +7,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
+
 type IBCRelayerNew struct {
 	RelayerId            string            `bson:"relayer_id"`
 	RelayerName          string            `bson:"relayer_name"`
@@ -37,6 +39,36 @@ func (i IBCRelayerNew) CollectionName() string {
 
 func (i ChannelPairInfo) Valid() bool {
 	return i.ChainA != "" && i.ChainB != "" && i.ChannelA != "" && i.ChannelB != "" && (i.ChainBAddress != "" || i.ChainAAddress != "")
+}
+
+type ChannelPairInfoList []ChannelPairInfo
+
+func (c ChannelPairInfoList) GetAddrs() []string {
+	addrMap := make(map[string]struct{})
+	for _, v := range c {
+		addrMap[v.ChainAAddress] = struct{}{}
+		addrMap[v.ChainBAddress] = struct{}{}
+	}
+
+	addrs := make([]string, 0, len(addrMap))
+	for k, _ := range addrMap {
+		addrs = append(addrs, k)
+	}
+	return addrs
+}
+
+func (c ChannelPairInfoList) GetChains() []string {
+	chainMap := make(map[string]struct{})
+	for _, v := range c {
+		chainMap[v.ChainA] = struct{}{}
+		chainMap[v.ChainB] = struct{}{}
+	}
+
+	chains := make([]string, 0, len(chainMap))
+	for k, _ := range chainMap {
+		chains = append(chains, k)
+	}
+	return chains
 }
 
 func GenerateChannelPairInfo(chain1, channel1, chain1Address, chain2, channel2, chain2Address string) ChannelPairInfo {

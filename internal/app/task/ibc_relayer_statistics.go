@@ -222,7 +222,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 				TxStatus:         entity.TxStatus(v.Status),
 				TxType:           entity.TxType(v.TxType),
 				BaseDenom:        denomEntity.BaseDenom,
-				BaseDenomChainId: denomEntity.BaseDenomChainId,
+				BaseDenomChain:   denomEntity.BaseDenomChainId,
 				RelayedAmount:    v.DenomAmount,
 				RelayedTxs:       v.TxsCount,
 				SegmentStartTime: segment.StartTime,

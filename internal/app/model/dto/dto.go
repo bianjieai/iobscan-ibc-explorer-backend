@@ -92,17 +92,36 @@ func (dto *CountRelayerPacketAmountDTO) Valid() bool {
 }
 
 type CountRelayerBaseDenomAmtDTO struct {
-	BaseDenom        string  `bson:"base_denom"`
-	BaseDenomChainId string  `bson:"base_denom_chain_id"`
-	TxStatus         int     `bson:"tx_status"`
-	Amount           float64 `bson:"amount"`
-	TotalTxs         int64   `bson:"total_txs"`
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	TxStatus       int     `bson:"tx_status"`
+	Amount         float64 `bson:"amount"`
+	TotalTxs       int64   `bson:"total_txs"`
+}
+
+type AggrRelayerTxTypeDTO struct {
+	TxType   string `bson:"tx_type"`
+	TotalTxs int64  `bson:"total_txs"`
+}
+
+type AggrRelayerRelayedValueDTO struct {
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	Amount         float64 `bson:"amount"`
+	TotalTxs       int64   `bson:"total_txs"`
 }
 
 type CountRelayerFeeDenomAmtDTO struct {
 	FeeDenom string  `bson:"fee_denom"`
 	ChainId  string  `bson:"chain_id"`
 	Amount   float64 `bson:"amount"`
+}
+
+type AggrRelayerTxsAmtDTo struct {
+	FeeDenom string  `bson:"fee_denom"`
+	Chain    string  `bson:"chain"`
+	Amount   float64 `bson:"amount"`
+	TotalTxs int64   `bson:"total_txs"`
 }
 
 type AggRelayerTxsDTO struct {
