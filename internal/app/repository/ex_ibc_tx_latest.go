@@ -38,7 +38,7 @@ type IExIbcTxRepo interface {
 	CountIBCTokenHistoryRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
 	GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
-	GetLatestTxTime() (int64, error)
+	GetMinTxTime(isTargetHistory bool) (int64, error)
 	GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	CountHistoryRelayerSuccessPacketTxs(startTime, endTime int64) ([]*dto.CountRelayerPacketTxsCntDTO, error)
@@ -69,6 +69,7 @@ type IExIbcTxRepo interface {
 	CountAll(stats []entity.IbcTxStatus) (int64, error)
 	CountTransferTxs(query dto.IbcTxQuery) (int64, error)
 	FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error)
+	AggrTxsValue(query dto.IbcTxQuery, isTargetHistory bool) ([]*dto.BaseDenomAmountDTO, error)
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool, startTime int64) ([]*entity.ExIbcTx, error)
 	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
@@ -458,9 +459,15 @@ func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 
 }
 
-func (repo *ExIbcTxRepo) GetLatestTxTime() (int64, error) {
+func (repo *ExIbcTxRepo) GetMinTxTime(isTargetHistory bool) (int64, error) {
 	var res *entity.ExIbcTx
-	err := repo.coll().Find(context.Background(), bson.M{}).Select(bson.M{"tx_time": 1}).Sort("-tx_time").One(&res)
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Find(context.Background(), bson.M{}).Select(bson.M{"tx_time": 1}).Sort("tx_time").One(&res)
+	} else {
+		err = repo.coll().Find(context.Background(), bson.M{}).Select(bson.M{"tx_time": 1}).Sort("tx_time").One(&res)
+	}
+
 	if err != nil {
 		return 0, err
 	}
@@ -1071,6 +1078,46 @@ func (repo *ExIbcTxRepo) CountTransferTxs(query dto.IbcTxQuery) (int64, error) {
 func (repo *ExIbcTxRepo) FindTransferTxs(query dto.IbcTxQuery, skip, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), parseQuery(query)).Skip(skip).Limit(limit).Sort("-tx_time").All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) AggrTxsValue(query dto.IbcTxQuery, isTargetHistory bool) ([]*dto.BaseDenomAmountDTO, error) {
+	match := bson.M{
+		"$match": parseQuery(query),
+	}
+
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":          "$base_denom",
+				"base_denom_chain_id": "$base_denom_chain_id",
+			},
+			"amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$sc_tx_info.msg_amount.amount",
+				},
+			},
+		},
+	}
+
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain_id",
+			"amount":           "$amount",
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	var res []*dto.BaseDenomAmountDTO
+	var err error
+	if isTargetHistory {
+		err = repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	} else {
+		err = repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	}
 	return res, err
 }
 

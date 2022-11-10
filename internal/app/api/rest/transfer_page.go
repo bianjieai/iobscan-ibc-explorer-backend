@@ -67,3 +67,12 @@ func (ctl *IbcTransferController) TraceSource(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(resp))
 }
+
+func (ctl *IbcTransferController) SearchCondition(c *gin.Context) {
+	resp, err := transferService.SearchCondition()
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(resp))
+}
