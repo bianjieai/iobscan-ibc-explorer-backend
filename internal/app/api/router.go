@@ -56,6 +56,7 @@ func txsPage(r *gin.RouterGroup) {
 	r.GET("/txs/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetail))
 	r.GET("/txs_detail/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetailNew))
 	r.GET("/trace_source/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TraceSource))
+	r.GET("/txs/searchCondition", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.SearchCondition))
 }
 
 func tokenPage(r *gin.RouterGroup) {
