@@ -131,7 +131,7 @@ func (repo *IbcRelayerRepo) FindAllBycond(relayerName, relayerAddr string, skip,
 		res []*entity.IBCRelayerNew
 	)
 	filter := repo.analyzeCond(relayerName, relayerAddr)
-	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort(RelayerFieldeRelayerName, "-"+RelayerFieldTotalTxs).All(&res)
+	err := repo.coll().Find(context.Background(), filter).Skip(skip).Limit(limit).Sort("-"+RelayerFieldeRelayerName, "-"+RelayerFieldTotalTxs).All(&res)
 	return res, err
 }
 
@@ -230,6 +230,6 @@ func (repo *IbcRelayerRepo) FindUnknownByAddrPair(addrA, addrB string) ([]*entit
 func (repo *IbcRelayerRepo) RelayerNameList() ([]*entity.IBCRelayerNew, error) {
 	var res []*entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldeRelayerName: bson.M{"$ne": ""}}).
-		Select(bson.M{RelayerFieldeRelayerName: 1}).Sort(RelayerFieldeRelayerName).All(&res)
+		Select(bson.M{RelayerFieldeRelayerName: 1}).Sort("-" + RelayerFieldeRelayerName).All(&res)
 	return res, err
 }

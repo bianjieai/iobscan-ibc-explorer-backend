@@ -111,6 +111,14 @@ type AggrRelayerRelayedValueDTO struct {
 	TotalTxs       int64   `bson:"total_txs"`
 }
 
+type CountRelayerBaseDenomAmtBySegmentDTO struct {
+	BaseDenom        string  `bson:"base_denom"`
+	BaseDenomChainId string  `bson:"base_denom_chain_id"`
+	SegmentStartTime int64   `bson:"segment_start_time"`
+	Amount           float64 `bson:"amount"`
+	TotalTxs         int64   `bson:"total_txs"`
+}
+
 type CountRelayerFeeDenomAmtDTO struct {
 	FeeDenom string  `bson:"fee_denom"`
 	ChainId  string  `bson:"chain_id"`

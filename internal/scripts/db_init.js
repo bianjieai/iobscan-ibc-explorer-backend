@@ -18,25 +18,47 @@ db.ibc_relayer.createIndex({
     "relayer_id": -1,
 }, {background: true, unique: true});
 
-// ibc_relayer_config表
+db.ibc_relayer.createIndex({
+    "relayer_name": -1,
+}, {background: true});
 
-db.ibc_relayer_config.createIndex({
-    "relayer_pair_id": 1
-}, {background: true, unique: true});
+db.ibc_relayer.createIndex({
+    "channel_pair_info.chain_a_address": -1
+}, {background: true});
 
-// ibc_relayer_statistics表
+db.ibc_relayer.createIndex({
+    "channel_pair_info.chain_b_address": -1
+}, {background: true});
 
-db.ibc_relayer_statistics.createIndex({
-    "transfer_base_denom": 1,
-    "address": 1,
-    "statistic_id": 1,
-    "segment_start_time": -1,
-    "segment_end_time": -1
-}, {
-    name: "relayer_statistics_unique",
-    unique: true,
-    background: true
-});
+db.ibc_relayer.createIndex({
+    "channel_pair_info.chain_a": -1,
+    "channel_pair_info.channel_a": -1,
+}, {background: true});
+
+db.ibc_relayer.createIndex({
+    "channel_pair_info.chain_b": -1,
+    "channel_pair_info.channel_b": -1,
+}, {background: true});
+
+// // ibc_relayer_config表
+//
+// db.ibc_relayer_config.createIndex({
+//     "relayer_pair_id": 1
+// }, {background: true, unique: true});
+
+// // ibc_relayer_statistics表
+//
+// db.ibc_relayer_statistics.createIndex({
+//     "transfer_base_denom": 1,
+//     "address": 1,
+//     "statistic_id": 1,
+//     "segment_start_time": -1,
+//     "segment_end_time": -1
+// }, {
+//     name: "relayer_statistics_unique",
+//     unique: true,
+//     background: true
+// });
 
 
 // ibc_channel表
@@ -262,6 +284,12 @@ db.ibc_relayer_fee_statistics.createIndex({
 
 db.ibc_relayer_fee_statistics.createIndex({
     "statistics_chain": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {background: true});
+
+db.ibc_relayer_denom_statistics.createIndex({
+    "relayer_address": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
 }, {background: true});

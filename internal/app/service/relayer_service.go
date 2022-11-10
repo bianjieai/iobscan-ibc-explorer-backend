@@ -434,24 +434,8 @@ func (svc *RelayerService) RelayerTrend(relayerId string, req *vo.RelayerTrendRe
 }
 
 func (svc *RelayerService) doHandleDaySegments(relayerAddrs []string, segments []*vo.DaySegment) vo.RelayerTrendResp {
-	retData := make(vo.RelayerTrendResp, len(segments))
 	denomPriceMap := cache.TokenPriceMap()
-	var wg sync.WaitGroup
-	wg.Add(3)
-	for i := 0; i < 3; i++ {
-		num := i
-		go func(num int) {
-			defer wg.Done()
-
-			for id, v := range segments {
-				if id%3 != num {
-					continue
-				}
-				retData[id] = svc.getDayofRelayerTxsAmt(relayerAddrs, denomPriceMap, v)
-			}
-		}(num)
-	}
-	wg.Wait()
+	retData := svc.getDayofRelayerTxsAmt(relayerAddrs, denomPriceMap, segments)
 	return retData
 }
 
@@ -459,9 +443,9 @@ func (svc *RelayerService) getSegmentOfDay(days int) []*vo.DaySegment {
 	end := time.Now()
 	endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.Local)
 	endUnix := endDay.Unix()
-	startDay := endDay.Add(time.Duration(-days) * 24 * time.Hour)
+	startDay := endDay.Add(time.Duration(-days+1) * 24 * time.Hour)
 	var segments []*vo.DaySegment
-	for temp := startDay.Unix(); temp < endUnix; temp += 24 * 3600 {
+	for temp := startDay.Unix(); temp <= endUnix; temp += 24 * 3600 {
 		segments = append(segments, &vo.DaySegment{
 			Date:      time.Unix(temp, 0).Format(constant.DateFormat),
 			StartTime: temp,
@@ -471,36 +455,57 @@ func (svc *RelayerService) getSegmentOfDay(days int) []*vo.DaySegment {
 	return segments
 }
 
-func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPriceMap map[string]dto.CoinItem, segment *vo.DaySegment) vo.RelayerTrendDto {
-	res, err := relayerDenomStatisticsRepo.AggrRelayerAmtAndTxsBySegment(relayerAddrs, segment.StartTime, segment.EndTime)
+func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPriceMap map[string]dto.CoinItem, segments []*vo.DaySegment) vo.RelayerTrendResp {
+	res, err := relayerDenomStatisticsRepo.AggrRelayerAmtAndTxsBySegment(relayerAddrs, segments[0].StartTime, segments[len(segments)-1].EndTime)
 	if err != nil {
-		logrus.Errorf("aggr date[%s] relayer amount and txs by segment[%d:%d] fail,%s", segment.Date, segment.StartTime, segment.EndTime, err.Error())
-		return vo.RelayerTrendDto{}
+		logrus.Errorf("aggr  relayer amount and txs by segment  %d-%d  fail,%s", segments[0].StartTime, segments[len(segments)-1].EndTime, err.Error())
+		return vo.RelayerTrendResp{}
 	}
-	txsNum := int64(0)
-	relayerTxsAmtMap := make(map[string]dto.TxsAmtItem, 20)
+	segmentTxsValueMap := make(map[string]dto.TxsAmtItem, 20)
 	for _, item := range res {
-		txsNum += item.TotalTxs
-		key := fmt.Sprintf("%s%s", item.BaseDenom, item.BaseDenomChain)
-		value, exist := relayerTxsAmtMap[key]
+
+		//计算价值
+		baseDenomValue := decimal.NewFromFloat(0)
+		decAmt := decimal.NewFromFloat(item.Amount)
+		priceKey := item.BaseDenom + item.BaseDenomChainId
+		if coin, ok := denomPriceMap[priceKey]; ok {
+			if coin.Scale > 0 {
+				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+			}
+		}
+
+		key := strconv.FormatInt(item.SegmentStartTime, 10)
+		value, exist := segmentTxsValueMap[key]
 		if exist {
-			value.Amt = value.Amt.Add(decimal.NewFromFloat(item.Amount))
-			relayerTxsAmtMap[key] = value
+			value.Amt = value.Amt.Add(baseDenomValue)
+			value.Txs += item.TotalTxs
+			segmentTxsValueMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChain,
+				ChainId: item.BaseDenomChainId,
 				Denom:   item.BaseDenom,
-				Amt:     decimal.NewFromFloat(item.Amount),
+				Txs:     item.TotalTxs,
+				Amt:     baseDenomValue,
 			}
-			relayerTxsAmtMap[key] = data
+			segmentTxsValueMap[key] = data
 		}
 	}
 
-	txsValue := dto.CaculateRelayerTotalValue(denomPriceMap, relayerTxsAmtMap)
-
-	return vo.RelayerTrendDto{
-		Date:     segment.Date,
-		Txs:      txsNum,
-		TxsValue: txsValue.String(),
+	retData := make(vo.RelayerTrendResp, 0, len(segments))
+	for _, segment := range segments {
+		data, ok := segmentTxsValueMap[strconv.FormatInt(segment.StartTime, 10)]
+		if ok {
+			item := vo.RelayerTrendDto{
+				Date:     segment.Date,
+				Txs:      data.Txs,
+				TxsValue: data.Amt.String(),
+			}
+			retData = append(retData, item)
+		} else {
+			retData = append(retData, vo.RelayerTrendDto{
+				Date: segment.Date,
+			})
+		}
 	}
+	return retData
 }

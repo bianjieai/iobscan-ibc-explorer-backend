@@ -110,7 +110,7 @@ func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string
 				"statistics_chain": "$statistics_chain",
 			},
 			"amount": bson.M{
-				"$sum": bson.M{"$toDouble": "$fee_amount"},
+				"$sum": "$fee_amount",
 			},
 		},
 	}
