@@ -6,7 +6,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -467,7 +466,7 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 		//计算价值
 		baseDenomValue := decimal.NewFromFloat(0)
 		decAmt := decimal.NewFromFloat(item.Amount)
-		priceKey := item.BaseDenom + item.BaseDenomChainId
+		priceKey := item.BaseDenom + item.BaseDenomChain
 		if coin, ok := denomPriceMap[priceKey]; ok {
 			if coin.Scale > 0 {
 				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
@@ -482,7 +481,7 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 			segmentTxsValueMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChainId,
+				ChainId: item.BaseDenomChain,
 				Denom:   item.BaseDenom,
 				Txs:     item.TotalTxs,
 				Amt:     baseDenomValue,

@@ -153,9 +153,9 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
-				"segment_start_time":  "$segment_start_time",
+				"base_denom":         "$base_denom",
+				"base_denom_chain":   "base_denom_chain",
+				"segment_start_time": "$segment_start_time",
 			},
 			"amount": bson.M{
 				"$sum": "$relayed_amount",
@@ -167,12 +167,12 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":                 0,
-			"base_denom":          "$_id.base_denom",
-			"base_denom_chain_id": "$_id.base_denom_chain_id",
-			"segment_start_time":  "$_id.segment_start_time",
-			"amount":              "$amount",
-			"total_txs":           "$relayed_txs",
+			"_id":                0,
+			"base_denom":         "$_id.base_denom",
+			"base_denom_chain":   "$_id.base_denom_chain",
+			"segment_start_time": "$_id.segment_start_time",
+			"amount":             "$amount",
+			"total_txs":          "$relayed_txs",
 		},
 	}
 	var pipe []bson.M
