@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
@@ -196,8 +195,7 @@ func (repo *RelayerDenomStatisticsRepo) AggrAmtByTxType(relayAddrs []string) ([]
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":       0,
-			"tx_type":   "$_id.$tx_type",
+			"tx_type":   "$_id",
 			"total_txs": "$total_txs",
 		},
 	}

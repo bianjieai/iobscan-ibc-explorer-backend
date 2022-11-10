@@ -22,8 +22,7 @@ var (
 	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
 	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
-	relayerTxsCache            cache.RelayerTotalTxsCacheRepo
-	relayerTrendCache          cache.RelayerRelayedTrendCacheRepo
+	relayerDataCache           cache.RelayerDataCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
 	relayerCfgRepo             repository.IRelayerConfigRepo = new(cache.RelayerConfigCacheRepo)
