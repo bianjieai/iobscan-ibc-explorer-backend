@@ -2,6 +2,11 @@ package dto
 
 import "github.com/shopspring/decimal"
 
+type CoinItem struct {
+	Price float64
+	Scale int
+}
+
 type CountBaseDenomTxsDTO struct {
 	BaseDenom        string `bson:"base_denom"`
 	BaseDenomChainId string `bson:"base_denom_chain_id"`
@@ -170,4 +175,10 @@ type IbcTxQuery struct {
 	BaseDenom        []string
 	BaseDenomChainId string
 	Denom            string
+}
+
+type BaseDenomAmountDTO struct {
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	Amount         float64 `bson:"amount"`
 }
