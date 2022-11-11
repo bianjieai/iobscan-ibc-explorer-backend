@@ -233,7 +233,7 @@ func (repo *IbcRelayerRepo) FindAllRelayerForCache() ([]*entity.IBCRelayerNew, e
 	var res []*entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{}).
 		Select(bson.M{RelayerFieldeRelayerIcon: 1, RelayerFieldeRelayerName: 1,
-			RelayerFieldChainA: 1, RelayerFieldChainB: 1, RelayerFieldChainAAddress: 1, RelayerFieldChainBAddress: 1}).All(&res)
+			RelayerFieldChainAAddress: 1, RelayerFieldChainBAddress: 1}).All(&res)
 	return res, err
 }
 
