@@ -19,6 +19,14 @@ func TestTransferService_TraceSource(t *testing.T) {
 	t.Log(string(utils.MarshalJsonIgnoreErr(data)))
 }
 
+func TestTransferService_TransferTxDetailNew(t *testing.T) {
+	data, err := new(TransferService).TransferTxDetailNew("D3AE70ABDDF6153F7BC3518BF2F29A2619401EF39067DF9493F7960FEFCFED56")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(data)))
+}
+
 func TestGetTxDataFromChain(t *testing.T) {
 	data, err := GetTxDataFromChain("https://mainnet.crescent.network:1317",
 		"0E000429F0CCB543D0FE0CDA57DF3A470E8DE54498FF071E755736CDBECE1C72")

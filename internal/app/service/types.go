@@ -25,6 +25,7 @@ var (
 	relayerDataCache           cache.RelayerDataCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
+	relayerCache               cache.RelayerCacheRepo
 	baseDenomRepo              cache.BaseDenomCacheRepo
 )
 

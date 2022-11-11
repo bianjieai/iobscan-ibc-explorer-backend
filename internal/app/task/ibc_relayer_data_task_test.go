@@ -35,7 +35,7 @@ func TestRelayerDataTask_matchRegisterRelayerChannelPairInfo(t *testing.T) {
 }
 
 func Test_getRelayerStatisticData(t *testing.T) {
-	one, err := relayerRepo.FindOneByRelayerId("636b87143ddcfb0816fa4d59")
+	one, err := relayerRepo.FindOneByRelayerId("636c60806754c75a88adc0d2")
 	if err != nil {
 		t.Fatal(err.Error())
 	}

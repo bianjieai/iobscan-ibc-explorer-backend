@@ -17,6 +17,7 @@ const (
 	RelayerFieldTotalFeeValue = "total_fee_value"
 	RelayerFieldServedChains  = "served_chains"
 	RelayerFieldeRelayerName  = "relayer_name"
+	RelayerFieldeRelayerIcon  = "relayer_icon"
 	RelayerFieldUpdateTime    = "update_time"
 	RelayerFieldChainA        = "channel_pair_info.chain_a"
 	RelayerFieldChainB        = "channel_pair_info.chain_b"
@@ -48,6 +49,7 @@ type IRelayerRepo interface {
 	Update(relayer *entity.IBCRelayerNew) error
 	RemoveDumpData(ids []string) error
 	FindUnknownByAddrPair(addrA, addrB string) ([]*entity.IBCRelayerNew, error)
+	FindAllRelayerForCache() ([]*entity.IBCRelayerNew, error)
 }
 
 var _ IRelayerRepo = new(IbcRelayerRepo)
@@ -224,6 +226,14 @@ func (repo *IbcRelayerRepo) FindOneByRelayerName(name string) (*entity.IBCRelaye
 func (repo *IbcRelayerRepo) FindUnknownByAddrPair(addrA, addrB string) ([]*entity.IBCRelayerNew, error) {
 	var res []*entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainAAddress: addrA, RelayerFieldChainBAddress: addrB, RelayerFieldeRelayerName: ""}).All(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindAllRelayerForCache() ([]*entity.IBCRelayerNew, error) {
+	var res []*entity.IBCRelayerNew
+	err := repo.coll().Find(context.Background(), bson.M{}).
+		Select(bson.M{RelayerFieldeRelayerIcon: 1, RelayerFieldeRelayerName: 1,
+			RelayerFieldChainAAddress: 1, RelayerFieldChainBAddress: 1}).All(&res)
 	return res, err
 }
 

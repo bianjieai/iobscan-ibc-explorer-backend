@@ -189,6 +189,7 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 	return resp, nil
 }
 
+// [Deprecated]
 func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error) {
 	var resp vo.TranaferTxDetailResp
 	ibcTxs, err := ibcTxRepo.TxDetail(hash, false)
@@ -235,6 +236,7 @@ func getMsgIndex(tx entity.Tx, msgType string, packetId string) int {
 	return -1
 }
 
+// [Deprecated]
 func getScTxInfo(chainId string, txHash string, packetId string) (scConnect string, signers []string) {
 	tx, err := txRepo.GetTxByHash(chainId, txHash)
 	if err != nil {
@@ -246,6 +248,7 @@ func getScTxInfo(chainId string, txHash string, packetId string) (scConnect stri
 	return
 }
 
+// [Deprecated]
 func getDcTxInfo(chainId string, txHash string, packetId string) (dcConnect string, ack string, signers []string) {
 	tx, err := txRepo.GetTxByHash(chainId, txHash)
 	if err != nil {
@@ -257,6 +260,7 @@ func getDcTxInfo(chainId string, txHash string, packetId string) (dcConnect stri
 	return
 }
 
+// [Deprecated]
 func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) string {
 	var connect string
 	for _, item := range eventNews {
@@ -276,6 +280,7 @@ func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) st
 	return connect
 }
 
+// [Deprecated]
 func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) (string, string) {
 	var connect, ackData string
 	for _, item := range eventNews {
@@ -335,8 +340,53 @@ func (t TransferService) TransferTxDetailNew(hash string) (*vo.TranaferTxDetailN
 }
 
 func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
-	// TODO
-	return nil, nil
+	relayerMap, err := getRelayerMap()
+	if err != nil {
+		return nil, err
+	}
+	if val.DcTxInfo == nil && val.RefundedTxInfo == nil {
+		return nil, nil
+	}
+	var relayerInfo vo.RelayerInfo
+	if val.DcTxInfo != nil && val.DcTxInfo.Msg != nil {
+		dcRelayerAddr := val.DcTxInfo.Msg.CommonMsg().Signer
+		relayerInfo.DcRelayer.RelayerAddr = dcRelayerAddr
+	}
+	if val.RefundedTxInfo != nil && val.RefundedTxInfo.Msg != nil {
+		scRelayerAddr := val.RefundedTxInfo.Msg.CommonMsg().Signer
+		relayerInfo.ScRelayer.RelayerAddr = scRelayerAddr
+	}
+	chainA, _ := entity.ConfirmRelayerPair(val.ScChainId, val.DcChainId)
+	matchInfo := strings.Join([]string{relayerInfo.ScRelayer.RelayerAddr, relayerInfo.DcRelayer.RelayerAddr}, ":")
+	if chainA != val.ScChainId {
+		matchInfo = strings.Join([]string{relayerInfo.DcRelayer.RelayerAddr, relayerInfo.ScRelayer.RelayerAddr}, ":")
+	}
+	if value, ok := relayerMap[matchInfo]; ok {
+		relayerInfo.ScRelayer.RelayerName = value.RelayerName
+		relayerInfo.ScRelayer.Icon = value.RelayerIcon
+	}
+	return &relayerInfo, nil
+}
+func getRelayerMap() (map[string]entity.IBCRelayerNew, error) {
+	relayers, err := relayerCache.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	relayerMap := make(map[string]entity.IBCRelayerNew, len(relayers))
+	for _, val := range relayers {
+		data := entity.IBCRelayerNew{
+			RelayerIcon: val.RelayerIcon,
+			RelayerName: val.RelayerName,
+		}
+		for _, one := range val.ChannelPairInfo {
+			key := strings.Join([]string{one.ChainAAddress, one.ChainBAddress}, ":")
+			if _, exist := relayerMap[key]; exist {
+				continue
+			}
+			relayerMap[key] = data
+		}
+	}
+	return relayerMap, nil
 }
 
 func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
