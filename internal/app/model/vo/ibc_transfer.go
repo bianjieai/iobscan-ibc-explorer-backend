@@ -24,6 +24,21 @@ type (
 		TimeStamp int64      `json:"time_stamp"`
 	}
 
+	TransferTxsCountResp struct {
+		TxsCount int64  `json:"txs_count"`
+		TxsValue string `json:"txs_value"`
+	}
+
+	TxsCountChanDTO struct {
+		Count int64
+		Err   error
+	}
+
+	TxsValueChanDTO struct {
+		Value string
+		Err   error
+	}
+
 	TranaferTxDetailResp struct {
 		Items     []IbcTxDetailDto `json:"items"`
 		TimeStamp int64            `json:"time_stamp"`
@@ -92,6 +107,10 @@ type (
 	TraceSourceResp struct {
 		Msg    interface{} `json:"msg"`
 		Events interface{} `json:"events"`
+	}
+
+	SearchConditionResp struct {
+		TxTimeMin int64 `json:"tx_time_min"`
 	}
 
 	Denoms struct {

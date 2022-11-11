@@ -24,28 +24,11 @@ const (
 )
 
 type RelayerHandler struct {
-	teamNameMap  map[string]string
-	jsonFileList []string
-	pairIdMap    map[string]struct{}
-	imageMap     map[string]bool
 }
 
 func (h *RelayerHandler) Collect(filepath string) {
 	logrus.Infof("RelayerHandler collect %s", filepath)
 	st := time.Now().Unix()
-	h.teamNameMap = make(map[string]string)
-	h.pairIdMap = make(map[string]struct{})
-	h.imageMap = make(map[string]bool)
-	h.jsonFileList = nil
-
-	//ids, err := relayerCfgRepo.FindRelayerPairIds()
-	//if err != nil {
-	//	logrus.Infof("RelayerHandler FindRelayerPairIds err, %v", err)
-	//	return
-	//}
-	//for _, v := range ids {
-	//	h.pairIdMap[v.RelayerPairId] = struct{}{}
-	//}
 
 	if filepath == "" {
 		h.xPathMainPage()
@@ -86,16 +69,21 @@ func (h *RelayerHandler) fetchSave(filepath string) {
 		return
 	}
 
+	if relayerInfoResp.TeamName == "" {
+		logrus.Warningf("RelayerHandler relayer %s team name is blank", filepath)
+		return
+	}
+
 	var distRelayerIds []string
 	for _, addrMap := range relayerInfoResp.Addresses {
 		index := 0
 		var chainA, chainAAddress, chainB, chainBAddress string
 		for k, v := range addrMap {
 			if index == 0 {
-				chainA = k
+				chainA = strings.ReplaceAll(k, "-", "_")
 				chainAAddress = v
 			} else {
-				chainB = k
+				chainB = strings.ReplaceAll(k, "-", "_")
 				chainBAddress = v
 			}
 
@@ -104,13 +92,13 @@ func (h *RelayerHandler) fetchSave(filepath string) {
 		distRelayerIds = append(distRelayerIds, entity.GenerateDistRelayerId(chainA, chainAAddress, chainB, chainBAddress))
 	}
 
-	if err = h.saveRegistryRelayer(relayerInfoResp.TeamName, distRelayerIds); err != nil {
-		logrus.Errorf("RelayerHandler saveRegistryRelayer %s err, %v", relayerInfoResp.TeamName, err)
+	if err = h.removeDumpChannelPairs(distRelayerIds); err != nil {
+		logrus.Errorf("RelayerHandler removeDumpChannelPairs %s err, %v", relayerInfoResp.TeamName, err)
 		return
 	}
 
-	if err = h.removeDumpChannelPairs(distRelayerIds); err != nil {
-		logrus.Errorf("RelayerHandler removeDumpChannelPairs %s err, %v", relayerInfoResp.TeamName, err)
+	if err = h.saveRegistryRelayer(relayerInfoResp.TeamName, distRelayerIds); err != nil {
+		logrus.Errorf("RelayerHandler saveRegistryRelayer %s err, %v", relayerInfoResp.TeamName, err)
 		return
 	}
 }
@@ -167,7 +155,7 @@ func (h *RelayerHandler) insertNewRelayer(relayerName string, nowDistRelayerIds 
 	err := relayerRepo.InsertOne(&entity.IBCRelayerNew{
 		RelayerId:       primitive.NewObjectID().Hex(),
 		RelayerName:     relayerName,
-		RelayerIcon:     strings.ReplaceAll(relayerName, " ", "_"),
+		RelayerIcon:     fmt.Sprintf(iconUrl, strings.ReplaceAll(relayerName, " ", "_")),
 		ServedChains:    int64(servedChainSet.Len()),
 		ChannelPairInfo: nowChannelPairInfo,
 		CreateAt:        time.Now().Unix(),
@@ -242,9 +230,9 @@ func getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB string) 
 	chainAChannelMap := make(map[string]string)
 	chainBChannelMap := make(map[string]string)
 	for _, c := range addrChannels {
-		if c.RelayerAddress == addressA && c.Chain == chainA {
+		if c.RelayerAddress == addressA {
 			chainAChannelMap[c.Channel] = c.CounterPartyChannel
-		} else if c.RelayerAddress == addressB && c.Chain == chainB {
+		} else if c.RelayerAddress == addressB {
 			chainBChannelMap[c.Channel] = c.CounterPartyChannel
 		}
 	}
