@@ -318,6 +318,7 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	}
 }
 
+// [Deprecated]
 func (dto IbcTxDetailDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDetailDto {
 	return IbcTxDetailDto{
 		ScAddr:           ibcTx.ScAddr,

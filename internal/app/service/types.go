@@ -25,7 +25,7 @@ var (
 	relayerTrendCache          cache.RelayerRelayedTrendCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
-	relayerCfgRepo             repository.IRelayerConfigRepo = new(cache.RelayerConfigCacheRepo)
+	relayerCache               cache.RelayerCacheRepo
 	baseDenomRepo              cache.BaseDenomCacheRepo
 )
 

@@ -10,7 +10,7 @@ import (
 
 func TestMain(m *testing.M) {
 	InitMgo(conf.Mongo{
-		Url:      "mongodb://ibc:ibcpassword@192.168.150.60:27018/?connect=direct&authSource=iobscan-ibc",
+		Url:      "mongodb://ibc:ibcpassword@192.168.0.135:27017/?authSource=iobscan-ibc",
 		Database: "iobscan-ibc",
 	}, context.Background())
 	m.Run()

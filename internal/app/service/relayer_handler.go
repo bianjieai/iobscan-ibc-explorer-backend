@@ -38,14 +38,14 @@ func (h *RelayerHandler) Collect(filepath string) {
 	h.imageMap = make(map[string]bool)
 	h.jsonFileList = nil
 
-	ids, err := relayerCfgRepo.FindRelayerPairIds()
-	if err != nil {
-		logrus.Infof("RelayerHandler FindRelayerPairIds err, %v", err)
-		return
-	}
-	for _, v := range ids {
-		h.pairIdMap[v.RelayerPairId] = struct{}{}
-	}
+	//ids, err := relayerCfgRepo.FindRelayerPairIds()
+	//if err != nil {
+	//	logrus.Infof("RelayerHandler FindRelayerPairIds err, %v", err)
+	//	return
+	//}
+	//for _, v := range ids {
+	//	h.pairIdMap[v.RelayerPairId] = struct{}{}
+	//}
 
 	if filepath == "" {
 		h.xPathMainPage()
