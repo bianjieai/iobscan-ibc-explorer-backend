@@ -3,27 +3,30 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 )
 
 type IRelayerService interface {
 	List(req *vo.RelayerListReq) (vo.RelayerListResp, errors.Error)
 	ListCount(req *vo.RelayerListReq) (int64, errors.Error)
-	Collect(OperatorFile string) errors.Error
+	Collect(operatorFile string) errors.Error
+	TransferTypeTxs(relayerId string) (*vo.TransferTypeTxsResp, errors.Error)
+	TotalRelayedValue(relayerId string) (*vo.TotalRelayedValueResp, errors.Error)
+	TotalFeeCost(relayerId string) (*vo.TotalFeeCostResp, errors.Error)
 	Detail(relayerId string) (vo.RelayerDetailResp, errors.Error)
 	DetailRelayerTxsCount(relayerId string, req *vo.DetailRelayerTxsReq) (int64, errors.Error)
 	DetailRelayerTxs(relayerId string, req *vo.DetailRelayerTxsReq) (vo.DetailRelayerTxsResp, errors.Error)
@@ -64,9 +67,138 @@ func (svc *RelayerService) ListCount(req *vo.RelayerListReq) (int64, errors.Erro
 	return total, nil
 }
 
-func (svc *RelayerService) Collect(OperatorFile string) errors.Error {
-	go svc.relayerHandler.Collect(OperatorFile)
+func (svc *RelayerService) Collect(operatorFile string) errors.Error {
+	go svc.relayerHandler.Collect(operatorFile)
 	return nil
+}
+
+func (svc *RelayerService) TransferTypeTxs(relayerId string) (*vo.TransferTypeTxsResp, errors.Error) {
+	if res, err := relayerDataCache.GetTransferTypeTxs(relayerId); err == nil {
+		return res, nil
+	}
+
+	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	if err != nil {
+		return nil, err
+	}
+
+	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
+	for _, val := range servedChainsInfoMap {
+		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	}
+
+	aggrRes, e := relayerDenomStatisticsRepo.AggrAmtByTxType(relayerAddrs)
+	if e != nil {
+		return nil, errors.Wrap(e)
+	}
+
+	var res vo.TransferTypeTxsResp
+	for _, v := range aggrRes {
+		txType := entity.TxType(v.TxType)
+		switch txType {
+		case entity.TxTypeTimeoutPacket:
+			res.TimeoutPacketTxs = v.TotalTxs
+		case entity.TxTypeRecvPacket:
+			res.RecvPacketTxs = v.TotalTxs
+		case entity.TxTypeAckPacket:
+			res.AcknowledgePacketTxs = v.TotalTxs
+		}
+	}
+
+	_ = relayerDataCache.SetTransferTypeTxs(relayerId, &res)
+	return &res, nil
+}
+
+func (svc *RelayerService) TotalRelayedValue(relayerId string) (*vo.TotalRelayedValueResp, errors.Error) {
+	if res, err := relayerDataCache.GetTotalRelayedValue(relayerId); err == nil {
+		return res, nil
+	}
+
+	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	if err != nil {
+		return nil, err
+	}
+
+	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
+	for _, val := range servedChainsInfoMap {
+		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	}
+
+	aggrRes, e := relayerDenomStatisticsRepo.AggrRelayedValue(relayerAddrs)
+	if e != nil {
+		return nil, errors.Wrap(e)
+	}
+
+	priceMap := cache.TokenPriceMap()
+	txsItem := make([]vo.DenomTxsItem, 0, len(aggrRes))
+	var totalTxs int64
+	TotalTxsValue := decimal.Zero
+	for _, v := range aggrRes {
+		txsValue := CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, decimal.NewFromFloat(v.Amount))
+		txsItem = append(txsItem, vo.DenomTxsItem{
+			BaseDenom:      v.BaseDenom,
+			BaseDenomChain: v.BaseDenomChain,
+			Txs:            v.TotalTxs,
+			TxsValue:       txsValue.String(),
+		})
+		totalTxs += v.TotalTxs
+		TotalTxsValue = TotalTxsValue.Add(txsValue)
+	}
+
+	res := vo.TotalRelayedValueResp{
+		TotalTxs:        totalTxs,
+		TotalTxsValue:   TotalTxsValue.String(),
+		TotalDenomCount: int64(len(txsItem)),
+		DenomList:       txsItem,
+	}
+	_ = relayerDataCache.SetTotalRelayedValue(relayerId, &res)
+	return &res, nil
+}
+
+func (svc *RelayerService) TotalFeeCost(relayerId string) (*vo.TotalFeeCostResp, errors.Error) {
+	if res, err := relayerDataCache.GetTotalFeeCost(relayerId); err == nil {
+		return res, nil
+	}
+
+	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	if err != nil {
+		return nil, err
+	}
+
+	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
+	for _, val := range servedChainsInfoMap {
+		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	}
+
+	aggrRes, e := relayerFeeStatisticsRepo.AggrFeeTxsAmt(relayerAddrs)
+	if e != nil {
+		return nil, errors.Wrap(e)
+	}
+
+	priceMap := cache.TokenPriceMap()
+	txsItem := make([]vo.DenomFeeItem, 0, len(aggrRes))
+	var totalTxs int64
+	TotalTxsValue := decimal.Zero
+	for _, v := range aggrRes {
+		txsValue := CalculateDenomValue(priceMap, v.FeeDenom, v.Chain, decimal.NewFromFloat(v.Amount))
+		txsItem = append(txsItem, vo.DenomFeeItem{
+			Denom:      v.FeeDenom,
+			DenomChain: v.Chain,
+			Txs:        v.TotalTxs,
+			FeeValue:   txsValue.String(),
+		})
+		totalTxs += v.TotalTxs
+		TotalTxsValue = TotalTxsValue.Add(txsValue)
+	}
+
+	res := vo.TotalFeeCostResp{
+		TotalTxs:        totalTxs,
+		TotalFeeValue:   TotalTxsValue.String(),
+		TotalDenomCount: int64(len(txsItem)),
+		DenomList:       txsItem,
+	}
+	_ = relayerDataCache.SetTotalFeeCost(relayerId, &res)
+	return &res, nil
 }
 
 func (svc *RelayerService) Detail(relayerId string) (vo.RelayerDetailResp, errors.Error) {
@@ -132,7 +264,7 @@ func (svc *RelayerService) DetailRelayerTxs(relayerId string, req *vo.DetailRela
 func (svc *RelayerService) DetailRelayerTxsCount(relayerId string, req *vo.DetailRelayerTxsReq) (int64, errors.Error) {
 	//默认情况下chain查询交易
 	if req.TxTimeStart == 0 && req.TxTimeEnd == 0 {
-		if value, err := relayerTxsCache.Get(relayerId, req.Chain); err == nil {
+		if value, err := relayerDataCache.GetTotalTxs(relayerId, req.Chain); err == nil {
 			return value, nil
 		}
 	}
@@ -145,7 +277,7 @@ func (svc *RelayerService) DetailRelayerTxsCount(relayerId string, req *vo.Detai
 		return 0, errors.Wrap(err)
 	}
 	if req.TxTimeStart == 0 && req.TxTimeEnd == 0 {
-		_ = relayerTxsCache.Set(relayerId, req.Chain, count)
+		_ = relayerDataCache.SetTotalTxs(relayerId, req.Chain, count)
 	}
 	return count, nil
 }
@@ -274,7 +406,7 @@ func (svc *RelayerService) RelayerTrend(relayerId string, req *vo.RelayerTrendRe
 	}
 
 	//从缓存取数据返回
-	if value, err := relayerTrendCache.Get(relayerId, strconv.Itoa(req.Days)); err == nil {
+	if value, err := relayerDataCache.GetRelayedTrend(relayerId, strconv.Itoa(req.Days)); err == nil {
 		var data vo.RelayerTrendResp
 		if err1 := json.Unmarshal([]byte(value), &data); err1 != nil {
 			return data, errors.Wrap(err1)
@@ -283,7 +415,7 @@ func (svc *RelayerService) RelayerTrend(relayerId string, req *vo.RelayerTrendRe
 	}
 	segments := svc.getSegmentOfDay(req.Days)
 	retData := svc.doHandleDaySegments(relayerAddrs, segments)
-	_ = relayerTrendCache.Set(relayerId, strconv.Itoa(req.Days), utils.MustMarshalJsonToStr(retData))
+	_ = relayerDataCache.SetRelayedTrend(relayerId, strconv.Itoa(req.Days), utils.MustMarshalJsonToStr(retData))
 
 	return retData, nil
 }
@@ -322,7 +454,7 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 		//计算价值
 		baseDenomValue := decimal.NewFromFloat(0)
 		decAmt := decimal.NewFromFloat(item.Amount)
-		priceKey := item.BaseDenom + item.BaseDenomChainId
+		priceKey := item.BaseDenom + item.BaseDenomChain
 		if coin, ok := denomPriceMap[priceKey]; ok {
 			if coin.Scale > 0 {
 				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
@@ -337,7 +469,7 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 			segmentTxsValueMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChainId,
+				ChainId: item.BaseDenomChain,
 				Denom:   item.BaseDenom,
 				Txs:     item.TotalTxs,
 				Amt:     baseDenomValue,

@@ -18,7 +18,7 @@ type IBCRelayerDenomStatistics struct {
 	TxStatus         TxStatus `bson:"tx_status"`
 	TxType           TxType   `bson:"tx_type"`
 	BaseDenom        string   `bson:"base_denom"`
-	BaseDenomChainId string   `bson:"base_denom_chain_id"`
+	BaseDenomChain   string   `bson:"base_denom_chain"`
 	RelayedAmount    float64  `bson:"relayed_amount"`
 	RelayedTxs       int64    `bson:"relayed_txs"`
 	SegmentStartTime int64    `bson:"segment_start_time"`

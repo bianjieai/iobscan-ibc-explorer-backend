@@ -3,6 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
@@ -11,21 +18,17 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
+	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 type ITransferService interface {
-	TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors.Error)
+	TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferTxsCountResp, errors.Error)
 	TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error)
 	TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error)
 	TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error)
 	TraceSource(hash string, req *vo.TraceSourceReq) (vo.TraceSourceResp, errors.Error)
+	SearchCondition() (*vo.SearchConditionResp, errors.Error)
 }
 
 var _ ITransferService = new(TransferService)
@@ -83,34 +86,81 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 	}
 	return query, nil
 }
-func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (int64, errors.Error) {
+func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferTxsCountResp, errors.Error) {
 	query, err := createIbcTxQuery(req)
 	if err != nil {
-		return 0, errors.Wrap(err)
+		return nil, errors.Wrap(err)
 	}
 	if len(query.ChainId) > 2 {
-		return 0, nil
+		return nil, errors.WrapBadRequest(fmt.Errorf("invalid chain id"))
 	}
 
-	checkDisplayMax := func(count int64) int64 {
-		if count > constant.DisplayIbcRecordMax {
-			return constant.DisplayIbcRecordMax
+	txsCountChan := make(chan *vo.TxsCountChanDTO)
+	txsValueChan := make(chan *vo.TxsValueChanDTO)
+	// 计算交易总数
+	go func() {
+		checkDisplayMax := func(count int64) int64 {
+			if count > constant.DisplayIbcRecordMax {
+				return constant.DisplayIbcRecordMax
+			}
+			return count
 		}
-		return count
-	}
-	//default cond
-	if len(query.ChainId) == 0 && (len(query.Status) == 4 || len(query.Status) == 0) && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
-		data, err := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
-		if err != nil {
-			return 0, errors.Wrap(err)
+		//default cond
+		if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
+			data, err2 := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
+			if err2 != nil {
+				txsCountChan <- &vo.TxsCountChanDTO{Count: 0, Err: err2}
+				return
+			}
+			txsCountChan <- &vo.TxsCountChanDTO{Count: checkDisplayMax(data.Count), Err: nil}
+			return
 		}
-		return checkDisplayMax(data.Count), nil
+		count, err2 := ibcTxRepo.CountTransferTxs(query)
+		if err2 != nil {
+			txsCountChan <- &vo.TxsCountChanDTO{Count: 0, Err: err2}
+			return
+		}
+		txsCountChan <- &vo.TxsCountChanDTO{Count: checkDisplayMax(count), Err: nil}
+	}()
+
+	// 计算交易价值
+	go func() {
+		if (len(query.ChainId) == 0) ||
+			(len(query.ChainId) == 1 && query.ChainId[0] == constant.AllChain) ||
+			(query.ChainId[0] == constant.AllChain && query.ChainId[1] == constant.AllChain) {
+			txsValueChan <- &vo.TxsValueChanDTO{Value: "", Err: nil}
+			return
+		}
+
+		aggrTxsValue, err2 := ibcTxRepo.AggrTxsValue(query, false)
+		if err2 != nil {
+			txsValueChan <- &vo.TxsValueChanDTO{Value: "", Err: err2}
+			return
+		}
+
+		priceMap := cache.TokenPriceMap()
+		totalTxsValue := decimal.Zero
+		for _, v := range aggrTxsValue {
+			txsValue := CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, decimal.NewFromFloat(v.Amount))
+			totalTxsValue = totalTxsValue.Add(txsValue)
+		}
+
+		txsValueChan <- &vo.TxsValueChanDTO{Value: totalTxsValue.String(), Err: err2}
+		return
+	}()
+
+	txsCountRes := <-txsCountChan
+	txsValueRes := <-txsValueChan
+	if txsCountRes.Err != nil {
+		return nil, errors.Wrap(txsCountRes.Err)
+	} else if txsValueRes.Err != nil {
+		return nil, errors.Wrap(txsValueRes.Err)
+	} else {
+		return &vo.TransferTxsCountResp{
+			TxsCount: txsCountRes.Count,
+			TxsValue: txsValueRes.Value,
+		}, nil
 	}
-	count, err := ibcTxRepo.CountTransferTxs(query)
-	if err != nil {
-		return 0, errors.Wrap(err)
-	}
-	return checkDisplayMax(count), nil
 }
 
 func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error) {
@@ -285,43 +335,10 @@ func (t TransferService) TransferTxDetailNew(hash string) (*vo.TranaferTxDetailN
 }
 
 func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
-	relayerCfgMap, err := getRelayerCfgMap()
-	if err != nil {
-		return nil, err
-	}
-	if val.DcTxInfo == nil && val.RefundedTxInfo == nil {
-		return nil, nil
-	}
-	var relayerInfo vo.RelayerInfo
-	if val.DcTxInfo != nil && val.DcTxInfo.Msg != nil {
-		dcRelayerAddr := val.DcTxInfo.Msg.CommonMsg().Signer
-		relayerInfo.DcRelayer.RelayerAddr = dcRelayerAddr
-	}
-	if val.RefundedTxInfo != nil && val.RefundedTxInfo.Msg != nil {
-		scRelayerAddr := val.RefundedTxInfo.Msg.CommonMsg().Signer
-		relayerInfo.ScRelayer.RelayerAddr = scRelayerAddr
-		matchInfo := strings.Join([]string{val.ScChainId, val.ScChannel, scRelayerAddr}, ":")
-		if cfg, ok := relayerCfgMap[matchInfo]; ok {
-			relayerInfo.ScRelayer.RelayerName = cfg.RelayerName
-			relayerInfo.ScRelayer.Icon = cfg.Icon
-		}
-	}
-	return &relayerInfo, nil
+	// TODO
+	return nil, nil
 }
-func getRelayerCfgMap() (map[string]entity.IBCRelayerConfig, error) {
-	relayerCfgs, err := relayerCfgRepo.FindAll()
-	if err != nil {
-		return nil, err
-	}
-	relayerCfgMap := make(map[string]entity.IBCRelayerConfig, len(relayerCfgs))
-	for _, val := range relayerCfgs {
-		srcChainInfo := strings.Join([]string{val.ChainA, val.ChannelA, val.ChainAAddress}, ":")
-		dcChainInfo := strings.Join([]string{val.ChainB, val.ChannelB, val.ChainBAddress}, ":")
-		relayerCfgMap[srcChainInfo] = *val
-		relayerCfgMap[dcChainInfo] = *val
-	}
-	return relayerCfgMap, nil
-}
+
 func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 	var (
 		sendToken = vo.DetailToken{
@@ -530,4 +547,13 @@ func GetTxDataFromChain(lcdUri string, hash string) (LcdTxData, errors.Error) {
 		return LcdTxData{}, errors.Wrap(err)
 	}
 	return txData, nil
+}
+
+func (t TransferService) SearchCondition() (*vo.SearchConditionResp, errors.Error) {
+	txTime, err := ibcTxRepo.GetMinTxTime(false)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	return &vo.SearchConditionResp{TxTimeMin: txTime}, nil
 }

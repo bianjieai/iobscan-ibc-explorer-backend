@@ -77,8 +77,7 @@ func (t *RelayerStatisticsTask) Run() int {
 		return -1
 	}
 
-	// todo 清除缓存，RunIncrement，RunWithParam中同样需要清除操作
-
+	t.flushCache()
 	return 1
 }
 
@@ -95,7 +94,7 @@ func (t *RelayerStatisticsTask) RunIncrement(seg *segment) error {
 	for chainId, _ := range chainMap {
 		worker.statistics(chainId, segs, opUpdate)
 	}
-
+	t.flushCache()
 	return nil
 }
 
@@ -114,7 +113,17 @@ func (t *RelayerStatisticsTask) RunWithParam(chainId string, startTime, endTime 
 	}
 	worker := newRelayerStatisticsWorker(t.Name(), workerName, chainMap)
 	worker.statistics(chainId, segments, opUpdate)
+	t.flushCache()
 	return 1
+}
+
+// flushCache 清除relayer相关缓存
+func (t *RelayerStatisticsTask) flushCache() {
+	_ = relayerDataCache.DelTotalFeeCost()
+	_ = relayerDataCache.DelTotalRelayedValue()
+	_ = relayerDataCache.DelTransferTypeTxs()
+	_ = relayerDataCache.DelTotalTxs()
+	_ = relayerDataCache.DelRelayedTrend()
 }
 
 // =========================================================================
@@ -222,7 +231,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 				TxStatus:         entity.TxStatus(v.Status),
 				TxType:           entity.TxType(v.TxType),
 				BaseDenom:        denomEntity.BaseDenom,
-				BaseDenomChainId: denomEntity.BaseDenomChainId,
+				BaseDenomChain:   denomEntity.BaseDenomChainId,
 				RelayedAmount:    v.DenomAmount,
 				RelayedTxs:       v.TxsCount,
 				SegmentStartTime: segment.StartTime,

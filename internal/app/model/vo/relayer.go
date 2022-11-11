@@ -18,7 +18,7 @@ type (
 		RelayerId            string            `json:"relayer_id"`
 		RelayerName          string            `json:"relayer_name"`
 		RelayerIcon          string            `json:"relayer_icon"`
-		ServedChainsNumber   int64             `json:"served_chains_number"`
+		ServedChains         int64             `json:"served_chains"`
 		ServedChainsInfo     []ServedChainInfo `json:"served_chains_info"`
 		UpdateTime           int64             `json:"update_time"`
 		RelayedTotalTxs      int64             `json:"relayed_total_txs"`
@@ -53,7 +53,7 @@ func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayerNew) RelayerDto {
 		RelayerId:            relayer.RelayerId,
 		RelayerName:          relayer.RelayerName,
 		RelayerIcon:          relayer.RelayerIcon,
-		ServedChainsNumber:   relayer.ServedChains,
+		ServedChains:         relayer.ServedChains,
 		ServedChainsInfo:     getServedChainInfo(),
 		UpdateTime:           relayer.UpdateTime,
 		RelayedTotalTxs:      relayer.RelayedTotalTxs,
@@ -64,8 +64,8 @@ func (dto RelayerDto) LoadDto(relayer *entity.IBCRelayerNew) RelayerDto {
 }
 
 type IobRegistryRelayerInfoResp struct {
-	TeamName string `json:"team name"`
-	TeamLogo string `json:"team logo"`
+	TeamName string `json:"team_name"`
+	TeamLogo string `json:"team_logo"`
 	Contact  struct {
 		Website string `json:"website"`
 		Github  string `json:"github"`
@@ -74,6 +74,40 @@ type IobRegistryRelayerInfoResp struct {
 	} `json:"contact"`
 	Introduction []string            `json:"introduction"`
 	Addresses    []map[string]string `json:"addresses"`
+}
+
+type TransferTypeTxsResp struct {
+	RecvPacketTxs        int64 `json:"recv_packet_txs"`
+	AcknowledgePacketTxs int64 `json:"acknowledge_packet_txs"`
+	TimeoutPacketTxs     int64 `json:"timeout_packet_txs"`
+}
+
+type TotalRelayedValueResp struct {
+	TotalTxs        int64          `json:"total_txs"`
+	TotalTxsValue   string         `json:"total_txs_value"`
+	TotalDenomCount int64          `json:"total_denom_count"`
+	DenomList       []DenomTxsItem `json:"denom_list"`
+}
+
+type DenomTxsItem struct {
+	BaseDenom      string `json:"base_denom"`
+	BaseDenomChain string `json:"base_denom_chain"`
+	Txs            int64  `json:"txs"`
+	TxsValue       string `json:"txs_value"`
+}
+
+type TotalFeeCostResp struct {
+	TotalTxs        int64          `json:"total_txs"`
+	TotalFeeValue   string         `json:"total_fee_value"`
+	TotalDenomCount int64          `json:"total_denom_count"`
+	DenomList       []DenomFeeItem `json:"denom_list"`
+}
+
+type DenomFeeItem struct {
+	Denom      string `json:"denom"`
+	DenomChain string `json:"denom_chain"`
+	Txs        int64  `json:"txs"`
+	FeeValue   string `json:"fee_value"`
 }
 
 type (
@@ -90,7 +124,7 @@ type (
 		RelayerId            string               `json:"relayer_id"`
 		RelayerName          string               `json:"relayer_name"`
 		RelayerIcon          string               `json:"relayer_icon"`
-		ServedChains         []string             `json:"served_chains"`
+		ServedChainsInfo     []string             `json:"served_chains_info"`
 		ChannelPairInfo      []ChannelPairInfoDto `json:"channel_pair_info"`
 		UpdateTime           int64                `json:"update_time"`
 		RelayedTotalTxs      int64                `json:"relayed_total_txs"`
@@ -104,13 +138,11 @@ type (
 
 func LoadRelayerDetailDto(relayer *entity.IBCRelayerNew, statusMap map[string]int) RelayerDetailResp {
 
-	getChannelPairInfo := func() ([]ChannelPairInfoDto, []string) {
+	getChannelPairInfo := func() []ChannelPairInfoDto {
 
 		setMap := make(map[string]ChannelPairInfoDto, len(relayer.ChannelPairInfo))
-		servedChains := make([]string, 0, 10)
 
 		for _, val := range relayer.ChannelPairInfo {
-			servedChains = append(servedChains, val.ChainA, val.ChainB)
 			key := val.ChainA + val.ChannelA + val.ChainB + val.ChannelB
 			if cacheValue, ok := setMap[key]; ok {
 				if val.ChainAAddress != "" {
@@ -149,17 +181,16 @@ func LoadRelayerDetailDto(relayer *entity.IBCRelayerNew, statusMap map[string]in
 			info.ChannelPairStatus = statusMap[key]
 			retData = append(retData, info)
 		}
-		servedChains = utils.DistinctSliceStr(servedChains)
-		return retData, servedChains
+		return retData
 	}
-	channelPairInfo, servedChains := getChannelPairInfo()
 
+	servedChainsInfo := entity.ChannelPairInfoList(relayer.ChannelPairInfo).GetChains()
 	return RelayerDetailResp{
 		RelayerId:            relayer.RelayerId,
 		RelayerName:          relayer.RelayerName,
 		RelayerIcon:          relayer.RelayerIcon,
-		ServedChains:         servedChains,
-		ChannelPairInfo:      channelPairInfo,
+		ServedChainsInfo:     servedChainsInfo,
+		ChannelPairInfo:      getChannelPairInfo(),
 		UpdateTime:           relayer.UpdateTime,
 		RelayedTotalTxs:      relayer.RelayedTotalTxs,
 		RelayedSuccessTxs:    relayer.RelayedSuccessTxs,

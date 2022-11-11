@@ -54,6 +54,7 @@ var (
 	tokenPriceRepo             cache.TokenPriceCacheRepo
 	denomDataRepo              cache.DenomDataCacheRepo
 	unbondTimeCache            cache.UnbondTimeCacheRepo
+	relayerDataCache           cache.RelayerDataCacheRepo
 	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
 	chainCache                 cache.ChainCacheRepo
 	baseDenomCache             cache.BaseDenomCacheRepo
@@ -74,7 +75,6 @@ var (
 	channelRepo                repository.IChannelRepo                = new(repository.ChannelRepo)
 	channelStatisticsRepo      repository.IChannelStatisticsRepo      = new(repository.ChannelStatisticsRepo)
 	channelConfigRepo          repository.IChannelConfigRepo          = new(repository.ChannelConfigRepo)
-	relayerStatisticsRepo      repository.IRelayerStatisticsRepo      = new(repository.RelayerStatisticsRepo)
 	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
 	relayerAddressChannelRepo  repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)

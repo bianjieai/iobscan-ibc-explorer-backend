@@ -182,7 +182,7 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAm
 	}
 	relayerTxsAmtMap := make(map[string]dto.TxsAmtItem, 20)
 	for _, item := range res {
-		key := fmt.Sprintf("%s%s", item.BaseDenom, item.BaseDenomChainId)
+		key := fmt.Sprintf("%s%s", item.BaseDenom, item.BaseDenomChain)
 		value, exist := relayerTxsAmtMap[key]
 		if exist {
 			value.Txs += item.TotalTxs
@@ -193,7 +193,7 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAm
 			relayerTxsAmtMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChainId,
+				ChainId: item.BaseDenomChain,
 				Denom:   item.BaseDenom,
 				Txs:     item.TotalTxs,
 				Amt:     decimal.NewFromFloat(item.Amount),
