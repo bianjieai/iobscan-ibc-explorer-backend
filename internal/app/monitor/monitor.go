@@ -17,22 +17,20 @@ import (
 )
 
 var (
-	cronTaskStatusMetric     metrics.Guage
-	lcdConnectStatsMetric    metrics.Guage
-	redisStatusMetric        metrics.Guage
-	relayerStatusCheckMetric metrics.Guage
-	TagName                  = "taskname"
-	ChainTag                 = "chain_id"
-	relayerTag               = "relayer_id"
+	cronTaskStatusMetric  metrics.Guage
+	lcdConnectStatsMetric metrics.Guage
+	redisStatusMetric     metrics.Guage
+	TagName               = "taskname"
+	ChainTag              = "chain_id"
 
 	chainConfigRepo   repository.IChainConfigRepo   = new(repository.ChainConfigRepo)
 	chainRegistryRepo repository.IChainRegistryRepo = new(repository.ChainRegistryRepo)
-	relayerRepo       repository.IRelayerRepo       = new(repository.IbcRelayerRepo)
 )
 
 const (
 	v1beta1        = "v1beta1"
 	v1             = "v1"
+	nodeInfo       = "/node_info"
 	v1Channels     = "/ibc/core/channel/v1/channels?pagination.limit=1"
 	apiChannels    = "/ibc/core/channel/%s/channels?pagination.offset=OFFSET&pagination.limit=LIMIT&pagination.count_total=true"
 	apiClientState = "/ibc/core/channel/%s/channels/CHANNEL/ports/PORT/client_state"
@@ -122,6 +120,25 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 	if ex && utils.InArray(unLcds, lcd) {
 		return false
 	}
+	if resp, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, nodeInfo)); err == nil {
+		var data struct {
+			NodeInfo struct {
+				Network string `json:"network"`
+			} `json:"node_info"`
+		}
+		if err := json.Unmarshal(resp, &data); err != nil {
+			return false
+		}
+		network := strings.ReplaceAll(data.NodeInfo.Network, "-", "_")
+		if network != cf.ChainId {
+			//return false, if lcd node_info network no match chain_id
+			return false
+		}
+
+	} else {
+		// return false,if lcd node_ifo api is not reach
+		return false
+	}
 
 	var ok bool
 	var version string
@@ -144,7 +161,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 		cf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, version)
 		cf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, version)
 		if err := chainConfigRepo.UpdateLcdApi(cf); err != nil {
-			logrus.Error("lcd monitor update api error: %v", err)
+			logrus.Errorf("lcd monitor update api error: %v", err)
 			return false
 		} else {
 			return true

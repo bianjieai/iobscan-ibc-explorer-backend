@@ -263,7 +263,7 @@ func (t *RelayerDataTask) handleIbcTxLatest(startTime, endTime int64) []*entity.
 	var relayers []*entity.ChannelPairInfo
 	for _, val := range relayerDtos {
 		item := t.createChannelPairInfoData(val)
-		if item.Valid() {
+		if item.Valid() && item.ChainA != item.ChainB {
 			relayers = append(relayers, &item)
 		}
 	}
@@ -279,7 +279,7 @@ func (t *RelayerDataTask) handleIbcTxHistory(startTime, endTime int64) []*entity
 	var relayers []*entity.ChannelPairInfo
 	for _, val := range relayerDtos {
 		item := t.createChannelPairInfoData(val)
-		if item.Valid() {
+		if item.Valid() && item.ChainA != item.ChainB {
 			relayers = append(relayers, &item)
 		}
 	}
