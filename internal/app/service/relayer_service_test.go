@@ -15,7 +15,8 @@ func TestRelayerService_List(t *testing.T) {
 			PageNum:  1,
 			PageSize: 10,
 		},
-		UseCount: false,
+		UseCount:    false,
+		RelayerName: "23A+B",
 	})
 	if err != nil {
 		t.Fatal(err.Error())

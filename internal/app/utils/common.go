@@ -185,3 +185,13 @@ func AddByDecimal(total, item string) (string, error) {
 	totalValue = totalValue.Add(itemValue)
 	return totalValue.String(), nil
 }
+
+func CheckRegexString(str string) string {
+	fbsStr := []string{"\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|"}
+	for _, ch := range fbsStr {
+		if strings.Contains(str, ch) {
+			str = strings.Replace(str, ch, "\\"+ch, -1)
+		}
+	}
+	return str
+}
