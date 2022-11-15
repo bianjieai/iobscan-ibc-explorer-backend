@@ -132,6 +132,8 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 }
 
 func (t *IbcRelayerCronTask) updateOneRelayerUpdateTime(one *entity.IBCRelayerNew) {
+	//更新channel_pair
+	handleRegisterRelayerChannelPair(one)
 	//更新relayer的updateTime
 	t.updateRelayerUpdateTime(one)
 	//更新channel的updateTime

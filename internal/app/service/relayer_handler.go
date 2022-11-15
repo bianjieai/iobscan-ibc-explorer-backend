@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"strings"
 	"time"
 
@@ -144,7 +145,7 @@ func (h *RelayerHandler) insertNewRelayer(relayerName string, nowDistRelayerIds 
 	servedChainSet := utils.NewStringSet()
 	for _, v := range nowDistRelayerIds {
 		chainA, addressA, chainB, addressB := entity.ParseDistRelayerId(v)
-		pairs, err := getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
+		pairs, err := repository.GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
 		if err != nil {
 			return err
 		}
@@ -192,7 +193,7 @@ func (h *RelayerHandler) updateRelayer(relayer *entity.IBCRelayerNew, nowDistRel
 		// 新增pair
 		needUpdate = true
 		chainA, addressA, chainB, addressB := entity.ParseDistRelayerId(v)
-		pairs, err := getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
+		pairs, err := repository.GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
 		if err != nil {
 			return err
 		}
@@ -218,41 +219,6 @@ func (h *RelayerHandler) updateRelayer(relayer *entity.IBCRelayerNew, nowDistRel
 		logrus.Infof("RelayerHandler update relayer %s succeed, %v", relayer.RelayerName, err)
 		return nil
 	}
-}
-
-// getChannelPairInfoByAddressPair 获取一对地址上的所有channel pair
-func getChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB string) ([]entity.ChannelPairInfo, error) {
-	addrChannels, err := relayerAddrChannelRepo.FindChannels([]string{addressA, addressB})
-	if err != nil {
-		return nil, err
-	}
-
-	chainAChannelMap := make(map[string]string)
-	chainBChannelMap := make(map[string]string)
-	for _, c := range addrChannels {
-		if c.RelayerAddress == addressA {
-			chainAChannelMap[c.Channel] = c.CounterPartyChannel
-		} else if c.RelayerAddress == addressB {
-			chainBChannelMap[c.Channel] = c.CounterPartyChannel
-		}
-	}
-
-	var res []entity.ChannelPairInfo
-	var channelMatched bool
-	for ch, cpch := range chainAChannelMap {
-		if ch2, _ := chainBChannelMap[cpch]; ch == ch2 { // channel match success
-			pairInfo := entity.GenerateChannelPairInfo(chainA, ch, addressA, chainB, cpch, addressB)
-			channelMatched = true
-			res = append(res, pairInfo)
-		}
-	}
-
-	if !channelMatched {
-		pairInfo := entity.GenerateChannelPairInfo(chainA, "", addressA, chainB, "", addressB)
-		res = append(res, pairInfo)
-	}
-
-	return res, nil
 }
 
 func (h *RelayerHandler) queryInfoJson(filepath string) (*vo.IobRegistryRelayerInfoResp, error) {

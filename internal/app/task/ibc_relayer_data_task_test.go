@@ -35,7 +35,7 @@ func TestRelayerDataTask_matchRegisterRelayerChannelPairInfo(t *testing.T) {
 }
 
 func Test_getRelayerStatisticData(t *testing.T) {
-	one, err := relayerRepo.FindOneByRelayerId("636df02a511ddac253083ff8")
+	one, err := relayerRepo.FindOneByRelayerId("637331e5db7541557af8e5b0")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -48,4 +48,12 @@ func Test_getRelayerStatisticData(t *testing.T) {
 
 func Test_doRegisterRelayer(t *testing.T) {
 	doRegisterRelayer(cache.TokenPriceMap())
+}
+
+func Test_handleRegisterRelayerChannelPair(t *testing.T) {
+	one, err := relayerRepo.FindOneByRelayerId("63735614bdb99a33d8a84329")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	handleRegisterRelayerChannelPair(one)
 }
