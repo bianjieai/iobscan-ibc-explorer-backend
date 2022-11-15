@@ -421,13 +421,14 @@ func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) 
 	for _, val := range addrPairInfo {
 		pairInfos, err := repository.GetChannelPairInfoByAddressPair(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
 		if err != nil {
-			logrus.Error("GetChannelPairInfoByAddressPair fail, " + err.Error())
+			logrus.Error("GetChannelPairInfoByAddressPair fail, "+err.Error(),
+				" chainA:", val.ChainA, " chainB:", val.ChainB, " chainAAddr:", val.ChainAAddress, " chainBAddr:", val.ChainBAddress)
 			continue
 		}
 		addrChannelPairInfos = append(addrChannelPairInfos, pairInfos...)
 	}
 
-	//存放新增的relayer
+	//存放新增的channel_pair
 	channelPairInfos := make([]entity.ChannelPairInfo, 0, len(addrPairInfo))
 	for _, val := range addrChannelPairInfos {
 		if !utils.InArray(pairIds, val.PairId) {
