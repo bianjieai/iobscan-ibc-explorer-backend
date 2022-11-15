@@ -77,7 +77,7 @@ func TestIbcRelayerCronTask_getUpdateTime(t *testing.T) {
 
 func Test_caculateRelayerTotalValue(t *testing.T) {
 	denomPrice := cache.TokenPriceMap()
-	one, err := relayerRepo.FindOneByRelayerId("6364f740177ccd71260b3fa0")
+	one, err := relayerRepo.FindOneByRelayerId("636de3ecbef5c58e42e3e2fa")
 	if err != nil {
 		t.Fatal(err.Error())
 	}

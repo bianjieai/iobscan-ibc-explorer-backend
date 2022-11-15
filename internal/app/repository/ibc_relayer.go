@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"strings"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -113,10 +115,14 @@ func (repo *IbcRelayerRepo) FindChannelPairInfos() ([]*entity.IBCRelayerNew, err
 }
 
 func (repo *IbcRelayerRepo) analyzeCond(relayerName, relayerAddr string) bson.M {
+	relayerName = strings.ReplaceAll(relayerName, " ", "")
+	relayerName = utils.CheckRegexString(relayerName)
+
 	filter := bson.M{}
 	if relayerName != "" {
 		filter[RelayerFieldeRelayerName] = bson.M{
-			"$regex": relayerName + ".*",
+			"$regex":   relayerName,
+			"$options": "$im",
 		}
 	}
 	if relayerAddr != "" {
