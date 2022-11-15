@@ -119,7 +119,7 @@ func doRegisterRelayer(denomPriceMap map[string]dto.CoinItem) {
 			return
 		}
 		for _, relayer := range relayers {
-			handleRegisterRelayerChannelPair(relayer)
+			handleRelayerChannelPair(relayer)
 			handleRegisterStatistic(denomPriceMap, relayer)
 		}
 		if len(relayers) < int(limit) {
@@ -129,9 +129,9 @@ func doRegisterRelayer(denomPriceMap map[string]dto.CoinItem) {
 	}
 }
 
-func handleRegisterRelayerChannelPair(relayer *entity.IBCRelayerNew) {
+func handleRelayerChannelPair(relayer *entity.IBCRelayerNew) {
 
-	channelPairs, change, err := matchRegisterRelayerChannelPairInfo(relayer.ChannelPairInfo)
+	channelPairs, change, err := matchRelayerChannelPairInfo(relayer.ChannelPairInfo)
 	if err != nil {
 		logrus.Error("match register relayer channel pair fail, ", err.Error())
 		return
@@ -414,8 +414,8 @@ func (t *RelayerDataTask) saveAndUpdateRelayer(newRelayerMap, dbRelayerMap []ent
 	return nil
 }
 
-//根据已注册的relayer的地址和链更新channel_pair_info
-func matchRegisterRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
+//根据relayer的地址和链更新channel_pair_info
+func matchRelayerChannelPairInfo(addrPairInfo []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
 	pairIds := getRelayerPairIds(addrPairInfo)
 	addrChannelPairInfos := make([]entity.ChannelPairInfo, 0, len(addrPairInfo))
 	for _, val := range addrPairInfo {
