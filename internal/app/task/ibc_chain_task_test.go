@@ -22,17 +22,17 @@ func TestMain(m *testing.M) {
 		DisableHTMLEscape: true,
 	})
 	cache.InitRedisClient(conf.Redis{
-		Addrs:    "127.0.0.1:6379",
+		Addrs:    "192.168.0.119:6379",
 		User:     "",
-		Password: "",
+		Password: "redisPassword",
 		Mode:     "single",
-		Db:       0,
+		Db:       4,
 	})
 	repository.InitMgo(conf.Mongo{
-		//Url: "mongodb://ibc:ibcpassword@192.168.0.135:27017/?authSource=iobscan-ibc",
+		Url: "mongodb://ibc:ibcpassword@192.168.0.135:27017/?authSource=iobscan-ibc",
 		//Url: "mongodb://ibcreader:idy45Eth@35.229.186.42:27017/?connect=direct&authSource=iobscan-ibc",
 		//Url: "mongodb://ibcreader:idy45Eth@34.80.213.223:27017/?connect=direct&authSource=iobscan_ibc",
-		Url:      "mongodb://ibc:ibcpassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc",
+		//Url:      "mongodb://ibc:ibcpassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc",
 		Database: "iobscan-ibc",
 	}, context.Background())
 

@@ -48,6 +48,7 @@ func (repo *TxRepo) GetFirstTx(chainId string) (*entity.Tx, error) {
 	return &res, err
 }
 
+// [Deprecated]
 func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, error) {
 	var res entity.Tx
 	//get relayer address by packet_id and acknowledge_packet or timeout_packet

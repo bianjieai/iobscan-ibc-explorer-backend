@@ -291,6 +291,7 @@ func (t *RelayerDataTask) createChannelPairInfoData(dto *dto.GetRelayerInfoDTO) 
 		ChainB:        dto.DcChainId,
 		ChannelA:      dto.ScChannel,
 		ChannelB:      dto.DcChannel,
+		ChainAAddress: dto.ScChainAddress,
 		ChainBAddress: dto.DcChainAddress,
 	}
 	return channelPairInfo
@@ -306,33 +307,6 @@ func checkNoExist(pairId string, data entity.IBCRelayerNew) bool {
 }
 
 func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.ChannelPairInfo) (map[string]entity.IBCRelayerNew, map[string]entity.IBCRelayerNew) {
-	//并发处理根据目标地址反查发起地址
-	dochannelPairInfos := func(workNum int, pairInfos []*entity.ChannelPairInfo, dowork func(one *entity.ChannelPairInfo) *entity.ChannelPairInfo) {
-		var wg sync.WaitGroup
-		wg.Add(workNum)
-		for i := 0; i < workNum; i++ {
-			num := i
-			go func(num int, pairInfos []*entity.ChannelPairInfo) {
-				defer wg.Done()
-				for id, v := range pairInfos {
-					if id%workNum != num {
-						continue
-					}
-					pairInfos[id] = dowork(v)
-				}
-			}(num, pairInfos)
-		}
-		wg.Wait()
-	}
-
-	dochannelPairInfos(5, channelPairInfos, func(one *entity.ChannelPairInfo) *entity.ChannelPairInfo {
-		addrs := getChannalPairInfo(*one)
-		if len(addrs) > 0 {
-			addrs = utils.DistinctSliceStr(addrs)
-			one.ChainAAddress = addrs[0]
-		}
-		return one
-	})
 
 	newRelayerMap := make(map[string]entity.IBCRelayerNew, 20)
 	dbRelayerMap := make(map[string]entity.IBCRelayerNew, 20)

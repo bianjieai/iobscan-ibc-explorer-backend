@@ -426,7 +426,8 @@ func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"relayer":     "$dc_tx_info.msg.msg.signer",
+				"sc_relayer":  "$refunded_tx_info.msg.msg.signer",
+				"dc_relayer":  "$dc_tx_info.msg.msg.signer",
 				"sc_chain_id": "$sc_chain_id",
 				"sc_channel":  "$sc_channel",
 				"dc_chain_id": "$dc_chain_id",
@@ -437,7 +438,8 @@ func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 	project := bson.M{
 		"$project": bson.M{
 			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
+			"sc_chain_address": "$_id.sc_relayer",
+			"dc_chain_address": "$_id.dc_relayer",
 			"sc_chain_id":      "$_id.sc_chain_id",
 			"dc_chain_id":      "$_id.dc_chain_id",
 			"sc_channel":       "$_id.sc_channel",
@@ -480,6 +482,7 @@ func (repo *ExIbcTxRepo) oneRelayerPacketCond(relayer *dto.GetRelayerInfoDTO) bs
 	}
 }
 
+// [Deprecated] todo remove this code
 func (repo *ExIbcTxRepo) GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error) {
 	var res entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), repo.oneRelayerPacketCond(dto)).
@@ -487,6 +490,7 @@ func (repo *ExIbcTxRepo) GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (
 	return res, err
 }
 
+// [Deprecated] todo remove this code
 func (repo *ExIbcTxRepo) GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error) {
 	var res entity.ExIbcTx
 	err := repo.collHistory().Find(context.Background(), repo.oneRelayerPacketCond(dto)).

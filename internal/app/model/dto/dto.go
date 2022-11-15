@@ -53,6 +53,7 @@ type RelayerFeeStatisticsDTO struct {
 }
 
 type GetRelayerInfoDTO struct {
+	ScChainAddress string `bson:"sc_chain_address"`
 	DcChainAddress string `bson:"dc_chain_address"`
 	ScChainId      string `bson:"sc_chain_id"`
 	ScChannel      string `bson:"sc_channel"`
