@@ -12,7 +12,7 @@ import (
 )
 
 type ITokenTraceRepo interface {
-	FindByBaseDenom(baseDenom, originChainId string) ([]*entity.IBCTokenTrace, error)
+	DelByBaseDenom(baseDenom, BaseDenomChainId string) error
 	BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, baseDenomChainId string) error
 	AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, error)
 	List(req *vo.IBCTokenListReq) ([]*entity.IBCTokenTrace, error)
@@ -28,13 +28,13 @@ func (repo *TokenTraceRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenTrace{}.CollectionName())
 }
 
-func (repo *TokenTraceRepo) FindByBaseDenom(baseDenom, chainId string) ([]*entity.IBCTokenTrace, error) {
-	var res []*entity.IBCTokenTrace
-	qurey := bson.M{"origional_id": chainId,
-		"base_denom": baseDenom,
+func (repo *TokenTraceRepo) DelByBaseDenom(baseDenom, baseDenomChainId string) error {
+	query := bson.M{
+		"base_denom":          baseDenom,
+		"base_denom_chain_id": baseDenomChainId,
 	}
-	err := repo.coll().Find(context.Background(), qurey).All(&res)
-	return res, err
+	_, err := repo.coll().RemoveAll(context.Background(), query)
+	return err
 }
 
 func (repo *TokenTraceRepo) BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, baseDenomChainId string) error {
