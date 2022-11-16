@@ -39,8 +39,6 @@ type IExIbcTxRepo interface {
 	GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetMinTxTime(isTargetHistory bool) (int64, error)
-	GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
-	GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error)
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	Aggr24hActiveChannels(startTime int64) ([]*dto.Aggr24hActiveChannelsDTO, error)
@@ -480,22 +478,6 @@ func (repo *ExIbcTxRepo) oneRelayerPacketCond(relayer *dto.GetRelayerInfoDTO) bs
 		"sc_channel":                relayer.ScChannel,
 		"dc_channel":                relayer.DcChannel,
 	}
-}
-
-// [Deprecated] todo remove this code
-func (repo *ExIbcTxRepo) GetOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error) {
-	var res entity.ExIbcTx
-	err := repo.coll().Find(context.Background(), repo.oneRelayerPacketCond(dto)).
-		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").Limit(1).One(&res)
-	return res, err
-}
-
-// [Deprecated] todo remove this code
-func (repo *ExIbcTxRepo) GetHistoryOneRelayerScTxPacketId(dto *dto.GetRelayerInfoDTO) (entity.ExIbcTx, error) {
-	var res entity.ExIbcTx
-	err := repo.collHistory().Find(context.Background(), repo.oneRelayerPacketCond(dto)).
-		Select(bson.M{"sc_tx_info.msg.msg.packet_id": 1}).Sort("-tx_time").Limit(1).One(&res)
-	return res, err
 }
 
 func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bson.M {
