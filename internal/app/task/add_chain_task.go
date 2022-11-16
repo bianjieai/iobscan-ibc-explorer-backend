@@ -100,7 +100,7 @@ func (t *AddChainTask) updateIbcTx(chainId string, chainConfig *entity.ChainConf
 
 			clientId := path.ClientId
 			var counterpartyClientId string
-			counterpartyChainId := path.ChainId
+			counterpartyChainId := path.Chain
 			counterpartyChannelId := path.Counterparty.ChannelId
 			cpChainCfg, ok := chainMap[counterpartyChainId]
 			if ok {

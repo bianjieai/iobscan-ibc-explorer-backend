@@ -20,7 +20,7 @@ func Test_checkAndUpdateLcd(t *testing.T) {
 	lcd := "https://api.sifchain.finance:443"
 	chainId := "sifchain_1"
 	ok := checkAndUpdateLcd(lcd, &entity.ChainConfig{
-		ChainId: chainId,
+		CurrentChainId: chainId,
 	})
 	t.Log(ok)
 }

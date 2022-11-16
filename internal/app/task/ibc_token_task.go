@@ -226,14 +226,14 @@ func (t *TokenTask) analyzeChainConf() error {
 	chainLcdApiMap := make(map[string]entity.ApiPath)
 	escrowAddressMap := make(map[string][]string)
 	for _, v := range configList {
-		chainIds = append(chainIds, v.ChainId)
-		chainLcdMap[v.ChainId] = v.Lcd
-		chainLcdApiMap[v.ChainId] = v.LcdApiPath
+		chainIds = append(chainIds, v.CurrentChainId)
+		chainLcdMap[v.CurrentChainId] = v.GrpcRestGateway
+		chainLcdApiMap[v.CurrentChainId] = v.LcdApiPath
 		address, err := t.analyzeChainEscrowAddress(v.IbcInfo, v.AddrPrefix)
 		if err != nil {
 			continue
 		}
-		escrowAddressMap[v.ChainId] = address
+		escrowAddressMap[v.CurrentChainId] = address
 	}
 	t.chainIds = chainIds
 	t.chainLcdMap = chainLcdMap
