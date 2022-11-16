@@ -21,6 +21,7 @@ import (
 )
 
 func Serve(cfg *conf.Config) {
+	time.Local = time.UTC
 	initCore(cfg)
 	defer repository.Close()
 

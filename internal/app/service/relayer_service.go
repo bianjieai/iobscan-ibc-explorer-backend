@@ -394,18 +394,18 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 			}
 		}
 
-		key := strconv.FormatInt(item.SegmentStartTime, 10)
+		key := time.Unix(item.SegmentStartTime, 0).Format(constant.DateFormat)
 		value, exist := segmentTxsValueMap[key]
 		if exist {
-			value.Amt = value.Amt.Add(baseDenomValue)
+			value.AmtValue = value.AmtValue.Add(baseDenomValue)
 			value.Txs += item.TotalTxs
 			segmentTxsValueMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChain,
-				Denom:   item.BaseDenom,
-				Txs:     item.TotalTxs,
-				Amt:     baseDenomValue,
+				ChainId:  item.BaseDenomChain,
+				Denom:    item.BaseDenom,
+				Txs:      item.TotalTxs,
+				AmtValue: baseDenomValue,
 			}
 			segmentTxsValueMap[key] = data
 		}
@@ -413,12 +413,12 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 
 	retData := make(vo.RelayerTrendResp, 0, len(segments))
 	for _, segment := range segments {
-		data, ok := segmentTxsValueMap[strconv.FormatInt(segment.StartTime, 10)]
+		data, ok := segmentTxsValueMap[segment.Date]
 		if ok {
 			item := vo.RelayerTrendDto{
 				Date:     segment.Date,
 				Txs:      data.Txs,
-				TxsValue: data.Amt.String(),
+				TxsValue: data.AmtValue.String(),
 			}
 			retData = append(retData, item)
 		} else {
