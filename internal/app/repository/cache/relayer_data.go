@@ -99,7 +99,7 @@ func (repo *RelayerDataCacheRepo) SetTotalRelayedValue(relayerId string, data *v
 	if err != nil {
 		return err
 	}
-	rc.Expire(ibcRelayerTotalRelayedValue, 2*oneHour)
+	rc.Expire(ibcRelayerTotalRelayedValue, 7*oneDay)
 	return nil
 }
 
@@ -128,7 +128,7 @@ func (repo *RelayerDataCacheRepo) SetTotalFeeCost(relayerId string, data *vo.Tot
 	if err != nil {
 		return err
 	}
-	rc.Expire(ibcRelayerTotalFeeCost, 2*oneHour)
+	rc.Expire(ibcRelayerTotalFeeCost, 7*oneDay)
 	return nil
 }
 
