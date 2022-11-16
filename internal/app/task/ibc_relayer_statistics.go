@@ -119,8 +119,8 @@ func (t *RelayerStatisticsTask) RunWithParam(chainId string, startTime, endTime 
 
 // flushCache 清除relayer相关缓存
 func (t *RelayerStatisticsTask) flushCache() {
-	_ = relayerDataCache.DelTotalFeeCost()
-	_ = relayerDataCache.DelTotalRelayedValue()
+	//_ = relayerDataCache.DelTotalFeeCost()
+	//_ = relayerDataCache.DelTotalRelayedValue()
 	_ = relayerDataCache.DelTransferTypeTxs()
 	_ = relayerDataCache.DelTotalTxs()
 	_ = relayerDataCache.DelRelayedTrend()

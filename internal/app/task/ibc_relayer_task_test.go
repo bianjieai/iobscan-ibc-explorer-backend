@@ -64,7 +64,7 @@ func TestIbcRelayerCronTask_getUpdateTime(t *testing.T) {
 //}
 //
 //func TestIbcRelayerCronTask_handleOneRelayerStatusAndTime(t *testing.T) {
-//	task.updateOneRelayerUpdateTime(&entity.IBCRelayer{
+//	task.updateOneRelayer(&entity.IBCRelayerNew{
 //		RelayerId:  "cf0fb3209ec3323c539e0e24c44e576d",
 //		ChainA:     "irishub_qa",
 //		ChainB:     "bigbang",
@@ -73,11 +73,10 @@ func TestIbcRelayerCronTask_getUpdateTime(t *testing.T) {
 //		UpdateTime: 0,
 //	}, 1656558771, 146, 0)
 //}
-//
 
 func Test_caculateRelayerTotalValue(t *testing.T) {
 	denomPrice := cache.TokenPriceMap()
-	one, err := relayerRepo.FindOneByRelayerId("636de3ecbef5c58e42e3e2fa")
+	one, err := relayerRepo.FindOneByRelayerId("63743d45e2427f9a04d8f42b")
 	if err != nil {
 		t.Fatal(err.Error())
 	}

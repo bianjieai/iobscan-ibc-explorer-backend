@@ -36,11 +36,6 @@ const (
 	apiClientState = "/ibc/core/channel/%s/channels/CHANNEL/ports/PORT/client_state"
 )
 
-// unbelievableLcd 不可信的lcd
-var unbelievableLcd = map[string][]string{
-	"sifchain_1": {"https://api.sifchain.chaintools.tech/"},
-}
-
 func NewMetricCronWorkStatus() metrics.Guage {
 	syncWorkStatusMetric := metrics.NewGuage(
 		"ibc_explorer_backend",
@@ -94,7 +89,7 @@ func lcdConnectionStatus(quit chan bool) {
 				return
 			}
 			for _, val := range chainCfgs {
-				if checkAndUpdateLcd(val.Lcd, val) {
+				if checkLcd(val.Lcd) {
 					lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
 				} else {
 					if switchLcd(val) {
@@ -114,12 +109,16 @@ func lcdConnectionStatus(quit chan bool) {
 	}
 }
 
-// checkAndUpdateLcd If lcd is ok, update db and return true. Else return false
-func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
-	unLcds, ex := unbelievableLcd[cf.ChainId]
-	if ex && utils.InArray(unLcds, lcd) {
+func checkLcd(lcd string) bool {
+	if _, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, v1Channels)); err != nil {
 		return false
 	}
+
+	return true
+}
+
+// checkAndUpdateLcd If lcd is ok, update db and return true. Else return false
+func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 	if resp, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, nodeInfo)); err == nil {
 		var data struct {
 			NodeInfo struct {

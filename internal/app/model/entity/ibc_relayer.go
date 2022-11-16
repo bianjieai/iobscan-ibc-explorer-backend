@@ -38,7 +38,7 @@ func (i IBCRelayerNew) CollectionName() string {
 }
 
 func (i ChannelPairInfo) Valid() bool {
-	return i.ChainA != "" && i.ChainB != "" && i.ChannelA != "" && i.ChannelB != "" && (i.ChainBAddress != "" || i.ChainAAddress != "")
+	return i.ChainA != "" && i.ChainB != "" && i.ChannelA != "" && i.ChannelB != "" && i.ChainBAddress != "" && i.ChainAAddress != ""
 }
 
 type ChannelPairInfoList []ChannelPairInfo

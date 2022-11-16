@@ -74,7 +74,7 @@ func (t *TokenTask) Run() int {
 		return -1
 	}
 
-	t.calculateTokenStatistics(existedTokenList, newTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
+	t.calculateTokenStatistics(existedTokenList, newTokenList, removedTokenList) // 此步计算ibc_token_statistics的数据，同时设置chains involved字段
 
 	// 更新数据到数据库
 	if err = tokenRepo.InsertBatch(newTokenList); err != nil {
@@ -491,7 +491,11 @@ func (t *TokenTask) getTokenScale(baseDenom, chain string) int {
 	return scale
 }
 
-func (t *TokenTask) calculateTokenStatistics(existedTokenList, newTokenList entity.IBCTokenList) {
+func (t *TokenTask) calculateTokenStatistics(existedTokenList, newTokenList, removedTokenList entity.IBCTokenList) {
+	for _, v := range removedTokenList {
+		t.ibcTokenTraceRemove(v)
+	}
+
 	for _, v := range existedTokenList {
 		chainNum, err := t.ibcTokenStatistics(v)
 		if err != nil {
@@ -513,6 +517,12 @@ func (t *TokenTask) calculateTokenStatistics(existedTokenList, newTokenList enti
 // ==============================================================================================================
 // ==============================================================================================================
 // 以下主要是对于ibc_token_statistics 集合数据的处理与计算
+
+func (t *TokenTask) ibcTokenTraceRemove(token *entity.IBCToken) {
+	if err := tokenTraceRepo.DelByBaseDenom(token.BaseDenom, token.ChainId); err != nil {
+		logrus.Errorf("task %s tokenTraceRepo.DelByBaseDenom error, %v", t.Name(), err)
+	}
+}
 
 func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error) {
 	ibcDenomCalculateList, err := denomCalculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
