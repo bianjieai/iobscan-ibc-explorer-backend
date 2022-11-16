@@ -1,12 +1,28 @@
 // ibc_chain表
-db.ibc_chain.createIndex({'chain_id': -1}, {background: true, unique: true});
+db.ibc_chain.createIndex({"chain": -1}, {background: true, unique: true});
 
 // chain_registry
 db.chain_registry.createIndex({
-    "chain_id": 1
+    "chain": 1
 }, {
     unique: true,
     background: true
+});
+
+db.getCollection("ibc_base_denom").createIndex({
+    "chain": 1,
+    "denom": 1
+}, {
+    background: true,
+    unique: true
+});
+
+db.getCollection("ibc_denom").createIndex({
+    "chain": 1,
+    "denom": 1
+}, {
+    background: true,
+    unique: true
 });
 
 // ibc_relayer表
@@ -86,14 +102,14 @@ db.ibc_channel_statistics.createIndex({
 
 db.ibc_token.createIndex({
     "base_denom": 1,
-    "chain_id": 1
+    "chain": 1
 }, {background: true, unique: true});
 
 // ibc_token_statistics表
 
 db.ibc_token_statistics.createIndex({
     "base_denom": 1,
-    "base_denom_chain_id": 1,
+    "base_denom_chain": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
@@ -104,7 +120,7 @@ db.ibc_token_statistics.createIndex({
 // ibc_token_trace表
 db.ibc_token_trace.createIndex({
     "denom": 1,
-    "chain_id": 1,
+    "chain": 1,
 }, {
     background: true,
     unique: true
@@ -113,7 +129,7 @@ db.ibc_token_trace.createIndex({
 // ibc_token_trace_statistics表
 db.ibc_token_trace_statistics.createIndex({
     "denom": 1,
-    "chain_id": 1,
+    "chain": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {

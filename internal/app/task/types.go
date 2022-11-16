@@ -88,14 +88,14 @@ var (
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 
-type chainQueueCoordinator struct {
-	chainQueue *utils.QueueString
+type stringQueueCoordinator struct {
+	stringQueue *utils.QueueString
 }
 
-func (coordinator *chainQueueCoordinator) getChain() (string, error) {
-	if coordinator.chainQueue == nil {
-		return "", fmt.Errorf("coordinator or chain queue is nil")
+func (coordinator *stringQueueCoordinator) getOne() (string, error) {
+	if coordinator.stringQueue == nil {
+		return "", fmt.Errorf("coordinator or string queue is nil")
 	}
 
-	return coordinator.chainQueue.Pop()
+	return coordinator.stringQueue.Pop()
 }

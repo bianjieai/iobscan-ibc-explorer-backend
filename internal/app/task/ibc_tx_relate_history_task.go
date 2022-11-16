@@ -13,7 +13,7 @@ type IbcTxRelateHistoryTask struct {
 }
 
 var _ Task = new(IbcTxRelateHistoryTask)
-var relateHistoryCoordinator *chainQueueCoordinator
+var relateHistoryCoordinator *stringQueueCoordinator
 
 func (t *IbcTxRelateHistoryTask) Name() string {
 	return "ibc_tx_relate_history_task"
@@ -45,8 +45,8 @@ func (t *IbcTxRelateHistoryTask) Run() int {
 	for _, v := range chainMap {
 		chainQueue.Push(v.ChainId)
 	}
-	relateHistoryCoordinator = &chainQueueCoordinator{
-		chainQueue: chainQueue,
+	relateHistoryCoordinator = &stringQueueCoordinator{
+		stringQueue: chainQueue,
 	}
 
 	workerNum := t.workerNum()

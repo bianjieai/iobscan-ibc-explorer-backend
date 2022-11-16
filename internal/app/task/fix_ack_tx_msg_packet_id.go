@@ -74,8 +74,8 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string, endHeightStr string) int 
 	for _, v := range newChainIds {
 		chainQueue.Push(v)
 	}
-	fixChainCoordinator := &chainQueueCoordinator{
-		chainQueue: chainQueue,
+	fixChainCoordinator := &stringQueueCoordinator{
+		stringQueue: chainQueue,
 	}
 
 	//handle chain
@@ -110,7 +110,7 @@ func (f FixAckTxPacketIdTask) handle(chainsStr string, endHeightStr string) int 
 		go func(wn string) {
 			defer waitGroup.Done()
 			for {
-				chainId, err := fixChainCoordinator.getChain()
+				chainId, err := fixChainCoordinator.getOne()
 				if err != nil {
 					logrus.Infof("task_name:%s chain_id %s worker %s exit", f.Name(), chainId, wn)
 					return

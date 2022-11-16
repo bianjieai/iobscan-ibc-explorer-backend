@@ -15,7 +15,7 @@ import (
 type RelayerStatisticsTask struct {
 }
 
-var relayerStatisticsCoordinator *chainQueueCoordinator
+var relayerStatisticsCoordinator *stringQueueCoordinator
 
 func (t *RelayerStatisticsTask) Name() string {
 	return "ibc_relayer_statistics_task"
@@ -38,8 +38,8 @@ func (t *RelayerStatisticsTask) Run() int {
 	for _, v := range chainMap {
 		chainQueue.Push(v.ChainId)
 	}
-	relayerStatisticsCoordinator = &chainQueueCoordinator{
-		chainQueue: chainQueue,
+	relayerStatisticsCoordinator = &stringQueueCoordinator{
+		stringQueue: chainQueue,
 	}
 
 	if err = relayerDenomStatisticsRepo.CreateNew(); err != nil {
@@ -145,7 +145,7 @@ type relayerStatisticsWorker struct {
 }
 
 func (w *relayerStatisticsWorker) getChain() (string, error) {
-	return relayerStatisticsCoordinator.getChain()
+	return relayerStatisticsCoordinator.getOne()
 }
 
 // exec 全量统计

@@ -20,6 +20,7 @@ type (
 		ChainId        string      `bson:"chain_id"`
 		Icon           string      `bson:"icon"`
 		ChainName      string      `bson:"chain_name"`
+		PrettyName     string      `bson:"pretty_name"`
 		LcdApiPath     ApiPath     `bson:"lcd_api_path"`
 		Lcd            string      `bson:"lcd"`
 		AddrPrefix     string      `bson:"addr_prefix"`

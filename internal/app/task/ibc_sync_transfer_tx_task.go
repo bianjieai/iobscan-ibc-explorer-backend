@@ -17,7 +17,7 @@ type IbcSyncTransferTxTask struct {
 }
 
 var _ Task = new(IbcSyncTransferTxTask)
-var transferTxCoordinator *chainQueueCoordinator
+var transferTxCoordinator *stringQueueCoordinator
 
 func (t *IbcSyncTransferTxTask) Name() string {
 	return "ibc_sync_transfer_tx_task"
@@ -49,8 +49,8 @@ func (t *IbcSyncTransferTxTask) Run() int {
 	for _, v := range chainMap {
 		chainQueue.Push(v.ChainId)
 	}
-	transferTxCoordinator = &chainQueueCoordinator{
-		chainQueue: chainQueue,
+	transferTxCoordinator = &stringQueueCoordinator{
+		stringQueue: chainQueue,
 	}
 
 	workerNum := t.workerNum()
@@ -89,7 +89,7 @@ type syncTransferTxWorker struct {
 func (w *syncTransferTxWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := transferTxCoordinator.getChain()
+		chainId, err := transferTxCoordinator.getOne()
 		if err != nil {
 			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break

@@ -32,4 +32,5 @@ var (
 	fixIbxTxTask                 task.FixIbxTxTask
 	ibcNodeLcdCronTask           task.IbcNodeLcdCronTask
 	ibcStatisticCronTask         task.IbcStatisticCronTask
+	modifyChainIdTask            task.ModifyChainIdTask
 )
