@@ -519,7 +519,7 @@ func (t *TokenTask) calculateTokenStatistics(existedTokenList, newTokenList, rem
 // 以下主要是对于ibc_token_statistics 集合数据的处理与计算
 
 func (t *TokenTask) ibcTokenTraceRemove(token *entity.IBCToken) {
-	if err := tokenTraceRepo.DelByBaseDenom(token.BaseDenom, token.ChainId); err != nil {
+	if err := tokenTraceRepo.DelByBaseDenom(token.BaseDenom, token.Chain); err != nil {
 		logrus.Errorf("task %s tokenTraceRepo.DelByBaseDenom error, %v", t.Name(), err)
 	}
 }
