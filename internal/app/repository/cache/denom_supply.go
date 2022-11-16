@@ -7,28 +7,28 @@ import (
 type DenomDataCacheRepo struct {
 }
 
-func (repo *DenomDataCacheRepo) SetSupply(chainId, denom, supply string) error {
-	_, err := rc.HSet(fmt.Sprintf(denomSupply, chainId), denom, supply)
+func (repo *DenomDataCacheRepo) SetSupply(chain, denom, supply string) error {
+	_, err := rc.HSet(fmt.Sprintf(denomSupply, chain), denom, supply)
 	return err
 }
 
-func (repo *DenomDataCacheRepo) GetSupply(chainId, denom string) (string, error) {
-	return rc.HGet(fmt.Sprintf(denomSupply, chainId), denom)
+func (repo *DenomDataCacheRepo) GetSupply(chain, denom string) (string, error) {
+	return rc.HGet(fmt.Sprintf(denomSupply, chain), denom)
 }
 
-func (repo *DenomDataCacheRepo) DelSupply(chainId string) (int64, error) {
-	return rc.Del(fmt.Sprintf(denomSupply, chainId))
+func (repo *DenomDataCacheRepo) DelSupply(chain string) (int64, error) {
+	return rc.Del(fmt.Sprintf(denomSupply, chain))
 }
 
-func (repo *DenomDataCacheRepo) SetTransferAmount(chainId string, amount map[string]string) error {
-	_, err := rc.HSet(fmt.Sprintf(denomTransAmount, chainId), amount)
+func (repo *DenomDataCacheRepo) SetTransferAmount(chain string, amount map[string]string) error {
+	_, err := rc.HSet(fmt.Sprintf(denomTransAmount, chain), amount)
 	return err
 }
 
-func (repo *DenomDataCacheRepo) GetTransferAmount(chainId, denom string) (string, error) {
-	return rc.HGet(fmt.Sprintf(denomTransAmount, chainId), denom)
+func (repo *DenomDataCacheRepo) GetTransferAmount(chain, denom string) (string, error) {
+	return rc.HGet(fmt.Sprintf(denomTransAmount, chain), denom)
 }
 
-func (repo *DenomDataCacheRepo) DelTransferAmount(chainId string) (int64, error) {
-	return rc.Del(fmt.Sprintf(denomTransAmount, chainId))
+func (repo *DenomDataCacheRepo) DelTransferAmount(chain string) (int64, error) {
+	return rc.Del(fmt.Sprintf(denomTransAmount, chain))
 }

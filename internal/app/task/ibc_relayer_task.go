@@ -31,7 +31,7 @@ type IbcRelayerCronTask struct {
 	relayerTxsDataMap map[string]dto.TxsAmtItem
 	//key:address+Chain+Channel
 	relayerValueMap map[string]decimal.Decimal
-	//key: BaseDenom+ChainId
+	//key: BaseDenom+Chain
 	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
 }
@@ -260,12 +260,12 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		return
 	}
 	for _, val := range res {
-		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
+		relayerCnt, err := relayerRepo.CountChainRelayers(val.Chain)
 		if err != nil {
 			logrus.Error("count relayers of chain fail, ", err.Error())
 			continue
 		}
-		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
+		if err := chainRepo.UpdateRelayers(val.Chain, relayerCnt); err != nil {
 			logrus.Error("update ibc_chain relayers fail, ", err.Error())
 		}
 	}

@@ -50,7 +50,7 @@ func (t *IbcTxRelateTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.ChainName)
 	}
 	relateCoordinator = &stringQueueCoordinator{
 		stringQueue: chainQueue,
@@ -94,23 +94,23 @@ type ibcTxRelateWorker struct {
 func (w *ibcTxRelateWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := w.getChain()
+		chain, err := w.getChain()
 		if err != nil {
 			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
-		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
-			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+		if cf, ok := w.chainMap[chain]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chain)
 			continue
 		}
 
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chain)
 		startTime := time.Now().Unix()
-		if err = w.relateTx(chainId); err != nil {
-			logrus.Errorf("task %s worker %s relate chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)
+		if err = w.relateTx(chain); err != nil {
+			logrus.Errorf("task %s worker %s relate chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chain, time.Now().Unix()-startTime, err)
 		} else {
-			logrus.Infof("task %s worker %s relate chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
+			logrus.Infof("task %s worker %s relate chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chain, time.Now().Unix()-startTime)
 		}
 	}
 }
@@ -122,7 +122,7 @@ func (w *ibcTxRelateWorker) getChain() (string, error) {
 	return relateCoordinator.getOne()
 }
 
-func (w *ibcTxRelateWorker) relateTx(chainId string) error {
+func (w *ibcTxRelateWorker) relateTx(chain string) error {
 	totalRelateTx := 0
 	//const limit = 500
 	maxParseTx := global.Config.Task.SingleChainIbcTxRelateMax
@@ -130,15 +130,15 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 		maxParseTx = defaultMaxHandlerTx
 	}
 
-	denomMap, err := w.getChainDenomMap(chainId)
+	denomMap, err := w.getChainDenomMap(chain)
 	if err != nil {
 		return err
 	}
 
 	for {
-		txList, err := w.getToBeRelatedTxs(chainId, constant.DefaultLimit)
+		txList, err := w.getToBeRelatedTxs(chain, constant.DefaultLimit)
 		if err != nil {
-			logrus.Errorf("task %s worker %s chain %s getToBeRelatedTxs error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s chain %s getToBeRelatedTxs error, %v", w.taskName, w.workerName, chain, err)
 			return err
 		}
 
@@ -146,7 +146,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 			return nil
 		}
 
-		w.handlerIbcTxs(chainId, txList, denomMap)
+		w.handlerIbcTxs(chain, txList, denomMap)
 
 		totalRelateTx += len(txList)
 		if len(txList) < constant.DefaultLimit || totalRelateTx >= maxParseTx {
@@ -305,18 +305,18 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 				if !isCrossBack {
 					dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
 					ibcDenom = &entity.IBCDenom{
-						Symbol:           "",
-						ChainId:          ibcTx.DcChainId,
-						Denom:            dcDenom,
-						PrevDenom:        ibcTx.Denoms.ScDenom,
-						PrevChainId:      ibcTx.ScChainId,
-						BaseDenom:        ibcTx.BaseDenom,
-						BaseDenomChainId: ibcTx.BaseDenomChainId,
-						DenomPath:        dcDenomPath,
-						IsBaseDenom:      false,
-						RootDenom:        rootDenom,
-						CreateAt:         time.Now().Unix(),
-						UpdateAt:         time.Now().Unix(),
+						Symbol:         "",
+						Chain:          ibcTx.DcChainId,
+						Denom:          dcDenom,
+						PrevDenom:      ibcTx.Denoms.ScDenom,
+						PrevChain:      ibcTx.ScChainId,
+						BaseDenom:      ibcTx.BaseDenom,
+						BaseDenomChain: ibcTx.BaseDenomChainId,
+						DenomPath:      dcDenomPath,
+						IsBaseDenom:    false,
+						RootDenom:      rootDenom,
+						CreateAt:       time.Now().Unix(),
+						UpdateAt:       time.Now().Unix(),
 					}
 				}
 			}
@@ -644,10 +644,10 @@ func (w *ibcTxRelateWorker) updateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) er
 	return ibcTxRepo.UpdateIbcTx(ibcTx, repaired)
 }
 
-func (w *ibcTxRelateWorker) getChainDenomMap(chainId string) (map[string]*entity.IBCDenom, error) {
-	denomList, err := denomRepo.FindByChainId(chainId)
+func (w *ibcTxRelateWorker) getChainDenomMap(chain string) (map[string]*entity.IBCDenom, error) {
+	denomList, err := denomRepo.FindByChain(chain)
 	if err != nil {
-		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chain, err)
 		return nil, err
 	}
 

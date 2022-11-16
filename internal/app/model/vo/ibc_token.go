@@ -30,11 +30,11 @@ type TokenItem struct {
 
 type IBCTokenListReq struct {
 	Page
-	BaseDenom        string                `json:"base_denom" form:"base_denom"`
-	BaseDenomChainId string                `json:"base_denom_chain_id" form:"base_denom_chain_id"`
-	Chain            string                `json:"chain" form:"chain"`
-	TokenType        entity.TokenTraceType `json:"token_type" form:"token_type"`
-	UseCount         bool                  `json:"use_count" form:"use_count"`
+	BaseDenom      string                `json:"base_denom" form:"base_denom"`
+	BaseDenomChain string                `json:"base_denom_chain" form:"base_denom_chain"`
+	Chain          string                `json:"chain" form:"chain"`
+	TokenType      entity.TokenTraceType `json:"token_type" form:"token_type"`
+	UseCount       bool                  `json:"use_count" form:"use_count"`
 }
 
 type IBCTokenListResp struct {

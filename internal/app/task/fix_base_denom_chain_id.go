@@ -70,9 +70,9 @@ func (t *FixBaseDenomChainIdTask) handle(isTargetHistory bool) {
 	const limit = 1000
 	var skip int64 = 0
 	for {
-		items, err := tokenStatisticsRepo.FindEmptyBaseDenomChainIdItems(skip, limit)
+		items, err := tokenStatisticsRepo.FindEmptyBaseDenomChainItems(skip, limit)
 		if err != nil {
-			logrus.Errorf("task %s FindEmptyBaseDenomChainIdItems error, %v", t.Name(), err)
+			logrus.Errorf("task %s FindEmptyBaseDenomChainItems error, %v", t.Name(), err)
 			return
 		}
 
@@ -112,7 +112,7 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 				_, _, denomFullPath, _, _ := parseTransferTxEvents(msgIndex, &tx)
 
 				ibcDenom := traceDenom(denomFullPath, ibcTx.ScChainId, t.chainMap)
-				if err = ibcTxRepo.UpdateBaseDenom(ibcTx.RecordId, ibcDenom.BaseDenom, ibcDenom.BaseDenomChainId, isTargetHistory); err != nil {
+				if err = ibcTxRepo.UpdateBaseDenom(ibcTx.RecordId, ibcDenom.BaseDenom, ibcDenom.BaseDenomChain, isTargetHistory); err != nil {
 					logrus.Errorf("task %s UpdateBaseDenom(recordId: %s) error, %v", t.Name(), ibcTx.RecordId, err)
 				}
 
@@ -125,18 +125,18 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 					if !isCrossBack { // transfer to next chain
 						dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
 						dcDenom := &entity.IBCDenom{
-							Symbol:           "",
-							ChainId:          ibcTx.DcChainId,
-							Denom:            ibcTx.Denoms.DcDenom,
-							PrevDenom:        ibcTx.Denoms.ScDenom,
-							PrevChainId:      ibcTx.ScChainId,
-							BaseDenom:        ibcDenom.BaseDenom,
-							BaseDenomChainId: ibcDenom.BaseDenomChainId,
-							DenomPath:        dcDenomPath,
-							RootDenom:        rootDenom,
-							IsBaseDenom:      false,
-							CreateAt:         time.Now().Unix(),
-							UpdateAt:         time.Now().Unix(),
+							Symbol:         "",
+							Chain:          ibcTx.DcChainId,
+							Denom:          ibcTx.Denoms.DcDenom,
+							PrevDenom:      ibcTx.Denoms.ScDenom,
+							PrevChain:      ibcTx.ScChainId,
+							BaseDenom:      ibcDenom.BaseDenom,
+							BaseDenomChain: ibcDenom.BaseDenomChain,
+							DenomPath:      dcDenomPath,
+							RootDenom:      rootDenom,
+							IsBaseDenom:    false,
+							CreateAt:       time.Now().Unix(),
+							UpdateAt:       time.Now().Unix(),
 						}
 
 						t.upsertDenom(dcDenom)
@@ -150,14 +150,14 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 }
 
 func (t *FixBaseDenomChainIdTask) upsertDenom(ibcDenom *entity.IBCDenom) {
-	_, ok := t.denomMap[fmt.Sprintf("%s%s", ibcDenom.ChainId, ibcDenom.Denom)]
+	_, ok := t.denomMap[fmt.Sprintf("%s%s", ibcDenom.Chain, ibcDenom.Denom)]
 	if !ok {
 		if err := denomRepo.Insert(ibcDenom); err != nil {
-			logrus.Errorf("task %s denomRepo.Insert error, chain_id: %s, denom: %s, %v", t.Name(), ibcDenom.ChainId, ibcDenom.Denom, err)
+			logrus.Errorf("task %s denomRepo.Insert error, chain_id: %s, denom: %s, %v", t.Name(), ibcDenom.Chain, ibcDenom.Denom, err)
 		}
 	} else {
 		if err := denomRepo.UpdateDenom(ibcDenom); err != nil {
-			logrus.Errorf("task %s denomRepo.UpdateDenom error, chain_id: %s, denom: %s, %v", t.Name(), ibcDenom.ChainId, ibcDenom.Denom, err)
+			logrus.Errorf("task %s denomRepo.UpdateDenom error, chain_id: %s, denom: %s, %v", t.Name(), ibcDenom.Chain, ibcDenom.Denom, err)
 		}
 	}
 }

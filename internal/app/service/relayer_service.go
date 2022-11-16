@@ -240,7 +240,7 @@ func (svc *RelayerService) DetailRelayerTxs(relayerId string, req *vo.DetailRela
 		return resp, errors.Wrap(err)
 	}
 	denomMap := make(map[string]*entity.IBCDenom, len(txs))
-	ibcDenoms, err := denomRepo.FindByChainId(req.Chain)
+	ibcDenoms, err := denomRepo.FindByChain(req.Chain)
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
@@ -341,7 +341,7 @@ func getTxDenomInfo(tx *entity.Tx, chain string, denomMap map[string]*entity.IBC
 			denomInfo.Denom = getMsgAmtDenom(msg)
 			denomInfo.DenomChain = chain
 			if data, ok := denomMap[denomInfo.Denom]; ok {
-				denomInfo.BaseDenomChain = data.BaseDenomChainId
+				denomInfo.BaseDenomChain = data.BaseDenomChain
 				denomInfo.BaseDenom = data.BaseDenom
 			}
 

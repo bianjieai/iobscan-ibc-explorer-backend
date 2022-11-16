@@ -47,7 +47,7 @@ func (t *IbcSyncTransferTxTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.ChainName)
 	}
 	transferTxCoordinator = &stringQueueCoordinator{
 		stringQueue: chainQueue,
@@ -89,23 +89,23 @@ type syncTransferTxWorker struct {
 func (w *syncTransferTxWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := transferTxCoordinator.getOne()
+		chain, err := transferTxCoordinator.getOne()
 		if err != nil {
 			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
-		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
-			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+		if cf, ok := w.chainMap[chain]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chain)
 			continue
 		}
 
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chain)
 		startTime := time.Now().Unix()
-		if err = w.parseChainIbcTx(chainId); err != nil {
-			logrus.Errorf("task %s worker %s parse chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)
+		if err = w.parseChainIbcTx(chain); err != nil {
+			logrus.Errorf("task %s worker %s parse chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chain, time.Now().Unix()-startTime, err)
 		} else {
-			logrus.Infof("task %s worker %s parse chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
+			logrus.Infof("task %s worker %s parse chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chain, time.Now().Unix()-startTime)
 		}
 	}
 }
@@ -223,7 +223,7 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			var baseDemom, baseDenomChainId string
 			if ibcDenom != nil {
 				baseDemom = ibcDenom.BaseDenom
-				baseDenomChainId = ibcDenom.BaseDenomChainId
+				baseDenomChainId = ibcDenom.BaseDenomChain
 			}
 			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
 			recordId := utils.Md5(recordIdStr)
@@ -339,10 +339,10 @@ func (w *syncTransferTxWorker) checkTaskRecord(chainId string) (*entity.IbcTaskR
 	return taskRecord, nil
 }
 
-func (w *syncTransferTxWorker) getChainDenomMap(chainId string) (map[string]*entity.IBCDenom, error) {
-	denomList, err := denomRepo.FindByChainId(chainId)
+func (w *syncTransferTxWorker) getChainDenomMap(chain string) (map[string]*entity.IBCDenom, error) {
+	denomList, err := denomRepo.FindByChain(chain)
 	if err != nil {
-		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chain, err)
 		return nil, err
 	}
 

@@ -116,7 +116,7 @@ func getAllChainMap() (map[string]*entity.ChainConfig, error) {
 
 	allChainMap := make(map[string]*entity.ChainConfig)
 	for _, v := range allChainList {
-		allChainMap[v.ChainId] = v
+		allChainMap[v.ChainName] = v
 	}
 
 	return allChainMap, err
@@ -191,17 +191,17 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 	rootDenom := getRootDenom(fullDenomPath)
 	if !strings.HasPrefix(denom, constant.IBCTokenPrefix) { // base denom
 		return &entity.IBCDenom{
-			ChainId:          chainId,
-			Denom:            denom,
-			PrevDenom:        "",
-			PrevChainId:      "",
-			BaseDenom:        denom,
-			BaseDenomChainId: chainId,
-			DenomPath:        "",
-			RootDenom:        rootDenom,
-			IsBaseDenom:      true,
-			CreateAt:         unix,
-			UpdateAt:         unix,
+			Chain:          chainId,
+			Denom:          denom,
+			PrevDenom:      "",
+			PrevChain:      "",
+			BaseDenom:      denom,
+			BaseDenomChain: chainId,
+			DenomPath:      "",
+			RootDenom:      rootDenom,
+			IsBaseDenom:    true,
+			CreateAt:       unix,
+			UpdateAt:       unix,
 		}
 	}
 
@@ -256,17 +256,17 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 	}
 
 	return &entity.IBCDenom{
-		ChainId:          chainId,
-		Denom:            denom,
-		PrevDenom:        prevDenom,
-		PrevChainId:      prevChainId,
-		BaseDenom:        baseDenom,
-		BaseDenomChainId: baseDenomChainId,
-		DenomPath:        denomPath,
-		RootDenom:        rootDenom,
-		IsBaseDenom:      isBaseDenom,
-		CreateAt:         unix,
-		UpdateAt:         unix,
+		Chain:          chainId,
+		Denom:          denom,
+		PrevDenom:      prevDenom,
+		PrevChain:      prevChainId,
+		BaseDenom:      baseDenom,
+		BaseDenomChain: baseDenomChainId,
+		DenomPath:      denomPath,
+		RootDenom:      rootDenom,
+		IsBaseDenom:    isBaseDenom,
+		CreateAt:       unix,
+		UpdateAt:       unix,
 	}
 }
 

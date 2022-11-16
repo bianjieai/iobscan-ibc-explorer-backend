@@ -173,7 +173,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 
 // switchLcd If Switch lcd succeeded, return true. Else return false
 func switchLcd(chainConf *entity.ChainConfig) bool {
-	chainRegistry, err := chainRegistryRepo.FindOne(chainConf.ChainId)
+	chainRegistry, err := chainRegistryRepo.FindOne(chainConf.ChainName)
 	if err != nil {
 		logrus.Errorf("lcd monitor error: %v", err)
 		return false

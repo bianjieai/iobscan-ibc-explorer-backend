@@ -244,19 +244,19 @@ func (w *fixDenomTraceDataWorker) fixData(startTime, endTime int64) {
 
 		for _, tx := range txList {
 			scDenom, dcDenom := w.parseDenom(tx)
-			if scDenom != nil && w.newDenomMap[fmt.Sprintf("%s%s", scDenom.ChainId, scDenom.Denom)] == nil {
+			if scDenom != nil && w.newDenomMap[fmt.Sprintf("%s%s", scDenom.Chain, scDenom.Denom)] == nil {
 				newDenomList = append(newDenomList, scDenom)
-				w.newDenomMap[fmt.Sprintf("%s%s", scDenom.ChainId, scDenom.Denom)] = scDenom
+				w.newDenomMap[fmt.Sprintf("%s%s", scDenom.Chain, scDenom.Denom)] = scDenom
 			}
-			if dcDenom != nil && w.newDenomMap[fmt.Sprintf("%s%s", dcDenom.ChainId, dcDenom.Denom)] == nil {
+			if dcDenom != nil && w.newDenomMap[fmt.Sprintf("%s%s", dcDenom.Chain, dcDenom.Denom)] == nil {
 				newDenomList = append(newDenomList, dcDenom)
-				w.newDenomMap[fmt.Sprintf("%s%s", dcDenom.ChainId, dcDenom.Denom)] = dcDenom
+				w.newDenomMap[fmt.Sprintf("%s%s", dcDenom.Chain, dcDenom.Denom)] = dcDenom
 			}
 
 			// update ibc tx
 			if scDenom != nil {
 				tx.BaseDenom = scDenom.BaseDenom
-				tx.BaseDenomChainId = scDenom.BaseDenomChainId
+				tx.BaseDenomChainId = scDenom.BaseDenomChain
 			}
 			if tx.CreateAt < fixCreateAtErrTime {
 				tx.CreateAt = tx.TxTime
@@ -336,18 +336,18 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 	DcDenomEntity, ok := w.denomMap[fmt.Sprintf("%s%s", tx.DcChainId, dcDenom)]
 	if ok {
 		dcDenomEntityNew = &entity.IBCDenom{
-			Symbol:           "",
-			ChainId:          tx.DcChainId,
-			Denom:            dcDenom,
-			PrevDenom:        tx.Denoms.ScDenom,
-			PrevChainId:      tx.ScChainId,
-			BaseDenom:        scDenomEntityNew.BaseDenom,
-			BaseDenomChainId: scDenomEntityNew.BaseDenomChainId,
-			DenomPath:        DcDenomEntity.DenomPath,
-			RootDenom:        scDenomEntityNew.RootDenom,
-			IsBaseDenom:      false,
-			CreateAt:         DcDenomEntity.CreateAt,
-			UpdateAt:         DcDenomEntity.UpdateAt,
+			Symbol:         "",
+			Chain:          tx.DcChainId,
+			Denom:          dcDenom,
+			PrevDenom:      tx.Denoms.ScDenom,
+			PrevChain:      tx.ScChainId,
+			BaseDenom:      scDenomEntityNew.BaseDenom,
+			BaseDenomChain: scDenomEntityNew.BaseDenomChain,
+			DenomPath:      DcDenomEntity.DenomPath,
+			RootDenom:      scDenomEntityNew.RootDenom,
+			IsBaseDenom:    false,
+			CreateAt:       DcDenomEntity.CreateAt,
+			UpdateAt:       DcDenomEntity.UpdateAt,
 		}
 	} else {
 		_ = storageCache.AddMissDenom(tx.RecordId, tx.ScChainId, scDenom)

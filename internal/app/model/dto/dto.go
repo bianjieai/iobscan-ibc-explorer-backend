@@ -6,14 +6,14 @@ import (
 )
 
 type CountBaseDenomTxsDTO struct {
-	BaseDenom        string `bson:"base_denom"`
-	BaseDenomChainId string `bson:"base_denom_chain_id"`
-	Count            int64  `bson:"count"`
+	BaseDenom      string `bson:"base_denom"`
+	BaseDenomChain string `bson:"base_denom_chain"`
+	Count          int64  `bson:"count"`
 }
 
-type GetDenomGroupByChainIdDTO struct {
-	ChainId string   `bson:"_id"`
-	Denom   []string `bson:"denom"`
+type GetDenomGroupByChainDTO struct {
+	Chain string   `bson:"_id"`
+	Denom []string `bson:"denom"`
 }
 
 type GetBaseDenomFromIbcDenomDTO struct {
@@ -27,7 +27,7 @@ type CountIBCTokenRecvTxsDTO struct {
 }
 
 type AggregateIBCChainDTO struct {
-	ChainId    string  `bson:"_id"`
+	Chain      string  `bson:"_id"`
 	DenomValue float64 `bson:"denom_value"`
 	Count      int64   `bson:"count"`
 }
@@ -180,7 +180,7 @@ type ChannelStatisticsAggrDTO struct {
 
 type TokenTraceStatisticsDTO struct {
 	Denom      string `bson:"denom"`
-	ChainId    string `bson:"chain_id"`
+	Chain      string `bson:"chain"`
 	ReceiveTxs int64  `bson:"receive_txs"`
 }
 

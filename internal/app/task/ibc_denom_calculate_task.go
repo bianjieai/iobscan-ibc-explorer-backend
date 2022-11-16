@@ -40,7 +40,7 @@ func (t *IbcDenomCalculateTask) Run() int {
 	}
 
 	for _, v := range baseDenomList {
-		chainConf, ok := chainConfMap[v.ChainId]
+		chainConf, ok := chainConfMap[v.Chain]
 		if ok {
 			_ = t.calculateDenom(v, chainConf)
 		}
@@ -75,7 +75,7 @@ func (t *IbcDenomCalculateTask) calculateDenom(baseDenom *entity.IBCBaseDenom, c
 		return nil
 	}
 
-	existedDenomMap, err := t.getExistedDenom(baseDenom.ChainId)
+	existedDenomMap, err := t.getExistedDenom(baseDenom.Chain)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (t *IbcDenomCalculateTask) calculateDenom(baseDenom *entity.IBCBaseDenom, c
 				Denom:     ibcHash,
 				DenomPath: denomPath,
 				ChainId:   path.ChainId,
-				ScChainId: baseDenom.ChainId,
+				ScChainId: baseDenom.Chain,
 				CreateAt:  time.Now().Unix(),
 				UpdateAt:  time.Now().Unix(),
 			})
@@ -111,7 +111,7 @@ func (t *IbcDenomCalculateTask) calculateDenom(baseDenom *entity.IBCBaseDenom, c
 		}
 	}
 
-	if err = denomCalculateRepo.InsertTransaction(newDenomList, baseDenom.Denom, baseDenom.ChainId, hashCode); err != nil {
+	if err = denomCalculateRepo.InsertTransaction(newDenomList, baseDenom.Denom, baseDenom.Chain, hashCode); err != nil {
 		logrus.Errorf("task %s InsertTransaction error, %v", t.Name(), err)
 		return err
 	}

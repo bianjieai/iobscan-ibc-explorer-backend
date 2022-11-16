@@ -399,7 +399,7 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	)
 	if strings.HasPrefix(ibcTx.Denoms.ScDenom, "ibc/") {
-		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.ScDenom, ibcTx.ScChainId)
+		denom, err := denomRepo.FindByDenomChain(ibcTx.Denoms.ScDenom, ibcTx.ScChainId)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
@@ -408,7 +408,7 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	}
 	if strings.HasPrefix(ibcTx.Denoms.DcDenom, "ibc/") {
-		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.DcDenom, ibcTx.DcChainId)
+		denom, err := denomRepo.FindByDenomChain(ibcTx.Denoms.DcDenom, ibcTx.DcChainId)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}

@@ -1,7 +1,7 @@
 package entity
 
 type IBCChain struct {
-	ChainId          string `bson:"chain_id"`
+	Chain            string `bson:"chain"`
 	ConnectedChains  int64  `bson:"connected_chains"`
 	Channels         int64  `bson:"channels"`
 	Relayers         int64  `bson:"relayers"`

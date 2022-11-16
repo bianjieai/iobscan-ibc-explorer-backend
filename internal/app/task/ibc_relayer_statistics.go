@@ -36,7 +36,7 @@ func (t *RelayerStatisticsTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.ChainName)
 	}
 	relayerStatisticsCoordinator = &stringQueueCoordinator{
 		stringQueue: chainQueue,
@@ -152,26 +152,26 @@ func (w *relayerStatisticsWorker) getChain() (string, error) {
 func (w *relayerStatisticsWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := w.getChain()
+		chain, err := w.getChain()
 		if err != nil {
 			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
-		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
-			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+		if cf, ok := w.chainMap[chain]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chain)
 			continue
 		}
 
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
-		firstTx, err := txRepo.GetFirstTx(chainId)
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chain)
+		firstTx, err := txRepo.GetFirstTx(chain)
 		if err != nil {
-			logrus.Errorf("task %s worker %s chain %s GetFirstTx err, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s chain %s GetFirstTx err, %v", w.taskName, w.workerName, chain, err)
 			continue
 		}
 
 		segments := segmentTool(segmentStepLatest, firstTx.Time, time.Now().Unix())
-		w.statistics(chainId, segments, opInsert)
+		w.statistics(chain, segments, opInsert)
 	}
 }
 
@@ -220,7 +220,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 		}
 
 		denomEntity := traceDenom(v.Denom, denomChain, w.chainMap)
-		dsmk := fmt.Sprintf("%s%s%d%s%s", v.Signer, v.TxType, v.Status, denomEntity.BaseDenom, denomEntity.BaseDenomChainId)
+		dsmk := fmt.Sprintf("%s%s%d%s%s", v.Signer, v.TxType, v.Status, denomEntity.BaseDenom, denomEntity.BaseDenomChain)
 		if _, ok := denomStatMap[dsmk]; ok {
 			denomStatMap[dsmk].RelayedAmount += v.DenomAmount
 			denomStatMap[dsmk].RelayedTxs += v.TxsCount
@@ -231,7 +231,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 				TxStatus:         entity.TxStatus(v.Status),
 				TxType:           entity.TxType(v.TxType),
 				BaseDenom:        denomEntity.BaseDenom,
-				BaseDenomChain:   denomEntity.BaseDenomChainId,
+				BaseDenomChain:   denomEntity.BaseDenomChain,
 				RelayedAmount:    v.DenomAmount,
 				RelayedTxs:       v.TxsCount,
 				SegmentStartTime: segment.StartTime,
