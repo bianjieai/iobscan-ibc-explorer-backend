@@ -121,7 +121,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		handleRelayers(5, relayers, t.updateOneRelayerUpdateTime)
+		handleRelayers(5, relayers, t.updateOneRelayer)
 
 		if len(relayers) < int(limit) {
 			break
@@ -130,7 +130,9 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	}
 }
 
-func (t *IbcRelayerCronTask) updateOneRelayerUpdateTime(one *entity.IBCRelayerNew) {
+func (t *IbcRelayerCronTask) updateOneRelayer(one *entity.IBCRelayerNew) {
+	//更新statistic
+	handleRelayerStatistic(t.denomPriceMap, one)
 	//更新channel_pair
 	handleRelayerChannelPair(one)
 	//更新relayer的updateTime
@@ -222,12 +224,14 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 		key := fmt.Sprintf("%s%s", item.FeeDenom, item.ChainId)
 		value, exist := relayerTxsAmtMap[key]
 		if exist {
+			value.Txs += item.TotalTxs
 			value.Amt = value.Amt.Add(decimal.NewFromFloat(item.Amount))
 			relayerTxsAmtMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
 				ChainId: item.ChainId,
 				Denom:   item.FeeDenom,
+				Txs:     item.TotalTxs,
 				Amt:     decimal.NewFromFloat(item.Amount),
 			}
 			relayerTxsAmtMap[key] = data

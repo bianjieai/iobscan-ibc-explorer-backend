@@ -105,13 +105,6 @@ type AggrRelayerTxTypeDTO struct {
 	TotalTxs int64  `bson:"total_txs"`
 }
 
-type AggrRelayerRelayedValueDTO struct {
-	BaseDenom      string  `bson:"base_denom"`
-	BaseDenomChain string  `bson:"base_denom_chain"`
-	Amount         float64 `bson:"amount"`
-	TotalTxs       int64   `bson:"total_txs"`
-}
-
 type CountRelayerBaseDenomAmtBySegmentDTO struct {
 	BaseDenom        string  `bson:"base_denom"`
 	BaseDenomChain   string  `bson:"base_denom_chain"`
@@ -120,15 +113,9 @@ type CountRelayerBaseDenomAmtBySegmentDTO struct {
 	TotalTxs         int64   `bson:"total_txs"`
 }
 
-type CountRelayerFeeDenomAmtDTO struct {
-	FeeDenom string  `bson:"fee_denom"`
-	ChainId  string  `bson:"chain_id"`
-	Amount   float64 `bson:"amount"`
-}
-
 type AggrRelayerTxsAmtDTo struct {
 	FeeDenom string  `bson:"fee_denom"`
-	Chain    string  `bson:"chain"`
+	ChainId  string  `bson:"chain_id"`
 	Amount   float64 `bson:"amount"`
 	TotalTxs int64   `bson:"total_txs"`
 }
@@ -236,6 +223,7 @@ type (
 		Denom      string
 		ChainId    string
 		Amt        decimal.Decimal
+		AmtValue   decimal.Decimal
 	}
 
 	CoinItem struct {
@@ -253,6 +241,8 @@ func CaculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsData
 		if coin, ok := denomPriceMap[key]; ok {
 			if coin.Scale > 0 {
 				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+				data.AmtValue = baseDenomValue
+				relayerTxsDataMap[key] = data
 			}
 		}
 		totalValue = totalValue.Add(baseDenomValue)

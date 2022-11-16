@@ -12,6 +12,7 @@ package task
 import (
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
@@ -120,7 +121,7 @@ func doRegisterRelayer(denomPriceMap map[string]dto.CoinItem) {
 		}
 		for _, relayer := range relayers {
 			handleRelayerChannelPair(relayer)
-			handleRegisterStatistic(denomPriceMap, relayer)
+			handleRelayerStatistic(denomPriceMap, relayer)
 		}
 		if len(relayers) < int(limit) {
 			break
@@ -145,7 +146,7 @@ func handleRelayerChannelPair(relayer *entity.IBCRelayerNew) {
 	return
 }
 
-func handleRegisterStatistic(denomPriceMap map[string]dto.CoinItem, relayer *entity.IBCRelayerNew) {
+func handleRelayerStatistic(denomPriceMap map[string]dto.CoinItem, relayer *entity.IBCRelayerNew) {
 	item := getRelayerStatisticData(denomPriceMap, relayer)
 	if err := relayerRepo.UpdateTxsInfo(item.RelayerId, item.RelayedTotalTxs, item.RelayedSuccessTxs,
 		item.RelayedTotalTxsValue, item.TotalFeeValue); err != nil {
@@ -370,15 +371,13 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 
 func (t *RelayerDataTask) saveAndUpdateRelayer(newRelayerMap, dbRelayerMap []entity.IBCRelayerNew) error {
 	for _, val := range dbRelayerMap {
-		item := getRelayerStatisticData(t.denomPriceMap, &val)
-		if err := relayerRepo.Update(item); err != nil {
+		if err := relayerRepo.Update(&val); err != nil {
 			return err
 		}
 	}
 	datas := make([]entity.IBCRelayerNew, 0, len(newRelayerMap))
 	for _, val := range newRelayerMap {
-		item := getRelayerStatisticData(t.denomPriceMap, &val)
-		datas = append(datas, *item)
+		datas = append(datas, val)
 	}
 	if len(datas) > 0 {
 		if err := relayerRepo.InsertBatch(datas); err != nil {
@@ -433,18 +432,52 @@ func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity
 	)
 	go func() {
 		defer wg.Done()
+		relayedFeeTotalTxs := int64(0)
 		relayerFeeAmt := AggrRelayerFeeAmt(data)
 		totalFeeValue = caculateRelayerTotalValue(denomPriceMap, relayerFeeAmt)
+		txsItem := make([]vo.DenomFeeItem, 0, len(relayerFeeAmt))
+		for _, val := range relayerFeeAmt {
+			relayedFeeTotalTxs += val.Txs
+			txsItem = append(txsItem, vo.DenomFeeItem{
+				Denom:      val.Denom,
+				DenomChain: val.ChainId,
+				Txs:        val.Txs,
+				FeeValue:   val.AmtValue.String(),
+			})
+		}
+		res := vo.TotalFeeCostResp{
+			TotalTxs:        relayedFeeTotalTxs,
+			TotalFeeValue:   totalFeeValue.String(),
+			TotalDenomCount: int64(len(txsItem)),
+			DenomList:       txsItem,
+		}
+		_ = relayerDataCache.SetTotalFeeCost(data.RelayerId, &res)
 	}()
 
 	go func() {
 		defer wg.Done()
 		relayerTxsAmt := AggrRelayerTxsAndAmt(data)
+		txsItem := make([]vo.DenomTxsItem, 0, len(relayerTxsAmt))
 		totalTxsValue = caculateRelayerTotalValue(denomPriceMap, relayerTxsAmt)
 		for _, val := range relayerTxsAmt {
+			txsItem = append(txsItem, vo.DenomTxsItem{
+				BaseDenom:      val.Denom,
+				BaseDenomChain: val.ChainId,
+				Txs:            val.Txs,
+				TxsValue:       val.AmtValue.String(),
+			})
 			relayedTotalTxs += val.Txs
 			relayedSuccessTxs += val.TxsSuccess
 		}
+
+		res := vo.TotalRelayedValueResp{
+			TotalTxs:        relayedTotalTxs,
+			TotalTxsValue:   totalTxsValue.String(),
+			TotalDenomCount: int64(len(txsItem)),
+			DenomList:       txsItem,
+		}
+		_ = relayerDataCache.SetTotalRelayedValue(data.RelayerId, &res)
+
 	}()
 	wg.Wait()
 	if !totalTxsValue.Equal(decimal.Zero) {
@@ -501,7 +534,9 @@ func (t *RelayerDataTask) aggrUnknowRelayerChannelPair() {
 		return
 	}
 	for _, val := range distRelayerMap {
-		err := relayerRepo.Update(val)
+		//caculate relayer statistic
+		item := getRelayerStatisticData(t.denomPriceMap, val)
+		err := relayerRepo.Update(item)
 		if err != nil {
 			logrus.Error(err.Error(), " relayerId:", val.RelayerId)
 		}

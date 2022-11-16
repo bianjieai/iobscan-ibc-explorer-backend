@@ -22,7 +22,7 @@ func TestRelayerDataTask_aggrUnknowRelayerChannelPair(t *testing.T) {
 	relayerDataTask.aggrUnknowRelayerChannelPair()
 }
 
-func TestRelayerDataTask_matchRegisterRelayerChannelPairInfo(t *testing.T) {
+func TestRelayerDataTask_matchRelayerChannelPairInfo(t *testing.T) {
 	addrPairs := []entity.ChannelPairInfo{
 		{ChainA: "qa_iris_snapshot", ChainAAddress: "iaa1vx32zg7aj62w906cwrjqhpv4xlsx4k4t4l6d2m", ChainB: "bigbang", ChainBAddress: "cosmos1vx32zg7aj62w906cwrjqhpv4xlsx4k4tqa6ug2"},
 		{ChainA: "qa_iris_snapshot", ChainAAddress: "iaa1fspgk7hu2ezlpasrf5tw4dwkrxmys8umtpum3a", ChainB: "bigbang", ChainBAddress: "cosmos1fspgk7hu2ezlpasrf5tw4dwkrxmys8um7ru2nv"},
