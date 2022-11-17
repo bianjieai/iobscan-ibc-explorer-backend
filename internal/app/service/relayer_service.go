@@ -247,7 +247,7 @@ func getMsgAmtDenom(msg *model.TxMsg) string {
 		}
 	case constant.MsgTypeRecvPacket:
 		packet := msg.RecvPacketMsg().Packet
-		dcPrefix := fmt.Sprintf("%s/%s", packet.DestinationPort, packet.DestinationChannel)
+		dcPrefix := fmt.Sprintf("%s/%s", packet.SourcePort, packet.SourceChannel)
 		if strings.HasPrefix(packet.Data.Denom, dcPrefix) {
 			arrs := strings.Split(packet.Data.Denom, "/")
 			if len(arrs) == 3 {
