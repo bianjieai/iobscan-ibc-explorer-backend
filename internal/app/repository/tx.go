@@ -11,7 +11,6 @@ import (
 
 type ITxRepo interface {
 	GetFirstTx(chainId string) (*entity.Tx, error)
-	GetRelayerScChainAddr(packetId, chainId string) (string, error)
 	GetUpdateTimeByUpdateClient(chainId, address, clientId string, startTime int64) (int64, error)
 	GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error)
 	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
@@ -31,6 +30,8 @@ type ITxRepo interface {
 		txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error)
 	CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd int64) (int64, error)
+
+	TestIndex(chainId string) error
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -46,26 +47,6 @@ func (repo *TxRepo) GetFirstTx(chainId string) (*entity.Tx, error) {
 	var res entity.Tx
 	err := repo.coll(chainId).Find(context.Background(), bson.M{}).Sort("time").One(&res)
 	return &res, err
-}
-
-func (repo *TxRepo) GetRelayerScChainAddr(packetId, chainId string) (string, error) {
-	var res entity.Tx
-	//get relayer address by packet_id and acknowledge_packet or timeout_packet
-	err := repo.coll(chainId).Find(context.Background(), bson.M{
-		"msgs.msg.packet_id": packetId,
-		"msgs.type": bson.M{ //filter ibc transfer
-			"$in": []string{constant.MsgTypeAcknowledgement, constant.MsgTypeTimeoutPacket},
-		},
-	}).Sort("-height").Limit(1).One(&res)
-	if len(res.DocTxMsgs) > 0 {
-		for _, msg := range res.DocTxMsgs {
-			cmsg := msg.CommonMsg()
-			if cmsg.PacketId == packetId {
-				return cmsg.Signer, nil
-			}
-		}
-	}
-	return "", err
 }
 
 // return value description
@@ -424,4 +405,11 @@ func (repo *TxRepo) GetRelayerTxs(chainId string, relayerAddrs []string, txTypes
 func (repo *TxRepo) CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
 	return repo.coll(chainId).Find(context.Background(), query).Hint("msgs.msg.signer_1_msgs.type_1_time_1").Count()
+}
+
+func (repo *TxRepo) TestIndex(chainId string) error {
+	var res []*entity.Tx
+	err2 := repo.coll(chainId).Find(context.Background(), bson.M{"time": 1}).Hint("time_-1_msgs.type_-1").All(&res)
+
+	return err2
 }

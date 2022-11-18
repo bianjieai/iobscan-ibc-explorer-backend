@@ -20,7 +20,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
@@ -30,7 +29,8 @@ type IbcRelayerCronTask struct {
 	//key:relayer_id
 	relayerTxsDataMap map[string]dto.TxsAmtItem
 	//key:address+Chain+Channel
-	relayerValueMap      map[string]decimal.Decimal
+	relayerValueMap map[string]decimal.Decimal
+	//key: BaseDenom+Chain
 	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
 }
@@ -121,7 +121,7 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 			logrus.Error("find relayer by page fail, ", err.Error())
 			return
 		}
-		handleRelayers(5, relayers, t.updateOneRelayerUpdateTime)
+		handleRelayers(5, relayers, t.updateOneRelayer)
 
 		if len(relayers) < int(limit) {
 			break
@@ -130,7 +130,11 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 	}
 }
 
-func (t *IbcRelayerCronTask) updateOneRelayerUpdateTime(one *entity.IBCRelayerNew) {
+func (t *IbcRelayerCronTask) updateOneRelayer(one *entity.IBCRelayerNew) {
+	//更新statistic
+	handleRelayerStatistic(t.denomPriceMap, one)
+	//更新channel_pair
+	handleRelayerChannelPair(one)
 	//更新relayer的updateTime
 	t.updateRelayerUpdateTime(one)
 	//更新channel的updateTime
@@ -226,6 +230,7 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 			data := dto.TxsAmtItem{
 				ChainId: item.ChainId,
 				Denom:   item.FeeDenom,
+				Txs:     item.TotalTxs,
 				Amt:     decimal.NewFromFloat(item.Amount),
 			}
 			relayerTxsAmtMap[key] = data
@@ -259,12 +264,12 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		return
 	}
 	for _, val := range res {
-		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
+		relayerCnt, err := relayerRepo.CountChainRelayers(val.Chain)
 		if err != nil {
 			logrus.Error("count relayers of chain fail, ", err.Error())
 			continue
 		}
-		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
+		if err := chainRepo.UpdateRelayers(val.Chain, relayerCnt); err != nil {
 			logrus.Error("update ibc_chain relayers fail, ", err.Error())
 		}
 	}
@@ -438,97 +443,4 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 
 	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
-}
-
-//func checkAndUpdateRelayerSrcChainAddr() {
-//	skip := int64(0)
-//	limit := int64(500)
-//	startTimeA := time.Now().Unix()
-//	for {
-//		relayers, err := relayerRepo.FindEmptyAddrAll(skip, limit)
-//		if err != nil {
-//			logrus.Error("find relayer by page fail, ", err.Error())
-//			return
-//		}
-//		for _, relayer := range relayers {
-//			for i, val := range relayer.ChannelPairInfo {
-//				if val.ChainAAddress == "" {
-//					addrs := getChannalPairInfo(val)
-//					if len(addrs) > 0 {
-//						addrs = utils.DistinctSliceStr(addrs)
-//						val.ChainAAddress = addrs[0]
-//					}
-//				}
-//				relayer.ChannelPairInfo[i] = val
-//			}
-//			if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil && !qmgo.IsDup(err) {
-//				logrus.Error("Update Src Address failed, " + err.Error())
-//			}
-//		}
-//		if len(relayers) < int(limit) {
-//			break
-//		}
-//		skip += limit
-//	}
-//	logrus.Infof("cronjob execute checkAndUpdateRelayerSrcChainAddr finished, time use %d(s)", time.Now().Unix()-startTimeA)
-//}
-
-//根据目标地址反查发起地址
-func getChannalPairInfo(pair entity.ChannelPairInfo) []string {
-	var (
-		addrs, historyAddrs []string
-	)
-	addrs = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-		ScChainId:      pair.ChainA,
-		ScChannel:      pair.ChannelA,
-		DcChainId:      pair.ChainB,
-		DcChannel:      pair.ChannelB,
-		DcChainAddress: pair.ChainBAddress,
-	}, false)
-	if len(addrs) > 0 {
-		addrs = utils.DistinctSliceStr(addrs)
-		return addrs
-	}
-
-	historyAddrs = getSrcChainAddress(&dto.GetRelayerInfoDTO{
-		ScChainId:      pair.ChainA,
-		ScChannel:      pair.ChannelA,
-		DcChainId:      pair.ChainB,
-		DcChannel:      pair.ChannelB,
-		DcChainAddress: pair.ChainBAddress,
-	}, true)
-
-	if len(historyAddrs) > 0 {
-		historyAddrs = utils.DistinctSliceStr(historyAddrs)
-	}
-	return addrs
-}
-func getSrcChainAddress(info *dto.GetRelayerInfoDTO, historyData bool) []string {
-	//查询relayer在原链所有地址
-	var (
-		chainAAddress []string
-		msgPacketId   string
-	)
-
-	if historyData {
-		ibcTx, err := ibcTxRepo.GetHistoryOneRelayerScTxPacketId(info)
-		if err == nil {
-			msgPacketId = ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-		}
-	} else {
-		ibcTx, err := ibcTxRepo.GetOneRelayerScTxPacketId(info)
-		if err == nil {
-			msgPacketId = ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-		}
-	}
-	if msgPacketId != "" {
-		scAddr, err := txRepo.GetRelayerScChainAddr(msgPacketId, info.ScChainId)
-		if err != nil && err != qmgo.ErrNoSuchDocuments {
-			logrus.Errorf("get srAddr relayer packetId fail, %s", err.Error())
-		}
-		if scAddr != "" {
-			chainAAddress = append(chainAAddress, scAddr)
-		}
-	}
-	return chainAAddress
 }

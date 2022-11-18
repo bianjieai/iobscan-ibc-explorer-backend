@@ -50,7 +50,7 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 	for _, v := range list {
 		items = append(items, vo.TokenItem{
 			BaseDenom:         v.BaseDenom,
-			Chain:             v.ChainId,
+			Chain:             v.Chain,
 			TokenType:         v.Type,
 			Supply:            v.Supply,
 			Currency:          v.Currency,
@@ -137,7 +137,7 @@ func (svc *TokenService) IBCTokenList(req *vo.IBCTokenListReq) (*vo.IBCTokenList
 		items = append(items, vo.IBCTokenItem{
 			Denom:      v.Denom,
 			DenomPath:  v.DenomPath,
-			Chain:      v.ChainId,
+			Chain:    v.Chain,
 			TokenType:  v.Type,
 			IBCHops:    v.IBCHops,
 			Amount:     v.DenomAmount,

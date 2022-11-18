@@ -45,7 +45,7 @@ func (t *IbcChainCronTask) Run() int {
 }
 func createChainData(chainId string, channels int, conntectedChains int) entity.IBCChain {
 	return entity.IBCChain{
-		ChainId:         chainId,
+		Chain:           chainId,
 		Channels:        int64(channels),
 		ConnectedChains: int64(conntectedChains),
 		CreateAt:        time.Now().Unix(),

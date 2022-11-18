@@ -79,7 +79,7 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			query.BaseDenom = tokens
 		} else {
 			query.BaseDenom = []string{req.BaseDenom}
-			query.BaseDenomChainId = req.BaseDenomChain
+			query.BaseDenomChain = req.BaseDenomChain
 		}
 	} else if req.Denom != "" {
 		query.Denom = req.Denom
@@ -91,7 +91,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	if len(query.ChainId) > 2 {
+	if len(query.Chain) > 2 {
 		return nil, errors.WrapBadRequest(fmt.Errorf("invalid chain id"))
 	}
 
@@ -106,7 +106,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 			return count
 		}
 		//default cond
-		if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
+		if len(query.Chain) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
 			data, err2 := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
 			if err2 != nil {
 				txsCountChan <- &vo.TxsCountChanDTO{Count: 0, Err: err2}
@@ -125,9 +125,9 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 
 	// 计算交易价值
 	go func() {
-		if (len(query.ChainId) == 0) ||
-			(len(query.ChainId) == 1 && query.ChainId[0] == constant.AllChain) ||
-			(query.ChainId[0] == constant.AllChain && query.ChainId[1] == constant.AllChain) {
+		if (len(query.Chain) == 0) ||
+			(len(query.Chain) == 1 && query.Chain[0] == constant.AllChain) ||
+			(query.Chain[0] == constant.AllChain && query.Chain[1] == constant.AllChain) {
 			txsValueChan <- &vo.TxsValueChanDTO{Value: "", Err: nil}
 			return
 		}
@@ -170,7 +170,7 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
-	if len(query.ChainId) > 2 {
+	if len(query.Chain) > 2 {
 		return resp, nil
 	}
 	res, err := ibcTxRepo.FindTransferTxs(query, skip, limit)
@@ -211,11 +211,11 @@ func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp,
 		setMap[val.RecordId] = struct{}{}
 
 		item := t.detailDto.LoadDto(val)
-		if val.ScChainId != "" && val.ScTxInfo != nil && val.ScTxInfo.Hash != "" {
-			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChainId, val.ScTxInfo.Hash, packetId)
+		if val.ScChain != "" && val.ScTxInfo != nil && val.ScTxInfo.Hash != "" {
+			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChain, val.ScTxInfo.Hash, packetId)
 		}
-		if val.DcChainId != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
-			item.DcConnect, item.Ack, item.DcSigners = getDcTxInfo(val.DcChainId, val.DcTxInfo.Hash, packetId)
+		if val.DcChain != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
+			item.DcConnect, item.Ack, item.DcSigners = getDcTxInfo(val.DcChain, val.DcTxInfo.Hash, packetId)
 		}
 		resp.Items = append(resp.Items, item)
 	}
@@ -356,9 +356,9 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 		scRelayerAddr := val.RefundedTxInfo.Msg.CommonMsg().Signer
 		relayerInfo.ScRelayer.RelayerAddr = scRelayerAddr
 	}
-	chainA, _ := entity.ConfirmRelayerPair(val.ScChainId, val.DcChainId)
+	chainA, _ := entity.ConfirmRelayerPair(val.ScChain, val.DcChain)
 	matchInfo := strings.Join([]string{relayerInfo.ScRelayer.RelayerAddr, relayerInfo.DcRelayer.RelayerAddr}, ":")
-	if chainA != val.ScChainId {
+	if chainA != val.ScChain {
 		matchInfo = strings.Join([]string{relayerInfo.DcRelayer.RelayerAddr, relayerInfo.ScRelayer.RelayerAddr}, ":")
 	}
 	if value, ok := relayerMap[matchInfo]; ok {
@@ -399,7 +399,7 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	)
 	if strings.HasPrefix(ibcTx.Denoms.ScDenom, "ibc/") {
-		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.ScDenom, ibcTx.ScChainId)
+		denom, err := denomRepo.FindByDenomChain(ibcTx.Denoms.ScDenom, ibcTx.ScChain)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
@@ -408,7 +408,7 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	}
 	if strings.HasPrefix(ibcTx.Denoms.DcDenom, "ibc/") {
-		denom, err := denomRepo.FindByDenomChainId(ibcTx.Denoms.DcDenom, ibcTx.DcChainId)
+		denom, err := denomRepo.FindByDenomChain(ibcTx.Denoms.DcDenom, ibcTx.DcChain)
 		if err != nil && err != qmgo.ErrNoSuchDocuments {
 			return nil, err
 		}
@@ -417,11 +417,11 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	}
 	return &vo.TokenInfo{
-		BaseDenom:      ibcTx.BaseDenom,
-		BaseDenomChain: ibcTx.BaseDenomChainId,
-		Amount:         ibcTx.ScTxInfo.MsgAmount.Amount,
-		SendToken:      sendToken,
-		RecvToken:      recvToken,
+		BaseDenom:        ibcTx.BaseDenom,
+		BaseDenomChain: ibcTx.BaseDenomChain,
+		Amount:           ibcTx.ScTxInfo.MsgAmount.Amount,
+		SendToken:        sendToken,
+		RecvToken:        recvToken,
 	}, nil
 }
 

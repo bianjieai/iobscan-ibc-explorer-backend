@@ -10,6 +10,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -143,3 +144,9 @@ func GetDatabase() *qmgo.Database {
 //		}
 //	}
 //}
+
+func CustomerUpdateAll(collName string, ctx context.Context, filter bson.M, update bson.M) error {
+	coll := mgo.Database(ibcDatabase).Collection(collName)
+	_, err := coll.UpdateAll(ctx, filter, update)
+	return err
+}

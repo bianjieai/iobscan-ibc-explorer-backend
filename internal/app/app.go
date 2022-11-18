@@ -21,6 +21,7 @@ import (
 )
 
 func Serve(cfg *conf.Config) {
+	time.Local = time.UTC
 	initCore(cfg)
 	defer repository.Close()
 
@@ -90,7 +91,6 @@ func startTask() {
 		&task.IbcStatisticCronTask{},
 		&task.IbcSyncAcknowledgeTxTask{},
 		&task.IbcChainConfigTask{},
-		&task.IbcDenomCalculateTask{},
 		&task.IbcDenomUpdateTask{},
 		&task.IbcSyncTransferTxTask{},
 		&task.IbcTxRelateTask{},

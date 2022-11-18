@@ -48,7 +48,7 @@ func (t *IbcDenomUpdateTask) getBaseDenomSysbolMap() (map[string]string, error) 
 
 	denomSymbolMap := make(map[string]string, len(baseDenomList))
 	for _, v := range baseDenomList {
-		denomSymbolMap[fmt.Sprintf("%s%s", v.ChainId, v.Denom)] = v.Symbol
+		denomSymbolMap[fmt.Sprintf("%s%s", v.Chain, v.Denom)] = v.Symbol
 	}
 	return denomSymbolMap, nil
 }
@@ -61,9 +61,9 @@ func (t *IbcDenomUpdateTask) handleIbcDenoms(denomSymbolMap map[string]string) e
 	}
 
 	for _, v := range denomList {
-		symbol, ok := denomSymbolMap[fmt.Sprintf("%s%s", v.BaseDenomChainId, v.BaseDenom)]
+		symbol, ok := denomSymbolMap[fmt.Sprintf("%s%s", v.BaseDenomChain, v.BaseDenom)]
 		if ok {
-			if err = denomRepo.UpdateSymbol(v.ChainId, v.Denom, symbol); err != nil {
+			if err = denomRepo.UpdateSymbol(v.Chain, v.Denom, symbol); err != nil {
 				logrus.Errorf("task %s UpdateSymbol error, %v", t.Name(), err)
 			}
 		}

@@ -477,11 +477,11 @@ func (t *modifyChainConfigTask) UpdateChainConfig(config _chainConfig) error {
 			item := loadChannelPath(path)
 			chain, ok := t.chainVerCfgMap[_formatChainId(path.ChainId)]
 			if !ok {
-				return fmt.Errorf("ChainId[%s] no found in chain_version_config", _formatChainId(path.ChainId))
+				return fmt.Errorf("Chain[%s] no found in chain_version_config", _formatChainId(path.ChainId))
 			}
 			scChain, ok := t.chainVerCfgMap[_formatChainId(path.ScChainId)]
 			if !ok {
-				return fmt.Errorf("ScChainId[%s] no found in chain_version_config", _formatChainId(path.ScChainId))
+				return fmt.Errorf("ScChain[%s] no found in chain_version_config", _formatChainId(path.ScChainId))
 			}
 			item.ScChain = scChain
 			item.Chain = chain
@@ -490,7 +490,7 @@ func (t *modifyChainConfigTask) UpdateChainConfig(config _chainConfig) error {
 
 		chain, ok := t.chainVerCfgMap[_formatChainId(val.ChainId)]
 		if !ok {
-			return fmt.Errorf("ChainId[%s] no found in chain_version_config", _formatChainId(val.ChainId))
+			return fmt.Errorf("Chain[%s] no found in chain_version_config", _formatChainId(val.ChainId))
 		}
 		ibcInfo := &entity.IbcInfo{
 			Chain: chain,

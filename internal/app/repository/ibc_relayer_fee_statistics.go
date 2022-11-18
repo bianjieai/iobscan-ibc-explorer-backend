@@ -18,8 +18,7 @@ type IRelayerFeeStatisticsRepo interface {
 	InsertMany(batch []*entity.IBCRelayerFeeStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerFeeStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
-	AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error)
-	AggrFeeTxsAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error)
+	AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error)
 }
 
 var _ IRelayerFeeStatisticsRepo = new(RelayerFeeStatisticsRepo)
@@ -97,7 +96,7 @@ func (repo *RelayerFeeStatisticsRepo) BatchSwap(chain string, segmentStartTime, 
 	return err
 }
 
-func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.CountRelayerFeeDenomAmtDTO, error) {
+func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error) {
 	match := bson.M{
 		"$match": bson.M{
 			"relayer_address": bson.M{"$in": relayAddrs},
@@ -112,38 +111,6 @@ func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string
 			"amount": bson.M{
 				"$sum": "$fee_amount",
 			},
-		},
-	}
-	project := bson.M{
-		"$project": bson.M{
-			"_id":       0,
-			"fee_denom": "$_id.fee_denom",
-			"chain_id":  "$_id.statistics_chain",
-			"amount":    "$amount",
-		},
-	}
-	var pipe []bson.M
-	pipe = append(pipe, match, group, project)
-	var res []*dto.CountRelayerFeeDenomAmtDTO
-	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *RelayerFeeStatisticsRepo) AggrFeeTxsAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error) {
-	match := bson.M{
-		"$match": bson.M{
-			"relayer_address": bson.M{"$in": relayAddrs},
-		},
-	}
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"fee_denom": "$fee_denom",
-				"chain":     "$statistics_chain",
-			},
-			"amount": bson.M{
-				"$sum": "$fee_amount",
-			},
 			"total_txs": bson.M{
 				"$sum": "$relayed_txs",
 			},
@@ -153,7 +120,7 @@ func (repo *RelayerFeeStatisticsRepo) AggrFeeTxsAmt(relayAddrs []string) ([]*dto
 		"$project": bson.M{
 			"_id":       0,
 			"fee_denom": "$_id.fee_denom",
-			"chain":     "$_id.chain",
+			"chain_id":  "$_id.statistics_chain",
 			"amount":    "$amount",
 			"total_txs": "$total_txs",
 		},

@@ -76,16 +76,16 @@ func (t *IbcStatisticCronTask) updateChains() error {
 	chainIdMap := make(map[string]struct{}, len(chainDtos))
 	var chainIds []string
 	for _, val := range chainDtos {
-		if val.ScChainId != "" {
-			if _, exist := chainIdMap[val.ScChainId]; !exist {
-				chainIds = append(chainIds, val.ScChainId)
-				chainIdMap[val.ScChainId] = struct{}{}
+		if val.ScChain != "" {
+			if _, exist := chainIdMap[val.ScChain]; !exist {
+				chainIds = append(chainIds, val.ScChain)
+				chainIdMap[val.ScChain] = struct{}{}
 			}
 		}
-		if val.DcChainId != "" {
-			if _, exist := chainIdMap[val.DcChainId]; !exist {
-				chainIds = append(chainIds, val.DcChainId)
-				chainIdMap[val.DcChainId] = struct{}{}
+		if val.DcChain != "" {
+			if _, exist := chainIdMap[val.DcChain]; !exist {
+				chainIds = append(chainIds, val.DcChain)
+				chainIdMap[val.DcChain] = struct{}{}
 			}
 		}
 	}
@@ -307,8 +307,8 @@ func (t *IbcStatisticCronTask) updateChannelAndChains24h() error {
 	setChannelMap := make(map[string]struct{}, len(channelDtos))
 	count := int64(0)
 	for _, val := range channelDtos {
-		channelIdPrefix := fmt.Sprintf("%s|%s", val.ScChainId, val.ScChannel)
-		channelIdEndwith := fmt.Sprintf("%s|%s", val.DcChainId, val.DcChannel)
+		channelIdPrefix := fmt.Sprintf("%s|%s", val.ScChain, val.ScChannel)
+		channelIdEndwith := fmt.Sprintf("%s|%s", val.DcChain, val.DcChannel)
 		_, existPrefix := setChannelMap[channelIdPrefix]
 		_, existEndWith := setChannelMap[channelIdEndwith]
 		if !existEndWith && !existPrefix {

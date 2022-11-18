@@ -19,7 +19,7 @@ type ITokenStatisticsRepo interface {
 	BatchInsert(batch []*entity.IBCTokenStatistics) error
 	BatchInsertToNew(batch []*entity.IBCTokenStatistics) error
 	Aggr() ([]*dto.CountBaseDenomTxsDTO, error)
-	FindEmptyBaseDenomChainIdItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error)
+	FindEmptyBaseDenomChainItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error)
 }
 
 var _ ITokenStatisticsRepo = new(TokenStatisticsRepo)
@@ -37,7 +37,7 @@ func (repo *TokenStatisticsRepo) collNew() *qmgo.Collection {
 
 func (repo *TokenStatisticsRepo) CreateNew() error {
 	indexOpts := officialOpts.Index().SetUnique(true)
-	key := []string{"base_denom", "base_denom_chain_id", "-segment_start_time", "-segment_end_time"}
+	key := []string{"base_denom", "base_denom_chain", "-segment_start_time", "-segment_end_time"}
 	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
 }
 
@@ -94,8 +94,8 @@ func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
 			},
 			"count": bson.M{
 				"$sum": "$transfer_txs",
@@ -105,10 +105,10 @@ func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 
 	project := bson.M{
 		"$project": bson.M{
-			"_id":                 0,
-			"base_denom":          "$_id.base_denom",
-			"base_denom_chain_id": "$_id.base_denom_chain_id",
-			"count":               "$count",
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"count":            "$count",
 		},
 	}
 
@@ -119,8 +119,8 @@ func (repo *TokenStatisticsRepo) Aggr() ([]*dto.CountBaseDenomTxsDTO, error) {
 	return res, err
 }
 
-func (repo *TokenStatisticsRepo) FindEmptyBaseDenomChainIdItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error) {
+func (repo *TokenStatisticsRepo) FindEmptyBaseDenomChainItems(skip, limit int64) ([]*entity.IBCTokenStatistics, error) {
 	var res []*entity.IBCTokenStatistics
-	err := repo.coll().Find(context.Background(), bson.M{"base_denom_chain_id": ""}).Skip(skip).Limit(limit).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"base_denom_chain": ""}).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }

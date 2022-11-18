@@ -10,13 +10,13 @@ import (
 type (
 	TranaferTxsReq struct {
 		Page
-		UseCount       bool   `json:"use_count" form:"use_count"`
-		DateRange      string `json:"date_range" form:"date_range"`
-		Status         string `json:"status" form:"status"`
-		Chain          string `json:"chain" form:"chain"`
-		Denom          string `json:"denom" form:"denom"`
-		BaseDenom      string `json:"base_denom" form:"base_denom"`
-		BaseDenomChain string `json:"base_denom_chain" form:"base_denom_chain"`
+		UseCount         bool   `json:"use_count" form:"use_count"`
+		DateRange        string `json:"date_range" form:"date_range"`
+		Status           string `json:"status" form:"status"`
+		Chain          string `json:"chain_id" form:"chain_id"`
+		Denom            string `json:"denom" form:"denom"`
+		BaseDenom        string `json:"base_denom" form:"base_denom"`
+		BaseDenomChain string `json:"base_denom_chain_id" form:"base_denom_chain_id"`
 	}
 	TranaferTxsResp struct {
 		Items     []IbcTxDto `json:"items"`
@@ -194,14 +194,14 @@ func loadTxInfoDto(info *entity.TxInfo) TxInfoDto {
 func loadChainInfo(tx *entity.ExIbcTx) (*ChainInfo, *ChainInfo) {
 	return &ChainInfo{
 			Address:      tx.ScAddr,
-			Chain:        tx.ScChainId,
+			Chain:        tx.ScChain,
 			ChannelId:    tx.ScChannel,
 			PortId:       tx.ScPort,
 			ConnectionId: tx.ScConnectionId,
 			ClientId:     tx.ScClientId,
 		}, &ChainInfo{
 			Address:      tx.DcAddr,
-			Chain:        tx.DcChainId,
+			Chain:        tx.DcChain,
 			ChannelId:    tx.DcChannel,
 			PortId:       tx.DcPort,
 			ConnectionId: tx.DcConnectionId,
@@ -282,15 +282,15 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 		ScAddr:         ibcTx.ScAddr,
 		DcAddr:         ibcTx.DcAddr,
 		Status:         int(ibcTx.Status),
-		ScChain:        ibcTx.ScChainId,
-		DcChain:        ibcTx.DcChainId,
+		ScChain:        ibcTx.ScChain,
+		DcChain:        ibcTx.DcChain,
 		ScChannel:      ibcTx.ScChannel,
 		DcChannel:      ibcTx.DcChannel,
 		Sequence:       ibcTx.Sequence,
 		ScTxInfo:       loadTxInfoDto(ibcTx.ScTxInfo),
 		DcTxInfo:       loadTxInfoDto(ibcTx.DcTxInfo),
 		BaseDenom:      ibcTx.BaseDenom,
-		BaseDenomChain: ibcTx.BaseDenomChainId,
+		BaseDenomChain: ibcTx.BaseDenomChain,
 		Denoms:         Denoms{ScDenom: ibcTx.Denoms.ScDenom, DcDenom: ibcTx.Denoms.DcDenom},
 		TxTime:         ibcTx.TxTime,
 		EndTime:        endTime,
@@ -343,17 +343,17 @@ func (dto IbcTxDetailDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDetailDto {
 		ScAddr:           ibcTx.ScAddr,
 		DcAddr:           ibcTx.DcAddr,
 		Status:           int(ibcTx.Status),
-		ScChainId:        ibcTx.ScChainId,
+		ScChainId:        ibcTx.ScChain,
 		ScChannel:        ibcTx.ScChannel,
 		ScPort:           ibcTx.ScPort,
-		DcChainId:        ibcTx.DcChainId,
+		DcChainId:        ibcTx.DcChain,
 		DcChannel:        ibcTx.DcChannel,
 		DcPort:           ibcTx.DcPort,
 		Sequence:         ibcTx.Sequence,
 		ScTxInfo:         loadTxInfoDto(ibcTx.ScTxInfo),
 		DcTxInfo:         loadTxInfoDto(ibcTx.DcTxInfo),
 		BaseDenom:        ibcTx.BaseDenom,
-		BaseDenomChainId: ibcTx.BaseDenomChainId,
+		BaseDenomChainId: ibcTx.BaseDenomChain,
 		Denoms:           Denoms{ScDenom: ibcTx.Denoms.ScDenom, DcDenom: ibcTx.Denoms.DcDenom},
 		TxTime:           ibcTx.TxTime,
 	}

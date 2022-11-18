@@ -79,11 +79,11 @@ func (t *IbcNodeLcdCronTask) doHandleChains(workNum int, chaincfgs []*entity.Cha
 	wg.Wait()
 }
 
-func getChainRegisterResp(chainId string) (vo.ChainRegisterResp, error) {
+func getChainRegisterResp(chain string) (vo.ChainRegisterResp, error) {
 	var chainRegisterResp vo.ChainRegisterResp
-	chainRegistry, err := chainRegistryRepo.FindOne(chainId)
+	chainRegistry, err := chainRegistryRepo.FindOne(chain)
 	if err != nil {
-		return chainRegisterResp, fmt.Errorf("find chain_registry by chain-id(%s) error: %s", chainId, err.Error())
+		return chainRegisterResp, fmt.Errorf("find chain_registry by chain(%s) error: %s", chain, err.Error())
 	}
 
 	bz, err := utils.HttpGet(chainRegistry.ChainJsonUrl)
@@ -96,6 +96,7 @@ func getChainRegisterResp(chainId string) (vo.ChainRegisterResp, error) {
 }
 
 func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
+	// todo chain Id -> chain
 	chainRegisterResp, err := getChainRegisterResp(chainId)
 	if err != nil {
 		logrus.Error(err.Error(), " task:", t.Name())
