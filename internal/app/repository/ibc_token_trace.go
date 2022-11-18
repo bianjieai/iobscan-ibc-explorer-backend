@@ -98,7 +98,7 @@ func (repo *TokenTraceRepo) AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, er
 func (repo *TokenTraceRepo) analyzeListParam(req *vo.IBCTokenListReq) map[string]interface{} {
 	q := make(map[string]interface{})
 	q["base_denom"] = req.BaseDenom
-	q["base_denom_chain_id"] = req.BaseDenomChainId
+	q["base_denom_chain_id"] = req.BaseDenomChain
 
 	if req.Chain != "" {
 		q["chain_id"] = req.Chain

@@ -50,10 +50,10 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	inActiveChains := make([]vo.DailyData, 0, allChainsLen-activeChainsLen)
 	for _, one := range chainCfgs {
 		item := vo.DailyData{
-			ChainName: one.ChainName,
-			ChainId:   one.CurrentChainId,
-			Icon:      one.Icon,
-			Status:    one.Status,
+			ChainName:      one.ChainName,
+			CurrentChainId: one.CurrentChainId,
+			Icon:           one.Icon,
+			Status:         one.Status,
 		}
 		allChains = append(allChains, item)
 

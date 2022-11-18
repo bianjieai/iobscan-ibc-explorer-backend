@@ -43,8 +43,8 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 		query dto.IbcTxQuery
 		err   error
 	)
-	if req.ChainId != "" {
-		query.ChainId = strings.Split(req.ChainId, ",")
+	if req.Chain != "" {
+		query.ChainId = strings.Split(req.Chain, ",")
 	}
 	if req.DateRange != "" {
 		dateRange := strings.Split(req.DateRange, ",")
@@ -79,7 +79,7 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			query.BaseDenom = tokens
 		} else {
 			query.BaseDenom = []string{req.BaseDenom}
-			query.BaseDenomChainId = req.BaseDenomChainId
+			query.BaseDenomChainId = req.BaseDenomChain
 		}
 	} else if req.Denom != "" {
 		query.Denom = req.Denom
@@ -417,11 +417,11 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	}
 	return &vo.TokenInfo{
-		BaseDenom:        ibcTx.BaseDenom,
-		BaseDenomChainId: ibcTx.BaseDenomChainId,
-		Amount:           ibcTx.ScTxInfo.MsgAmount.Amount,
-		SendToken:        sendToken,
-		RecvToken:        recvToken,
+		BaseDenom:      ibcTx.BaseDenom,
+		BaseDenomChain: ibcTx.BaseDenomChainId,
+		Amount:         ibcTx.ScTxInfo.MsgAmount.Amount,
+		SendToken:      sendToken,
+		RecvToken:      recvToken,
 	}, nil
 }
 
@@ -478,18 +478,18 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 		return resp, errors.WrapBadRequest(fmt.Errorf("only support transfer,recv_packet,acknowledge_packet,timeout_packet"))
 	}
 
-	value, err := lcdTxDataCache.Get(req.ChainId, hash)
+	value, err := lcdTxDataCache.Get(req.CurrentChainId, hash)
 	if err == nil {
 		utils.UnmarshalJsonIgnoreErr([]byte(value), &resp)
 		return resp, nil
 	}
-	return getMsgAndTxData(msgType, req.ChainId, hash)
+	return getMsgAndTxData(msgType, req.CurrentChainId, hash)
 }
 
-func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.Error) {
+func getMsgAndTxData(msgType, currentChainId, hash string) (vo.TraceSourceResp, errors.Error) {
 	var resp vo.TraceSourceResp
 
-	lcdTxData, err := GetLcdTxData(chainId, hash)
+	lcdTxData, err := GetLcdTxData(currentChainId, hash)
 	if err != nil {
 		return resp, err
 	}
@@ -506,13 +506,13 @@ func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.
 		}
 	}
 	if resp.Msg != nil {
-		_ = lcdTxDataCache.Set(chainId, hash, string(utils.MarshalJsonIgnoreErr(resp)))
+		_ = lcdTxDataCache.Set(currentChainId, hash, string(utils.MarshalJsonIgnoreErr(resp)))
 	}
 	return resp, nil
 }
 
-func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
-	lcdAddrs, _ := lcdAddrCache.Get(chainId)
+func GetLcdTxData(currentChainId, hash string) (LcdTxData, errors.Error) {
+	lcdAddrs, _ := lcdAddrCache.Get(currentChainId)
 	if len(lcdAddrs) > 0 {
 		//全节点且支持交易查询
 		if lcdAddrs[0].FullNode && lcdAddrs[0].TxIndexEnable {
@@ -528,7 +528,7 @@ func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
 		//并发处理
 		return doHandleTxData(2, validNodes, hash)
 	} else {
-		cfg, err := chainCfgRepo.FindOne(chainId)
+		cfg, err := chainCfgRepo.FindOne(currentChainId)
 		if err != nil {
 			return LcdTxData{}, errors.Wrap(fmt.Errorf("invalid chain id"))
 		}

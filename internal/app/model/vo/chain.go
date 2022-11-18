@@ -10,7 +10,7 @@ type ChainListReq struct {
 	UseCount bool `json:"use_count" form:"use_count"`
 }
 type ChainDto struct {
-	ChainId          string `json:"chain_id"`
+	Chain            string `json:"chain"`
 	ConnectedChains  int64  `json:"connected_chains"`
 	Channels         int64  `json:"channels"`
 	Relayers         int64  `json:"relayers"`
@@ -29,7 +29,7 @@ type ChainListResp struct {
 
 func (dto ChainDto) LoadDto(chain *entity.IBCChain) ChainDto {
 	return ChainDto{
-		ChainId:          chain.ChainId,
+		Chain:            chain.ChainId,
 		ConnectedChains:  chain.ConnectedChains,
 		Channels:         chain.Channels,
 		Relayers:         chain.Relayers,
