@@ -44,7 +44,7 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 		err   error
 	)
 	if req.ChainId != "" {
-		query.ChainId = strings.Split(req.ChainId, ",")
+		query.Chain = strings.Split(req.ChainId, ",")
 	}
 	if req.DateRange != "" {
 		dateRange := strings.Split(req.DateRange, ",")
@@ -79,7 +79,7 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			query.BaseDenom = tokens
 		} else {
 			query.BaseDenom = []string{req.BaseDenom}
-			query.BaseDenomChainId = req.BaseDenomChainId
+			query.BaseDenomChain = req.BaseDenomChainId
 		}
 	} else if req.Denom != "" {
 		query.Denom = req.Denom
@@ -91,7 +91,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	if len(query.ChainId) > 2 {
+	if len(query.Chain) > 2 {
 		return nil, errors.WrapBadRequest(fmt.Errorf("invalid chain id"))
 	}
 
@@ -106,7 +106,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 			return count
 		}
 		//default cond
-		if len(query.ChainId) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
+		if len(query.Chain) == 0 && len(query.Status) == 4 && query.StartTime == 0 && len(query.BaseDenom) == 0 && query.Denom == "" {
 			data, err2 := statisticRepo.FindOne(constant.TxLatestAllStatisticName)
 			if err2 != nil {
 				txsCountChan <- &vo.TxsCountChanDTO{Count: 0, Err: err2}
@@ -125,9 +125,9 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 
 	// 计算交易价值
 	go func() {
-		if (len(query.ChainId) == 0) ||
-			(len(query.ChainId) == 1 && query.ChainId[0] == constant.AllChain) ||
-			(query.ChainId[0] == constant.AllChain && query.ChainId[1] == constant.AllChain) {
+		if (len(query.Chain) == 0) ||
+			(len(query.Chain) == 1 && query.Chain[0] == constant.AllChain) ||
+			(query.Chain[0] == constant.AllChain && query.Chain[1] == constant.AllChain) {
 			txsValueChan <- &vo.TxsValueChanDTO{Value: "", Err: nil}
 			return
 		}
@@ -170,7 +170,7 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
-	if len(query.ChainId) > 2 {
+	if len(query.Chain) > 2 {
 		return resp, nil
 	}
 	res, err := ibcTxRepo.FindTransferTxs(query, skip, limit)

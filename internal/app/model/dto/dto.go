@@ -77,19 +77,19 @@ func (dto *CountRelayerPacketTxsCntDTO) Valid() bool {
 }
 
 type CountRelayerPacketAmountDTO struct {
-	DcChainAddress   string  `bson:"dc_chain_address"`
-	DcChainId        string  `bson:"dc_chain_id"`
-	DcChannel        string  `bson:"dc_channel"`
-	ScChainId        string  `bson:"sc_chain_id"`
-	ScChannel        string  `bson:"sc_channel"`
-	BaseDenom        string  `bson:"base_denom"`
-	BaseDenomChainId string  `bson:"base_denom_chain_id"`
-	Amount           float64 `bson:"amount"`
-	Count            int64   `bson:"count"`
+	DcChainAddress string  `bson:"dc_chain_address"`
+	DcChain        string  `bson:"dc_chain"`
+	DcChannel      string  `bson:"dc_channel"`
+	ScChain        string  `bson:"sc_chain"`
+	ScChannel      string  `bson:"sc_channel"`
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	Amount         float64 `bson:"amount"`
+	Count          int64   `bson:"count"`
 }
 
 func (dto *CountRelayerPacketAmountDTO) Valid() bool {
-	return dto.DcChainId != "" && dto.DcChannel != "" && dto.ScChainId != "" && dto.ScChannel != "" && dto.BaseDenom != "" && dto.DcChainAddress != ""
+	return dto.DcChain != "" && dto.DcChannel != "" && dto.ScChain != "" && dto.ScChannel != "" && dto.BaseDenom != "" && dto.DcChainAddress != ""
 }
 
 type CountRelayerBaseDenomAmtDTO struct {
@@ -173,15 +173,15 @@ type TokenTraceStatisticsDTO struct {
 }
 
 type Aggr24hActiveChannelsDTO struct {
-	ScChainId string `bson:"sc_chain_id"`
-	DcChainId string `bson:"dc_chain_id"`
+	ScChain   string `bson:"sc_chain"`
+	DcChain   string `bson:"dc_chain"`
 	ScChannel string `bson:"sc_channel"`
 	DcChannel string `bson:"dc_channel"`
 }
 
 type Aggr24hActiveChainsDTO struct {
-	ScChainId string `bson:"sc_chain_id"`
-	DcChainId string `bson:"dc_chain_id"`
+	ScChain string `bson:"sc_chain"`
+	DcChain string `bson:"dc_chain"`
 }
 
 type RelayerPairIdDTO struct {
@@ -207,13 +207,13 @@ type HeightTimeDTO struct {
 }
 
 type IbcTxQuery struct {
-	StartTime        int64
-	EndTime          int64
-	ChainId          []string
-	Status           []int
-	BaseDenom        []string
-	BaseDenomChainId string
-	Denom            string
+	StartTime      int64
+	EndTime        int64
+	Chain          []string
+	Status         []int
+	BaseDenom      []string
+	BaseDenomChain string
+	Denom          string
 }
 
 type (

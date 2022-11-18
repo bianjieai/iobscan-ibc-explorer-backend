@@ -73,9 +73,9 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 		var skip int64 = 0
 		var toBeFixedTxs []*fixDcChainIdTx
 		for {
-			txs, err := ibcTxRepo.FindDcChainIdEmptyTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
+			txs, err := ibcTxRepo.FindDcChainEmptyTxs(v.StartTime, v.EndTime, skip, limit, isTargetHistory)
 			if err != nil {
-				logrus.Errorf("task %s FindDcChainIdEmptyTxs %s %d-%d err, %v", t.Name(), target, v.StartTime, v.EndTime, err)
+				logrus.Errorf("task %s FindDcChainEmptyTxs %s %d-%d err, %v", t.Name(), target, v.StartTime, v.EndTime, err)
 				break
 			}
 
@@ -96,8 +96,8 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 		}
 
 		for _, tx := range toBeFixedTxs {
-			if err := ibcTxRepo.FixDcChainId(tx.RecordId, tx.DcChainId, tx.DcChannel, tx.Status, isTargetHistory); err != nil {
-				logrus.Errorf("task %s FixDcChainId(%s) %s err, dcChainId: %s, dcChannel: %s, %v", t.Name(), tx.RecordId, target, tx.DcChainId, tx.DcChannel, err)
+			if err := ibcTxRepo.FixDcChain(tx.RecordId, tx.DcChainId, tx.DcChannel, tx.Status, isTargetHistory); err != nil {
+				logrus.Errorf("task %s FixDcChain(%s) %s err, dcChainId: %s, dcChannel: %s, %v", t.Name(), tx.RecordId, target, tx.DcChainId, tx.DcChannel, err)
 			}
 		}
 	}

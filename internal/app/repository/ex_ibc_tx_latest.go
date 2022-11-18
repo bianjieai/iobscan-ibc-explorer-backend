@@ -44,12 +44,12 @@ type IExIbcTxRepo interface {
 	// special method
 	UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error
 	UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error
-	AddNewChainUpdate(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error
-	AddNewChainUpdateHistory(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error
-	AddNewChainUpdateFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error
-	AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error
-	UpdateBaseDenomInfo(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
-	UpdateBaseDenomInfoHistory(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error
+	AddNewChainUpdate(scChain, scChannel, scClientId, dcChain, dcClientId string) error
+	AddNewChainUpdateHistory(scChain, scChannel, scClientId, dcChain, dcClientId string) error
+	AddNewChainUpdateFailedTx(scChain, scChannel, scClientId, dcChain, dcChannel, dcClientId string) error
+	AddNewChainUpdateHistoryFailedTx(scChain, scChannel, scClientId, dcChain, dcChannel, dcClientId string) error
+	UpdateBaseDenomInfo(baseDenom, baseDenomChain, baseDenomNew, baseDenomChainNew string) error
+	UpdateBaseDenomInfoHistory(baseDenom, baseDenomChain, baseDenomNew, baseDenomChainNew string) error
 
 	HistoryLatestCreateAt() (int64, error)
 	HistoryCountAll(createAt int64, record bool) (int64, error)
@@ -65,12 +65,11 @@ type IExIbcTxRepo interface {
 	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
 	UpdateOne(recordId string, history bool, setData bson.M) error
 
-	// fix dc_chain_id
-	FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	FixDcChainId(recordId, dcChainId, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error
-	// fix base_denom_chain_id
-	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error
+	FindDcChainEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	FixDcChain(recordId, dcChain, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error
+
+	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChain string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
+	UpdateBaseDenom(recordId, baseDenom, baseDenomChain string, isTargetHistory bool) error
 
 	//fix ibcTransfer fail and fix acknowledge
 	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
@@ -497,13 +496,13 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"dc_chain_id":         "$dc_chain_id",
-				"dc_channel":          "$dc_channel",
-				"sc_chain_id":         "$sc_chain_id",
-				"sc_channel":          "$sc_channel",
-				"relayer":             "$dc_tx_info.msg.msg.signer",
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
+				"dc_chain":         "$dc_chain",
+				"dc_channel":       "$dc_channel",
+				"sc_chain":         "$sc_chain",
+				"sc_channel":       "$sc_channel",
+				"relayer":          "$dc_tx_info.msg.msg.signer",
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{"$toDouble": "$sc_tx_info.msg_amount.amount"},
@@ -515,16 +514,16 @@ func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bso
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":                 0,
-			"dc_chain_address":    "$_id.relayer",
-			"dc_chain_id":         "$_id.dc_chain_id",
-			"dc_channel":          "$_id.dc_channel",
-			"sc_chain_id":         "$_id.sc_chain_id",
-			"sc_channel":          "$_id.sc_channel",
-			"base_denom":          "$_id.base_denom",
-			"base_denom_chain_id": "$_id.base_denom_chain_id",
-			"amount":              "$amount",
-			"count":               "$count",
+			"_id":              0,
+			"dc_chain_address": "$_id.relayer",
+			"dc_chain":         "$_id.dc_chain",
+			"dc_channel":       "$_id.dc_channel",
+			"sc_chain":         "$_id.sc_chain",
+			"sc_channel":       "$_id.sc_channel",
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"amount":           "$amount",
+			"count":            "$count",
 		},
 	}
 	var pipe []bson.M
@@ -554,12 +553,12 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
-				"sc_chain_id":         "$sc_chain_id",
-				"dc_chain_id":         "$dc_chain_id",
-				"sc_channel":          "$sc_channel",
-				"dc_channel":          "$dc_channel",
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
+				"sc_chain":         "$sc_chain",
+				"dc_chain":         "$dc_chain",
+				"sc_channel":       "$sc_channel",
+				"dc_channel":       "$dc_channel",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -573,15 +572,15 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":                 0,
-			"base_denom":          "$_id.base_denom",
-			"base_denom_chain_id": "$_id.base_denom_chain_id",
-			"sc_chain_id":         "$_id.sc_chain_id",
-			"dc_chain_id":         "$_id.dc_chain_id",
-			"sc_channel":          "$_id.sc_channel",
-			"dc_channel":          "$_id.dc_channel",
-			"count":               "$count",
-			"amount":              "$amount",
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"sc_chain":         "$_id.sc_chain",
+			"dc_chain":         "$_id.dc_chain",
+			"sc_channel":       "$_id.sc_channel",
+			"dc_channel":       "$_id.dc_channel",
+			"count":            "$count",
+			"amount":           "$amount",
 		},
 	}
 	var pipe []bson.M
@@ -618,20 +617,20 @@ func (repo *ExIbcTxRepo) aggr24hActiveChannelPipe(startTime int64) []bson.M {
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"sc_chain_id": "$sc_chain_id",
-				"dc_chain_id": "$dc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"dc_channel":  "$dc_channel",
+				"sc_chain":   "$sc_chain",
+				"dc_chain":   "$dc_chain",
+				"sc_channel": "$sc_channel",
+				"dc_channel": "$dc_channel",
 			},
 		},
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":         0,
-			"sc_chain_id": "$_id.sc_chain_id",
-			"dc_chain_id": "$_id.dc_chain_id",
-			"sc_channel":  "$_id.sc_channel",
-			"dc_channel":  "$_id.dc_channel",
+			"_id":        0,
+			"sc_chain":   "$_id.sc_chain",
+			"dc_chain":   "$_id.dc_chain",
+			"sc_channel": "$_id.sc_channel",
+			"dc_channel": "$_id.dc_channel",
 		},
 	}
 	var pipe []bson.M
@@ -653,16 +652,16 @@ func (repo *ExIbcTxRepo) aggr24hActiveChainsPipe(startTime int64) []bson.M {
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"sc_chain_id": "$sc_chain_id",
-				"dc_chain_id": "$dc_chain_id",
+				"sc_chain": "$sc_chain",
+				"dc_chain": "$dc_chain",
 			},
 		},
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":         0,
-			"sc_chain_id": "$_id.sc_chain_id",
-			"dc_chain_id": "$_id.dc_chain_id",
+			"_id":      0,
+			"sc_chain": "$_id.sc_chain",
+			"dc_chain": "$_id.dc_chain",
 		},
 	}
 	var pipe []bson.M
@@ -699,9 +698,10 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 			return nil, err
 		}
 
-		if err := repo.DeleteByRecordIds(recordIds); err != nil {
-			return nil, err
-		}
+		// todo del record
+		//if err := repo.DeleteByRecordIds(recordIds); err != nil {
+		//	return nil, err
+		//}
 
 		return nil, nil
 	}
@@ -709,10 +709,10 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdate(scChain, scChannel, scClientId, dcChain, dcClientId string) error {
 	query := bson.M{
-		"sc_chain_id": scChainId,
-		"sc_channel":  scChannel,
+		"sc_chain":   scChain,
+		"sc_channel": scChannel,
 		"status": bson.M{
 			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSetting, entity.IbcTxStatusProcessing},
 		},
@@ -720,7 +720,7 @@ func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, scClientId, dcC
 
 	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id":  dcChainId,
+			"dc_chain":     dcChain,
 			"status":       entity.IbcTxStatusProcessing,
 			"sc_client_id": scClientId,
 			"dc_client_id": dcClientId,
@@ -729,10 +729,10 @@ func (repo *ExIbcTxRepo) AddNewChainUpdate(scChainId, scChannel, scClientId, dcC
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, scClientId, dcChainId, dcClientId string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChain, scChannel, scClientId, dcChain, dcClientId string) error {
 	query := bson.M{
-		"sc_chain_id": scChainId,
-		"sc_channel":  scChannel,
+		"sc_chain":   scChain,
+		"sc_channel": scChannel,
 		"status": bson.M{
 			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSetting, entity.IbcTxStatusProcessing},
 		},
@@ -740,7 +740,7 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, scClient
 
 	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id":  dcChainId,
+			"dc_chain":     dcChain,
 			"status":       entity.IbcTxStatusProcessing,
 			"sc_client_id": scClientId,
 			"dc_client_id": dcClientId,
@@ -749,16 +749,16 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistory(scChainId, scChannel, scClient
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChain, scChannel, scClientId, dcChain, dcChannel, dcClientId string) error {
 	query := bson.M{
-		"sc_chain_id": scChainId,
-		"sc_channel":  scChannel,
-		"status":      entity.IbcTxStatusFailed,
+		"sc_chain":   scChain,
+		"sc_channel": scChannel,
+		"status":     entity.IbcTxStatusFailed,
 	}
 
 	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id":  dcChainId,
+			"dc_chain":     dcChain,
 			"dc_channel":   dcChannel,
 			"sc_client_id": scClientId,
 			"dc_client_id": dcClientId,
@@ -767,16 +767,16 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateFailedTx(scChainId, scChannel, scClien
 	return err
 }
 
-func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, scClientId, dcChainId, dcChannel, dcClientId string) error {
+func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChain, scChannel, scClientId, dcChain, dcChannel, dcClientId string) error {
 	query := bson.M{
-		"sc_chain_id": scChainId,
-		"sc_channel":  scChannel,
-		"status":      entity.IbcTxStatusFailed,
+		"sc_chain":   scChain,
+		"sc_channel": scChannel,
+		"status":     entity.IbcTxStatusFailed,
 	}
 
 	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"dc_chain_id":  dcChainId,
+			"dc_chain":     dcChain,
 			"dc_channel":   dcChannel,
 			"sc_client_id": scClientId,
 			"dc_client_id": dcClientId,
@@ -785,29 +785,29 @@ func (repo *ExIbcTxRepo) AddNewChainUpdateHistoryFailedTx(scChainId, scChannel, 
 	return err
 }
 
-func (repo *ExIbcTxRepo) UpdateBaseDenomInfo(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error {
+func (repo *ExIbcTxRepo) UpdateBaseDenomInfo(baseDenom, baseDenomChain, baseDenomNew, baseDenomChainNew string) error {
 	query := bson.M{
-		"base_denom":          baseDenom,
-		"base_denom_chain_id": baseDenomChainId,
+		"base_denom":       baseDenom,
+		"base_denom_chain": baseDenomChain,
 	}
 	_, err := repo.coll().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"base_denom":          baseDenomNew,
-			"base_denom_chain_id": baseDenomChainIdNew,
+			"base_denom":       baseDenomNew,
+			"base_denom_chain": baseDenomChainNew,
 		},
 	})
 	return err
 }
 
-func (repo *ExIbcTxRepo) UpdateBaseDenomInfoHistory(baseDenom, baseDenomChainId, baseDenomNew, baseDenomChainIdNew string) error {
+func (repo *ExIbcTxRepo) UpdateBaseDenomInfoHistory(baseDenom, baseDenomChain, baseDenomNew, baseDenomChainNew string) error {
 	query := bson.M{
-		"base_denom":          baseDenom,
-		"base_denom_chain_id": baseDenomChainId,
+		"base_denom":       baseDenom,
+		"base_denom_chain": baseDenomChain,
 	}
 	_, err := repo.collHistory().UpdateAll(context.Background(), query, bson.M{
 		"$set": bson.M{
-			"base_denom":          baseDenomNew,
-			"base_denom_chain_id": baseDenomChainIdNew,
+			"base_denom":       baseDenomNew,
+			"base_denom_chain": baseDenomChainNew,
 		},
 	})
 	return err
@@ -917,34 +917,34 @@ func parseQuery(queryCond dto.IbcTxQuery) bson.M {
 		}
 	}
 	//chain
-	if length := len(queryCond.ChainId); length > 0 {
+	if length := len(queryCond.Chain); length > 0 {
 		switch length {
 		case 1:
 			// transfer_chain or recv_chain
-			if queryCond.ChainId[0] != constant.AllChain {
+			if queryCond.Chain[0] != constant.AllChain {
 				query["$or"] = []bson.M{
-					{"sc_chain_id": queryCond.ChainId[0]},
-					{"dc_chain_id": queryCond.ChainId[0]},
+					{"sc_chain": queryCond.Chain[0]},
+					{"dc_chain": queryCond.Chain[0]},
 				}
 			}
 		case 2:
 			//transfer_chain and recv_chain
-			if queryCond.ChainId[0] == queryCond.ChainId[1] && queryCond.ChainId[0] == constant.AllChain {
+			if queryCond.Chain[0] == queryCond.Chain[1] && queryCond.Chain[0] == constant.AllChain {
 				// nothing to do
 			} else {
-				value := strings.Join(queryCond.ChainId, ",")
+				value := strings.Join(queryCond.Chain, ",")
 				if strings.Contains(value, constant.AllChain) {
 					index := strings.Index(value, constant.AllChain)
 					if index > 0 { //chain-id,allchain
-						query["sc_chain_id"] = queryCond.ChainId[0]
+						query["sc_chain"] = queryCond.Chain[0]
 					} else { //allchain,chain-id
-						query["dc_chain_id"] = queryCond.ChainId[1]
+						query["dc_chain"] = queryCond.Chain[1]
 					}
 
 				} else {
 					query["$and"] = []bson.M{
-						{"sc_chain_id": queryCond.ChainId[0]},
-						{"dc_chain_id": queryCond.ChainId[1]},
+						{"sc_chain": queryCond.Chain[0]},
+						{"dc_chain": queryCond.Chain[1]},
 					}
 				}
 			}
@@ -957,9 +957,9 @@ func parseQuery(queryCond dto.IbcTxQuery) bson.M {
 			"$in": queryCond.BaseDenom,
 		}
 	}
-	//origin_chain_id
-	if len(queryCond.BaseDenomChainId) > 0 {
-		query["base_denom_chain_id"] = queryCond.BaseDenomChainId
+	//origin_chain
+	if len(queryCond.BaseDenomChain) > 0 {
+		query["base_denom_chain"] = queryCond.BaseDenomChain
 	}
 	// denom
 	if queryCond.Denom != "" {
@@ -1007,8 +1007,8 @@ func (repo *ExIbcTxRepo) AggrTxsValue(query dto.IbcTxQuery, isTargetHistory bool
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
 			},
 			"amount": bson.M{
 				"$sum": bson.M{
@@ -1022,7 +1022,7 @@ func (repo *ExIbcTxRepo) AggrTxsValue(query dto.IbcTxQuery, isTargetHistory bool
 		"$project": bson.M{
 			"_id":              0,
 			"base_denom":       "$_id.base_denom",
-			"base_denom_chain": "$_id.base_denom_chain_id",
+			"base_denom_chain": "$_id.base_denom_chain",
 			"amount":           "$amount",
 		},
 	}
@@ -1090,7 +1090,7 @@ func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, setData bson.M
 	return err
 }
 
-func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) FindDcChainEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
 	query := bson.M{
 		"create_at": bson.M{
 			"$gte": startTime,
@@ -1099,7 +1099,7 @@ func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit i
 		"status": bson.M{
 			"$in": []entity.IbcTxStatus{entity.IbcTxStatusProcessing, entity.IbcTxStatusSetting},
 		},
-		"dc_chain_id": "",
+		"dc_chain": "",
 	}
 
 	var txs []*entity.ExIbcTx
@@ -1112,16 +1112,16 @@ func (repo *ExIbcTxRepo) FindDcChainIdEmptyTxs(startTime, endTime, skip, limit i
 	return txs, err
 }
 
-func (repo *ExIbcTxRepo) FixDcChainId(recordId, dcChainId, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error {
+func (repo *ExIbcTxRepo) FixDcChain(recordId, dcChain, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error {
 	set := bson.M{}
-	if dcChainId == "" {
+	if dcChain == "" {
 		if originStatus == entity.IbcTxStatusProcessing {
 			set["status"] = entity.IbcTxStatusSetting
 		} else {
 			return nil
 		}
 	} else {
-		set["dc_chain_id"] = dcChainId
+		set["dc_chain"] = dcChain
 		set["dc_channel"] = dcChannel
 		if originStatus == entity.IbcTxStatusSetting {
 			set["status"] = entity.IbcTxStatusProcessing
@@ -1140,14 +1140,14 @@ func (repo *ExIbcTxRepo) FixDcChainId(recordId, dcChainId, dcChannel string, ori
 	return repo.coll().UpdateOne(context.Background(), filter, update)
 }
 
-func (repo *ExIbcTxRepo) FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChainId string, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChain string, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
 	query := bson.M{
 		"create_at": bson.M{
 			"$gte": startTime,
 			"$lte": endTime,
 		},
-		"base_denom":          baseDenom,
-		"base_denom_chain_id": baseDenomChainId,
+		"base_denom":       baseDenom,
+		"base_denom_chain": baseDenomChain,
 	}
 
 	var txs []*entity.ExIbcTx
@@ -1161,11 +1161,11 @@ func (repo *ExIbcTxRepo) FindByBaseDenom(startTime, endTime int64, baseDenom, ba
 	return txs, err
 }
 
-func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChainId string, isTargetHistory bool) error {
+func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChain string, isTargetHistory bool) error {
 	update := bson.M{
 		"$set": bson.M{
-			"base_denom":          baseDenom,
-			"base_denom_chain_id": baseDenomChainId,
+			"base_denom":       baseDenom,
+			"base_denom_chain": baseDenomChain,
 		}}
 	if isTargetHistory {
 		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
