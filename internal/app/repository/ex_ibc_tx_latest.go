@@ -42,8 +42,6 @@ type IExIbcTxRepo interface {
 	Migrate(txs []*entity.ExIbcTx) error
 
 	// special method
-	UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error
-	UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error
 	AddNewChainUpdate(scChain, scChannel, scClientId, dcChain, dcClientId string) error
 	AddNewChainUpdateHistory(scChain, scChannel, scClientId, dcChain, dcClientId string) error
 	AddNewChainUpdateFailedTx(scChain, scChannel, scClientId, dcChain, dcChannel, dcClientId string) error
@@ -64,23 +62,6 @@ type IExIbcTxRepo interface {
 	GetNeedAcknowledgeTxs(history bool, startTime int64) ([]*entity.ExIbcTx, error)
 	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
 	UpdateOne(recordId string, history bool, setData bson.M) error
-
-	FindDcChainEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	FixDcChain(recordId, dcChain, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error
-
-	FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChain string, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	UpdateBaseDenom(recordId, baseDenom, baseDenomChain string, isTargetHistory bool) error
-
-	//fix ibcTransfer fail and fix acknowledge
-	FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	// fix ibc tx
-	FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error
-	FindEmptyDcConnTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-
-	//fix fail recv_packet
-	FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
-	//fix acknowledge tx
-	FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -233,29 +214,6 @@ func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool
 	set := repo.parseUpdateIbcTxSql(ibcTx, repaired)
 	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
 		"$set": set,
-	})
-}
-
-func (repo *ExIbcTxRepo) UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error {
-	return repo.coll().UpdateId(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
-		"$set": bson.M{
-			"base_denom_chain": ibcTx.BaseDenomChain,
-			"base_denom":       ibcTx.BaseDenom,
-			"create_at":        ibcTx.CreateAt,
-			"update_at":        ibcTx.UpdateAt,
-		},
-	})
-}
-
-func (repo *ExIbcTxRepo) UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error {
-	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
-		"$set": bson.M{
-			"record_id":        ibcTx.RecordId,
-			"base_denom_chain": ibcTx.BaseDenomChain,
-			"base_denom":       ibcTx.BaseDenom,
-			"create_at":        ibcTx.CreateAt,
-			"update_at":        ibcTx.UpdateAt,
-		},
 	})
 }
 
@@ -1090,89 +1048,6 @@ func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, setData bson.M
 	return err
 }
 
-func (repo *ExIbcTxRepo) FindDcChainEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status": bson.M{
-			"$in": []entity.IbcTxStatus{entity.IbcTxStatusProcessing, entity.IbcTxStatusSetting},
-		},
-		"dc_chain": "",
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Sort("-create_at").Limit(limit).All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Sort("-create_at").Limit(limit).All(&txs)
-	}
-	return txs, err
-}
-
-func (repo *ExIbcTxRepo) FixDcChain(recordId, dcChain, dcChannel string, originStatus entity.IbcTxStatus, isTargetHistory bool) error {
-	set := bson.M{}
-	if dcChain == "" {
-		if originStatus == entity.IbcTxStatusProcessing {
-			set["status"] = entity.IbcTxStatusSetting
-		} else {
-			return nil
-		}
-	} else {
-		set["dc_chain"] = dcChain
-		set["dc_channel"] = dcChannel
-		if originStatus == entity.IbcTxStatusSetting {
-			set["status"] = entity.IbcTxStatusProcessing
-		}
-	}
-
-	update := bson.M{
-		"$set": set,
-	}
-	filter := bson.M{
-		"record_id": recordId,
-	}
-	if isTargetHistory {
-		return repo.collHistory().UpdateOne(context.Background(), filter, update)
-	}
-	return repo.coll().UpdateOne(context.Background(), filter, update)
-}
-
-func (repo *ExIbcTxRepo) FindByBaseDenom(startTime, endTime int64, baseDenom, baseDenomChain string, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"base_denom":       baseDenom,
-		"base_denom_chain": baseDenomChain,
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).All(&txs)
-	}
-
-	return txs, err
-}
-
-func (repo *ExIbcTxRepo) UpdateBaseDenom(recordId, baseDenom, baseDenomChain string, isTargetHistory bool) error {
-	update := bson.M{
-		"$set": bson.M{
-			"base_denom":       baseDenom,
-			"base_denom_chain": baseDenomChain,
-		}}
-	if isTargetHistory {
-		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
-	}
-	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": recordId}, update)
-}
-
 func (repo *ExIbcTxRepo) GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	//查询"已退还"状态的没有dc_tx_info的数据
@@ -1186,103 +1061,4 @@ func (repo *ExIbcTxRepo) GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, 
 	}
 	err := repo.coll().Find(context.Background(), query).Sort("-update_at").Limit(constant.DefaultLimit).All(&res)
 	return res, err
-}
-
-func (repo *ExIbcTxRepo) FindFailStatusTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	var res []*entity.ExIbcTx
-	//查询"失败"状态的没有refunded_tx_info的数据
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status":            entity.IbcTxStatusFailed,
-		"dc_tx_info.status": entity.TxStatusSuccess,
-	}
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&res)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&res)
-	}
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) FixIbxTx(ibcTx *entity.ExIbcTx, isTargetHistory bool) error {
-	set := bson.M{
-		"$set": bson.M{
-			"sc_client_id":     ibcTx.ScClientId,
-			"sc_connection_id": ibcTx.ScConnectionId,
-			"dc_client_id":     ibcTx.DcClientId,
-			"dc_connection_id": ibcTx.DcConnectionId,
-			"sc_tx_info":       ibcTx.ScTxInfo,
-			"dc_tx_info":       ibcTx.DcTxInfo,
-			"refunded_tx_info": ibcTx.RefundedTxInfo,
-		},
-	}
-
-	if isTargetHistory {
-		return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, set)
-	}
-	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, set)
-}
-
-func (repo *ExIbcTxRepo) FindRecvPacketTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status": entity.IbcTxStatusRefunded,
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
-	}
-	return txs, err
-}
-
-func (repo *ExIbcTxRepo) FindEmptyDcConnTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status": bson.M{
-			"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusRefunded},
-		},
-		"dc_connection_id": "",
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
-	}
-	return txs, err
-}
-
-func (repo *ExIbcTxRepo) FindAcknowledgeTxsEmptyTxs(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error) {
-	query := bson.M{
-		"create_at": bson.M{
-			"$gte": startTime,
-			"$lte": endTime,
-		},
-		"status": entity.IbcTxStatusSuccess,
-	}
-
-	var txs []*entity.ExIbcTx
-	var err error
-	if isTargetHistory {
-		err = repo.collHistory().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
-	} else {
-		err = repo.coll().Find(context.Background(), query).Skip(skip).Limit(limit).Sort("-create_at").Hint("create_at_-1").All(&txs)
-	}
-	return txs, err
 }

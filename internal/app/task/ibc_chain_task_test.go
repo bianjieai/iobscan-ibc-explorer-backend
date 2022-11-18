@@ -37,12 +37,8 @@ func TestMain(m *testing.M) {
 	time.Local = time.UTC
 	global.Config = &conf.Config{
 		Task: conf.Task{
-			SingleChainSyncTransferTxMax:      1000,
-			SingleChainIbcTxRelateMax:         1000,
-			FixDenomTraceDataStartTime:        1634232199,
-			FixDenomTraceDataEndTime:          1660103712,
-			FixDenomTraceHistoryDataStartTime: 1620369550,
-			FixDenomTraceHistoryDataEndTime:   1658830692,
+			SingleChainSyncTransferTxMax: 1000,
+			SingleChainIbcTxRelateMax:    1000,
 		},
 		ChainConfig: conf.ChainConfig{
 			NewChains: "qa_iris_snapshot"}}

@@ -15,22 +15,13 @@ var (
 	cacheService    service.CacheService
 
 	// task
-	addChainTask                 task.AddChainTask
-	fixDcChainIdTask             task.FixDcChainIdTask
-	fixBaseDenomChainIdTask      task.FixBaseDenomChainIdTask
-	fixDenomTraceDataTask        task.FixDenomTraceDataTask
-	fixDenomTraceHistoryDataTask task.FixDenomTraceHistoryDataTask
-	tokenStatisticsTask          task.TokenStatisticsTask
-	channelStatisticsTask        task.ChannelStatisticsTask
-	relayerStatisticsTask        task.RelayerStatisticsTask
-	relayerDataTask              task.RelayerDataTask
-	fixFailRecvPacketTask        task.FixFailRecvPacketTask
-	addTransferDataTask          task.AddTransferDataTask
-	fixFailTxTask                task.FixFailTxTask
-	fixAcknowledgeTxTask         task.FixAcknowledgeTxTask
-	fixAckTxPacketIdTask         task.FixAckTxPacketIdTask
-	fixIbxTxTask                 task.FixIbxTxTask
-	ibcNodeLcdCronTask           task.IbcNodeLcdCronTask
-	ibcStatisticCronTask         task.IbcStatisticCronTask
-	modifyChainIdTask            task.ModifyChainIdTask
+	addChainTask          task.AddChainTask
+	tokenStatisticsTask   task.TokenStatisticsTask
+	channelStatisticsTask task.ChannelStatisticsTask
+	relayerStatisticsTask task.RelayerStatisticsTask
+	relayerDataTask       task.RelayerDataTask
+	addTransferDataTask   task.AddTransferDataTask
+	ibcNodeLcdCronTask    task.IbcNodeLcdCronTask
+	ibcStatisticCronTask  task.IbcStatisticCronTask
+	modifyChainIdTask     task.ModifyChainIdTask
 )

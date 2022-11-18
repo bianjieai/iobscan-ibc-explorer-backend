@@ -116,7 +116,7 @@ func getAllChainMap() (map[string]*entity.ChainConfig, error) {
 
 	allChainMap := make(map[string]*entity.ChainConfig)
 	for _, v := range allChainList {
-		allChainMap[v.ChainName] = v
+		allChainMap[v.CurrentChainId] = v
 	}
 
 	return allChainMap, err

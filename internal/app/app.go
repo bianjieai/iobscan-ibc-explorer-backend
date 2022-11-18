@@ -91,7 +91,6 @@ func startTask() {
 		&task.IbcStatisticCronTask{},
 		&task.IbcSyncAcknowledgeTxTask{},
 		&task.IbcChainConfigTask{},
-		&task.IbcDenomCalculateTask{},
 		&task.IbcDenomUpdateTask{},
 		&task.IbcSyncTransferTxTask{},
 		&task.IbcTxRelateTask{},

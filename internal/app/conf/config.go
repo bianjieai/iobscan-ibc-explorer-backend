@@ -64,43 +64,32 @@ type Log struct {
 }
 
 type Task struct {
-	CronTimeChainTask                 int   `mapstructure:"cron_time_chain_task"`
-	CronTimeChannelTask               int   `mapstructure:"cron_time_channel_task"`
-	CronTimeRelayerTask               int   `mapstructure:"cron_time_relayer_task"`
-	CronTimeStatisticTask             int   `mapstructure:"cron_time_statistic_task"`
-	CronTimeTokenTask                 int   `mapstructure:"cron_time_token_task"`
-	CronTimeTokenPriceTask            int   `mapstructure:"cron_time_token_price_task"`
-	CronTimeChainConfigTask           int   `mapstructure:"cron_time_chain_config_task"`
-	CronTimeDenomCalculateTask        int   `mapstructure:"cron_time_denom_calculate_task"`
-	CronTimeDenomUpdateTask           int   `mapstructure:"cron_time_denom_update_task"`
-	CronTimeSyncTransferTxTask        int   `mapstructure:"cron_time_sync_transfer_tx_task"`
-	CronTimeIbcTxRelateTask           int   `mapstructure:"cron_time_ibc_tx_relate_task"`
-	CronTimeIbcTxMigrateTask          int   `mapstructure:"cron_time_ibc_tx_migrate_task"`
-	RedisLockExpireTime               int   `mapstructure:"redis_lock_expire_time"`
-	SingleChainSyncTransferTxMax      int   `mapstructure:"single_chain_sync_transfer_tx_max"`
-	SingleChainIbcTxRelateMax         int   `mapstructure:"single_chain_ibc_tx_relate_max"`
-	FixDenomTraceDataStartTime        int64 `mapstructure:"fix_denom_trace_data_start_time"`
-	FixDenomTraceDataEndTime          int64 `mapstructure:"fix_denom_trace_data_end_time"`
-	FixDenomTraceHistoryDataStartTime int64 `mapstructure:"fix_denom_trace_history_data_start_time"`
-	FixDenomTraceHistoryDataEndTime   int64 `mapstructure:"fix_denom_trace_history_data_end_time"`
-	CronTimeSyncAckTxTask             int   `mapstructure:"cron_time_sync_ack_tx_task"`
+	CronTimeChainTask            int `mapstructure:"cron_time_chain_task"`
+	CronTimeChannelTask          int `mapstructure:"cron_time_channel_task"`
+	CronTimeRelayerTask          int `mapstructure:"cron_time_relayer_task"`
+	CronTimeStatisticTask        int `mapstructure:"cron_time_statistic_task"`
+	CronTimeTokenTask            int `mapstructure:"cron_time_token_task"`
+	CronTimeTokenPriceTask       int `mapstructure:"cron_time_token_price_task"`
+	CronTimeChainConfigTask      int `mapstructure:"cron_time_chain_config_task"`
+	CronTimeDenomUpdateTask      int `mapstructure:"cron_time_denom_update_task"`
+	CronTimeSyncTransferTxTask   int `mapstructure:"cron_time_sync_transfer_tx_task"`
+	CronTimeIbcTxRelateTask      int `mapstructure:"cron_time_ibc_tx_relate_task"`
+	CronTimeIbcTxMigrateTask     int `mapstructure:"cron_time_ibc_tx_migrate_task"`
+	RedisLockExpireTime          int `mapstructure:"redis_lock_expire_time"`
+	SingleChainSyncTransferTxMax int `mapstructure:"single_chain_sync_transfer_tx_max"`
+	SingleChainIbcTxRelateMax    int `mapstructure:"single_chain_ibc_tx_relate_max"`
+	CronTimeSyncAckTxTask        int `mapstructure:"cron_time_sync_ack_tx_task"`
 
-	SwitchFixDenomTraceHistoryDataTask bool `mapstructure:"switch_fix_denom_trace_history_data_task"`
-	SwitchFixDenomTraceDataTask        bool `mapstructure:"switch_fix_denom_trace_data_task"`
-	SwitchAddChainTask                 bool `mapstructure:"switch_add_chain_task"`
-	SwitchOnlyInitRelayerData          bool `mapstructure:"switch_only_init_relayer_data"`
-	SwitchIbcTxMigrateTask             bool `mapstructure:"switch_ibc_tx_migrate_task"`
-	SwitchIbcTokenStatisticsTask       bool `mapstructure:"switch_ibc_token_statistics_task"`
-	SwitchIbcChannelStatisticsTask     bool `mapstructure:"switch_ibc_channel_statistics_task"`
-	SwitchIbcRelayerStatisticsTask     bool `mapstructure:"switch_ibc_relayer_statistics_task"`
-	SwitchAddTransferDataTask          bool `mapstructure:"switch_add_transfer_data_task"`
-	SwitchFixFailRecvPacketTask        bool `mapstructure:"switch_fix_fail_recv_packet_task"`
-	SwitchFixDcChainIdTask             bool `mapstructure:"switch_fix_dc_chain_id_task"`
-	SwitchFixBaseDenomChainIdTask      bool `mapstructure:"switch_fix_base_denom_chain_id_task"`
+	SwitchAddChainTask             bool `mapstructure:"switch_add_chain_task"`
+	SwitchOnlyInitRelayerData      bool `mapstructure:"switch_only_init_relayer_data"`
+	SwitchIbcTxMigrateTask         bool `mapstructure:"switch_ibc_tx_migrate_task"`
+	SwitchIbcTokenStatisticsTask   bool `mapstructure:"switch_ibc_token_statistics_task"`
+	SwitchIbcChannelStatisticsTask bool `mapstructure:"switch_ibc_channel_statistics_task"`
+	SwitchIbcRelayerStatisticsTask bool `mapstructure:"switch_ibc_relayer_statistics_task"`
+	SwitchAddTransferDataTask      bool `mapstructure:"switch_add_transfer_data_task"`
 
-	SyncTransferTxWorkerNum    int `mapstructure:"sync_transfer_tx_worker_num"`
-	IbcTxRelateWorkerNum       int `mapstructure:"ibc_tx_relate_worker_num"`
-	FixDenomTraceDataWorkerNum int `mapstructure:"fix_denom_trace_data_worker_num"`
+	SyncTransferTxWorkerNum int `mapstructure:"sync_transfer_tx_worker_num"`
+	IbcTxRelateWorkerNum    int `mapstructure:"ibc_tx_relate_worker_num"`
 
 	CreateAtUseTxTime bool `mapstructure:"create_at_use_tx_time"`
 }
