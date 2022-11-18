@@ -140,10 +140,16 @@ db.ibc_token_trace_statistics.createIndex({
 
 // ex_ibc_tx表
 db.ex_ibc_tx.createIndex({
-    "sc_tx_info.hash": -1,
+    "sc_tx_info.hash": 1,
+    "sc_tx_info.height": 1,
+    "sc_chain": 1,
+    "sc_tx_info.msg.msg.packet_id": 1
 }, {
-    background: true
+    name: "sc_tx_unique",
+    background: true,
+    unique: true
 });
+
 db.ex_ibc_tx.createIndex({
     "dc_tx_info.hash": -1,
 }, {
@@ -164,43 +170,60 @@ db.ex_ibc_tx.createIndex({
 });
 
 db.ex_ibc_tx.createIndex({
-    "base_denom": 1,
-    "status": 1
-}, {
-    background: true
-});
-
-db.ex_ibc_tx.createIndex({
     "dc_tx_info.status": 1
 }, {
     background: true
 });
 
 db.ex_ibc_tx.createIndex({
-    "status": -1,
-    "tx_time": -1
+    "tx_time": 1,
+    "status": 1
 }, {
     background: true
 });
 
 db.ex_ibc_tx.createIndex({
     "create_at": 1,
+}, {
+    background: true
+});
+
+db.ex_ibc_tx.createIndex({
+    "sc_chain":1,
+    "sc_channel": 1,
     "status": 1
 }, {
     background: true
 });
 
+db.getCollection("ex_ibc_tx").createIndex({
+    "base_denom": 1,
+    "base_denom_chain": 1,
+    "status": 1
+}, {
+    background: true
+});
+
+db.getCollection("ex_ibc_tx").createIndex({
+    "sc_chain": 1,
+    "status": 1,
+    "next_try_time": 1
+}, {
+    background: true
+});
 
 // ex_ibc_tx_latest表
 
-db.ex_ibc_tx_latest.createIndex({
-    "denoms.sc_denom" : -1,
+db.getCollection("ex_ibc_tx_latest").createIndex({
+    "denoms.sc_denom": 1,
+    "sc_chain": 1
 }, {
     background: true
 });
 
-db.ex_ibc_tx_latest.createIndex({
-    "denoms.dc_denom" : -1,
+db.getCollection("ex_ibc_tx_latest").createIndex({
+    "denoms.dc_denom": 1,
+    "dc_chain": 1
 }, {
     background: true
 });
@@ -224,18 +247,12 @@ db.ex_ibc_tx_latest.createIndex({
 });
 
 db.ex_ibc_tx_latest.createIndex({
-    "status": -1,
-    "tx_time": -1
-}, {
-    background: true
-});
-
-db.ex_ibc_tx_latest.createIndex({
-    "base_denom": 1,
+    "tx_time": 1,
     "status": 1
 }, {
     background: true
 });
+
 db.ex_ibc_tx_latest.createIndex({
     "dc_tx_info.status": 1
 }, {
@@ -247,29 +264,48 @@ db.ex_ibc_tx_latest.createIndex({
 }, {
     background: true
 });
+
 db.ex_ibc_tx_latest.createIndex({
-    "sc_chain_id": 1,
-    "status": 1
-}, {
-    background: true
-});
-db.ex_ibc_tx_latest.createIndex({
-    "dc_chain_id": 1,
-    "status": 1
-}, {
-    background: true
-});
-db.ex_ibc_tx_latest.createIndex({
-    "sc_chain_id": 1,
-    "dc_chain_id": 1,
+    "dc_chain": 1,
     "status": 1
 }, {
     background: true
 });
 
 db.ex_ibc_tx_latest.createIndex({
-    "create_at": 1,
+    "sc_chain": 1,
+    "dc_chain": 1,
     "status": 1
+}, {
+    background: true
+});
+
+db.ex_ibc_tx_latest.createIndex({
+    "create_at": 1
+}, {
+    background: true
+});
+
+db.getCollection("ex_ibc_tx_latest").createIndex({
+    "sc_chain": 1,
+    "sc_channel": 1,
+    "status": 1
+}, {
+    background: true
+});
+
+db.getCollection("ex_ibc_tx_latest").createIndex({
+    "base_denom": 1,
+    "base_denom_chain": 1,
+    "status": 1
+}, {
+    background: true
+});
+
+db.getCollection("ex_ibc_tx_latest").createIndex({
+    "sc_chain": 1,
+    "status": 1,
+    "next_try_time": 1
 }, {
     background: true
 });

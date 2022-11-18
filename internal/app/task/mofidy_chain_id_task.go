@@ -46,11 +46,48 @@ func (t *ModifyChainIdTask) RunWithParam(category string, coll string) int {
 		handlerOne := newModifyChainIdHandlerOne(chainIdNameMap)
 		handlerOne.exec(coll)
 
-	case "threee", "3":
-
+	case "three", "3":
+		handlerThree := newModifyChainIdHandlerThree(chainIdNameMap)
+		handlerThree.exec()
 	}
-
 	return 1
+}
+
+// ============================================================================
+// ============================================================================
+// ============================================================================
+// bson
+
+func filterBson(k, v string) bson.M {
+	return bson.M{
+		k: v,
+	}
+}
+
+func filterSegmentBson(k, v string, segKey string, seg *segment) bson.M {
+	return bson.M{
+		k: v,
+		segKey: bson.M{
+			"$gte": seg.StartTime,
+			"$lte": seg.EndTime,
+		},
+	}
+}
+
+func setBson(k, v string) bson.M {
+	return bson.M{
+		"$set": bson.M{
+			k: v,
+		},
+	}
+}
+
+func unsetBson(k string) bson.M {
+	return bson.M{
+		"$unset": bson.M{
+			k: nil,
+		},
+	}
 }
 
 // ============================================================================
@@ -69,7 +106,7 @@ func newModifyChainIdHandlerOne(chainIdNameMap map[string]string) *ModifyChainId
 }
 
 func (h *ModifyChainIdHandlerOne) name() string {
-	return "MCH-1"
+	return "MCHOne"
 }
 
 func (h *ModifyChainIdHandlerOne) defaultColls() []string {
@@ -128,28 +165,6 @@ func (h *ModifyChainIdHandlerOne) handleDefault() {
 	}
 	waitGroup.Wait()
 	logrus.Infof("%s handleDefault end, time use %d(s)", h.name(), time.Now().Unix()-st)
-}
-
-func filterBson(k, v string) bson.M {
-	return bson.M{
-		k: v,
-	}
-}
-
-func setBson(k, v string) bson.M {
-	return bson.M{
-		"$set": bson.M{
-			k: v,
-		},
-	}
-}
-
-func unsetBson(k string) bson.M {
-	return bson.M{
-		"$unset": bson.M{
-			k: nil,
-		},
-	}
 }
 
 func (h *ModifyChainIdHandlerOne) updateColl(collName string) {
@@ -344,5 +359,205 @@ func (h *ModifyChainIdHandlerOne) updateColl(collName string) {
 		logrus.Errorf("%s update coll %s err, %v", h.name(), collName, err)
 	} else {
 		logrus.Infof("%s update coll %s end, time use %d(s)", h.name(), collName, time.Now().Unix()-st)
+	}
+}
+
+// ============================================================================
+// ============================================================================
+// ============================================================================
+
+// ModifyChainIdHandlerThree 处理第一类问题
+type ModifyChainIdHandlerThree struct {
+	chainIdNameMap map[string]string
+}
+
+func newModifyChainIdHandlerThree(chainIdNameMap map[string]string) *ModifyChainIdHandlerThree {
+	return &ModifyChainIdHandlerThree{
+		chainIdNameMap: chainIdNameMap,
+	}
+}
+
+func (h *ModifyChainIdHandlerThree) name() string {
+	return "MCHThree"
+}
+
+func (h *ModifyChainIdHandlerThree) getTxSegments(isTargetHistory bool) ([]*segment, error) {
+	var startTime int64
+
+	if isTargetHistory {
+		first, err := ibcTxRepo.FirstHistory()
+		if err != nil {
+			return nil, err
+		}
+		startTime = first.CreateAt
+	} else {
+		first, err := ibcTxRepo.First()
+		if err != nil {
+			return nil, err
+		}
+		startTime = first.CreateAt
+	}
+
+	segs := segmentTool(3600*24*2, startTime, time.Now().Unix())
+	return segs, nil
+}
+
+func (h *ModifyChainIdHandlerThree) exec() {
+	// ex_ibc_tx
+	segments, err := h.getTxSegments(true)
+	if err != nil {
+		logrus.Errorf("%s get tx segments err, %v", h.name(), err)
+		return
+	}
+
+	doHandleSegments(h.name(), 5, segments, true, h.updateColl)
+
+	// ex_ibc_tx_latest
+	latestSegments, err := h.getTxSegments(false)
+	if err != nil {
+		logrus.Errorf("%s get latest tx segments err, %v", h.name(), err)
+		return
+	}
+
+	doHandleSegments(h.name(), 3, latestSegments, false, h.updateColl)
+}
+
+func (h *ModifyChainIdHandlerThree) updateColl(seg *segment, isTargetHistory bool) {
+	collName := entity.CollectionNameExIbcTxLatest
+	if isTargetHistory {
+		collName = entity.CollectionNameExIbcTx
+	}
+
+	const (
+		scChainIdField        = "sc_chain_id"
+		dcChainIdField        = "dc_chain_id"
+		scChainField          = "sc_chain"
+		dcChainField          = "dc_chain"
+		baseDenomChainIdField = "base_denom_chain_id"
+		baseDenomChainField   = "base_denom_chain"
+		createAtField         = "create_at"
+		refundedTxInfoField   = "refunded_tx_info"
+		ackTimeoutTxInfoField = "ack_timeout_tx_info"
+	)
+
+	singleScChainIdFunc := func() error {
+		for chainId, chainName := range h.chainIdNameMap {
+			if chainName == "" {
+				logrus.Errorf("%s chain(%s) name is blank", h.name(), chainId)
+				continue
+			}
+			fb := filterSegmentBson(scChainIdField, chainId, createAtField, seg)
+			sb := setBson(scChainField, chainName)
+			if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	singleDcChainIdFunc := func() error {
+		for chainId, chainName := range h.chainIdNameMap {
+			if chainName == "" {
+				logrus.Errorf("%s chain(%s) name is blank", h.name(), chainId)
+				continue
+			}
+			fb := filterSegmentBson(dcChainIdField, chainId, createAtField, seg)
+			sb := setBson(dcChainField, chainName)
+			if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+				return err
+			}
+		}
+
+		fb := filterSegmentBson(dcChainIdField, "", createAtField, seg)
+		sb := setBson(dcChainField, "")
+		if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	singleBaseDenomChainIdFunc := func() error {
+		for chainId, chainName := range h.chainIdNameMap {
+			if chainName == "" {
+				logrus.Errorf("%s chain(%s) name is blank", h.name(), chainId)
+				continue
+			}
+			fb := filterSegmentBson(baseDenomChainIdField, chainId, createAtField, seg)
+			sb := setBson(baseDenomChainField, chainName)
+			if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+				return err
+			}
+		}
+
+		fb := filterSegmentBson(baseDenomChainIdField, "", createAtField, seg)
+		sb := setBson(baseDenomChainField, "")
+		if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	unsetFieldBatchFunc := func() error {
+		fb := bson.M{
+			createAtField: bson.M{
+				"$gte": seg.StartTime,
+				"$lte": seg.EndTime,
+			},
+		}
+		sb := bson.M{
+			"$unset": bson.M{
+				baseDenomChainIdField: nil,
+				scChainIdField:        nil,
+				dcChainIdField:        nil,
+			},
+		}
+		if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// rename refunded_tx_info -> ack_timeout_tx_info
+	renameFunc := func() error {
+		fb := bson.M{
+			createAtField: bson.M{
+				"$gte": seg.StartTime,
+				"$lte": seg.EndTime,
+			},
+		}
+		sb := bson.M{
+			"$rename": bson.M{
+				refundedTxInfoField: ackTimeoutTxInfoField,
+			},
+		}
+		if err := repository.CustomerUpdateAll(collName, context.Background(), fb, sb); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	logFunc := func(fn string, err error) {
+		logrus.Errorf("%s import err, %s-%d-%d, %v", h.name(), fn, seg.StartTime, seg.EndTime, err)
+	}
+
+	if err := singleScChainIdFunc(); err != nil {
+		logFunc("singleScChainIdFunc", err)
+		return
+	}
+	if err := singleDcChainIdFunc(); err != nil {
+		logFunc("singleDcChainIdFunc", err)
+		return
+	}
+	if err := singleBaseDenomChainIdFunc(); err != nil {
+		logFunc("singleBaseDenomChainIdFunc", err)
+		return
+	}
+	if err := unsetFieldBatchFunc(); err != nil {
+		logFunc("unsetFieldBatchFunc", err)
+		return
+	}
+	if err := renameFunc(); err != nil {
+		logFunc("renameFunc", err)
+		return
 	}
 }
