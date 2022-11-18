@@ -396,11 +396,11 @@ func (repo *TxRepo) GetRelayerTxs(chainId string, relayerAddrs []string, txTypes
 	txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
-	err := repo.coll(chainId).Find(context.Background(), query).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Skip(skip).Limit(limit).All(&res)
+	err := repo.coll(chainId).Find(context.Background(), query).Sort("-time").Hint("time_-1_msgs.type_-1").Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
 
 func (repo *TxRepo) CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
-	return repo.coll(chainId).Find(context.Background(), query).Hint("msgs.msg.signer_1_msgs.type_1_time_1").Count()
+	return repo.coll(chainId).Find(context.Background(), query).Hint("time_-1_msgs.type_-1").Count()
 }
