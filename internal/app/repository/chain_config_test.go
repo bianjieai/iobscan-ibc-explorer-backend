@@ -10,7 +10,7 @@ import (
 
 func TestMain(m *testing.M) {
 	InitMgo(conf.Mongo{
-		Url:      "mongodb://ibc:ibcpassword@192.168.0.135:27017/?authSource=iobscan-ibc",
+		Url:      "mongodb://ibc:ibcpassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc",
 		Database: "iobscan-ibc",
 	}, context.Background())
 	m.Run()
@@ -37,17 +37,17 @@ func TestChainConfigRepo_FindOne(t *testing.T) {
 
 func Test_Update(t *testing.T) {
 	conf := entity.ChainConfig{
-		ChainId: "qa_iris_snapshot",
+		CurrentChainId: "qa_iris_snapshot",
 		IbcInfo: []*entity.IbcInfo{
 			{
-				ChainId: "cosmos_4",
+				Chain: "cosmoshub_4",
 				Paths: []*entity.ChannelPath{
 					{
 						State:     "OPEN",
 						PortId:    "transfer",
 						ChannelId: "channel-1",
-						ChainId:   "cosmos",
-						ScChainId: "qa_iris_snapshot",
+						Chain:     "cosmos",
+						ScChain:   "qa_iris_snapshot",
 						Counterparty: entity.CounterParty{
 							State:     "OPEN",
 							PortId:    "transfer",

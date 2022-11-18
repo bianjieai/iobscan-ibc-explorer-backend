@@ -8,6 +8,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+const (
+	ChainConfigFieldCurrentChainId  = "current_chain_id"
+	ChainConfigFieldGrpcRestGateway = "grpc_rest_gateway"
+	ChainConfigFieldChainName       = "chain_name"
+	ChainConfigFieldIcon            = "icon"
+	ChainConfigFieldStatus          = "status"
+	ChainConfigFieldIbcInfo         = "ibc_info"
+	ChainConfigFieldIbcInfoHashLcd  = "ibc_info_hash_lcd"
+	ChainConfigFieldLcdApiPathd     = "lcd_api_path"
+)
+
 type IChainConfigRepo interface {
 	FindAll() ([]*entity.ChainConfig, error)
 	FindAllChainInfos() ([]*entity.ChainConfig, error)
@@ -39,35 +50,37 @@ func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 func (repo *ChainConfigRepo) FindAllChainInfos() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
-		Select(bson.M{"chain_id": 1, "chain_name": 1, "pretty_name": 1, "icon": 1, "lcd": 1, "lcd_api_path": 1, "status": 1}).All(&res)
+		Select(bson.M{ChainConfigFieldCurrentChainId: 1, ChainConfigFieldChainName: 1, ChainConfigFieldIcon: 1, ChainConfigFieldGrpcRestGateway: 1,
+			ChainConfigFieldLcdApiPathd: 1, ChainConfigFieldStatus: 1}).All(&res)
 	return res, err
 }
 
 func (repo *ChainConfigRepo) FindAllOpenChainInfos() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
-	err := repo.coll().Find(context.Background(), bson.M{"status": entity.ChainStatusOpen}).
-		Select(bson.M{"chain_id": 1, "chain_name": 1, "pretty_name": 1, "icon": 1, "lcd": 1, "lcd_api_path": 1}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldStatus: entity.ChainStatusOpen}).
+		Select(bson.M{ChainConfigFieldCurrentChainId: 1, ChainConfigFieldChainName: 1, ChainConfigFieldIcon: 1, ChainConfigFieldGrpcRestGateway: 1,
+			ChainConfigFieldLcdApiPathd: 1}).All(&res)
 	return res, err
 }
 
 func (repo *ChainConfigRepo) FindOne(chainId string) (*entity.ChainConfig, error) {
 	var res *entity.ChainConfig
-	err := repo.coll().Find(context.Background(), bson.M{"chain_id": chainId}).One(&res)
+	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldCurrentChainId: chainId}).One(&res)
 	return res, err
 }
 
 func (repo *ChainConfigRepo) UpdateIbcInfo(config *entity.ChainConfig) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": config.ChainId}, bson.M{
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainConfigFieldCurrentChainId: config.CurrentChainId}, bson.M{
 		"$set": bson.M{
-			"ibc_info":          config.IbcInfo,
-			"ibc_info_hash_lcd": config.IbcInfoHashLcd,
+			ChainConfigFieldIbcInfo:        config.IbcInfo,
+			ChainConfigFieldIbcInfoHashLcd: config.IbcInfoHashLcd,
 		}})
 }
 
 func (repo *ChainConfigRepo) UpdateLcdApi(config *entity.ChainConfig) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": config.ChainId}, bson.M{
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainConfigFieldCurrentChainId: config.CurrentChainId}, bson.M{
 		"$set": bson.M{
-			"lcd":                            config.Lcd,
+			ChainConfigFieldGrpcRestGateway:  config.GrpcRestGateway,
 			"lcd_api_path.channels_path":     config.LcdApiPath.ChannelsPath,
 			"lcd_api_path.client_state_path": config.LcdApiPath.ClientStatePath,
 			//"lcd_api_path.supply_path":       config.LcdApiPath.SupplyPath,

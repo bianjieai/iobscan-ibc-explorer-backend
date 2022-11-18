@@ -224,7 +224,6 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 		key := fmt.Sprintf("%s%s", item.FeeDenom, item.ChainId)
 		value, exist := relayerTxsAmtMap[key]
 		if exist {
-			value.Txs += item.TotalTxs
 			value.Amt = value.Amt.Add(decimal.NewFromFloat(item.Amount))
 			relayerTxsAmtMap[key] = value
 		} else {
@@ -249,7 +248,7 @@ func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*ent
 	cfg, ok := t.chainConfigMap[chainId]
 	if ok {
 		for _, v := range cfg.IbcInfo {
-			if v.ChainId == dcChainId {
+			if v.Chain == dcChainId {
 				return v.Paths
 			}
 		}
@@ -395,7 +394,7 @@ func (t *IbcRelayerCronTask) getChannelClient(chainId, channelId string) (string
 	}
 
 	port := chainConf.GetPortId(channelId)
-	state, err := queryClientState(chainConf.Lcd, chainConf.LcdApiPath.ClientStatePath, port, channelId)
+	state, err := queryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
 	if err != nil {
 		return "", err
 	}

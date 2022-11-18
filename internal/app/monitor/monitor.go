@@ -36,6 +36,11 @@ const (
 	apiClientState = "/ibc/core/channel/%s/channels/CHANNEL/ports/PORT/client_state"
 )
 
+// unbelievableLcd 不可信的lcd
+var unbelievableLcd = map[string][]string{
+	"sifchain_1": {"https://api.sifchain.chaintools.tech/"},
+}
+
 func NewMetricCronWorkStatus() metrics.Guage {
 	syncWorkStatusMetric := metrics.NewGuage(
 		"ibc_explorer_backend",
@@ -89,14 +94,14 @@ func lcdConnectionStatus(quit chan bool) {
 				return
 			}
 			for _, val := range chainCfgs {
-				if checkLcd(val.Lcd) {
-					lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
+				if checkAndUpdateLcd(val.GrpcRestGateway, val) {
+					lcdConnectStatsMetric.With(ChainTag, val.CurrentChainId).Set(float64(1))
 				} else {
 					if switchLcd(val) {
-						lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
+						lcdConnectStatsMetric.With(ChainTag, val.CurrentChainId).Set(float64(1))
 					} else {
-						lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(-1))
-						logrus.Errorf("monitor chain %s lcd is unavailable", val.ChainId)
+						lcdConnectStatsMetric.With(ChainTag, val.CurrentChainId).Set(float64(-1))
+						logrus.Errorf("monitor chain %s lcd is unavailable", val.CurrentChainId)
 					}
 				}
 			}
@@ -109,16 +114,12 @@ func lcdConnectionStatus(quit chan bool) {
 	}
 }
 
-func checkLcd(lcd string) bool {
-	if _, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, v1Channels)); err != nil {
-		return false
-	}
-
-	return true
-}
-
 // checkAndUpdateLcd If lcd is ok, update db and return true. Else return false
 func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
+	unLcds, ex := unbelievableLcd[cf.CurrentChainId]
+	if ex && utils.InArray(unLcds, lcd) {
+		return false
+	}
 	if resp, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, nodeInfo)); err == nil {
 		var data struct {
 			NodeInfo struct {
@@ -129,7 +130,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 			return false
 		}
 		network := strings.ReplaceAll(data.NodeInfo.Network, "-", "_")
-		if network != cf.ChainId {
+		if network != cf.CurrentChainId {
 			//return false, if lcd node_info network no match chain_id
 			return false
 		}
@@ -152,11 +153,11 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 	}
 
 	if ok {
-		if cf.Lcd == lcd && cf.LcdApiPath.ChannelsPath == fmt.Sprintf(apiChannels, version) && cf.LcdApiPath.ClientStatePath == fmt.Sprintf(apiClientState, version) {
+		if cf.GrpcRestGateway == lcd && cf.LcdApiPath.ChannelsPath == fmt.Sprintf(apiChannels, version) && cf.LcdApiPath.ClientStatePath == fmt.Sprintf(apiClientState, version) {
 			return true
 		}
 
-		cf.Lcd = lcd
+		cf.GrpcRestGateway = lcd
 		cf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, version)
 		cf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, version)
 		if err := chainConfigRepo.UpdateLcdApi(cf); err != nil {
@@ -172,7 +173,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 
 // switchLcd If Switch lcd succeeded, return true. Else return false
 func switchLcd(chainConf *entity.ChainConfig) bool {
-	chainRegistry, err := chainRegistryRepo.FindOne(chainConf.ChainName)
+	chainRegistry, err := chainRegistryRepo.FindOne(chainConf.CurrentChainId)
 	if err != nil {
 		logrus.Errorf("lcd monitor error: %v", err)
 		return false

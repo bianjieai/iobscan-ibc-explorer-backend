@@ -111,9 +111,9 @@ func (t *ChannelTask) analyzeChainConfig() error {
 
 	var chainA, channelA, chainB, channelB string
 	for _, v := range confList {
-		chainA = v.ChainId
+		chainA = v.CurrentChainId
 		for _, info := range v.IbcInfo {
-			chainB = info.ChainId
+			chainB = info.Chain
 			for _, p := range info.Paths {
 				channelA = p.ChannelId
 				channelB = p.Counterparty.ChannelId
@@ -327,7 +327,7 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 
 	for _, v := range statistics {
 		if channelId == v.ChannelId {
-			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom, v.BaseDenomChainId)
+			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom, v.BaseDenomChain)
 			txsCount += v.TxsCount
 			txsValue = txsValue.Add(valueDecimal)
 

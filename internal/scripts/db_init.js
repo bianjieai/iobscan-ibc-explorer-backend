@@ -1,3 +1,5 @@
+// chain_config表
+db.chain_config.createIndex({'current_chain_id': -1}, {background: true, unique: true});
 // ibc_chain表
 db.ibc_chain.createIndex({"chain": -1}, {background: true, unique: true});
 
@@ -56,26 +58,6 @@ db.ibc_relayer.createIndex({
     "channel_pair_info.channel_b": -1,
 }, {background: true});
 
-// // ibc_relayer_config表
-//
-// db.ibc_relayer_config.createIndex({
-//     "relayer_pair_id": 1
-// }, {background: true, unique: true});
-
-// // ibc_relayer_statistics表
-//
-// db.ibc_relayer_statistics.createIndex({
-//     "transfer_base_denom": 1,
-//     "address": 1,
-//     "statistic_id": 1,
-//     "segment_start_time": -1,
-//     "segment_end_time": -1
-// }, {
-//     name: "relayer_statistics_unique",
-//     unique: true,
-//     background: true
-// });
-
 
 // ibc_channel表
 
@@ -89,7 +71,7 @@ db.ibc_channel.createIndex({
 db.ibc_channel_statistics.createIndex({
     "channel_id": 1,
     "base_denom": 1,
-    "base_denom_chain_id": 1,
+    "base_denom_chain": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
