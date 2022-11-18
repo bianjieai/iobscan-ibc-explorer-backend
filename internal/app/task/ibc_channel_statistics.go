@@ -107,9 +107,9 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 	var cl []*dto.ChannelStatisticsDTO
 	for _, v := range txs {
 		isExisted := false
-		ChannelId := generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
+		ChannelId := generateChannelId(v.ScChain, v.ScChannel, v.DcChain, v.DcChannel)
 		for _, c := range cl {
-			if c.ChannelId == ChannelId && v.BaseDenom == c.BaseDenom && v.BaseDenomChainId == c.BaseDenomChain { // 同一个channel
+			if c.ChannelId == ChannelId && v.BaseDenom == c.BaseDenom && v.BaseDenomChain == c.BaseDenomChain { // 同一个channel
 				c.TxsCount += v.Count
 				c.TxsAmount = c.TxsAmount.Add(decimal.NewFromFloat(v.Amount))
 				isExisted = true
@@ -121,7 +121,7 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 			cl = append(cl, &dto.ChannelStatisticsDTO{
 				ChannelId:      ChannelId,
 				BaseDenom:      v.BaseDenom,
-				BaseDenomChain: v.BaseDenomChainId,
+				BaseDenomChain: v.BaseDenomChain,
 				TxsCount:       v.Count,
 				TxsAmount:      decimal.NewFromFloat(v.Amount),
 			})

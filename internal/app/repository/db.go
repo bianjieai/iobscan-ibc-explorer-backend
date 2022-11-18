@@ -99,6 +99,10 @@ func Close() {
 	}
 }
 
+func GetDatabase() *qmgo.Database {
+	return mgo.Database(ibcDatabase)
+}
+
 //var (
 //	Collections = []Docs{
 //		new(IbcChainRepo),
