@@ -15,21 +15,17 @@ import (
 type IExIbcTxRepo interface {
 	InsertBatch(txs []*entity.ExIbcTx) error
 	InsertBatchHistory(txs []*entity.ExIbcTx) error
-	DeleteByRecordIds(recordIds []string) error
-	FindAll(skip, limit int64) ([]*entity.ExIbcTx, error)
-	FindByRecordId(recordId string, targetHistory bool) (*entity.ExIbcTx, error)
 	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
 	FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindByCreateAt(startTime, endTime, skip, limit int64, isTargetHistory bool) ([]*entity.ExIbcTx, error)
 	CountByStatus(status []entity.IbcTxStatus) (int64, error)
-	FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error)
 	First() (*entity.ExIbcTx, error)
 	FirstHistory() (*entity.ExIbcTx, error)
 	Latest() (*entity.ExIbcTx, error)
 	LatestHistory() (*entity.ExIbcTx, error)
-	FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
-	FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error)
+	FindProcessingTxs(chain string, limit int64) ([]*entity.ExIbcTx, error)
+	FindProcessingHistoryTxs(chain string, limit int64) ([]*entity.ExIbcTx, error)
 	UpdateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) error
 	UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool) error
 	CountBaseDenomTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
@@ -117,35 +113,6 @@ func (repo *ExIbcTxRepo) InsertBatchHistory(txs []*entity.ExIbcTx) error {
 	return err
 }
 
-func (repo *ExIbcTxRepo) DeleteByRecordIds(recordIds []string) error {
-	_, err := repo.coll().RemoveAll(context.Background(), bson.M{"record_id": bson.M{"$in": recordIds}})
-	return err
-}
-
-func (repo *ExIbcTxRepo) FindAll(skip, limit int64) ([]*entity.ExIbcTx, error) {
-	var res []*entity.ExIbcTx
-	err := repo.coll().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) FindByRecordId(recordId string, targetHistory bool) (*entity.ExIbcTx, error) {
-	var res *entity.ExIbcTx
-	var err error
-	if targetHistory {
-		err = repo.collHistory().Find(context.Background(), bson.M{"record_id": recordId}).One(&res)
-	} else {
-		err = repo.coll().Find(context.Background(), bson.M{"record_id": recordId}).One(&res)
-	}
-
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) FindAllHistory(skip, limit int64) ([]*entity.ExIbcTx, error) {
-	var res []*entity.ExIbcTx
-	err := repo.collHistory().Find(context.Background(), bson.M{}).Skip(skip).Limit(limit).All(&res)
-	return res, err
-}
-
 func (repo *ExIbcTxRepo) FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
 	err := repo.coll().Find(context.Background(), bson.M{"status": bson.M{"$in": status}}).Sort("tx_time").Limit(limit).All(&res)
@@ -224,15 +191,15 @@ func (repo *ExIbcTxRepo) LatestHistory() (*entity.ExIbcTx, error) {
 	return &res, err
 }
 
-func (repo *ExIbcTxRepo) FindProcessingTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) FindProcessingTxs(chain string, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	err := repo.coll().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_try_time").Limit(limit).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"sc_chain": chain, "status": entity.IbcTxStatusProcessing}).Sort("next_try_time").Limit(limit).All(&res)
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chain string, limit int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	err := repo.collHistory().Find(context.Background(), bson.M{"sc_chain_id": chainId, "status": entity.IbcTxStatusProcessing}).Sort("next_try_time").Limit(limit).All(&res)
+	err := repo.collHistory().Find(context.Background(), bson.M{"sc_chain": chain, "status": entity.IbcTxStatusProcessing}).Sort("next_try_time").Limit(limit).All(&res)
 	return res, err
 }
 
@@ -271,12 +238,12 @@ func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool
 }
 
 func (repo *ExIbcTxRepo) UpdateDenomTrace(originRecordId string, ibcTx *entity.ExIbcTx) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
+	return repo.coll().UpdateId(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
 		"$set": bson.M{
-			"base_denom_chain_id": ibcTx.BaseDenomChainId,
-			"base_denom":          ibcTx.BaseDenom,
-			"create_at":           ibcTx.CreateAt,
-			"update_at":           ibcTx.UpdateAt,
+			"base_denom_chain": ibcTx.BaseDenomChain,
+			"base_denom":       ibcTx.BaseDenom,
+			"create_at":        ibcTx.CreateAt,
+			"update_at":        ibcTx.UpdateAt,
 		},
 	})
 }
@@ -284,11 +251,11 @@ func (repo *ExIbcTxRepo) UpdateDenomTrace(originRecordId string, ibcTx *entity.E
 func (repo *ExIbcTxRepo) UpdateDenomTraceHistory(originRecordId string, ibcTx *entity.ExIbcTx) error {
 	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": originRecordId}, bson.M{
 		"$set": bson.M{
-			"record_id":           ibcTx.RecordId,
-			"base_denom_chain_id": ibcTx.BaseDenomChainId,
-			"base_denom":          ibcTx.BaseDenom,
-			"create_at":           ibcTx.CreateAt,
-			"update_at":           ibcTx.UpdateAt,
+			"record_id":        ibcTx.RecordId,
+			"base_denom_chain": ibcTx.BaseDenomChain,
+			"base_denom":       ibcTx.BaseDenom,
+			"create_at":        ibcTx.CreateAt,
+			"update_at":        ibcTx.UpdateAt,
 		},
 	})
 }
@@ -309,8 +276,8 @@ func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64)
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -320,10 +287,10 @@ func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64)
 
 	project := bson.M{
 		"$project": bson.M{
-			"_id":                 0,
-			"base_denom":          "$_id.base_denom",
-			"base_denom_chain_id": "$_id.base_denom_chain_id",
-			"count":               "$count",
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"count":            "$count",
 		},
 	}
 
@@ -360,8 +327,8 @@ func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(startTime, endTime int64) []bs
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"denom":    "$denoms.dc_denom",
-				"chain_id": "$dc_chain_id",
+				"denom": "$denoms.dc_denom",
+				"chain": "$dc_chain",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -372,10 +339,10 @@ func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(startTime, endTime int64) []bs
 	project :=
 		bson.M{
 			"$project": bson.M{
-				"_id":      0,
-				"denom":    "$_id.denom",
-				"chain_id": "$_id.chain_id",
-				"count":    "$count",
+				"_id":   0,
+				"denom": "$_id.denom",
+				"chain": "$_id.chain",
+				"count": "$count",
 			}}
 
 	var pipe []bson.M
@@ -424,12 +391,12 @@ func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"sc_relayer":  "$refunded_tx_info.msg.msg.signer",
-				"dc_relayer":  "$dc_tx_info.msg.msg.signer",
-				"sc_chain_id": "$sc_chain_id",
-				"sc_channel":  "$sc_channel",
-				"dc_chain_id": "$dc_chain_id",
-				"dc_channel":  "$dc_channel",
+				"sc_relayer": "$refunded_tx_info.msg.msg.signer",
+				"dc_relayer": "$dc_tx_info.msg.msg.signer",
+				"sc_chain":   "$sc_chain",
+				"sc_channel": "$sc_channel",
+				"dc_chain":   "$dc_chain",
+				"dc_channel": "$dc_channel",
 			},
 		},
 	}
@@ -438,8 +405,8 @@ func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 			"_id":              0,
 			"sc_chain_address": "$_id.sc_relayer",
 			"dc_chain_address": "$_id.dc_relayer",
-			"sc_chain_id":      "$_id.sc_chain_id",
-			"dc_chain_id":      "$_id.dc_chain_id",
+			"sc_chain":         "$_id.sc_chain",
+			"dc_chain":         "$_id.dc_chain",
 			"sc_channel":       "$_id.sc_channel",
 			"dc_channel":       "$_id.dc_channel",
 		},
@@ -470,16 +437,6 @@ func (repo *ExIbcTxRepo) GetMinTxTime(isTargetHistory bool) (int64, error) {
 	return res.TxTime, nil
 }
 
-func (repo *ExIbcTxRepo) oneRelayerPacketCond(relayer *dto.GetRelayerInfoDTO) bson.M {
-	return bson.M{
-		"dc_tx_info.msg.msg.signer": relayer.DcChainAddress,
-		"sc_chain_id":               relayer.ScChainId,
-		"dc_chain_id":               relayer.DcChainId,
-		"sc_channel":                relayer.ScChannel,
-		"dc_channel":                relayer.DcChannel,
-	}
-}
-
 func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
@@ -493,13 +450,13 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bs
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"dc_chain_id":         "$dc_chain_id",
-				"dc_channel":          "$dc_channel",
-				"sc_chain_id":         "$sc_chain_id",
-				"sc_channel":          "$sc_channel",
-				"relayer":             "$dc_tx_info.msg.msg.signer",
-				"base_denom":          "$base_denom",
-				"base_denom_chain_id": "$base_denom_chain_id",
+				"dc_chain":         "$dc_chain",
+				"dc_channel":       "$dc_channel",
+				"sc_chain":         "$sc_chain",
+				"sc_channel":       "$sc_channel",
+				"relayer":          "$dc_tx_info.msg.msg.signer",
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -508,15 +465,15 @@ func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bs
 	}
 	project := bson.M{
 		"$project": bson.M{
-			"_id":                 0,
-			"dc_chain_address":    "$_id.relayer",
-			"dc_chain_id":         "$_id.dc_chain_id",
-			"dc_channel":          "$_id.dc_channel",
-			"sc_chain_id":         "$_id.sc_chain_id",
-			"sc_channel":          "$_id.sc_channel",
-			"base_denom":          "$_id.base_denom",
-			"base_denom_chain_id": "$_id.base_denom_chain_id",
-			"count":               "$count",
+			"_id":              0,
+			"dc_chain_address": "$_id.relayer",
+			"dc_chain":         "$_id.dc_chain",
+			"dc_channel":       "$_id.dc_channel",
+			"sc_chain":         "$_id.sc_chain",
+			"sc_channel":       "$_id.sc_channel",
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"count":            "$count",
 		},
 	}
 	var pipe []bson.M

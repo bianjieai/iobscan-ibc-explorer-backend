@@ -178,10 +178,10 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 			}
 
 			for _, val := range txs {
-				bindedTx, err := txRepo.GetTxByHash(val.DcChainId, val.DcTxInfo.Hash)
+				bindedTx, err := txRepo.GetTxByHash(val.DcChain, val.DcTxInfo.Hash)
 				if err != nil {
 					logrus.Errorf("task %s  %s err, chain_id: %s,dc_tx_hash:%s packet_id: %s, %v", t.Name(), target,
-						val.ScChainId, val.DcTxInfo.Hash, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+						val.ScChain, val.DcTxInfo.Hash, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 					continue
 				}
 				packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
@@ -190,7 +190,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					ackTx, err := findAckTx(val, ackRes, wAckOk)
 					if err != nil {
 						logrus.Errorf("task %s findAckTx %s err, chain_id: %s, packet_id: %s, %v",
-							t.Name(), target, val.ScChainId, packetId, err.Error())
+							t.Name(), target, val.ScChain, packetId, err.Error())
 						return
 					}
 					if ackTx != nil {
@@ -202,25 +202,25 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 						}
 						err = t.FixAcknowledgeTx(val.RecordId, ackTx, isTargetHistory, status, packetId)
 						if err != nil && err != qmgo.ErrNoSuchDocuments {
-							logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+							logrus.Errorf("task %s  %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChain, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 							return
 						}
 					} else {
 						logrus.Debugf("status:%d recv_packet(chain_id:%s hash:%s) findWriteAck is ok,but no found acknowledge tx(chain_id:%s) tx",
-							val.Status, val.DcChainId, bindedTx.TxHash, val.ScChainId)
+							val.Status, val.DcChain, bindedTx.TxHash, val.ScChain)
 						//status:fail->process
 						err = t.FixRecvPacketTxs(val.RecordId, nil, nil, isTargetHistory, entity.IbcTxStatusProcessing, packetId)
 						if err != nil && err != qmgo.ErrNoSuchDocuments {
 							logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v",
-								t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+								t.Name(), target, val.ScChain, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 							return
 						}
 					}
 				} else {
 					//status: fail->success or fail->refund or fail->process
-					recvTxs, err := txRepo.GetRecvPacketTxs(val.DcChainId, val.ScTxInfo.Msg.CommonMsg().PacketId)
+					recvTxs, err := txRepo.GetRecvPacketTxs(val.DcChain, val.ScTxInfo.Msg.CommonMsg().PacketId)
 					if err != nil {
-						logrus.Errorf("task %s GetRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, packetId, err)
+						logrus.Errorf("task %s GetRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChain, packetId, err)
 						return
 					}
 
@@ -242,7 +242,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					if varfindWriteAck {
 						ackTx, err = findAckTx(val, varAckRes, ackOk)
 						if err != nil {
-							logrus.Errorf("task %s findAckTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, packetId, err)
+							logrus.Errorf("task %s findAckTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChain, packetId, err)
 							return
 						}
 
@@ -256,7 +256,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 					}
 					err = t.FixRecvPacketTxs(val.RecordId, recvTx, ackTx, isTargetHistory, status, packetId)
 					if err != nil && err != qmgo.ErrNoSuchDocuments {
-						logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, packetId, err)
+						logrus.Errorf("task %s FixRecvPacketTxs %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChain, packetId, err)
 						return
 					}
 				}
@@ -276,7 +276,7 @@ func (t *FixFailTxTask) fixFailTxs(target string, segments []*segment) error {
 func findAckTx(val *entity.ExIbcTx, ackRes string, ackOk bool) (*entity.Tx, error) {
 	var ackTx *entity.Tx
 	packetId := val.ScTxInfo.Msg.CommonMsg().PacketId
-	ackTxs, err := txRepo.GetAcknowledgeTxs(val.ScChainId, packetId)
+	ackTxs, err := txRepo.GetAcknowledgeTxs(val.ScChain, packetId)
 	if err != nil {
 		return nil, err
 	}

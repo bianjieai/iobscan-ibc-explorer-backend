@@ -69,7 +69,7 @@ func (t *FixFailRecvPacketTask) fixFailRecvPacketTxs(target string, segments []*
 			for _, val := range txs {
 				err := SaveRecvPacketTx(val, isTargetHistory)
 				if err != nil && err != qmgo.ErrNoSuchDocuments {
-					logrus.Errorf("task %s SaveRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+					logrus.Errorf("task %s SaveRecvPacketTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChain, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 					return
 				}
 			}

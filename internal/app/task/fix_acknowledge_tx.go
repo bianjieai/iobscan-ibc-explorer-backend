@@ -71,7 +71,7 @@ func (t *FixAcknowledgeTxTask) fixAcknowledgeTxs(target string, segments []*segm
 			for _, val := range txs {
 				err := t.SaveAcknowledgeTx(val, isTargetHistory)
 				if err != nil && err != qmgo.ErrNoSuchDocuments {
-					logrus.Errorf("task %s saveAcknowledgeTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChainId, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
+					logrus.Errorf("task %s saveAcknowledgeTx %s err, chain_id: %s, packet_id: %s, %v", t.Name(), target, val.ScChain, val.ScTxInfo.Msg.CommonMsg().PacketId, err)
 					return
 				}
 			}
@@ -88,7 +88,7 @@ func (t *FixAcknowledgeTxTask) fixAcknowledgeTxs(target string, segments []*segm
 
 func (t *FixAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history bool) error {
 	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, packetId)
+	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChain, packetId)
 	if err != nil {
 		return err
 	}

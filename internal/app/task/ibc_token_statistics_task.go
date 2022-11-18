@@ -163,7 +163,7 @@ func (t *TokenStatisticsTask) saveTraceReceiveData(dtoList []*dto.CountIBCTokenR
 	for _, v := range dtoList {
 		statistics = append(statistics, &entity.IBCTokenTraceStatistics{
 			Denom:            v.Denom,
-			Chain:            v.ChainId,
+			Chain:            v.Chain,
 			ReceiveTxs:       v.Count,
 			SegmentStartTime: segmentStart,
 			SegmentEndTime:   segmentEnd,

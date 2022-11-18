@@ -288,8 +288,8 @@ func (t *RelayerDataTask) handleIbcTxHistory(startTime, endTime int64) []*entity
 
 func (t *RelayerDataTask) createChannelPairInfoData(dto *dto.GetRelayerInfoDTO) entity.ChannelPairInfo {
 	channelPairInfo := entity.ChannelPairInfo{
-		ChainA:        dto.ScChainId,
-		ChainB:        dto.DcChainId,
+		ChainA:        dto.ScChain,
+		ChainB:        dto.DcChain,
 		ChannelA:      dto.ScChannel,
 		ChannelB:      dto.DcChannel,
 		ChainAAddress: dto.ScChainAddress,

@@ -126,13 +126,13 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 	chainHashMap := make(map[string][]string)
 	for _, v := range ibcTxs {
 		if v.DcTxInfo != nil {
-			chainHashMap[v.DcChainId] = append(chainHashMap[v.DcChainId], v.DcTxInfo.Hash)
+			chainHashMap[v.DcChain] = append(chainHashMap[v.DcChain], v.DcTxInfo.Hash)
 		}
 		if v.RefundedTxInfo != nil {
-			chainHashMap[v.ScChainId] = append(chainHashMap[v.ScChainId], v.RefundedTxInfo.Hash)
+			chainHashMap[v.ScChain] = append(chainHashMap[v.ScChain], v.RefundedTxInfo.Hash)
 		}
 		if v.ScTxInfo != nil {
-			chainHashMap[v.ScChainId] = append(chainHashMap[v.ScChainId], v.ScTxInfo.Hash)
+			chainHashMap[v.ScChain] = append(chainHashMap[v.ScChain], v.ScTxInfo.Hash)
 		}
 	}
 
@@ -152,7 +152,7 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 	// 补充数据
 	for _, v := range ibcTxs {
 		if v.ScTxInfo != nil {
-			tx, ok := chainHashTxMap[fmt.Sprintf("%s%d%s", v.ScChainId, v.ScTxInfo.Height, v.ScTxInfo.Hash)]
+			tx, ok := chainHashTxMap[fmt.Sprintf("%s%d%s", v.ScChain, v.ScTxInfo.Height, v.ScTxInfo.Hash)]
 			if ok {
 				v.ScTxInfo.Memo = tx.Memo
 				v.ScTxInfo.Signers = tx.Signers
@@ -169,7 +169,7 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 		}
 
 		if v.DcTxInfo != nil {
-			tx, ok := chainHashTxMap[fmt.Sprintf("%s%d%s", v.DcChainId, v.DcTxInfo.Height, v.DcTxInfo.Hash)]
+			tx, ok := chainHashTxMap[fmt.Sprintf("%s%d%s", v.DcChain, v.DcTxInfo.Height, v.DcTxInfo.Hash)]
 			if ok {
 				v.DcTxInfo.Memo = tx.Memo
 				v.DcTxInfo.Signers = tx.Signers
@@ -186,7 +186,7 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 		}
 
 		if v.RefundedTxInfo != nil {
-			tx, ok := chainHashTxMap[fmt.Sprintf("%s%d%s", v.ScChainId, v.RefundedTxInfo.Height, v.RefundedTxInfo.Hash)]
+			tx, ok := chainHashTxMap[fmt.Sprintf("%s%d%s", v.ScChain, v.RefundedTxInfo.Height, v.RefundedTxInfo.Hash)]
 			if ok {
 				v.RefundedTxInfo.Memo = tx.Memo
 				v.RefundedTxInfo.Signers = tx.Signers
@@ -194,10 +194,10 @@ func (t *FixIbxTxTask) fixTxs(ibcTxs []*entity.ExIbcTx, isTargetHistory bool) {
 			}
 		}
 
-		if cf, ok := t.chainMap[v.ScChainId]; ok {
+		if cf, ok := t.chainMap[v.ScChain]; ok {
 			v.ScClientId = cf.GetChannelClient(v.ScPort, v.ScChannel)
 		}
-		if cf, ok := t.chainMap[v.DcChainId]; ok {
+		if cf, ok := t.chainMap[v.DcChain]; ok {
 			v.DcClientId = cf.GetChannelClient(v.DcPort, v.DcChannel)
 		}
 

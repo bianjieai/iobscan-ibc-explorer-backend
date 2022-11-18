@@ -80,7 +80,7 @@ func (t *FixDcChainIdTask) fixDcChainId(target string, segments []*segment) {
 			}
 
 			for _, tx := range txs {
-				dcChainId, _, dcChannel := matchDcInfo(tx.ScChainId, constant.PortTransfer, tx.ScChannel, t.chainMap)
+				dcChainId, _, dcChannel := matchDcInfo(tx.ScChain, constant.PortTransfer, tx.ScChannel, t.chainMap)
 				toBeFixedTxs = append(toBeFixedTxs, &fixDcChainIdTx{
 					RecordId:  tx.RecordId,
 					DcChainId: dcChainId,

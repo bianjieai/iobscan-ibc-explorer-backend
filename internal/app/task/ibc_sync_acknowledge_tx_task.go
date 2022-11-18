@@ -41,7 +41,7 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 				logrus.Warnf("task %s SaveAcknowledgeTx failed %s, chain_id:%s packet_id:%s",
 					t.Name(),
 					err.Error(),
-					val.ScChainId,
+					val.ScChain,
 					val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
@@ -59,7 +59,7 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 				logrus.Warnf("task %s SaveRecvPacketTx failed %s, chain_id:%s packet_id:%s",
 					t.Name(),
 					err.Error(),
-					val.ScChainId,
+					val.ScChain,
 					val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
@@ -86,7 +86,7 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 
 func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history bool) error {
 	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, packetId)
+	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChain, packetId)
 	if err != nil {
 		return err
 	}
@@ -124,13 +124,13 @@ func getMsgByType(tx entity.Tx, msgType, packetId string) *model.TxMsg {
 
 func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChainId, packetId)
+	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChain, packetId)
 	if err != nil {
 		return err
 	}
 	//dcAddrMap := make(map[string]struct{}, 20)
 	//if len(recvTxs) > 0 {
-	//	relayers, err := relayerRepo.FindRelayer(ibcTx.ScChainId, ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer, ibcTx.ScChannel)
+	//	relayers, err := relayerRepo.FindRelayer(ibcTx.ScChain, ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer, ibcTx.ScChannel)
 	//	if err != nil {
 	//		return err
 	//	}
@@ -189,7 +189,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 		})
 	} else {
 		logrus.Debugf("status:%d recv_packet(chain_id:%s)  no found transfer(hash:%s chain_id:%s)",
-			ibcTx.Status, ibcTx.DcChainId, ibcTx.ScTxInfo.Hash, ibcTx.ScChainId)
+			ibcTx.Status, ibcTx.DcChain, ibcTx.ScTxInfo.Hash, ibcTx.ScChain)
 	}
 	return nil
 }

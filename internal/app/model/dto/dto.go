@@ -21,9 +21,9 @@ type GetBaseDenomFromIbcDenomDTO struct {
 }
 
 type CountIBCTokenRecvTxsDTO struct {
-	Denom   string `bson:"denom"`
-	ChainId string `bson:"chain_id"`
-	Count   int64  `bson:"count"`
+	Denom string `bson:"denom"`
+	Chain string `bson:"chain"`
+	Count int64  `bson:"count"`
 }
 
 type AggregateIBCChainDTO struct {
@@ -55,9 +55,9 @@ type RelayerFeeStatisticsDTO struct {
 type GetRelayerInfoDTO struct {
 	ScChainAddress string `bson:"sc_chain_address"`
 	DcChainAddress string `bson:"dc_chain_address"`
-	ScChainId      string `bson:"sc_chain_id"`
+	ScChain        string `bson:"sc_chain"`
 	ScChannel      string `bson:"sc_channel"`
-	DcChainId      string `bson:"dc_chain_id"`
+	DcChain        string `bson:"dc_chain"`
 	DcChannel      string `bson:"dc_channel"`
 }
 

@@ -101,7 +101,7 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 		}
 
 		packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-		tx, err := txRepo.GetTxByHash(ibcTx.ScChainId, ibcTx.ScTxInfo.Hash)
+		tx, err := txRepo.GetTxByHash(ibcTx.ScChain, ibcTx.ScTxInfo.Hash)
 		if err != nil {
 			logrus.Errorf("task %s GetTxByHash(hash: %s) error, %v", t.Name(), ibcTx.ScTxInfo.Hash, err)
 			continue
@@ -111,7 +111,7 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 			if msg.Type == constant.MsgTypeTransfer && msg.CommonMsg().PacketId == packetId {
 				_, _, denomFullPath, _, _ := parseTransferTxEvents(msgIndex, &tx)
 
-				ibcDenom := traceDenom(denomFullPath, ibcTx.ScChainId, t.chainMap)
+				ibcDenom := traceDenom(denomFullPath, ibcTx.ScChain, t.chainMap)
 				if err = ibcTxRepo.UpdateBaseDenom(ibcTx.RecordId, ibcDenom.BaseDenom, ibcDenom.BaseDenomChain, isTargetHistory); err != nil {
 					logrus.Errorf("task %s UpdateBaseDenom(recordId: %s) error, %v", t.Name(), ibcTx.RecordId, err)
 				}
@@ -126,10 +126,10 @@ func (t *FixBaseDenomChainIdTask) handleSegment(startTime, endTime int64, baseDe
 						dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
 						dcDenom := &entity.IBCDenom{
 							Symbol:         "",
-							Chain:          ibcTx.DcChainId,
+							Chain:          ibcTx.DcChain,
 							Denom:          ibcTx.Denoms.DcDenom,
 							PrevDenom:      ibcTx.Denoms.ScDenom,
-							PrevChain:      ibcTx.ScChainId,
+							PrevChain:      ibcTx.ScChain,
 							BaseDenom:      ibcDenom.BaseDenom,
 							BaseDenomChain: ibcDenom.BaseDenomChain,
 							DenomPath:      dcDenomPath,

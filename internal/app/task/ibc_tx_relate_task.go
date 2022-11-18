@@ -163,12 +163,12 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 
 	var ibcDenomNewList entity.IBCDenomList
 	for _, ibcTx := range ibcTxList {
-		if ibcTx.DcChainId == "" || ibcTx.ScTxInfo == nil || ibcTx.ScTxInfo.Msg == nil {
+		if ibcTx.DcChain == "" || ibcTx.ScTxInfo == nil || ibcTx.ScTxInfo.Msg == nil {
 			w.setNextTryTime(ibcTx)
 		} else {
 			packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-			if syncTxs, ok := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChainId, packetId)]; ok {
-				ackSyncTxs := ackTxMap[w.genPacketTxMapKey(ibcTx.ScChainId, packetId)]
+			if syncTxs, ok := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChain, packetId)]; ok {
+				ackSyncTxs := ackTxMap[w.genPacketTxMapKey(ibcTx.ScChain, packetId)]
 				ibcDenom := w.loadRecvPacketTx(ibcTx, syncTxs, ackSyncTxs)
 				if ibcDenom != nil && denomMap[ibcDenom.Denom] == nil {
 					denomMap[ibcDenom.Denom] = ibcDenom
@@ -176,8 +176,8 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 				}
 			}
 
-			if syncTxs, ok := refundedTxMap[w.genPacketTxMapKey(ibcTx.ScChainId, packetId)]; ok && ibcTx.Status == entity.IbcTxStatusProcessing {
-				recvSyncTxs := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChainId, packetId)]
+			if syncTxs, ok := refundedTxMap[w.genPacketTxMapKey(ibcTx.ScChain, packetId)]; ok && ibcTx.Status == entity.IbcTxStatusProcessing {
+				recvSyncTxs := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChain, packetId)]
 				w.loadTimeoutPacketTx(ibcTx, syncTxs, recvSyncTxs)
 			}
 		}
@@ -204,7 +204,7 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 
 func (w *ibcTxRelateWorker) updateProcessInfo(ibcTx *entity.ExIbcTx, timeOutMap map[string]struct{}, noFoundAckMap map[string]struct{}) *entity.ExIbcTx {
 	if ibcTx.Status == entity.IbcTxStatusProcessing {
-		if ibcTx.DcChainId == "" {
+		if ibcTx.DcChain == "" {
 			ibcTx.ProcessInfo = constant.NoFoundDcChainId
 		} else {
 			if _, ok := timeOutMap[ibcTx.RecordId]; ok {
@@ -306,12 +306,12 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 					dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
 					ibcDenom = &entity.IBCDenom{
 						Symbol:         "",
-						Chain:          ibcTx.DcChainId,
+						Chain:          ibcTx.DcChain,
 						Denom:          dcDenom,
 						PrevDenom:      ibcTx.Denoms.ScDenom,
-						PrevChain:      ibcTx.ScChainId,
+						PrevChain:      ibcTx.ScChain,
 						BaseDenom:      ibcTx.BaseDenom,
-						BaseDenomChain: ibcTx.BaseDenomChainId,
+						BaseDenomChain: ibcTx.BaseDenomChain,
 						DenomPath:      dcDenomPath,
 						IsBaseDenom:    false,
 						RootDenom:      rootDenom,
@@ -439,14 +439,14 @@ func (w *ibcTxRelateWorker) setNextTryTime(ibcTx *entity.ExIbcTx) {
 func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx, bool) {
 	var repaired bool
 	if ibcTx.DcClientId == "" {
-		if cf, ok := w.chainMap[ibcTx.DcChainId]; ok {
+		if cf, ok := w.chainMap[ibcTx.DcChain]; ok {
 			ibcTx.DcClientId = cf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
 			repaired = true
 		}
 	}
 
 	if ibcTx.ScClientId == "" {
-		if cf, ok := w.chainMap[ibcTx.ScChainId]; ok {
+		if cf, ok := w.chainMap[ibcTx.ScChain]; ok {
 			ibcTx.ScClientId = cf.GetChannelClient(ibcTx.ScPort, ibcTx.ScChannel)
 			repaired = true
 		}
@@ -455,7 +455,7 @@ func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx
 	if ibcTx.ScConnectionId == "" {
 		packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
 		status := entity.TxStatusSuccess
-		if transferTxs, err := txRepo.FindByPacketIds(ibcTx.ScChainId, constant.MsgTypeTransfer, []string{packetId}, &status); err == nil && len(transferTxs) > 0 {
+		if transferTxs, err := txRepo.FindByPacketIds(ibcTx.ScChain, constant.MsgTypeTransfer, []string{packetId}, &status); err == nil && len(transferTxs) > 0 {
 			for msgIndex, msg := range transferTxs[0].DocTxMsgs {
 				if msg.Type == constant.MsgTypeTransfer && msg.CommonMsg().PacketId == packetId {
 					_, _, _, _, ibcTx.ScConnectionId = parseTransferTxEvents(msgIndex, transferTxs[0])
@@ -579,7 +579,7 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string][]*dto.PacketIdDTO {
 	res := make(map[string][]*dto.PacketIdDTO)
 	for _, tx := range ibcTxList {
-		if tx.DcChainId == "" || tx.ScTxInfo == nil || tx.ScTxInfo.Msg == nil {
+		if tx.DcChain == "" || tx.ScTxInfo == nil || tx.ScTxInfo.Msg == nil {
 			logrus.Warningf("ibc tx dc_chain_id or sc_tx_info exception, record_id: %s", tx.RecordId)
 			continue
 		}
@@ -590,8 +590,8 @@ func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string
 			continue
 		}
 
-		res[tx.DcChainId] = append(res[tx.DcChainId], &dto.PacketIdDTO{
-			DcChainId:     tx.DcChainId,
+		res[tx.DcChain] = append(res[tx.DcChain], &dto.PacketIdDTO{
+			DcChainId:     tx.DcChain,
 			TimeoutHeight: transferMsg.TimeoutHeight.RevisionHeight,
 			PacketId:      transferMsg.PacketId,
 			TimeOutTime:   transferMsg.TimeoutTimestamp,
@@ -618,12 +618,12 @@ func (w *ibcTxRelateWorker) findLatestBlock(scChainId string, ibcTxList []*entit
 
 	findFunc(scChainId)
 	for _, tx := range ibcTxList {
-		if tx.DcChainId == "" {
+		if tx.DcChain == "" {
 			continue
 		}
 
-		if _, ok := blockMap[tx.DcChainId]; !ok {
-			findFunc(tx.DcChainId)
+		if _, ok := blockMap[tx.DcChain]; !ok {
+			findFunc(tx.DcChain)
 		}
 	}
 

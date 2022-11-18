@@ -242,12 +242,12 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				ScChannel:      scChannel,
 				ScConnectionId: scConnection,
 				ScClientId:     "",
-				ScChainId:      chainId,
+				ScChain:        chainId,
 				DcPort:         dcPort,
 				DcChannel:      dcChannel,
 				DcConnectionId: "",
 				DcClientId:     "",
-				DcChainId:      dcChainId,
+				DcChain:        dcChainId,
 				Sequence:       sequence,
 				Status:         ibcTxStatus,
 				ScTxInfo: &entity.TxInfo{
@@ -271,12 +271,12 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 					ScDenom: scDenom,
 					DcDenom: "",
 				},
-				BaseDenom:        baseDemom,
-				BaseDenomChainId: baseDenomChainId,
-				RetryTimes:       0,
-				NextTryTime:      nowUnix,
-				CreateAt:         createAt,
-				UpdateAt:         createAt,
+				BaseDenom:      baseDemom,
+				BaseDenomChain: baseDenomChainId,
+				RetryTimes:     0,
+				NextTryTime:    nowUnix,
+				CreateAt:       createAt,
+				UpdateAt:       createAt,
 			}
 			w.setClientId(exIbcTx) // set ScClientId, DcClientId
 			ibcTxList = append(ibcTxList, exIbcTx)
@@ -286,14 +286,14 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 }
 
 func (w *syncTransferTxWorker) setClientId(ibcTx *entity.ExIbcTx) {
-	chainConf, ok := w.chainMap[ibcTx.ScChainId]
+	chainConf, ok := w.chainMap[ibcTx.ScChain]
 	if ok {
 		client := chainConf.GetChannelClient(ibcTx.ScPort, ibcTx.ScChannel)
 		ibcTx.ScClientId = client
 	}
 
-	if ibcTx.DcChainId != "" {
-		chainConf, ok = w.chainMap[ibcTx.DcChainId]
+	if ibcTx.DcChain != "" {
+		chainConf, ok = w.chainMap[ibcTx.DcChain]
 		if ok {
 			client := chainConf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
 			ibcTx.DcClientId = client

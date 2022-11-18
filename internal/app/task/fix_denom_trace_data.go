@@ -256,7 +256,7 @@ func (w *fixDenomTraceDataWorker) fixData(startTime, endTime int64) {
 			// update ibc tx
 			if scDenom != nil {
 				tx.BaseDenom = scDenom.BaseDenom
-				tx.BaseDenomChainId = scDenom.BaseDenomChain
+				tx.BaseDenomChain = scDenom.BaseDenomChain
 			}
 			if tx.CreateAt < fixCreateAtErrTime {
 				tx.CreateAt = tx.TxTime
@@ -303,7 +303,7 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 	// parse sc denom
 	var scDenomEntityNew, dcDenomEntityNew *entity.IBCDenom
 	scDenom := tx.Denoms.ScDenom
-	scDenomEntity, ok := w.denomMap[fmt.Sprintf("%s%s", tx.ScChainId, scDenom)]
+	scDenomEntity, ok := w.denomMap[fmt.Sprintf("%s%s", tx.ScChain, scDenom)]
 	if ok {
 		var scDenomFullPath string
 		if scDenomEntity.DenomPath != "" {
@@ -311,12 +311,12 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 		} else {
 			scDenomFullPath = scDenomEntity.BaseDenom
 		}
-		scDenomEntityNew = traceDenom(scDenomFullPath, tx.ScChainId, w.chainMap)
+		scDenomEntityNew = traceDenom(scDenomFullPath, tx.ScChain, w.chainMap)
 	}
 
 	// parse dc denom
 	if scDenomEntityNew == nil {
-		_ = storageCache.AddMissDenom(utils.Md5(tx.RecordId), tx.ScChainId, scDenom)
+		_ = storageCache.AddMissDenom(utils.Md5(tx.RecordId), tx.ScChain, scDenom)
 		return nil, nil
 	} else {
 		scDenomEntityNew.CreateAt = scDenomEntity.CreateAt
@@ -333,14 +333,14 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 	}
 
 	dcDenom := tx.Denoms.DcDenom
-	DcDenomEntity, ok := w.denomMap[fmt.Sprintf("%s%s", tx.DcChainId, dcDenom)]
+	DcDenomEntity, ok := w.denomMap[fmt.Sprintf("%s%s", tx.DcChain, dcDenom)]
 	if ok {
 		dcDenomEntityNew = &entity.IBCDenom{
 			Symbol:         "",
-			Chain:          tx.DcChainId,
+			Chain:          tx.DcChain,
 			Denom:          dcDenom,
 			PrevDenom:      tx.Denoms.ScDenom,
-			PrevChain:      tx.ScChainId,
+			PrevChain:      tx.ScChain,
 			BaseDenom:      scDenomEntityNew.BaseDenom,
 			BaseDenomChain: scDenomEntityNew.BaseDenomChain,
 			DenomPath:      DcDenomEntity.DenomPath,
@@ -350,7 +350,7 @@ func (w *fixDenomTraceDataWorker) parseDenom(tx *entity.ExIbcTx) (*entity.IBCDen
 			UpdateAt:       DcDenomEntity.UpdateAt,
 		}
 	} else {
-		_ = storageCache.AddMissDenom(tx.RecordId, tx.ScChainId, scDenom)
+		_ = storageCache.AddMissDenom(tx.RecordId, tx.ScChain, scDenom)
 		return scDenomEntityNew, nil
 	}
 
