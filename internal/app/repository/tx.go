@@ -30,8 +30,6 @@ type ITxRepo interface {
 		txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error)
 	CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd int64) (int64, error)
-
-	TestIndex(chainId string) error
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -405,11 +403,4 @@ func (repo *TxRepo) GetRelayerTxs(chainId string, relayerAddrs []string, txTypes
 func (repo *TxRepo) CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
 	return repo.coll(chainId).Find(context.Background(), query).Hint("msgs.msg.signer_1_msgs.type_1_time_1").Count()
-}
-
-func (repo *TxRepo) TestIndex(chainId string) error {
-	var res []*entity.Tx
-	err2 := repo.coll(chainId).Find(context.Background(), bson.M{"time": 1}).Hint("time_-1_msgs.type_-1").All(&res)
-
-	return err2
 }

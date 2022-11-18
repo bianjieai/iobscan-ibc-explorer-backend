@@ -29,7 +29,7 @@ type ChainListResp struct {
 
 func (dto ChainDto) LoadDto(chain *entity.IBCChain) ChainDto {
 	return ChainDto{
-		Chain:            chain.ChainId,
+		Chain:            chain.Chain,
 		ConnectedChains:  chain.ConnectedChains,
 		Channels:         chain.Channels,
 		Relayers:         chain.Relayers,

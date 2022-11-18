@@ -68,10 +68,10 @@ func (dto IbcBaseDenomDto) LoadDto(baseDenom *entity.IBCBaseDenom) IbcBaseDenomD
 
 func (dto IbcDenomDto) LoadDto(denom *entity.IBCDenom) IbcDenomDto {
 	return IbcDenomDto{
-		Chain:          denom.ChainId,
+		Chain:          denom.Chain,
 		Denom:          denom.Denom,
 		BaseDenom:      denom.BaseDenom,
-		BaseDenomChain: denom.BaseDenomChainId,
+		BaseDenomChain: denom.BaseDenomChain,
 		DenomPath:      denom.DenomPath,
 		Symbol:         denom.Symbol,
 	}

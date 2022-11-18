@@ -44,7 +44,7 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 		err   error
 	)
 	if req.Chain != "" {
-		query.ChainId = strings.Split(req.Chain, ",")
+		query.Chain = strings.Split(req.Chain, ",")
 	}
 	if req.DateRange != "" {
 		dateRange := strings.Split(req.DateRange, ",")
@@ -417,11 +417,11 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	}
 	return &vo.TokenInfo{
-		BaseDenom:        ibcTx.BaseDenom,
+		BaseDenom:      ibcTx.BaseDenom,
 		BaseDenomChain: ibcTx.BaseDenomChain,
-		Amount:           ibcTx.ScTxInfo.MsgAmount.Amount,
-		SendToken:        sendToken,
-		RecvToken:        recvToken,
+		Amount:         ibcTx.ScTxInfo.MsgAmount.Amount,
+		SendToken:      sendToken,
+		RecvToken:      recvToken,
 	}, nil
 }
 
