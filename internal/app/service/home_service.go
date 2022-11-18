@@ -51,13 +51,13 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	for _, one := range chainCfgs {
 		item := vo.DailyData{
 			ChainName: one.ChainName,
-			ChainId:   one.ChainId,
+			ChainId:   one.CurrentChainId,
 			Icon:      one.Icon,
 			Status:    one.Status,
 		}
 		allChains = append(allChains, item)
 
-		_, exist := activeChainsMap[one.ChainId]
+		_, exist := activeChainsMap[one.CurrentChainId]
 		if exist {
 			activeChains = append(activeChains, item)
 		} else {

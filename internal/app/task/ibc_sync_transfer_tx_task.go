@@ -47,7 +47,7 @@ func (t *IbcSyncTransferTxTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.CurrentChainId)
 	}
 	transferTxCoordinator = &chainQueueCoordinator{
 		chainQueue: chainQueue,

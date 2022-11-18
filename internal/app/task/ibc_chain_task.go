@@ -31,7 +31,7 @@ func (t *IbcChainCronTask) Run() int {
 		for _, val := range chainCfg.IbcInfo {
 			channels += len(val.Paths)
 		}
-		data := createChainData(chainCfg.ChainId, channels, conntectedChains)
+		data := createChainData(chainCfg.CurrentChainId, channels, conntectedChains)
 		chains = append(chains, data)
 	}
 

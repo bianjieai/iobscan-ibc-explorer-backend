@@ -43,7 +43,7 @@ func (t *IbcTxRelateHistoryTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.CurrentChainId)
 	}
 	relateHistoryCoordinator = &chainQueueCoordinator{
 		chainQueue: chainQueue,

@@ -152,30 +152,30 @@ type GetRelayerScChainAddreeDTO struct {
 }
 
 type AggrIBCChannelTxsDTO struct {
-	BaseDenom        string  `bson:"base_denom"`
-	BaseDenomChainId string  `bson:"base_denom_chain_id"`
-	ScChainId        string  `bson:"sc_chain_id"`
-	DcChainId        string  `bson:"dc_chain_id"`
-	ScChannel        string  `bson:"sc_channel"`
-	DcChannel        string  `bson:"dc_channel"`
-	Count            int64   `bson:"count"`
-	Amount           float64 `bson:"amount"`
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	ScChain        string  `bson:"sc_chain"`
+	DcChain        string  `bson:"dc_chain"`
+	ScChannel      string  `bson:"sc_channel"`
+	DcChannel      string  `bson:"dc_channel"`
+	Count          int64   `bson:"count"`
+	Amount         float64 `bson:"amount"`
 }
 
 type ChannelStatisticsDTO struct {
-	ChannelId        string          `bson:"channel_id"`
-	BaseDenom        string          `bson:"base_denom"`
-	BaseDenomChainId string          `bson:"base_denom_chain_id"`
-	TxsCount         int64           `bson:"count"`
-	TxsAmount        decimal.Decimal `bson:"amount"`
+	ChannelId      string          `bson:"channel_id"`
+	BaseDenom      string          `bson:"base_denom"`
+	BaseDenomChain string          `bson:"base_denom_chain"`
+	TxsCount       int64           `bson:"count"`
+	TxsAmount      decimal.Decimal `bson:"amount"`
 }
 
 type ChannelStatisticsAggrDTO struct {
-	ChannelId        string  `bson:"channel_id"`
-	BaseDenom        string  `bson:"base_denom"`
-	BaseDenomChainId string  `bson:"base_denom_chain_id"`
-	TxsCount         int64   `bson:"count"`
-	TxsAmount        float64 `bson:"amount"`
+	ChannelId      string  `bson:"channel_id"`
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	TxsCount       int64   `bson:"count"`
+	TxsAmount      float64 `bson:"amount"`
 }
 
 type TokenTraceStatisticsDTO struct {

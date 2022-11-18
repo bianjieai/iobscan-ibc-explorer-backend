@@ -532,7 +532,7 @@ func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
 		if err != nil {
 			return LcdTxData{}, errors.Wrap(fmt.Errorf("invalid chain id"))
 		}
-		return GetTxDataFromChain(cfg.Lcd, hash)
+		return GetTxDataFromChain(cfg.GrpcRestGateway, hash)
 	}
 }
 

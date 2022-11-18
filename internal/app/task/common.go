@@ -116,7 +116,7 @@ func getAllChainMap() (map[string]*entity.ChainConfig, error) {
 
 	allChainMap := make(map[string]*entity.ChainConfig)
 	for _, v := range allChainList {
-		allChainMap[v.ChainId] = v
+		allChainMap[v.CurrentChainId] = v
 	}
 
 	return allChainMap, err
@@ -130,7 +130,7 @@ func matchDcInfo(scChainId, scPort, scChannel string, allChainMap map[string]*en
 	for _, ibcInfo := range allChainMap[scChainId].IbcInfo {
 		for _, path := range ibcInfo.Paths {
 			if path.PortId == scPort && path.ChannelId == scChannel {
-				dcChainId = path.ChainId
+				dcChainId = path.Chain
 				dcPort = path.Counterparty.PortId
 				dcChannel = path.Counterparty.ChannelId
 				return

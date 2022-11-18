@@ -30,8 +30,7 @@ type IbcRelayerCronTask struct {
 	//key:relayer_id
 	relayerTxsDataMap map[string]dto.TxsAmtItem
 	//key:address+Chain+Channel
-	relayerValueMap map[string]decimal.Decimal
-	//key: BaseDenom+ChainId
+	relayerValueMap      map[string]decimal.Decimal
 	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
 }
@@ -244,7 +243,7 @@ func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*ent
 	cfg, ok := t.chainConfigMap[chainId]
 	if ok {
 		for _, v := range cfg.IbcInfo {
-			if v.ChainId == dcChainId {
+			if v.Chain == dcChainId {
 				return v.Paths
 			}
 		}
@@ -390,7 +389,7 @@ func (t *IbcRelayerCronTask) getChannelClient(chainId, channelId string) (string
 	}
 
 	port := chainConf.GetPortId(channelId)
-	state, err := queryClientState(chainConf.Lcd, chainConf.LcdApiPath.ClientStatePath, port, channelId)
+	state, err := queryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
 	if err != nil {
 		return "", err
 	}

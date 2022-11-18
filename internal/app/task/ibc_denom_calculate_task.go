@@ -58,7 +58,7 @@ func (t *IbcDenomCalculateTask) getChainConfigMap() (map[string]*entity.ChainCon
 
 	res := make(map[string]*entity.ChainConfig, len(confList))
 	for _, v := range confList {
-		res[v.ChainId] = v
+		res[v.CurrentChainId] = v
 	}
 
 	return res, nil
@@ -84,12 +84,12 @@ func (t *IbcDenomCalculateTask) calculateDenom(baseDenom *entity.IBCBaseDenom, c
 	newDenomMap := make(map[string]string)
 	for _, ibcInfo := range chainConf.IbcInfo {
 		for _, path := range ibcInfo.Paths {
-			if path.ChainId == "" || path.Counterparty.ChannelId == "" || path.Counterparty.PortId == "" {
+			if path.Chain == "" || path.Counterparty.ChannelId == "" || path.Counterparty.PortId == "" {
 				continue
 			}
 
 			denomPath := fmt.Sprintf("%s/%s", path.Counterparty.PortId, path.Counterparty.ChannelId)
-			existKey := fmt.Sprintf("%s/%s/%s", path.ChainId, denomPath, baseDenom.Denom)
+			existKey := fmt.Sprintf("%s/%s/%s", path.Chain, denomPath, baseDenom.Denom)
 			_, ok1 := existedDenomMap[existKey]
 			_, ok2 := newDenomMap[existKey]
 			if ok1 || ok2 {
@@ -102,7 +102,7 @@ func (t *IbcDenomCalculateTask) calculateDenom(baseDenom *entity.IBCBaseDenom, c
 				BaseDenom: baseDenom.Denom,
 				Denom:     ibcHash,
 				DenomPath: denomPath,
-				ChainId:   path.ChainId,
+				ChainId:   path.Chain,
 				ScChainId: baseDenom.ChainId,
 				CreateAt:  time.Now().Unix(),
 				UpdateAt:  time.Now().Unix(),

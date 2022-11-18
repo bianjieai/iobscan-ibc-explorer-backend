@@ -8,7 +8,7 @@ const (
 type IBCChannelStatistics struct {
 	ChannelId        string `bson:"channel_id"`
 	BaseDenom        string `bson:"base_denom"`
-	BaseDenomChainId string `bson:"base_denom_chain_id"`
+	BaseDenomChain   string `bson:"base_denom_chain"`
 	TransferTxs      int64  `bson:"transfer_txs"`
 	TransferAmount   string `bson:"transfer_amount"`
 	SegmentStartTime int64  `bson:"segment_start_time"`

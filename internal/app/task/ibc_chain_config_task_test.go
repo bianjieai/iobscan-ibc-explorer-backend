@@ -13,9 +13,9 @@ func TestEmptyTxs(t *testing.T) {
 	}
 
 	for _, val := range cfgs {
-		_, err := txRepo.FindHeight(val.ChainId, true)
+		_, err := txRepo.FindHeight(val.CurrentChainId, true)
 		if err != nil {
-			t.Errorf(err.Error(), val.ChainId)
+			t.Errorf(err.Error(), val.CurrentChainId)
 		}
 	}
 }
