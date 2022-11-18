@@ -17,22 +17,20 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	time.Local = time.UTC
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat:   constant.DefaultTimeFormat,
 		DisableHTMLEscape: true,
 	})
 	cache.InitRedisClient(conf.Redis{
-		Addrs:    "192.168.0.119:6379",
+		Addrs:    "127.0.0.1:6379",
 		User:     "",
-		Password: "redisPassword",
+		Password: "",
 		Mode:     "single",
-		Db:       4,
+		Db:       0,
 	})
 	repository.InitMgo(conf.Mongo{
-		Url: "mongodb://ibc:ibcpassword@192.168.0.135:27017/?authSource=iobscan-ibc",
-		//Url: "mongodb://ibcreader:idy45Eth@35.229.186.42:27017/?connect=direct&authSource=iobscan-ibc",
-		//Url: "mongodb://ibcreader:idy45Eth@34.80.213.223:27017/?connect=direct&authSource=iobscan_ibc",
-		//Url:      "mongodb://ibc:ibcpassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc",
+		Url:      "mongodb://ibc:ibcpassword@192.168.0.122:27017,192.168.0.126:27017,192.168.0.127:27017/?authSource=iobscan-ibc",
 		Database: "iobscan-ibc",
 	}, context.Background())
 
@@ -71,7 +69,7 @@ func Test_CheckFollowingStatus(t *testing.T) {
 		}
 		if !checkFollowingStatus {
 			notFollowingStatus = append(notFollowingStatus, v.ChainId)
-			//logrus.Warningf("chain %s is not follow status", v.ChainId)
+			//logrus.Warningf("chain %s is not follow status", v.Chain)
 		}
 	}
 

@@ -153,7 +153,7 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 		"$group": bson.M{
 			"_id": bson.M{
 				"base_denom":         "$base_denom",
-				"base_denom_chain":   "base_denom_chain",
+				"base_denom_chain":   "$base_denom_chain",
 				"segment_start_time": "$segment_start_time",
 			},
 			"amount": bson.M{

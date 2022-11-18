@@ -480,12 +480,8 @@ func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity
 
 	}()
 	wg.Wait()
-	if !totalTxsValue.Equal(decimal.Zero) {
-		data.RelayedTotalTxsValue = totalTxsValue.String()
-	}
-	if !totalFeeValue.Equal(decimal.Zero) {
-		data.TotalFeeValue = totalFeeValue.String()
-	}
+	data.RelayedTotalTxsValue = totalTxsValue.String()
+	data.TotalFeeValue = totalFeeValue.String()
 	data.RelayedTotalTxs = relayedTotalTxs
 	data.RelayedSuccessTxs = relayedSuccessTxs
 	return data
