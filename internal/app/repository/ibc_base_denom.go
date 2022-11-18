@@ -35,6 +35,8 @@ func (repo *BaseDenomRepo) FindBySymbol(symbol string) (entity.IBCBaseDenom, err
 	return res, err
 }
 
+// TODO remove UpdateIbcInfoHashCalculate
+
 func (repo *BaseDenomRepo) UpdateIbcInfoHashCalculate(denom, chainId, ibcInfoHashCalculate string) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": chainId, "denom": denom}, bson.M{
 		"$set": bson.M{

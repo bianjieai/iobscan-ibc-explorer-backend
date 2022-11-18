@@ -20,6 +20,7 @@ type (
 		CurrentChainId  string      `bson:"current_chain_id"`
 		Icon            string      `bson:"icon"`
 		ChainName       string      `bson:"chain_name"`
+		PrettyName      string      `bson:"pretty_name"`
 		LcdApiPath      ApiPath     `bson:"lcd_api_path"`
 		GrpcRestGateway string      `bson:"grpc_rest_gateway"`
 		AddrPrefix      string      `bson:"addr_prefix"`

@@ -58,7 +58,7 @@ type (
 
 func (dto IbcBaseDenomDto) LoadDto(baseDenom *entity.IBCBaseDenom) IbcBaseDenomDto {
 	return IbcBaseDenomDto{
-		ChainId: baseDenom.ChainId,
+		ChainId: baseDenom.Chain,
 		Denom:   baseDenom.Denom,
 		Symbol:  baseDenom.Symbol,
 		Scale:   baseDenom.Scale,
@@ -68,10 +68,10 @@ func (dto IbcBaseDenomDto) LoadDto(baseDenom *entity.IBCBaseDenom) IbcBaseDenomD
 
 func (dto IbcDenomDto) LoadDto(denom *entity.IBCDenom) IbcDenomDto {
 	return IbcDenomDto{
-		ChainId:          denom.ChainId,
+		ChainId:          denom.Chain,
 		Denom:            denom.Denom,
 		BaseDenom:        denom.BaseDenom,
-		BaseDenomChainId: denom.BaseDenomChainId,
+		BaseDenomChainId: denom.BaseDenomChain,
 		DenomPath:        denom.DenomPath,
 		Symbol:           denom.Symbol,
 	}

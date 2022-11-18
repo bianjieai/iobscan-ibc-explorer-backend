@@ -17,6 +17,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	time.Local = time.UTC
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat:   constant.DefaultTimeFormat,
 		DisableHTMLEscape: true,
@@ -29,22 +30,15 @@ func TestMain(m *testing.M) {
 		Db:       0,
 	})
 	repository.InitMgo(conf.Mongo{
-		//Url: "mongodb://ibc:ibcpassword@192.168.0.135:27017/?authSource=iobscan-ibc",
-		//Url: "mongodb://ibcreader:idy45Eth@35.229.186.42:27017/?connect=direct&authSource=iobscan-ibc",
-		//Url: "mongodb://ibcreader:idy45Eth@34.80.213.223:27017/?connect=direct&authSource=iobscan_ibc",
-		Url:      "mongodb://ibc:ibcpassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc",
+		Url:      "mongodb://ibc:ibcpassword@192.168.0.122:27017,192.168.0.126:27017,192.168.0.127:27017/?authSource=iobscan-ibc",
 		Database: "iobscan-ibc",
 	}, context.Background())
 
 	time.Local = time.UTC
 	global.Config = &conf.Config{
 		Task: conf.Task{
-			SingleChainSyncTransferTxMax:      1000,
-			SingleChainIbcTxRelateMax:         1000,
-			FixDenomTraceDataStartTime:        1634232199,
-			FixDenomTraceDataEndTime:          1660103712,
-			FixDenomTraceHistoryDataStartTime: 1620369550,
-			FixDenomTraceHistoryDataEndTime:   1658830692,
+			SingleChainSyncTransferTxMax: 1000,
+			SingleChainIbcTxRelateMax:    1000,
 		},
 		ChainConfig: conf.ChainConfig{
 			NewChains: "qa_iris_snapshot"}}

@@ -21,7 +21,6 @@ type IRelayerDenomStatisticsRepo interface {
 	AggrRelayerBaseDenomAmtAndTxs(relayAddrs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
 	AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error)
 	AggrAmtByTxType(relayAddrs []string) ([]*dto.AggrRelayerTxTypeDTO, error)
-	AggrRelayedValue(relayAddrs []string) ([]*dto.AggrRelayerRelayedValueDTO, error)
 }
 
 var _ IRelayerDenomStatisticsRepo = new(RelayerDenomStatisticsRepo)
@@ -154,7 +153,7 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs
 		"$group": bson.M{
 			"_id": bson.M{
 				"base_denom":         "$base_denom",
-				"base_denom_chain":   "base_denom_chain",
+				"base_denom_chain":   "$base_denom_chain",
 				"segment_start_time": "$segment_start_time",
 			},
 			"amount": bson.M{
@@ -205,42 +204,6 @@ func (repo *RelayerDenomStatisticsRepo) AggrAmtByTxType(relayAddrs []string) ([]
 	var pipe []bson.M
 	pipe = append(pipe, match, group, project)
 	var res []*dto.AggrRelayerTxTypeDTO
-	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *RelayerDenomStatisticsRepo) AggrRelayedValue(relayAddrs []string) ([]*dto.AggrRelayerRelayedValueDTO, error) {
-	match := bson.M{
-		"$match": bson.M{
-			"relayer_address": bson.M{"$in": relayAddrs},
-		},
-	}
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"base_denom":       "$base_denom",
-				"base_denom_chain": "$base_denom_chain",
-			},
-			"amount": bson.M{
-				"$sum": "$relayed_amount",
-			},
-			"relayed_txs": bson.M{
-				"$sum": "$relayed_txs",
-			},
-		},
-	}
-	project := bson.M{
-		"$project": bson.M{
-			"_id":              0,
-			"base_denom":       "$_id.base_denom",
-			"base_denom_chain": "$_id.base_denom_chain",
-			"amount":           "$amount",
-			"total_txs":        "$relayed_txs",
-		},
-	}
-	var pipe []bson.M
-	pipe = append(pipe, match, group, project)
-	var res []*dto.AggrRelayerRelayedValueDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

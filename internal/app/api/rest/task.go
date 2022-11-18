@@ -35,34 +35,6 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		switch taskName {
 		case addChainTask.Name():
 			res = addChainTask.RunWithParam(c.PostForm("new_chains"))
-		case fixDcChainIdTask.Name():
-			res = fixDcChainIdTask.Run()
-		case fixBaseDenomChainIdTask.Name():
-			res = fixBaseDenomChainIdTask.Run()
-		case fixDenomTraceDataTask.Name():
-			startTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
-			if err != nil {
-				logrus.Errorf("TaskController run %s err, %v", taskName, err)
-				return
-			}
-			endTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
-			if err != nil {
-				logrus.Errorf("TaskController run %s err, %v", taskName, err)
-				return
-			}
-			res = fixDenomTraceDataTask.RunWithParam(startTime, endTime)
-		case fixDenomTraceHistoryDataTask.Name():
-			startTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
-			if err != nil {
-				logrus.Errorf("TaskController run %s err, %v", taskName, err)
-				return
-			}
-			endTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
-			if err != nil {
-				logrus.Errorf("TaskController run %s err, %v", taskName, err)
-				return
-			}
-			res = fixDenomTraceHistoryDataTask.RunWithParam(startTime, endTime)
 		case tokenStatisticsTask.Name():
 			res = tokenStatisticsTask.Run()
 		case channelStatisticsTask.Name():
@@ -86,29 +58,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			}
 		case relayerDataTask.Name():
 			res = relayerDataTask.Run()
-		case fixFailRecvPacketTask.Name():
-			fixFailRecvPacketTask.Run()
 		case addTransferDataTask.Name():
 			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
-		case fixFailTxTask.Name():
-			value := c.PostForm("start_time")
-			if len(value) > 0 {
-				startTime, err := strconv.ParseInt(value, 10, 64)
-				if err != nil {
-					logrus.Errorf("TaskController run %s err, %v", taskName, err)
-					return
-				}
-				fixFailTxTask.RunWithParam(startTime)
-			} else {
-				fixFailTxTask.Run()
-			}
-
-		case fixAcknowledgeTxTask.Name():
-			fixAcknowledgeTxTask.Run()
-		case fixAckTxPacketIdTask.Name():
-			fixAckTxPacketIdTask.RunWithParam(c.PostForm("chains"), c.PostForm("end_height"))
-		case fixIbxTxTask.Name():
-			fixIbxTxTask.RunWithParam(c.PostForm("domain"))
 		case ibcNodeLcdCronTask.Name():
 			value := c.PostForm("chains")
 			if len(value) > 0 {
@@ -118,6 +69,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			}
 		case ibcStatisticCronTask.Name():
 			ibcStatisticCronTask.NewRun()
+		case modifyChainIdTask.Name():
+			modifyChainIdTask.RunWithParam(c.PostForm("category"), c.PostForm("coll"))
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

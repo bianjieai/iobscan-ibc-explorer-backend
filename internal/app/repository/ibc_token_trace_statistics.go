@@ -36,7 +36,7 @@ func (repo *TokenTraceStatisticsRepo) collNew() *qmgo.Collection {
 
 func (repo *TokenTraceStatisticsRepo) CreateNew() error {
 	indexOpts := officialOpts.Index().SetUnique(true)
-	key := []string{"denom", "chain_id", "-segment_start_time", "-segment_end_time"}
+	key := []string{"denom", "chain", "-segment_start_time", "-segment_end_time"}
 	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
 }
 
@@ -93,8 +93,8 @@ func (repo *TokenTraceStatisticsRepo) Aggr() ([]*dto.TokenTraceStatisticsDTO, er
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"denom":    "$denom",
-				"chain_id": "$chain_id",
+				"denom": "$denom",
+				"chain": "$chain",
 			},
 			"receive_txs": bson.M{
 				"$sum": "$receive_txs",
@@ -105,7 +105,7 @@ func (repo *TokenTraceStatisticsRepo) Aggr() ([]*dto.TokenTraceStatisticsDTO, er
 		"$project": bson.M{
 			"_id":         0,
 			"denom":       "$_id.denom",
-			"chain_id":    "$_id.chain_id",
+			"chain":       "$_id.chain",
 			"receive_txs": "$receive_txs",
 		},
 	}

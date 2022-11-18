@@ -110,95 +110,28 @@ func (svc *RelayerService) TransferTypeTxs(relayerId string) (*vo.TransferTypeTx
 }
 
 func (svc *RelayerService) TotalRelayedValue(relayerId string) (*vo.TotalRelayedValueResp, errors.Error) {
-	if res, err := relayerDataCache.GetTotalRelayedValue(relayerId); err == nil {
-		return res, nil
-	}
-
-	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	_, err := getRelayerChainsInfo(relayerId)
 	if err != nil {
 		return nil, err
 	}
 
-	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
-	for _, val := range servedChainsInfoMap {
-		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	res, err1 := relayerDataCache.GetTotalRelayedValue(relayerId)
+	if err1 != nil {
+		return nil, errors.Wrap(err1)
 	}
-
-	aggrRes, e := relayerDenomStatisticsRepo.AggrRelayedValue(relayerAddrs)
-	if e != nil {
-		return nil, errors.Wrap(e)
-	}
-
-	priceMap := cache.TokenPriceMap()
-	txsItem := make([]vo.DenomTxsItem, 0, len(aggrRes))
-	var totalTxs int64
-	TotalTxsValue := decimal.Zero
-	for _, v := range aggrRes {
-		txsValue := CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, decimal.NewFromFloat(v.Amount))
-		txsItem = append(txsItem, vo.DenomTxsItem{
-			BaseDenom:      v.BaseDenom,
-			BaseDenomChain: v.BaseDenomChain,
-			Txs:            v.TotalTxs,
-			TxsValue:       txsValue.String(),
-		})
-		totalTxs += v.TotalTxs
-		TotalTxsValue = TotalTxsValue.Add(txsValue)
-	}
-
-	res := vo.TotalRelayedValueResp{
-		TotalTxs:        totalTxs,
-		TotalTxsValue:   TotalTxsValue.String(),
-		TotalDenomCount: int64(len(txsItem)),
-		DenomList:       txsItem,
-	}
-	_ = relayerDataCache.SetTotalRelayedValue(relayerId, &res)
-	return &res, nil
+	return res, nil
 }
 
 func (svc *RelayerService) TotalFeeCost(relayerId string) (*vo.TotalFeeCostResp, errors.Error) {
-	if res, err := relayerDataCache.GetTotalFeeCost(relayerId); err == nil {
-		return res, nil
-	}
-
-	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	_, err := getRelayerChainsInfo(relayerId)
 	if err != nil {
 		return nil, err
 	}
-
-	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
-	for _, val := range servedChainsInfoMap {
-		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	res, err1 := relayerDataCache.GetTotalFeeCost(relayerId)
+	if err1 != nil {
+		return nil, errors.Wrap(err1)
 	}
-
-	aggrRes, e := relayerFeeStatisticsRepo.AggrFeeTxsAmt(relayerAddrs)
-	if e != nil {
-		return nil, errors.Wrap(e)
-	}
-
-	priceMap := cache.TokenPriceMap()
-	txsItem := make([]vo.DenomFeeItem, 0, len(aggrRes))
-	var totalTxs int64
-	TotalTxsValue := decimal.Zero
-	for _, v := range aggrRes {
-		txsValue := CalculateDenomValue(priceMap, v.FeeDenom, v.Chain, decimal.NewFromFloat(v.Amount))
-		txsItem = append(txsItem, vo.DenomFeeItem{
-			Denom:      v.FeeDenom,
-			DenomChain: v.Chain,
-			Txs:        v.TotalTxs,
-			FeeValue:   txsValue.String(),
-		})
-		totalTxs += v.TotalTxs
-		TotalTxsValue = TotalTxsValue.Add(txsValue)
-	}
-
-	res := vo.TotalFeeCostResp{
-		TotalTxs:        totalTxs,
-		TotalFeeValue:   TotalTxsValue.String(),
-		TotalDenomCount: int64(len(txsItem)),
-		DenomList:       txsItem,
-	}
-	_ = relayerDataCache.SetTotalFeeCost(relayerId, &res)
-	return &res, nil
+	return res, nil
 }
 
 func (svc *RelayerService) Detail(relayerId string) (vo.RelayerDetailResp, errors.Error) {
@@ -240,7 +173,7 @@ func (svc *RelayerService) DetailRelayerTxs(relayerId string, req *vo.DetailRela
 		return resp, errors.Wrap(err)
 	}
 	denomMap := make(map[string]*entity.IBCDenom, len(txs))
-	ibcDenoms, err := denomRepo.FindByChainId(req.Chain)
+	ibcDenoms, err := denomRepo.FindByChain(req.Chain)
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
@@ -314,7 +247,7 @@ func getMsgAmtDenom(msg *model.TxMsg) string {
 		}
 	case constant.MsgTypeRecvPacket:
 		packet := msg.RecvPacketMsg().Packet
-		dcPrefix := fmt.Sprintf("%s/%s", packet.DestinationPort, packet.DestinationChannel)
+		dcPrefix := fmt.Sprintf("%s/%s", packet.SourcePort, packet.SourceChannel)
 		if strings.HasPrefix(packet.Data.Denom, dcPrefix) {
 			arrs := strings.Split(packet.Data.Denom, "/")
 			if len(arrs) == 3 {
@@ -341,7 +274,7 @@ func getTxDenomInfo(tx *entity.Tx, chain string, denomMap map[string]*entity.IBC
 			denomInfo.Denom = getMsgAmtDenom(msg)
 			denomInfo.DenomChain = chain
 			if data, ok := denomMap[denomInfo.Denom]; ok {
-				denomInfo.BaseDenomChain = data.BaseDenomChainId
+				denomInfo.BaseDenomChain = data.BaseDenomChain
 				denomInfo.BaseDenom = data.BaseDenom
 			}
 
@@ -461,18 +394,18 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 			}
 		}
 
-		key := strconv.FormatInt(item.SegmentStartTime, 10)
+		key := time.Unix(item.SegmentStartTime, 0).Format(constant.DateFormat)
 		value, exist := segmentTxsValueMap[key]
 		if exist {
-			value.Amt = value.Amt.Add(baseDenomValue)
+			value.AmtValue = value.AmtValue.Add(baseDenomValue)
 			value.Txs += item.TotalTxs
 			segmentTxsValueMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChain,
-				Denom:   item.BaseDenom,
-				Txs:     item.TotalTxs,
-				Amt:     baseDenomValue,
+				ChainId:  item.BaseDenomChain,
+				Denom:    item.BaseDenom,
+				Txs:      item.TotalTxs,
+				AmtValue: baseDenomValue,
 			}
 			segmentTxsValueMap[key] = data
 		}
@@ -480,12 +413,12 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 
 	retData := make(vo.RelayerTrendResp, 0, len(segments))
 	for _, segment := range segments {
-		data, ok := segmentTxsValueMap[strconv.FormatInt(segment.StartTime, 10)]
+		data, ok := segmentTxsValueMap[segment.Date]
 		if ok {
 			item := vo.RelayerTrendDto{
 				Date:     segment.Date,
 				Txs:      data.Txs,
-				TxsValue: data.Amt.String(),
+				TxsValue: data.AmtValue.String(),
 			}
 			retData = append(retData, item)
 		} else {

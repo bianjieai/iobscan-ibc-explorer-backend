@@ -10,7 +10,7 @@ import (
 
 type IChainRegistryRepo interface {
 	FindAll() ([]*entity.ChainRegistry, error)
-	FindOne(chainId string) (*entity.ChainRegistry, error)
+	FindOne(chain string) (*entity.ChainRegistry, error)
 }
 
 var _ IChainRegistryRepo = new(ChainRegistryRepo)
@@ -28,8 +28,8 @@ func (repo *ChainRegistryRepo) FindAll() ([]*entity.ChainRegistry, error) {
 	return res, err
 }
 
-func (repo *ChainRegistryRepo) FindOne(chainId string) (*entity.ChainRegistry, error) {
+func (repo *ChainRegistryRepo) FindOne(chain string) (*entity.ChainRegistry, error) {
 	var res *entity.ChainRegistry
-	err := repo.coll().Find(context.Background(), bson.M{"chain_id": chainId}).One(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"chain": chain}).One(&res)
 	return res, err
 }

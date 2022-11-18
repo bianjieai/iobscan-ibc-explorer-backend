@@ -12,8 +12,8 @@ import (
 )
 
 type ITokenTraceRepo interface {
-	FindByBaseDenom(baseDenom, originChainId string) ([]*entity.IBCTokenTrace, error)
-	BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, baseDenomChainId string) error
+	DelByBaseDenom(baseDenom, BaseDenomChain string) error
+	BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, BaseDenomChain string) error
 	AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, error)
 	List(req *vo.IBCTokenListReq) ([]*entity.IBCTokenTrace, error)
 	CountList(req *vo.IBCTokenListReq) (int64, error)
@@ -28,20 +28,20 @@ func (repo *TokenTraceRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenTrace{}.CollectionName())
 }
 
-func (repo *TokenTraceRepo) FindByBaseDenom(baseDenom, chainId string) ([]*entity.IBCTokenTrace, error) {
-	var res []*entity.IBCTokenTrace
-	qurey := bson.M{"origional_id": chainId,
-		"base_denom": baseDenom,
+func (repo *TokenTraceRepo) DelByBaseDenom(baseDenom, BaseDenomChain string) error {
+	query := bson.M{
+		"base_denom":       baseDenom,
+		"base_denom_chain": BaseDenomChain,
 	}
-	err := repo.coll().Find(context.Background(), qurey).All(&res)
-	return res, err
+	_, err := repo.coll().RemoveAll(context.Background(), query)
+	return err
 }
 
-func (repo *TokenTraceRepo) BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, baseDenomChainId string) error {
+func (repo *TokenTraceRepo) BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, BaseDenomChain string) error {
 	callback := func(sessCtx context.Context) (interface{}, error) {
 		query := bson.M{
-			"base_denom":          baseDenom,
-			"base_denom_chain_id": baseDenomChainId,
+			"base_denom":       baseDenom,
+			"base_denom_chain": BaseDenomChain,
 		}
 		if _, err := repo.coll().RemoveAll(sessCtx, query); err != nil {
 			return nil, err
@@ -76,7 +76,7 @@ func (repo *TokenTraceRepo) AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, er
 
 	group := bson.M{
 		"$group": bson.M{
-			"_id": "$chain_id",
+			"_id": "$chain",
 			"denom_value": bson.M{
 				"$sum": bson.M{
 					"$toDouble": "$denom_value",
@@ -98,10 +98,10 @@ func (repo *TokenTraceRepo) AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, er
 func (repo *TokenTraceRepo) analyzeListParam(req *vo.IBCTokenListReq) map[string]interface{} {
 	q := make(map[string]interface{})
 	q["base_denom"] = req.BaseDenom
-	q["base_denom_chain_id"] = req.BaseDenomChainId
+	q["base_denom_chain"] = req.BaseDenomChain
 
 	if req.Chain != "" {
-		q["chain_id"] = req.Chain
+		q["chain"] = req.Chain
 	}
 
 	if req.TokenType != "" {
