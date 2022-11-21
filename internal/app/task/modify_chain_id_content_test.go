@@ -17,7 +17,7 @@ func TestNewModifyChainIdContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	client := NewModifyChainIdContent("chain_config_copy", mapData)
+	client := newModifyChainIdHandlerTwo("chain_config_copy", mapData)
 	if client != nil {
 		client.Run()
 	}

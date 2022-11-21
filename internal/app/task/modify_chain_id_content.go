@@ -16,7 +16,7 @@ type IModifyChainIdContent interface {
 	Run() int
 }
 
-func NewModifyChainIdContent(collName string, chainIdNameMap map[string]string) IModifyChainIdContent {
+func newModifyChainIdHandlerTwo(collName string, chainIdNameMap map[string]string) IModifyChainIdContent {
 
 	switch collName {
 	case entity.ChainConfig{}.CollectionName():
