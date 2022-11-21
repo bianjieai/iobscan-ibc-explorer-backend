@@ -25,7 +25,6 @@ import (
 type ITransferService interface {
 	TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferTxsCountResp, errors.Error)
 	TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error)
-	TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error)
 	TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error)
 	TraceSource(hash string, req *vo.TraceSourceReq) (vo.TraceSourceResp, errors.Error)
 	SearchCondition() (*vo.SearchConditionResp, errors.Error)
@@ -34,8 +33,7 @@ type ITransferService interface {
 var _ ITransferService = new(TransferService)
 
 type TransferService struct {
-	dto       vo.IbcTxDto
-	detailDto vo.IbcTxDetailDto
+	dto vo.IbcTxDto
 }
 
 func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
@@ -187,119 +185,6 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
-}
-
-// [Deprecated]
-func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error) {
-	var resp vo.TranaferTxDetailResp
-	ibcTxs, err := ibcTxRepo.TxDetail(hash, false)
-	if err != nil && err != qmgo.ErrNoSuchDocuments {
-		return resp, errors.Wrap(err)
-	}
-	if len(ibcTxs) == 0 {
-		ibcTxs, err = ibcTxRepo.TxDetail(hash, true)
-		if err != nil && err != qmgo.ErrNoSuchDocuments {
-			return resp, errors.Wrap(err)
-		}
-	}
-	setMap := make(map[string]struct{}, len(ibcTxs))
-	for _, val := range ibcTxs {
-		packetId := fmt.Sprintf("%s%s%s%s%s", val.ScPort, val.ScChannel, val.DcPort, val.DcChannel, val.Sequence)
-		if _, exist := setMap[val.RecordId]; exist {
-			continue
-		}
-		setMap[val.RecordId] = struct{}{}
-
-		item := t.detailDto.LoadDto(val)
-		if val.ScChain != "" && val.ScTxInfo != nil && val.ScTxInfo.Hash != "" {
-			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChain, val.ScTxInfo.Hash, packetId)
-		}
-		if val.DcChain != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
-			item.DcConnect, item.Ack, item.DcSigners = getDcTxInfo(val.DcChain, val.DcTxInfo.Hash, packetId)
-		}
-		resp.Items = append(resp.Items, item)
-	}
-	if len(resp.Items) > 1 {
-		// detail api page no support more than one return
-		resp.Items = []vo.IbcTxDetailDto{}
-	}
-	resp.TimeStamp = time.Now().Unix()
-	return resp, nil
-}
-
-func getMsgIndex(tx entity.Tx, msgType string, packetId string) int {
-	for i, val := range tx.DocTxMsgs {
-		if val.Type == msgType && val.CommonMsg().PacketId == packetId {
-			return i
-		}
-	}
-	return -1
-}
-
-// [Deprecated]
-func getScTxInfo(chainId string, txHash string, packetId string) (scConnect string, signers []string) {
-	tx, err := txRepo.GetTxByHash(chainId, txHash)
-	if err != nil {
-		logrus.Error(err.Error())
-		return
-	}
-	signers = tx.Signers
-	scConnect = getConnectByTransferEventNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeTransfer, packetId))
-	return
-}
-
-// [Deprecated]
-func getDcTxInfo(chainId string, txHash string, packetId string) (dcConnect string, ack string, signers []string) {
-	tx, err := txRepo.GetTxByHash(chainId, txHash)
-	if err != nil {
-		logrus.Error(err.Error())
-		return
-	}
-	signers = tx.Signers
-	dcConnect, ack = getConnectByRecvPacketEventsNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeRecvPacket, packetId))
-	return
-}
-
-// [Deprecated]
-func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) string {
-	var connect string
-	for _, item := range eventNews {
-		if item.MsgIndex == uint32(msgIndex) {
-			for _, val := range item.Events {
-				if val.Type == "send_packet" {
-					for _, attribute := range val.Attributes {
-						switch attribute.Key {
-						case "packet_connection":
-							connect = attribute.Value
-						}
-					}
-				}
-			}
-		}
-	}
-	return connect
-}
-
-// [Deprecated]
-func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) (string, string) {
-	var connect, ackData string
-	for _, item := range eventNews {
-		if item.MsgIndex == uint32(msgIndex) {
-			for _, val := range item.Events {
-				if val.Type == "write_acknowledgement" || val.Type == "recv_packet" {
-					for _, attribute := range val.Attributes {
-						switch attribute.Key {
-						case "packet_connection":
-							connect = attribute.Value
-						case "packet_ack":
-							ackData = attribute.Value
-						}
-					}
-				}
-			}
-		}
-	}
-	return connect, ackData
 }
 
 func (t TransferService) TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error) {

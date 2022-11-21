@@ -33,17 +33,6 @@ func (ctl *IbcTransferController) TransferTxs(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(resp))
 }
 
-// [Deprecated]
-func (ctl *IbcTransferController) TransferTxDetail(c *gin.Context) {
-	hash := c.Param("hash")
-	resp, err := transferService.TransferTxDetail(hash)
-	if err != nil {
-		c.JSON(http.StatusOK, response.FailError(err))
-		return
-	}
-	c.JSON(http.StatusOK, response.Success(resp))
-}
-
 func (ctl *IbcTransferController) TransferTxDetailNew(c *gin.Context) {
 	hash := c.Param("hash")
 	resp, err := transferService.TransferTxDetailNew(hash)
