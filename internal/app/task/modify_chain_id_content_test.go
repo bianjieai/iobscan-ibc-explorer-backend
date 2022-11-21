@@ -88,11 +88,7 @@ func TestFixChannelIdTaskRun(t *testing.T) {
 }
 
 func TestGetAllChainConigs(t *testing.T) {
-	mapData, err := _initChainCfgMap()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	_fixChainCfg = NewModifyChainConfig(mapData)
+	_fixChainCfg = NewModifyChainConfig()
 	datas, err := _fixChainCfg.GetAllChainConigs()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -104,11 +100,7 @@ func TestGetAllChainConigs(t *testing.T) {
 }
 
 func TestModifyChainConfigRun(t *testing.T) {
-	mapData, err := _initChainCfgMap()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	_fixChainCfg = NewModifyChainConfig(mapData)
+	_fixChainCfg = NewModifyChainConfig()
 	_fixChainCfg.Run()
 }
 
