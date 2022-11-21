@@ -89,7 +89,7 @@ func (t *fixIbcTaskRecordTask) GetIbcTaskRecordData() ([]*_ibcTaskRecord, error)
 
 func (t *fixIbcTaskRecordTask) UpdateIbcTaskRecord(record _ibcTaskRecord) error {
 	if len(t.chainIdNameMap) == 0 {
-		return fmt.Errorf("init don't work")
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	arrs := strings.Split(record.TaskName, "_")
 	chainId := strings.Join(arrs[1:len(arrs)-1], "_")
@@ -159,7 +159,7 @@ func (t *fixIbcRelayerTask) GetIbcRelayerData(skip, limit int64) ([]*entity.IBCR
 
 func (t *fixIbcRelayerTask) UpdateIbcRelayerData(relayer entity.IBCRelayerNew) error {
 	if len(t.chainIdNameMap) == 0 {
-		return fmt.Errorf("init don't work")
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	channelPairInfos := make([]entity.ChannelPairInfo, 0, len(relayer.ChannelPairInfo))
 	for _, val := range relayer.ChannelPairInfo {
@@ -305,7 +305,7 @@ func (t *fixChannelIdTask) GetIbcChannelStatisticData(skip, limit int64) ([]*_hi
 
 func (t *fixChannelIdTask) UpdateIbcChannel(channel _historyIBCChannel) error {
 	if len(t.chainIdNameMap) == 0 {
-		return fmt.Errorf("init don't work")
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	scChain, ok := t.chainIdNameMap[_formatChainId(channel.ChainA)]
 	if !ok {
@@ -328,7 +328,7 @@ func (t *fixChannelIdTask) UpdateIbcChannel(channel _historyIBCChannel) error {
 
 func (t *fixChannelIdTask) UpdateIbcChannelStatistic(channelStatistic _historyIBCChannelStatistics) error {
 	if len(t.chainIdNameMap) == 0 {
-		return fmt.Errorf("init don't work")
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	chainA, channelA, chainB, channelB, err := t.parseChannelId(channelStatistic.ChannelId)
 	if err != nil {
@@ -451,7 +451,7 @@ func (t *modifyChainConfigTask) GetAllChainConigs() ([]*_chainConfig, error) {
 
 func (t *modifyChainConfigTask) UpdateChainConfig(config _chainConfig) error {
 	if len(t.chainIdNameMap) == 0 {
-		return fmt.Errorf("init don't work")
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	loadChannelPath := func(path *_channelPath) *entity.ChannelPath {
 		return &entity.ChannelPath{
