@@ -104,7 +104,7 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 			MsgAmount: nil,
 			Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement, packetId),
 		}
-		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+		return ibcTxRepo.UpdateOne(ibcTx.Id, history, bson.M{
 			"$set": bson.M{
 				"refunded_tx_info": ibcTx.RefundedTxInfo,
 			},
@@ -168,7 +168,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 			MsgAmount: nil,
 			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket, packetId),
 		}
-		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+		return ibcTxRepo.UpdateOne(ibcTx.Id, history, bson.M{
 			"$set": bson.M{
 				"dc_tx_info":       ibcTx.DcTxInfo,
 				"dc_connection_id": ibcTx.DcConnectionId,

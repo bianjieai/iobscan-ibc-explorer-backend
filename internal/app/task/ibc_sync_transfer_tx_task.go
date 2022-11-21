@@ -10,6 +10,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -234,6 +235,7 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			}
 
 			exIbcTx := &entity.ExIbcTx{
+				Id:             primitive.NewObjectID(),
 				RecordId:       recordId,
 				TxTime:         tx.Time,
 				ScAddr:         transferTxMsg.Sender,
