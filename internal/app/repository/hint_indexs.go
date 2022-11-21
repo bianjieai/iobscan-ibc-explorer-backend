@@ -5,7 +5,6 @@ import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 const (
 	IndexNameMsgsMsgSignerMsgsTypeTime = "msgs.msg.signer_1_msgs.type_1_time_1"
 	IndexNameTimeMsgsType              = "time_-1_msgs.type_-1"
-	IndexNameCreateAt                  = "create_at_-1"
 )
 
 var (
@@ -16,23 +15,30 @@ func LoadIndexNameConf(indexNameCfg conf.HintIndexName) {
 	indexNameConf = indexNameCfg
 }
 
-func MsgsMsgSignerMsgsTypeTimeIndexName() string {
-	if indexNameConf.MsgsMsgSignerMsgsTypeTimeIndexName != "" {
-		return indexNameConf.MsgsMsgSignerMsgsTypeTimeIndexName
+func GetLatestRecvPacketTimeHintIndexName() string {
+	if indexNameConf.GetLatestRecvPacketTimeHintIndex != "" {
+		return indexNameConf.GetLatestRecvPacketTimeHintIndex
 	}
 	return IndexNameMsgsMsgSignerMsgsTypeTime
 }
 
-func TimeMsgsTypeIndexName() string {
-	if indexNameConf.TimeMsgsTypeIndexName != "" {
-		return indexNameConf.TimeMsgsTypeIndexName
+func GetRelayerUpdateTimeHintIndexName() string {
+	if indexNameConf.GetRelayerUpdateTimeHintIndex != "" {
+		return indexNameConf.GetLatestRecvPacketTimeHintIndex
 	}
-	return IndexNameTimeMsgsType
+	return IndexNameMsgsMsgSignerMsgsTypeTime
 }
 
-func CreateAtIndexName() string {
-	if indexNameConf.CreateAtIndexName != "" {
-		return indexNameConf.CreateAtIndexName
+func CountRelayerTxsHintIndexName() string {
+	if indexNameConf.CountRelayerTxsHintIndex != "" {
+		return indexNameConf.CountRelayerTxsHintIndex
 	}
-	return IndexNameCreateAt
+	return IndexNameMsgsMsgSignerMsgsTypeTime
+}
+
+func GetRelayerTxsHintIndexName() string {
+	if indexNameConf.GetRelayerTxsHintIndex != "" {
+		return indexNameConf.GetRelayerTxsHintIndex
+	}
+	return IndexNameTimeMsgsType
 }
