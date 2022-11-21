@@ -295,6 +295,17 @@ func (t *RelayerDataTask) createChannelPairInfoData(dto *dto.GetRelayerInfoDTO) 
 		ChainAAddress: dto.ScChainAddress,
 		ChainBAddress: dto.DcChainAddress,
 	}
+	chainA, _ := entity.ConfirmRelayerPair(channelPairInfo.ChainA, channelPairInfo.ChainB)
+	if chainA != channelPairInfo.ChainA {
+		channelPairInfo = entity.ChannelPairInfo{
+			ChainA:        dto.DcChainId,
+			ChainB:        dto.ScChainId,
+			ChannelA:      dto.DcChannel,
+			ChannelB:      dto.ScChannel,
+			ChainAAddress: dto.DcChainAddress,
+			ChainBAddress: dto.ScChainAddress,
+		}
+	}
 	return channelPairInfo
 }
 
