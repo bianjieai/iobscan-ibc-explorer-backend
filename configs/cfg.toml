@@ -23,9 +23,10 @@ url = "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&au
 database = "iobscan-ibc_0805"
 
 [hint_index_name]
-msgs_msg_signer_msgs_type_time_index_name="msgs.msg.signer_1_msgs.type_1_time_1"
-time_msgs_type_index_name="time_-1_msgs.type_-1"
-create_at_index_name="create_at_-1"
+count_relayer_txs_hint_index="msgs.msg.signer_1_msgs.type_1_time_1"
+get_relayer_txs_hint_index="time_-1_msgs.type_-1"
+get_relayer_update_time_hint_index="msgs.msg.signer_1_msgs.type_1_time_1"
+get_latest_recv_packet_time_hint_index="msgs.msg.signer_1_msgs.type_1_time_1"
 
 [redis]
 addrs = "127.0.0.1:6379"

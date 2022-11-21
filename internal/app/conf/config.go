@@ -35,9 +35,10 @@ type Mongo struct {
 }
 
 type HintIndexName struct {
-	MsgsMsgSignerMsgsTypeTimeIndexName string `mapstructure:"msgs_msg_signer_msgs_type_time_index_name"`
-	TimeMsgsTypeIndexName              string `mapstructure:"time_msgs_type_index_name"`
-	CreateAtIndexName                  string `mapstructure:"create_at_index_name"`
+	GetRelayerTxsHintIndex           string `mapstructure:"get_relayer_txs_hint_index"`
+	CountRelayerTxsHintIndex         string `mapstructure:"count_relayer_txs_hint_index"`
+	GetRelayerUpdateTimeHintIndex    string `mapstructure:"get_relayer_update_time_hint_index"`
+	GetLatestRecvPacketTimeHintIndex string `mapstructure:"get_latest_recv_packet_time_hint_index"`
 }
 
 type App struct {
