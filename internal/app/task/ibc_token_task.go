@@ -525,28 +525,17 @@ func (t *TokenTask) ibcTokenTraceRemove(token *entity.IBCToken) {
 }
 
 func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error) {
-	ibcDenomCalculateList, err := denomCalculateRepo.FindByBaseDenom(ibcToken.BaseDenom)
-	if err != nil {
-		logrus.Errorf("task %s denomCaculateRepo.FindByBaseDenom error, %v", t.Name(), err)
-		return 0, nil
-	}
-
 	denomList, err := denomRepo.FindByBaseDenom(ibcToken.BaseDenom, ibcToken.Chain)
 	if err != nil {
 		logrus.Errorf("task %s FindByBaseDenom error, %v", t.Name(), err)
 		return 0, nil
 	}
 
-	ibcDenomCalculateStrList := make([]string, 0, len(ibcDenomCalculateList))
-	for _, v := range ibcDenomCalculateList {
-		ibcDenomCalculateStrList = append(ibcDenomCalculateStrList, fmt.Sprintf("%s%s", v.ChainId, v.Denom))
-	}
-
 	scale := t.getTokenScale(ibcToken.BaseDenom, ibcToken.Chain)
 	allTokenStatisticsList := make([]*entity.IBCTokenTrace, 0, len(denomList))
 	chainsSet := utils.NewStringSet()
 	for _, v := range denomList {
-		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v.Denom, v.Chain, ibcDenomCalculateStrList)
+		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v)
 		var denomAmount string
 		if denomType == entity.TokenTraceTypeGenesis {
 			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
@@ -645,16 +634,18 @@ func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
 	return sd.Sub(td).String()
 }
 
-func (t *TokenTask) ibcTokenStatisticsType(baseDenom, denom, chain string, ibcHash []string) entity.TokenTraceType {
-	if baseDenom == denom {
+func (t *TokenTask) ibcTokenStatisticsType(baseDenom string, denom *entity.IBCDenom) entity.TokenTraceType {
+	if baseDenom == denom.Denom {
 		return entity.TokenTraceTypeGenesis
 	}
 
-	if utils.InArray(ibcHash, fmt.Sprintf("%s%s", chain, denom)) {
-		return entity.TokenTraceTypeAuthed
-	} else {
-		return entity.TokenTraceTypeOther
+	for _, v := range t.baseDenomList {
+		if v.Denom == denom.BaseDenom && v.Chain == denom.BaseDenomChain {
+			return entity.TokenTraceTypeAuthed
+		}
 	}
+
+	return entity.TokenTraceTypeOther
 }
 
 func (t *TokenTask) ibcHops(denomPath string) int {

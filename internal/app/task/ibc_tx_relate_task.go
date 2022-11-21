@@ -190,7 +190,7 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 		var repaired bool
 		ibcTx, repaired = w.repairTxInfo(ibcTx)
 		if err := w.updateIbcTx(ibcTx, repaired); err != nil {
-			logrus.Errorf("task %s worker %s chain %s updateIbcTx error, record_id: %s, %v", w.taskName, w.workerName, scChainId, ibcTx.RecordId, err)
+			logrus.Errorf("task %s worker %s chain %s updateIbcTx error, _id: %s, %v", w.taskName, w.workerName, scChainId, ibcTx.Id, err)
 		}
 	}
 
@@ -580,7 +580,7 @@ func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string
 	res := make(map[string][]*dto.PacketIdDTO)
 	for _, tx := range ibcTxList {
 		if tx.DcChain == "" || tx.ScTxInfo == nil || tx.ScTxInfo.Msg == nil {
-			logrus.Warningf("ibc tx dc_chain_id or sc_tx_info exception, record_id: %s", tx.RecordId)
+			logrus.Warningf("ibc tx dc_chain_id or sc_tx_info exception, record_id: %s", tx.Id)
 			continue
 		}
 
