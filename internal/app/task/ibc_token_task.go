@@ -26,7 +26,7 @@ type TokenTask struct {
 	chainLcdMap      map[string]string         // chain lcd地址
 	chainLcdApiMap   map[string]entity.ApiPath // chain lcd api地址
 	escrowAddressMap map[string][]string       // chain ibc跨链托管地址
-	baseDenomList    entity.IBCBaseDenomList   // 所有的base denom
+	baseDenomList    entity.AuthDenomList      // 所有的base denom
 	ibcChainDenomMap map[string][]string       // chain id 和其对应的跨链denom的映射关系
 	ibcReceiveTxsMap map[string]int64          // ibc hash token denom的recv txs
 }

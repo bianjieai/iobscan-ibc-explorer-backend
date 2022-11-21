@@ -9,10 +9,10 @@ import (
 )
 
 type BaseDenomCacheRepo struct {
-	baseDenom repository.BaseDenomRepo
+	baseDenom repository.AuthDenomRepo
 }
 
-func (repo *BaseDenomCacheRepo) FindAll() (entity.IBCBaseDenomList, error) {
+func (repo *BaseDenomCacheRepo) FindAll() (entity.AuthDenomList, error) {
 	value, err := rc.Get(baseDenom)
 	if err != nil && err == v8.Nil || len(value) == 0 {
 		baseDenoms, err := repo.baseDenom.FindAll()
@@ -24,22 +24,22 @@ func (repo *BaseDenomCacheRepo) FindAll() (entity.IBCBaseDenomList, error) {
 			return baseDenoms, nil
 		}
 	}
-	var data []*entity.IBCBaseDenom
+	var data []*entity.AuthDenom
 	utils.UnmarshalJsonIgnoreErr([]byte(value), &data)
 	return data, nil
 }
 
-func (repo *BaseDenomCacheRepo) FindBySymbol(symbol string) (entity.IBCBaseDenom, error) {
+func (repo *BaseDenomCacheRepo) FindBySymbol(symbol string) (entity.AuthDenom, error) {
 	value, err := rc.Get(fmt.Sprintf(baseDenomSymbol, symbol))
 	if err != nil && err == v8.Nil || len(value) == 0 {
 		baseDenom, err := repo.baseDenom.FindBySymbol(symbol)
 		if err != nil {
-			return entity.IBCBaseDenom{}, err
+			return entity.AuthDenom{}, err
 		}
 		_ = rc.Set(fmt.Sprintf(baseDenomSymbol, symbol), utils.MarshalJsonIgnoreErr(baseDenom), oneDay)
 		return baseDenom, nil
 	}
-	var data entity.IBCBaseDenom
+	var data entity.AuthDenom
 	utils.UnmarshalJsonIgnoreErr([]byte(value), &data)
 	return data, nil
 }

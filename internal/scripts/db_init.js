@@ -11,7 +11,7 @@ db.chain_registry.createIndex({
     background: true
 });
 
-db.getCollection("ibc_base_denom").createIndex({
+db.getCollection("auth_denom").createIndex({
     "chain": 1,
     "denom": 1
 }, {
@@ -292,15 +292,15 @@ db.getCollection("ex_ibc_tx_latest").createIndex({
     background: true
 });
 
-// sync_{chain_id}_tx表
+// sync_{chain}_tx表
 db.sync_xxxx_tx.createIndex({"tx_hash": -1,"height": -1},{unique: true, background: true});
 db.sync_xxxx_tx.createIndex({"height": -1},{background: true});
 db.sync_xxxx_tx.createIndex({"types": -1,"height": -1},{background: true});
 db.sync_xxxx_tx.createIndex({"msgs.msg.packet_id":-1},{background: true});
 db.sync_xxxx_tx.createIndex({"msgs.msg.signer": 1,"msgs.type": 1,"time": 1},{background: true});
 
-// ex_search_record
-db.ex_search_record.createIndex({
+// uba_search_record
+db.uba_search_record.createIndex({
     "create_at": 1
 }, {
     expireAfterSeconds: 31536000

@@ -23,10 +23,10 @@ type (
 	}
 
 	IbcBaseDenomsResp struct {
-		Items     []IbcBaseDenomDto `json:"items"`
-		TimeStamp int64             `json:"time_stamp"`
+		Items     []AuthDenomDto `json:"items"`
+		TimeStamp int64          `json:"time_stamp"`
 	}
-	IbcBaseDenomDto struct {
+	AuthDenomDto struct {
 		Chain  string `json:"chain"`
 		Denom  string `json:"denom"`
 		Symbol string `json:"symbol"`
@@ -57,8 +57,8 @@ type (
 	}
 )
 
-func (dto IbcBaseDenomDto) LoadDto(baseDenom *entity.IBCBaseDenom) IbcBaseDenomDto {
-	return IbcBaseDenomDto{
+func (dto AuthDenomDto) LoadDto(baseDenom *entity.AuthDenom) AuthDenomDto {
+	return AuthDenomDto{
 		Chain:  baseDenom.Chain,
 		Denom:  baseDenom.Denom,
 		Symbol: baseDenom.Symbol,

@@ -21,7 +21,7 @@ type IHomeService interface {
 var _ IHomeService = new(HomeService)
 
 type HomeService struct {
-	baseDenomdto    vo.IbcBaseDenomDto
+	baseDenomdto    vo.AuthDenomDto
 	denomDto        vo.IbcDenomDto
 	statisticCntDto vo.StatisticsCntDto
 }
@@ -110,7 +110,7 @@ func (svc HomeService) Statistics() (vo.StatisticsCntResp, errors.Error) {
 }
 
 func (svc HomeService) SearchPoint(req *vo.SearchPointReq) errors.Error {
-	if err := exSearchRecordRepo.Insert(&entity.ExSearchRecord{
+	if err := exSearchRecordRepo.Insert(&entity.UbaSearchRecord{
 		Ip:       req.Ip,
 		Content:  req.Content,
 		CreateAt: time.Now().Unix(),
