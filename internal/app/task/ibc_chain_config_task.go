@@ -19,7 +19,7 @@ type IbcChainConfigTask struct {
 	channelStateMap *sync.Map // channel -> state map
 	chainUpdateMap  *sync.Map // map[string]bool chain 最后是否能被更新map
 	chainChannelMap *sync.Map // chain -> chain的所有channel map
-	chainVerCfgMap  map[string]string
+	chainCfgMap     map[string]string
 }
 
 var _ibcChainConfigTask Task = new(IbcChainConfigTask)
@@ -82,11 +82,11 @@ func (t *IbcChainConfigTask) init() {
 	t.channelStateMap = new(sync.Map)
 	t.chainUpdateMap = new(sync.Map)
 	t.chainChannelMap = new(sync.Map)
-	mapData, err := chainVersionConfigRepo.GetChainVerCfgMap()
+	mapData, err := chainConfigRepo.GetChainCfgMap()
 	if err != nil {
 		logrus.Fatal(err.Error())
 	}
-	t.chainVerCfgMap = mapData
+	t.chainCfgMap = mapData
 }
 
 func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
@@ -97,7 +97,7 @@ func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
 
 	allChainList := make([]string, 0, len(chainConfList))
 	for _, v := range chainConfList {
-		allChainList = append(allChainList, t.chainVerCfgMap[v.CurrentChainId])
+		allChainList = append(allChainList, t.chainCfgMap[v.CurrentChainId])
 	}
 	t.allChainList = allChainList
 
@@ -138,14 +138,14 @@ func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*en
 				PortId:    v.PortId,
 				ChannelId: v.ChannelId,
 				Chain:     "",
-				ScChain:   t.chainVerCfgMap[chainId],
+				ScChain:   t.chainCfgMap[chainId],
 				Counterparty: entity.CounterParty{
 					State:     "",
 					PortId:    v.Counterparty.PortId,
 					ChannelId: v.Counterparty.ChannelId,
 				},
 			})
-			k := fmt.Sprintf("%s%s%s%s%s", t.chainVerCfgMap[chainId], v.PortId, v.ChannelId, v.Counterparty.PortId, v.Counterparty.ChannelId)
+			k := fmt.Sprintf("%s%s%s%s%s", t.chainCfgMap[chainId], v.PortId, v.ChannelId, v.Counterparty.PortId, v.Counterparty.ChannelId)
 			t.channelStateMap.Store(k, v.State)
 		}
 
@@ -188,7 +188,7 @@ func (t *IbcChainConfigTask) setChainAndCounterpartyState(chain *entity.ChainCon
 					lcdConnectionErr = isConnectionErr(err)
 					logrus.Errorf("task %s %s queryClientState error, %v", t.Name(), chain.CurrentChainId, err)
 				} else {
-					v.Chain = t.chainVerCfgMap[stateResp.IdentifiedClientState.ClientState.ChainId]
+					v.Chain = t.chainCfgMap[stateResp.IdentifiedClientState.ClientState.ChainId]
 					v.ClientId = stateResp.IdentifiedClientState.ClientId
 				}
 			}
