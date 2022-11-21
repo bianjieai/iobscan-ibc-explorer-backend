@@ -10,7 +10,6 @@ import (
 
 type IBaseDenomRepo interface {
 	FindAll() (entity.IBCBaseDenomList, error)
-	UpdateIbcInfoHashCalculate(denom, chainId, ibcInfoHashCalculate string) error
 	FindBySymbol(symbol string) (entity.IBCBaseDenom, error)
 }
 
@@ -33,13 +32,4 @@ func (repo *BaseDenomRepo) FindBySymbol(symbol string) (entity.IBCBaseDenom, err
 	var res entity.IBCBaseDenom
 	err := repo.coll().Find(context.Background(), bson.M{"symbol": symbol}).One(&res)
 	return res, err
-}
-
-// TODO remove UpdateIbcInfoHashCalculate
-
-func (repo *BaseDenomRepo) UpdateIbcInfoHashCalculate(denom, chainId, ibcInfoHashCalculate string) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": chainId, "denom": denom}, bson.M{
-		"$set": bson.M{
-			"ibc_info_hash_caculate": ibcInfoHashCalculate,
-		}})
 }

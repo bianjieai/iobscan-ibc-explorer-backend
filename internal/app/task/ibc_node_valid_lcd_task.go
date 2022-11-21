@@ -96,7 +96,7 @@ func getChainRegisterResp(chain string) (vo.ChainRegisterResp, error) {
 }
 
 func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
-	// todo chain Id -> chain
+	// TODO chain Id -> chain
 	chainRegisterResp, err := getChainRegisterResp(chainId)
 	if err != nil {
 		logrus.Error(err.Error(), " task:", t.Name())

@@ -66,7 +66,6 @@ var (
 	tokenTraceStatisticsRepo   repository.ITokenTraceStatisticsRepo   = new(repository.TokenTraceStatisticsRepo)
 	baseDenomRepo              repository.IBaseDenomRepo              = new(repository.BaseDenomRepo)
 	denomRepo                  repository.IDenomRepo                  = new(repository.DenomRepo)
-	denomCalculateRepo         repository.IDenomCalculateRepo         = new(repository.DenomCalculateRepo)
 	chainConfigRepo            repository.IChainConfigRepo            = new(repository.ChainConfigRepo)
 	ibcTxRepo                  repository.IExIbcTxRepo                = new(repository.ExIbcTxRepo)
 	chainRepo                  repository.IChainRepo                  = new(repository.IbcChainRepo)
