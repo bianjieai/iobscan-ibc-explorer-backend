@@ -20,7 +20,7 @@ func TestNewModifyChainIdContent(t *testing.T) {
 }
 
 func TestGetIbcRelayerData(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -36,7 +36,7 @@ func TestGetIbcRelayerData(t *testing.T) {
 }
 
 func TestFixIbcRelayerTaskRun(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -45,7 +45,7 @@ func TestFixIbcRelayerTaskRun(t *testing.T) {
 }
 
 func TestFixChannelIdTaskGetIbcChannelData(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -61,7 +61,7 @@ func TestFixChannelIdTaskGetIbcChannelData(t *testing.T) {
 }
 
 func TestGetIbcChannelStatisticData(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -79,7 +79,7 @@ func TestGetIbcChannelStatisticData(t *testing.T) {
 }
 
 func TestFixChannelIdTaskRun(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -88,7 +88,7 @@ func TestFixChannelIdTaskRun(t *testing.T) {
 }
 
 func TestGetAllChainConigs(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -104,7 +104,7 @@ func TestGetAllChainConigs(t *testing.T) {
 }
 
 func TestModifyChainConfigRun(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -113,7 +113,7 @@ func TestModifyChainConfigRun(t *testing.T) {
 }
 
 func TestGetIbcTaskRecordData(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -132,7 +132,7 @@ func TestGetIbcTaskRecordData(t *testing.T) {
 }
 
 func TestFixIbcTaskRecordTaskRun(t *testing.T) {
-	mapData, err := _initChainVerCfgMap()
+	mapData, err := _initChainCfgMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

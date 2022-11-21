@@ -17,7 +17,7 @@ type IModifyChainIdContent interface {
 }
 
 func NewModifyChainIdContent(collName string) IModifyChainIdContent {
-	verCfgMap, err := _initChainVerCfgMap()
+	verCfgMap, err := _initChainCfgMap()
 	if err != nil {
 		return nil
 	}
@@ -37,9 +37,9 @@ func NewModifyChainIdContent(collName string) IModifyChainIdContent {
 
 //========================================================================================
 //========================================================================================
-//========get all chain version config data================================
-func _initChainVerCfgMap() (map[string]string, error) {
-	mapData, err := chainVersionConfigRepo.GetChainVerCfgMap()
+//========get all chain config data================================
+func _initChainCfgMap() (map[string]string, error) {
+	mapData, err := chainConfigRepo.GetChainCfgMap()
 	if err != nil {
 		return nil, err
 	}

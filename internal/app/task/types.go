@@ -85,7 +85,6 @@ var (
 	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
 	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
 	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
-	chainVersionConfigRepo     repository.IChainVersionConfigRepo     = new(repository.ChainVersionConfigRepo)
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 

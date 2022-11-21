@@ -28,6 +28,7 @@ type IChainConfigRepo interface {
 	UpdateIbcInfo(config *entity.ChainConfig) error
 	UpdateLcdApi(config *entity.ChainConfig) error
 	Count() (int64, error)
+	GetChainCfgMap() (map[string]string, error)
 }
 
 var _ IChainConfigRepo = new(ChainConfigRepo)
@@ -48,6 +49,19 @@ func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
 	return res, err
 }
+
+func (repo *ChainConfigRepo) GetChainCfgMap() (map[string]string, error) {
+	chainCfgMap := make(map[string]string, 10)
+	res, err := repo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	for _, val := range res {
+		chainCfgMap[val.CurrentChainId] = val.ChainName
+	}
+	return chainCfgMap, nil
+}
+
 func (repo *ChainConfigRepo) FindAllChainInfos() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
