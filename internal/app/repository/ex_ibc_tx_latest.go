@@ -9,12 +9,14 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IExIbcTxRepo interface {
 	InsertBatch(txs []*entity.ExIbcTx) error
 	InsertBatchHistory(txs []*entity.ExIbcTx) error
+	DelBatch(ids []primitive.ObjectID) error
 	FindByStatus(status []entity.IbcTxStatus, limit int64) ([]*entity.ExIbcTx, error)
 	FindByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
 	FindHistoryByTxTime(startTime, endTime, skip, limit int64) ([]*entity.ExIbcTx, error)
@@ -61,7 +63,7 @@ type IExIbcTxRepo interface {
 	TxDetail(hash string, history bool) ([]*entity.ExIbcTx, error)
 	GetNeedAcknowledgeTxs(history bool, startTime int64) ([]*entity.ExIbcTx, error)
 	GetNeedRecvPacketTxs(history bool) ([]*entity.ExIbcTx, error)
-	UpdateOne(recordId string, history bool, setData bson.M) error
+	UpdateOne(id primitive.ObjectID, history bool, setData bson.M) error
 }
 
 var _ IExIbcTxRepo = new(ExIbcTxRepo)
@@ -90,6 +92,11 @@ func (repo *ExIbcTxRepo) InsertBatchHistory(txs []*entity.ExIbcTx) error {
 	if mongo.IsDuplicateKeyError(err) {
 		return nil
 	}
+	return err
+}
+
+func (repo *ExIbcTxRepo) DelBatch(ids []primitive.ObjectID) error {
+	_, err := repo.coll().RemoveAll(context.Background(), bson.M{"_id": bson.M{"$in": ids}})
 	return err
 }
 
@@ -205,14 +212,14 @@ func (repo *ExIbcTxRepo) parseUpdateIbcTxSql(ibcTx *entity.ExIbcTx, repaired boo
 
 func (repo *ExIbcTxRepo) UpdateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) error {
 	set := repo.parseUpdateIbcTxSql(ibcTx, repaired)
-	return repo.coll().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+	return repo.coll().UpdateId(context.Background(), ibcTx.Id, bson.M{
 		"$set": set,
 	})
 }
 
 func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool) error {
 	set := repo.parseUpdateIbcTxSql(ibcTx, repaired)
-	return repo.collHistory().UpdateOne(context.Background(), bson.M{"record_id": ibcTx.RecordId}, bson.M{
+	return repo.collHistory().UpdateId(context.Background(), ibcTx.Id, bson.M{
 		"$set": set,
 	})
 }
@@ -646,9 +653,9 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 		return nil
 	}
 
-	var recordIds []string
+	var ids []primitive.ObjectID
 	for _, v := range txs {
-		recordIds = append(recordIds, v.RecordId)
+		ids = append(ids, v.Id)
 	}
 
 	callback := func(sessCtx context.Context) (interface{}, error) {
@@ -656,10 +663,9 @@ func (repo *ExIbcTxRepo) Migrate(txs []*entity.ExIbcTx) error {
 			return nil, err
 		}
 
-		// todo del record
-		//if err := repo.DeleteByRecordIds(recordIds); err != nil {
-		//	return nil, err
-		//}
+		if err := repo.DelBatch(ids); err != nil {
+			return nil, err
+		}
 
 		return nil, nil
 	}
@@ -1035,16 +1041,12 @@ func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool, startTime int64) ([
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) UpdateOne(recordId string, history bool, setData bson.M) error {
+func (repo *ExIbcTxRepo) UpdateOne(id primitive.ObjectID, history bool, setData bson.M) error {
 	if history {
-		err := repo.collHistory().UpdateOne(context.Background(), bson.M{
-			"record_id": recordId,
-		}, setData)
+		err := repo.collHistory().UpdateId(context.Background(), id, setData)
 		return err
 	}
-	err := repo.coll().UpdateOne(context.Background(), bson.M{
-		"record_id": recordId,
-	}, setData)
+	err := repo.coll().UpdateId(context.Background(), id, setData)
 	return err
 }
 
