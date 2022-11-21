@@ -13,14 +13,18 @@ var (
 )
 
 func TestNewModifyChainIdContent(t *testing.T) {
-	client := NewModifyChainIdContent("chain_config_copy")
+	mapData, err := getChainIdNameMap()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	client := NewModifyChainIdContent("chain_config_copy", mapData)
 	if client != nil {
 		client.Run()
 	}
 }
 
 func TestGetIbcRelayerData(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -36,7 +40,7 @@ func TestGetIbcRelayerData(t *testing.T) {
 }
 
 func TestFixIbcRelayerTaskRun(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -45,7 +49,7 @@ func TestFixIbcRelayerTaskRun(t *testing.T) {
 }
 
 func TestFixChannelIdTaskGetIbcChannelData(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -61,7 +65,7 @@ func TestFixChannelIdTaskGetIbcChannelData(t *testing.T) {
 }
 
 func TestGetIbcChannelStatisticData(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -79,7 +83,7 @@ func TestGetIbcChannelStatisticData(t *testing.T) {
 }
 
 func TestFixChannelIdTaskRun(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -105,7 +109,7 @@ func TestModifyChainConfigRun(t *testing.T) {
 }
 
 func TestGetIbcTaskRecordData(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -124,7 +128,7 @@ func TestGetIbcTaskRecordData(t *testing.T) {
 }
 
 func TestFixIbcTaskRecordTaskRun(t *testing.T) {
-	mapData, err := _initChainCfgMap()
+	mapData, err := getChainIdNameMap()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
