@@ -59,7 +59,7 @@ func (c ChainConfig) CollectionName() string {
 	return "chain_config"
 }
 
-func (c *ChainConfig) GetDcChainId(scChannel, dcChannel string) string {
+func (c *ChainConfig) GetDcChain(scChannel, dcChannel string) string {
 	for _, ibcInfo := range c.IbcInfo {
 		for _, path := range ibcInfo.Paths {
 			if path.ChannelId == scChannel && path.Counterparty.ChannelId == dcChannel {
