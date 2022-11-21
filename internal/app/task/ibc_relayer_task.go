@@ -26,10 +26,6 @@ import (
 
 type IbcRelayerCronTask struct {
 	chainConfigMap map[string]*entity.ChainConfig
-	//key:relayer_id
-	relayerTxsDataMap map[string]dto.TxsAmtItem
-	//key:address+Chain+Channel
-	relayerValueMap map[string]decimal.Decimal
 	//key: BaseDenom+ChainId
 	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
@@ -243,19 +239,6 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 //dependence: AggrRelayerFeeAmt or AggrRelayerTxsAndAmt
 func caculateRelayerTotalValue(denomPriceMap map[string]dto.CoinItem, relayerTxsDataMap map[string]dto.TxsAmtItem) decimal.Decimal {
 	return dto.CaculateRelayerTotalValue(denomPriceMap, relayerTxsDataMap)
-}
-
-func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*entity.ChannelPath {
-	cfg, ok := t.chainConfigMap[chainId]
-	if ok {
-		for _, v := range cfg.IbcInfo {
-			if v.ChainId == dcChainId {
-				return v.Paths
-			}
-		}
-	}
-
-	return nil
 }
 
 func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
