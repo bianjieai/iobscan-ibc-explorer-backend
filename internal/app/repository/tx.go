@@ -17,13 +17,10 @@ type ITxRepo interface {
 	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
 	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
 	GetTxByHash(chainId string, hash string) (entity.Tx, error)
-	GetTxByHashes(chainId string, hashs []string) ([]*entity.Tx, error)
+	GetTxByHashes(chain string, hashs []string) ([]*entity.Tx, error)
 	GetAcknowledgeTxs(chainId, packetId string) ([]*entity.Tx, error)
 	GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, error)
 	FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
-	FindAllAckTxs(chainId string, height int64) ([]*entity.Tx, error)
-	FindHeight(chainId string, min bool) (entity.Tx, error)
-	UpdateAckPacketId(chainId string, height int64, txHash string, msgs []interface{}) error
 	RelayerDenomStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error)
 	RelayerFeeStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error)
 	GetRelayerTxs(chainId string, relayerAddrs []string, txTypes []string,
@@ -158,9 +155,9 @@ func (repo *TxRepo) GetTxByHash(chainId string, hash string) (entity.Tx, error) 
 	err := repo.coll(chainId).Find(context.Background(), bson.M{"tx_hash": hash}).Sort("-height").One(&res)
 	return res, err
 }
-func (repo *TxRepo) GetTxByHashes(chainId string, hashs []string) ([]*entity.Tx, error) {
+func (repo *TxRepo) GetTxByHashes(chain string, hashs []string) ([]*entity.Tx, error) {
 	var res []*entity.Tx
-	err := repo.coll(chainId).Find(context.Background(), bson.M{"tx_hash": bson.M{
+	err := repo.coll(chain).Find(context.Background(), bson.M{"tx_hash": bson.M{
 		"$in": hashs,
 	}}).Sort("height").All(&res)
 	return res, err
@@ -194,39 +191,6 @@ func (repo *TxRepo) GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, er
 		return res, err
 	}
 	return res, nil
-}
-
-func (repo *TxRepo) FindAllAckTxs(chainId string, height int64) ([]*entity.Tx, error) {
-	var txs []*entity.Tx
-	err := repo.coll(chainId).Find(context.Background(), bson.M{
-		"types":  constant.MsgTypeAcknowledgement,
-		"height": bson.M{"$gt": height, "$lte": height + constant.IncreHeight},
-	}).Sort("height").All(&txs)
-	return txs, err
-}
-
-func (repo *TxRepo) FindHeight(chainId string, min bool) (entity.Tx, error) {
-	var tx entity.Tx
-	sorts := "-height"
-	if min {
-		sorts = "+height"
-	}
-	err := repo.coll(chainId).Find(context.Background(), bson.M{
-		"types": constant.MsgTypeAcknowledgement,
-	}).Sort(sorts).Limit(1).One(&tx)
-	return tx, err
-}
-
-func (repo *TxRepo) UpdateAckPacketId(chainId string, height int64, txHash string, msgs []interface{}) error {
-	filter, update := bson.M{
-		"height": height, "tx_hash": txHash,
-	}, bson.M{
-		"$set": bson.M{
-			"msgs": msgs,
-		},
-	}
-	err := repo.coll(chainId).UpdateOne(context.Background(), filter, update)
-	return err
 }
 
 func (repo *TxRepo) RelayerDenomStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error) {
