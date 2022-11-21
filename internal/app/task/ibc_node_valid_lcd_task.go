@@ -35,9 +35,9 @@ func (t *IbcNodeLcdCronTask) Run() int {
 
 }
 
-func (t *IbcNodeLcdCronTask) RunWithParam(chainId string) int {
-	if chainId != "" {
-		t.CheckAndUpdateTraceSourceNode(chainId)
+func (t *IbcNodeLcdCronTask) RunWithParam(chain string) int {
+	if chain != "" {
+		t.CheckAndUpdateTraceSourceNode(chain)
 		return 1
 	}
 
@@ -95,9 +95,8 @@ func getChainRegisterResp(chain string) (vo.ChainRegisterResp, error) {
 	return chainRegisterResp, nil
 }
 
-func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
-	// TODO chain Id -> chain
-	chainRegisterResp, err := getChainRegisterResp(chainId)
+func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chain string) {
+	chainRegisterResp, err := getChainRegisterResp(chain)
 	if err != nil {
 		logrus.Error(err.Error(), " task:", t.Name())
 		return
@@ -133,7 +132,7 @@ func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
 	}
 
 	if len(rpcAddrMap) == 0 {
-		logrus.Warnf("CheckAndUpdateTraceSourceNode chain %s addr map is empty", chainId)
+		logrus.Warnf("CheckAndUpdateTraceSourceNode chain %s addr map is empty", chain)
 		return
 	}
 
@@ -156,8 +155,7 @@ func (t *IbcNodeLcdCronTask) CheckAndUpdateTraceSourceNode(chainId string) {
 	}
 
 	var lcdAddrCache cache.LcdAddrCacheRepo
-	chainRegisterResp.ChainId = strings.ReplaceAll(chainRegisterResp.ChainId, "-", "_")
-	if err := lcdAddrCache.Set(chainRegisterResp.ChainId, res); err != nil {
+	if err := lcdAddrCache.Set(chain, res); err != nil {
 		logrus.Error(err.Error(), " task:", t.Name())
 	}
 

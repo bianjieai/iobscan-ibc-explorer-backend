@@ -24,7 +24,7 @@ type IChainConfigRepo interface {
 	FindAll() ([]*entity.ChainConfig, error)
 	FindAllChainInfos() ([]*entity.ChainConfig, error)
 	FindAllOpenChainInfos() ([]*entity.ChainConfig, error)
-	FindOne(chainId string) (*entity.ChainConfig, error)
+	FindOne(chain string) (*entity.ChainConfig, error)
 	UpdateIbcInfo(config *entity.ChainConfig) error
 	UpdateLcdApi(config *entity.ChainConfig) error
 	Count() (int64, error)
@@ -48,6 +48,7 @@ func (repo *ChainConfigRepo) FindAll() ([]*entity.ChainConfig, error) {
 	err := repo.coll().Find(context.Background(), bson.M{}).All(&res)
 	return res, err
 }
+
 func (repo *ChainConfigRepo) FindAllChainInfos() ([]*entity.ChainConfig, error) {
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
@@ -64,9 +65,9 @@ func (repo *ChainConfigRepo) FindAllOpenChainInfos() ([]*entity.ChainConfig, err
 	return res, err
 }
 
-func (repo *ChainConfigRepo) FindOne(chainId string) (*entity.ChainConfig, error) {
+func (repo *ChainConfigRepo) FindOne(chain string) (*entity.ChainConfig, error) {
 	var res *entity.ChainConfig
-	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldCurrentChainId: chainId}).One(&res)
+	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldChainName: chain}).One(&res)
 	return res, err
 }
 

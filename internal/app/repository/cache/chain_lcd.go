@@ -15,14 +15,14 @@ type TraceSourceLcd struct {
 	FullNode      bool   `json:"full_node"`
 }
 
-func (repo *LcdAddrCacheRepo) Set(chainId string, value []TraceSourceLcd) error {
-	err := rc.Set(fmt.Sprintf(lcdAddr, chainId), string(utils.MarshalJsonIgnoreErr(value)), 7*oneDay)
+func (repo *LcdAddrCacheRepo) Set(chain string, value []TraceSourceLcd) error {
+	err := rc.Set(fmt.Sprintf(lcdAddr, chain), string(utils.MarshalJsonIgnoreErr(value)), 7*oneDay)
 	return err
 }
 
-func (repo *LcdAddrCacheRepo) Get(chainId string) ([]TraceSourceLcd, error) {
+func (repo *LcdAddrCacheRepo) Get(chain string) ([]TraceSourceLcd, error) {
 	var res []TraceSourceLcd
-	value, err := rc.Get(fmt.Sprintf(lcdAddr, chainId))
+	value, err := rc.Get(fmt.Sprintf(lcdAddr, chain))
 	if err != nil {
 		return nil, err
 	}

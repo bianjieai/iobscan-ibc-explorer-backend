@@ -46,6 +46,10 @@ func (t *ModifyChainIdTask) RunWithParam(category string, coll string) int {
 		handlerOne := newModifyChainIdHandlerOne(chainIdNameMap)
 		handlerOne.exec(coll)
 
+	case "two", "2":
+		handlerTwo := newModifyChainIdHandlerTwo(coll, chainIdNameMap)
+		handlerTwo.Run()
+
 	case "three", "3":
 		handlerThree := newModifyChainIdHandlerThree(chainIdNameMap)
 		handlerThree.exec()

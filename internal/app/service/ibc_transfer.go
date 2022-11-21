@@ -25,7 +25,6 @@ import (
 type ITransferService interface {
 	TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferTxsCountResp, errors.Error)
 	TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp, errors.Error)
-	TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error)
 	TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error)
 	TraceSource(hash string, req *vo.TraceSourceReq) (vo.TraceSourceResp, errors.Error)
 	SearchCondition() (*vo.SearchConditionResp, errors.Error)
@@ -34,8 +33,7 @@ type ITransferService interface {
 var _ ITransferService = new(TransferService)
 
 type TransferService struct {
-	dto       vo.IbcTxDto
-	detailDto vo.IbcTxDetailDto
+	dto vo.IbcTxDto
 }
 
 func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
@@ -43,8 +41,8 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 		query dto.IbcTxQuery
 		err   error
 	)
-	if req.ChainId != "" {
-		query.Chain = strings.Split(req.ChainId, ",")
+	if req.Chain != "" {
+		query.Chain = strings.Split(req.Chain, ",")
 	}
 	if req.DateRange != "" {
 		dateRange := strings.Split(req.DateRange, ",")
@@ -79,7 +77,7 @@ func createIbcTxQuery(req *vo.TranaferTxsReq) (dto.IbcTxQuery, error) {
 			query.BaseDenom = tokens
 		} else {
 			query.BaseDenom = []string{req.BaseDenom}
-			query.BaseDenomChain = req.BaseDenomChainId
+			query.BaseDenomChain = req.BaseDenomChain
 		}
 	} else if req.Denom != "" {
 		query.Denom = req.Denom
@@ -187,119 +185,6 @@ func (t TransferService) TransferTxs(req *vo.TranaferTxsReq) (vo.TranaferTxsResp
 	resp.PageInfo = page
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
-}
-
-// [Deprecated]
-func (t TransferService) TransferTxDetail(hash string) (vo.TranaferTxDetailResp, errors.Error) {
-	var resp vo.TranaferTxDetailResp
-	ibcTxs, err := ibcTxRepo.TxDetail(hash, false)
-	if err != nil && err != qmgo.ErrNoSuchDocuments {
-		return resp, errors.Wrap(err)
-	}
-	if len(ibcTxs) == 0 {
-		ibcTxs, err = ibcTxRepo.TxDetail(hash, true)
-		if err != nil && err != qmgo.ErrNoSuchDocuments {
-			return resp, errors.Wrap(err)
-		}
-	}
-	setMap := make(map[string]struct{}, len(ibcTxs))
-	for _, val := range ibcTxs {
-		packetId := fmt.Sprintf("%s%s%s%s%s", val.ScPort, val.ScChannel, val.DcPort, val.DcChannel, val.Sequence)
-		if _, exist := setMap[val.RecordId]; exist {
-			continue
-		}
-		setMap[val.RecordId] = struct{}{}
-
-		item := t.detailDto.LoadDto(val)
-		if val.ScChain != "" && val.ScTxInfo != nil && val.ScTxInfo.Hash != "" {
-			item.ScConnect, item.ScSigners = getScTxInfo(val.ScChain, val.ScTxInfo.Hash, packetId)
-		}
-		if val.DcChain != "" && val.DcTxInfo != nil && val.DcTxInfo.Hash != "" {
-			item.DcConnect, item.Ack, item.DcSigners = getDcTxInfo(val.DcChain, val.DcTxInfo.Hash, packetId)
-		}
-		resp.Items = append(resp.Items, item)
-	}
-	if len(resp.Items) > 1 {
-		// detail api page no support more than one return
-		resp.Items = []vo.IbcTxDetailDto{}
-	}
-	resp.TimeStamp = time.Now().Unix()
-	return resp, nil
-}
-
-func getMsgIndex(tx entity.Tx, msgType string, packetId string) int {
-	for i, val := range tx.DocTxMsgs {
-		if val.Type == msgType && val.CommonMsg().PacketId == packetId {
-			return i
-		}
-	}
-	return -1
-}
-
-// [Deprecated]
-func getScTxInfo(chainId string, txHash string, packetId string) (scConnect string, signers []string) {
-	tx, err := txRepo.GetTxByHash(chainId, txHash)
-	if err != nil {
-		logrus.Error(err.Error())
-		return
-	}
-	signers = tx.Signers
-	scConnect = getConnectByTransferEventNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeTransfer, packetId))
-	return
-}
-
-// [Deprecated]
-func getDcTxInfo(chainId string, txHash string, packetId string) (dcConnect string, ack string, signers []string) {
-	tx, err := txRepo.GetTxByHash(chainId, txHash)
-	if err != nil {
-		logrus.Error(err.Error())
-		return
-	}
-	signers = tx.Signers
-	dcConnect, ack = getConnectByRecvPacketEventsNews(tx.EventsNew, getMsgIndex(tx, constant.MsgTypeRecvPacket, packetId))
-	return
-}
-
-// [Deprecated]
-func getConnectByTransferEventNews(eventNews []entity.EventNew, msgIndex int) string {
-	var connect string
-	for _, item := range eventNews {
-		if item.MsgIndex == uint32(msgIndex) {
-			for _, val := range item.Events {
-				if val.Type == "send_packet" {
-					for _, attribute := range val.Attributes {
-						switch attribute.Key {
-						case "packet_connection":
-							connect = attribute.Value
-						}
-					}
-				}
-			}
-		}
-	}
-	return connect
-}
-
-// [Deprecated]
-func getConnectByRecvPacketEventsNews(eventNews []entity.EventNew, msgIndex int) (string, string) {
-	var connect, ackData string
-	for _, item := range eventNews {
-		if item.MsgIndex == uint32(msgIndex) {
-			for _, val := range item.Events {
-				if val.Type == "write_acknowledgement" || val.Type == "recv_packet" {
-					for _, attribute := range val.Attributes {
-						switch attribute.Key {
-						case "packet_connection":
-							connect = attribute.Value
-						case "packet_ack":
-							ackData = attribute.Value
-						}
-					}
-				}
-			}
-		}
-	}
-	return connect, ackData
 }
 
 func (t TransferService) TransferTxDetailNew(hash string) (*vo.TranaferTxDetailNewResp, errors.Error) {
@@ -417,11 +302,11 @@ func getTokenInfo(ibcTx *entity.ExIbcTx) (*vo.TokenInfo, error) {
 		}
 	}
 	return &vo.TokenInfo{
-		BaseDenom:        ibcTx.BaseDenom,
-		BaseDenomChainId: ibcTx.BaseDenomChain,
-		Amount:           ibcTx.ScTxInfo.MsgAmount.Amount,
-		SendToken:        sendToken,
-		RecvToken:        recvToken,
+		BaseDenom:      ibcTx.BaseDenom,
+		BaseDenomChain: ibcTx.BaseDenomChain,
+		Amount:         ibcTx.ScTxInfo.MsgAmount.Amount,
+		SendToken:      sendToken,
+		RecvToken:      recvToken,
 	}, nil
 }
 
@@ -478,18 +363,18 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 		return resp, errors.WrapBadRequest(fmt.Errorf("only support transfer,recv_packet,acknowledge_packet,timeout_packet"))
 	}
 
-	value, err := lcdTxDataCache.Get(req.ChainId, hash)
+	value, err := lcdTxDataCache.Get(req.Chain, hash)
 	if err == nil {
 		utils.UnmarshalJsonIgnoreErr([]byte(value), &resp)
 		return resp, nil
 	}
-	return getMsgAndTxData(msgType, req.ChainId, hash)
+	return getMsgAndTxData(msgType, req.Chain, hash)
 }
 
-func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.Error) {
+func getMsgAndTxData(msgType, chain, hash string) (vo.TraceSourceResp, errors.Error) {
 	var resp vo.TraceSourceResp
 
-	lcdTxData, err := GetLcdTxData(chainId, hash)
+	lcdTxData, err := GetLcdTxData(chain, hash)
 	if err != nil {
 		return resp, err
 	}
@@ -506,13 +391,13 @@ func getMsgAndTxData(msgType, chainId, hash string) (vo.TraceSourceResp, errors.
 		}
 	}
 	if resp.Msg != nil {
-		_ = lcdTxDataCache.Set(chainId, hash, string(utils.MarshalJsonIgnoreErr(resp)))
+		_ = lcdTxDataCache.Set(chain, hash, string(utils.MarshalJsonIgnoreErr(resp)))
 	}
 	return resp, nil
 }
 
-func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
-	lcdAddrs, _ := lcdAddrCache.Get(chainId)
+func GetLcdTxData(chain, hash string) (LcdTxData, errors.Error) {
+	lcdAddrs, _ := lcdAddrCache.Get(chain)
 	if len(lcdAddrs) > 0 {
 		//全节点且支持交易查询
 		if lcdAddrs[0].FullNode && lcdAddrs[0].TxIndexEnable {
@@ -528,7 +413,7 @@ func GetLcdTxData(chainId, hash string) (LcdTxData, errors.Error) {
 		//并发处理
 		return doHandleTxData(2, validNodes, hash)
 	} else {
-		cfg, err := chainCfgRepo.FindOne(chainId)
+		cfg, err := chainCfgRepo.FindOne(chain)
 		if err != nil {
 			return LcdTxData{}, errors.Wrap(fmt.Errorf("invalid chain id"))
 		}

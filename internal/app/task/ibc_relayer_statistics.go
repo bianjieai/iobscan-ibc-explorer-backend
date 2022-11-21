@@ -216,7 +216,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 		if v.TxType == string(entity.TxTypeAckPacket) || v.TxType == string(entity.TxTypeTimeoutPacket) {
 			denomChain = chainId
 		} else {
-			denomChain = w.chainMap[chainId].GetDcChainId(v.DcChannel, v.ScChannel)
+			denomChain = w.chainMap[chainId].GetDcChain(v.DcChannel, v.ScChannel)
 		}
 
 		denomEntity := traceDenom(v.Denom, denomChain, w.chainMap)

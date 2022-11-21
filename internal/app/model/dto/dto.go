@@ -61,21 +61,6 @@ type GetRelayerInfoDTO struct {
 	DcChannel      string `bson:"dc_channel"`
 }
 
-type CountRelayerPacketTxsCntDTO struct {
-	DcChainAddress   string `bson:"dc_chain_address"`
-	ScChainId        string `bson:"sc_chain_id"`
-	ScChannel        string `bson:"sc_channel"`
-	DcChainId        string `bson:"dc_chain_id"`
-	DcChannel        string `bson:"dc_channel"`
-	BaseDenom        string `bson:"base_denom"`
-	BaseDenomChainId string `bson:"base_denom_chain_id"`
-	Count            int64  `bson:"count"`
-}
-
-func (dto *CountRelayerPacketTxsCntDTO) Valid() bool {
-	return dto.DcChainId != "" && dto.DcChannel != "" && dto.ScChainId != "" && dto.ScChannel != "" && dto.DcChainAddress != ""
-}
-
 type CountRelayerPacketAmountDTO struct {
 	DcChainAddress string  `bson:"dc_chain_address"`
 	DcChain        string  `bson:"dc_chain"`

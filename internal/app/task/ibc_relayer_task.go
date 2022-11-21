@@ -26,10 +26,6 @@ import (
 
 type IbcRelayerCronTask struct {
 	chainConfigMap map[string]*entity.ChainConfig
-	//key:relayer_id
-	relayerTxsDataMap map[string]dto.TxsAmtItem
-	//key:address+Chain+Channel
-	relayerValueMap map[string]decimal.Decimal
 	//key: BaseDenom+Chain
 	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
@@ -244,19 +240,6 @@ func caculateRelayerTotalValue(denomPriceMap map[string]dto.CoinItem, relayerTxs
 	return dto.CaculateRelayerTotalValue(denomPriceMap, relayerTxsDataMap)
 }
 
-func (t *IbcRelayerCronTask) getChannelsStatus(chainId, dcChainId string) []*entity.ChannelPath {
-	cfg, ok := t.chainConfigMap[chainId]
-	if ok {
-		for _, v := range cfg.IbcInfo {
-			if v.Chain == dcChainId {
-				return v.Paths
-			}
-		}
-	}
-
-	return nil
-}
-
 func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 	res, err := chainCache.FindAll()
 	if err != nil {
@@ -303,13 +286,7 @@ func (t *IbcRelayerCronTask) getUpdateTime(relayer *entity.IBCRelayerNew) int64 
 	startTime = time.Now().Add(-24 * 21 * time.Hour).Unix()
 	if relayer.UpdateTime > 0 && relayer.UpdateTime <= startTime {
 		startTime = relayer.UpdateTime
-		//} else {
-		//	unbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
-		//	if unbondTime != "" {
-		//		if unbondTimeSeconds, err := strconv.ParseInt(strings.ReplaceAll(unbondTime, "s", ""), 10, 64); err == nil && unbondTimeSeconds > 0 && unbondTimeSeconds < startTime {
-		//			startTime = time.Now().Add(time.Duration(-unbondTimeSeconds) * time.Second).Unix()
-		//		}
-		//	}
+
 	}
 
 	getChannelPairUpdateTime := func(channelPair entity.ChannelPairInfo) (int64, string) {

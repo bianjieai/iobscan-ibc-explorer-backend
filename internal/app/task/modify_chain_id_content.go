@@ -16,34 +16,19 @@ type IModifyChainIdContent interface {
 	Run() int
 }
 
-func NewModifyChainIdContent(collName string) IModifyChainIdContent {
-	verCfgMap, err := _initChainVerCfgMap()
-	if err != nil {
-		return nil
-	}
+func newModifyChainIdHandlerTwo(collName string, chainIdNameMap map[string]string) IModifyChainIdContent {
 
 	switch collName {
 	case entity.ChainConfig{}.CollectionName():
-		return NewModifyChainConfig(verCfgMap)
+		return NewModifyChainConfig()
 	case entity.IBCRelayerNew{}.CollectionName():
-		return NewModifyIbcRelayer(verCfgMap)
+		return NewModifyIbcRelayer(chainIdNameMap)
 	case entity.IbcTaskRecord{}.CollectionName():
-		return NewModifyIbcTaskRecord(verCfgMap)
+		return NewModifyIbcTaskRecord(chainIdNameMap)
 	case entity.IBCChannelStatisticsCollName, entity.IBCChannel{}.CollectionName():
-		return NewModifyChannalIdTask(verCfgMap)
+		return NewModifyChannalIdTask(chainIdNameMap)
 	}
 	return nil
-}
-
-//========================================================================================
-//========================================================================================
-//========get all chain version config data================================
-func _initChainVerCfgMap() (map[string]string, error) {
-	mapData, err := chainVersionConfigRepo.GetChainVerCfgMap()
-	if err != nil {
-		return nil, err
-	}
-	return mapData, nil
 }
 
 //========chain_id format convert================================
@@ -55,12 +40,12 @@ func _formatChainId(chainId string) string {
 //========================================================================================
 //============================modify ibc_task_record taskname===========================
 type fixIbcTaskRecordTask struct {
-	chainVerCfgMap map[string]string
+	chainIdNameMap map[string]string
 }
 
-func NewModifyIbcTaskRecord(verCfg map[string]string) *fixIbcTaskRecordTask {
+func NewModifyIbcTaskRecord(chainIdNameMapData map[string]string) *fixIbcTaskRecordTask {
 	return &fixIbcTaskRecordTask{
-		chainVerCfgMap: verCfg,
+		chainIdNameMap: chainIdNameMapData,
 	}
 }
 
@@ -103,15 +88,15 @@ func (t *fixIbcTaskRecordTask) GetIbcTaskRecordData() ([]*_ibcTaskRecord, error)
 }
 
 func (t *fixIbcTaskRecordTask) UpdateIbcTaskRecord(record _ibcTaskRecord) error {
-	if len(t.chainVerCfgMap) == 0 {
-		return fmt.Errorf("init don't work")
+	if len(t.chainIdNameMap) == 0 {
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	arrs := strings.Split(record.TaskName, "_")
 	chainId := strings.Join(arrs[1:len(arrs)-1], "_")
 
-	chain, ok := t.chainVerCfgMap[_formatChainId(chainId)]
+	chain, ok := t.chainIdNameMap[_formatChainId(chainId)]
 	if !ok {
-		return fmt.Errorf("chain-id[%s] no found in chain_version_config", _formatChainId(chainId))
+		return fmt.Errorf("chain-id[%s] no found in chain_config", _formatChainId(chainId))
 	}
 	return t._historyIbcTaskRecordRepo().UpdateId(context.Background(), record.Id, bson.M{
 		"$set": bson.M{
@@ -125,12 +110,12 @@ func (t *fixIbcTaskRecordTask) UpdateIbcTaskRecord(record _ibcTaskRecord) error 
 //============================modify ibc_relayer channel_pair_id =========================
 
 type fixIbcRelayerTask struct {
-	chainVerCfgMap map[string]string
+	chainIdNameMap map[string]string
 }
 
-func NewModifyIbcRelayer(verCfg map[string]string) *fixIbcRelayerTask {
+func NewModifyIbcRelayer(chainIdNameMapData map[string]string) *fixIbcRelayerTask {
 	return &fixIbcRelayerTask{
-		chainVerCfgMap: verCfg,
+		chainIdNameMap: chainIdNameMapData,
 	}
 }
 
@@ -173,18 +158,18 @@ func (t *fixIbcRelayerTask) GetIbcRelayerData(skip, limit int64) ([]*entity.IBCR
 }
 
 func (t *fixIbcRelayerTask) UpdateIbcRelayerData(relayer entity.IBCRelayerNew) error {
-	if len(t.chainVerCfgMap) == 0 {
-		return fmt.Errorf("init don't work")
+	if len(t.chainIdNameMap) == 0 {
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	channelPairInfos := make([]entity.ChannelPairInfo, 0, len(relayer.ChannelPairInfo))
 	for _, val := range relayer.ChannelPairInfo {
-		chainA, ok := t.chainVerCfgMap[_formatChainId(val.ChainA)]
+		chainA, ok := t.chainIdNameMap[_formatChainId(val.ChainA)]
 		if !ok {
-			return fmt.Errorf("chainA[%s] no found in chain_version_config", _formatChainId(val.ChainA))
+			return fmt.Errorf("chainA[%s] no found in chain_config", _formatChainId(val.ChainA))
 		}
-		chainB, ok := t.chainVerCfgMap[_formatChainId(val.ChainB)]
+		chainB, ok := t.chainIdNameMap[_formatChainId(val.ChainB)]
 		if !ok {
-			return fmt.Errorf("chainB[%s] no found in chain_version_config", _formatChainId(val.ChainB))
+			return fmt.Errorf("chainB[%s] no found in chain_config", _formatChainId(val.ChainB))
 		}
 		val.PairId = entity.GenerateRelayerPairId(chainA, val.ChannelA, val.ChainAAddress,
 			chainB, val.ChannelB, val.ChainBAddress)
@@ -203,12 +188,12 @@ func (t *fixIbcRelayerTask) UpdateIbcRelayerData(relayer entity.IBCRelayerNew) e
 //==========modify ibc_channel_statistic channel_id==============================
 
 type fixChannelIdTask struct {
-	chainVerCfgMap map[string]string
+	chainIdNameMap map[string]string
 }
 
-func NewModifyChannalIdTask(verCfg map[string]string) *fixChannelIdTask {
+func NewModifyChannalIdTask(chainIdNameMapData map[string]string) *fixChannelIdTask {
 	return &fixChannelIdTask{
-		chainVerCfgMap: verCfg,
+		chainIdNameMap: chainIdNameMapData,
 	}
 }
 
@@ -254,6 +239,7 @@ func (t *fixChannelIdTask) Run() int {
 			skip += limit
 		}
 
+		logrus.Infof("task[%s] finish update ibc_channel ", t.Name())
 		return 1
 	}
 
@@ -277,6 +263,7 @@ func (t *fixChannelIdTask) Run() int {
 			}
 			skip += limit
 		}
+		logrus.Infof("task[%s] finish update ibc_channel_statistic ", t.Name())
 		return 1
 	}
 
@@ -317,16 +304,16 @@ func (t *fixChannelIdTask) GetIbcChannelStatisticData(skip, limit int64) ([]*_hi
 }
 
 func (t *fixChannelIdTask) UpdateIbcChannel(channel _historyIBCChannel) error {
-	if len(t.chainVerCfgMap) == 0 {
-		return fmt.Errorf("init don't work")
+	if len(t.chainIdNameMap) == 0 {
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
-	scChain, ok := t.chainVerCfgMap[_formatChainId(channel.ChainA)]
+	scChain, ok := t.chainIdNameMap[_formatChainId(channel.ChainA)]
 	if !ok {
-		return fmt.Errorf("ChainA-id[%s] no found in chain_version_config", _formatChainId(channel.ChainA))
+		return fmt.Errorf("ChainA-id[%s] no found in chain_config", _formatChainId(channel.ChainA))
 	}
-	dcChain, ok := t.chainVerCfgMap[_formatChainId(channel.ChainB)]
+	dcChain, ok := t.chainIdNameMap[_formatChainId(channel.ChainB)]
 	if !ok {
-		return fmt.Errorf("ChainB-id[%s] no found in chain_version_config", _formatChainId(channel.ChainB))
+		return fmt.Errorf("ChainB-id[%s] no found in chain_config", _formatChainId(channel.ChainB))
 	}
 	channelId := generateChannelId(scChain, channel.ChannelA, dcChain, channel.ChannelB)
 	return t._historyIbcChannelRepo().UpdateId(context.Background(), channel.Id,
@@ -340,25 +327,25 @@ func (t *fixChannelIdTask) UpdateIbcChannel(channel _historyIBCChannel) error {
 }
 
 func (t *fixChannelIdTask) UpdateIbcChannelStatistic(channelStatistic _historyIBCChannelStatistics) error {
-	if len(t.chainVerCfgMap) == 0 {
-		return fmt.Errorf("init don't work")
+	if len(t.chainIdNameMap) == 0 {
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	chainA, channelA, chainB, channelB, err := t.parseChannelId(channelStatistic.ChannelId)
 	if err != nil {
 		return err
 	}
 
-	scChain, ok := t.chainVerCfgMap[_formatChainId(chainA)]
+	scChain, ok := t.chainIdNameMap[_formatChainId(chainA)]
 	if !ok {
-		logrus.Warnf("update ibc_channel_statistic fail for [%s] no found in chain_version_config", _formatChainId(chainA))
+		logrus.Warnf("update ibc_channel_statistic fail for [%s] no found in chain_config", _formatChainId(chainA))
 		return nil
 	}
-	dcChain, ok := t.chainVerCfgMap[_formatChainId(chainB)]
+	dcChain, ok := t.chainIdNameMap[_formatChainId(chainB)]
 	if !ok {
-		logrus.Warnf("update ibc_channel_statistic fail for [%s] no found in chain_version_config", _formatChainId(chainB))
+		logrus.Warnf("update ibc_channel_statistic fail for [%s] no found in chain_config", _formatChainId(chainB))
 		return nil
 	}
-	baseDenomChain := t.chainVerCfgMap[_formatChainId(channelStatistic.BaseDenomChainId)]
+	baseDenomChain := t.chainIdNameMap[_formatChainId(channelStatistic.BaseDenomChainId)]
 	channelId := generateChannelId(scChain, channelA, dcChain, channelB)
 	return t._historyIbcChannelStatisticRepo().UpdateId(context.Background(), channelStatistic.Id,
 		bson.M{
@@ -387,19 +374,18 @@ func (t *fixChannelIdTask) parseChannelId(channelId string) (chainA, channelA, c
 //==================modify chain_config chain_id -> current_chain_id==============
 //==================modify chain_config chain_id -> chain=========================
 type modifyChainConfigTask struct {
-	chainVerCfgMap map[string]string
+	chainIdNameMap map[string]string
 }
 
-func NewModifyChainConfig(verCfg map[string]string) *modifyChainConfigTask {
-	return &modifyChainConfigTask{
-		chainVerCfgMap: verCfg,
-	}
+func NewModifyChainConfig() *modifyChainConfigTask {
+	return &modifyChainConfigTask{}
 }
 
 type (
 	_chainConfig struct {
 		Id         primitive.ObjectID `bson:"_id"`
 		ChainId    string             `bson:"chain_id"`
+		ChainName  string             `bson:"chain_name"`
 		LcdApiPath entity.ApiPath     `bson:"lcd_api_path"`
 		Lcd        string             `bson:"lcd"`
 		IbcInfo    []*_ibcInfo        `bson:"ibc_info"`
@@ -453,12 +439,19 @@ func (t *modifyChainConfigTask) GetAllChainConigs() ([]*_chainConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	chainIdNameMap := make(map[string]string, 10)
+	for _, val := range datas {
+		chainIdNameMap[_formatChainId(val.ChainId)] = val.ChainName
+	}
+	t.chainIdNameMap = chainIdNameMap
+
 	return datas, nil
 }
 
 func (t *modifyChainConfigTask) UpdateChainConfig(config _chainConfig) error {
-	if len(t.chainVerCfgMap) == 0 {
-		return fmt.Errorf("init don't work")
+	if len(t.chainIdNameMap) == 0 {
+		return fmt.Errorf("chainIdNameMap is empty")
 	}
 	loadChannelPath := func(path *_channelPath) *entity.ChannelPath {
 		return &entity.ChannelPath{
@@ -475,22 +468,22 @@ func (t *modifyChainConfigTask) UpdateChainConfig(config _chainConfig) error {
 		paths := make([]*entity.ChannelPath, 0, len(val.Paths))
 		for _, path := range val.Paths {
 			item := loadChannelPath(path)
-			chain, ok := t.chainVerCfgMap[_formatChainId(path.ChainId)]
+			chain, ok := t.chainIdNameMap[_formatChainId(path.ChainId)]
 			if !ok {
-				return fmt.Errorf("Chain[%s] no found in chain_version_config", _formatChainId(path.ChainId))
+				return fmt.Errorf("Chain[%s] no found in chain_config", _formatChainId(path.ChainId))
 			}
-			scChain, ok := t.chainVerCfgMap[_formatChainId(path.ScChainId)]
+			scChain, ok := t.chainIdNameMap[_formatChainId(path.ScChainId)]
 			if !ok {
-				return fmt.Errorf("ScChain[%s] no found in chain_version_config", _formatChainId(path.ScChainId))
+				return fmt.Errorf("ScChain[%s] no found in chain_config", _formatChainId(path.ScChainId))
 			}
 			item.ScChain = scChain
 			item.Chain = chain
 			paths = append(paths, item)
 		}
 
-		chain, ok := t.chainVerCfgMap[_formatChainId(val.ChainId)]
+		chain, ok := t.chainIdNameMap[_formatChainId(val.ChainId)]
 		if !ok {
-			return fmt.Errorf("Chain[%s] no found in chain_version_config", _formatChainId(val.ChainId))
+			return fmt.Errorf("Chain[%s] no found in chain_config", _formatChainId(val.ChainId))
 		}
 		ibcInfo := &entity.IbcInfo{
 			Chain: chain,
