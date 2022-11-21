@@ -17,6 +17,7 @@ type (
 	DailyData struct {
 		CurrentChainId string             `json:"current_chain_id"`
 		ChainName      string             `json:"chain_name"`
+		PrettyName     string             `json:"pretty_name"`
 		Icon           string             `json:"icon"`
 		Status         entity.ChainStatus `json:"status"`
 	}

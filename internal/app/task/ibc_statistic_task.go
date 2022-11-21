@@ -74,22 +74,22 @@ func (t *IbcStatisticCronTask) updateChains() error {
 		return err
 	}
 	chainIdMap := make(map[string]struct{}, len(chainDtos))
-	var chainIds []string
+	var chains []string
 	for _, val := range chainDtos {
 		if val.ScChain != "" {
 			if _, exist := chainIdMap[val.ScChain]; !exist {
-				chainIds = append(chainIds, val.ScChain)
+				chains = append(chains, val.ScChain)
 				chainIdMap[val.ScChain] = struct{}{}
 			}
 		}
 		if val.DcChain != "" {
 			if _, exist := chainIdMap[val.DcChain]; !exist {
-				chainIds = append(chainIds, val.DcChain)
+				chains = append(chains, val.DcChain)
 				chainIdMap[val.DcChain] = struct{}{}
 			}
 		}
 	}
-	chains24hInfo := strings.Join(chainIds, ",")
+	chains24hInfo := strings.Join(chains, ",")
 	data := entity.IbcStatistic{
 		StatisticsName: constant.Chains24hStatisticName,
 		Count:          int64(len(chainIdMap)),

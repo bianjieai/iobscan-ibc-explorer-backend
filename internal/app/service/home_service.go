@@ -33,9 +33,9 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
-	chainIds := strings.Split(data.StatisticsInfo, ",")
-	activeChainsMap := make(map[string]struct{}, len(chainIds))
-	for _, val := range chainIds {
+	chains := strings.Split(data.StatisticsInfo, ",")
+	activeChainsMap := make(map[string]struct{}, len(chains))
+	for _, val := range chains {
 		activeChainsMap[val] = struct{}{}
 	}
 
@@ -44,20 +44,21 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 		return resp, errors.Wrap(err)
 	}
 	allChainsLen := len(chainCfgs)
-	activeChainsLen := len(chainIds)
+	activeChainsLen := len(chains)
 	allChains := make([]vo.DailyData, 0, len(chainCfgs))
-	activeChains := make([]vo.DailyData, 0, len(chainIds))
+	activeChains := make([]vo.DailyData, 0, len(chains))
 	inActiveChains := make([]vo.DailyData, 0, allChainsLen-activeChainsLen)
 	for _, one := range chainCfgs {
 		item := vo.DailyData{
 			ChainName:      one.ChainName,
+			PrettyName:     one.PrettyName,
 			CurrentChainId: one.CurrentChainId,
 			Icon:           one.Icon,
 			Status:         one.Status,
 		}
 		allChains = append(allChains, item)
 
-		_, exist := activeChainsMap[one.CurrentChainId]
+		_, exist := activeChainsMap[one.ChainName]
 		if exist {
 			activeChains = append(activeChains, item)
 		} else {
