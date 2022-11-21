@@ -28,11 +28,11 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 		}, nil
 	}
 
-	var chainId string
+	var chain string
 	if req.BaseDenomChain != "" {
-		chainId = req.BaseDenomChain
+		chain = req.BaseDenomChain
 	} else {
-		chainId = req.Chain
+		chain = req.Chain
 	}
 
 	baseDenomList, err := svc.analyzeBaseDenom(req.BaseDenom)
@@ -41,7 +41,7 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 	}
 
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	list, err := tokenRepo.List(baseDenomList, chainId, req.TokenType, skip, limit)
+	list, err := tokenRepo.List(baseDenomList, chain, req.TokenType, skip, limit)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -137,7 +137,7 @@ func (svc *TokenService) IBCTokenList(req *vo.IBCTokenListReq) (*vo.IBCTokenList
 		items = append(items, vo.IBCTokenItem{
 			Denom:      v.Denom,
 			DenomPath:  v.DenomPath,
-			Chain:    v.Chain,
+			Chain:      v.Chain,
 			TokenType:  v.Type,
 			IBCHops:    v.IBCHops,
 			Amount:     v.DenomAmount,
