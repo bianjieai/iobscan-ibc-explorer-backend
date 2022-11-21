@@ -10,12 +10,12 @@ import (
 type (
 	TranaferTxsReq struct {
 		Page
-		UseCount         bool   `json:"use_count" form:"use_count"`
-		DateRange        string `json:"date_range" form:"date_range"`
-		Status           string `json:"status" form:"status"`
+		UseCount       bool   `json:"use_count" form:"use_count"`
+		DateRange      string `json:"date_range" form:"date_range"`
+		Status         string `json:"status" form:"status"`
 		Chain          string `json:"chain_id" form:"chain_id"`
-		Denom            string `json:"denom" form:"denom"`
-		BaseDenom        string `json:"base_denom" form:"base_denom"`
+		Denom          string `json:"denom" form:"denom"`
+		BaseDenom      string `json:"base_denom" form:"base_denom"`
 		BaseDenomChain string `json:"base_denom_chain_id" form:"base_denom_chain_id"`
 	}
 	TranaferTxsResp struct {
@@ -100,8 +100,8 @@ type (
 	}
 
 	TraceSourceReq struct {
-		CurrentChainId string `json:"current_chain_id" form:"current_chain_id"`
-		MsgType        string `json:"msg_type" form:"msg_type"`
+		Chain   string `json:"chain" form:"chain"`
+		MsgType string `json:"msg_type" form:"msg_type"`
 	}
 
 	TraceSourceResp struct {

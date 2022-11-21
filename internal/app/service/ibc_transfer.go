@@ -478,18 +478,18 @@ func (t TransferService) TraceSource(hash string, req *vo.TraceSourceReq) (vo.Tr
 		return resp, errors.WrapBadRequest(fmt.Errorf("only support transfer,recv_packet,acknowledge_packet,timeout_packet"))
 	}
 
-	value, err := lcdTxDataCache.Get(req.CurrentChainId, hash)
+	value, err := lcdTxDataCache.Get(req.Chain, hash)
 	if err == nil {
 		utils.UnmarshalJsonIgnoreErr([]byte(value), &resp)
 		return resp, nil
 	}
-	return getMsgAndTxData(msgType, req.CurrentChainId, hash)
+	return getMsgAndTxData(msgType, req.Chain, hash)
 }
 
-func getMsgAndTxData(msgType, currentChainId, hash string) (vo.TraceSourceResp, errors.Error) {
+func getMsgAndTxData(msgType, chain, hash string) (vo.TraceSourceResp, errors.Error) {
 	var resp vo.TraceSourceResp
 
-	lcdTxData, err := GetLcdTxData(currentChainId, hash)
+	lcdTxData, err := GetLcdTxData(chain, hash)
 	if err != nil {
 		return resp, err
 	}
@@ -506,13 +506,13 @@ func getMsgAndTxData(msgType, currentChainId, hash string) (vo.TraceSourceResp, 
 		}
 	}
 	if resp.Msg != nil {
-		_ = lcdTxDataCache.Set(currentChainId, hash, string(utils.MarshalJsonIgnoreErr(resp)))
+		_ = lcdTxDataCache.Set(chain, hash, string(utils.MarshalJsonIgnoreErr(resp)))
 	}
 	return resp, nil
 }
 
-func GetLcdTxData(currentChainId, hash string) (LcdTxData, errors.Error) {
-	lcdAddrs, _ := lcdAddrCache.Get(currentChainId)
+func GetLcdTxData(chain, hash string) (LcdTxData, errors.Error) {
+	lcdAddrs, _ := lcdAddrCache.Get(chain)
 	if len(lcdAddrs) > 0 {
 		//全节点且支持交易查询
 		if lcdAddrs[0].FullNode && lcdAddrs[0].TxIndexEnable {
@@ -528,7 +528,7 @@ func GetLcdTxData(currentChainId, hash string) (LcdTxData, errors.Error) {
 		//并发处理
 		return doHandleTxData(2, validNodes, hash)
 	} else {
-		cfg, err := chainCfgRepo.FindOne(currentChainId)
+		cfg, err := chainCfgRepo.FindOne(chain)
 		if err != nil {
 			return LcdTxData{}, errors.Wrap(fmt.Errorf("invalid chain id"))
 		}
