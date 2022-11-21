@@ -61,7 +61,7 @@ func (repo *TxRepo) GetUpdateTimeByUpdateClient(chainId, address, clientId strin
 		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1, "msgs.type": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(1).One(&res)
+		Select(bson.M{"time": 1, "msgs.type": 1}).Sort("-time").Hint(MsgsMsgSignerMsgsTypeTimeIndexName()).Limit(1).One(&res)
 	if err != nil {
 		return 0, err
 	}
@@ -83,7 +83,7 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address, channelId string, 
 		},
 	}
 	err := repo.coll(chainId).Find(context.Background(), query).
-		Select(bson.M{"time": 1}).Sort("-time").Hint("msgs.msg.signer_1_msgs.type_1_time_1").Limit(1).All(&res)
+		Select(bson.M{"time": 1}).Sort("-time").Hint(MsgsMsgSignerMsgsTypeTimeIndexName()).Limit(1).All(&res)
 	if err != nil {
 		return 0, err
 	}
@@ -396,11 +396,11 @@ func (repo *TxRepo) GetRelayerTxs(chainId string, relayerAddrs []string, txTypes
 	txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
-	err := repo.coll(chainId).Find(context.Background(), query).Sort("-time").Hint("time_-1_msgs.type_-1").Skip(skip).Limit(limit).All(&res)
+	err := repo.coll(chainId).Find(context.Background(), query).Sort("-time").Hint(TimeMsgsTypeIndexName()).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
 
 func (repo *TxRepo) CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
-	return repo.coll(chainId).Find(context.Background(), query).Hint("msgs.msg.signer_1_msgs.type_1_time_1").Count()
+	return repo.coll(chainId).Find(context.Background(), query).Hint(MsgsMsgSignerMsgsTypeTimeIndexName()).Count()
 }
