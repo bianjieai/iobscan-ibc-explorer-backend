@@ -1,11 +1,9 @@
 package dto
 
-import "github.com/shopspring/decimal"
-
-type CoinItem struct {
-	Price float64
-	Scale int
-}
+import (
+	"github.com/shopspring/decimal"
+	"math"
+)
 
 type CountBaseDenomTxsDTO struct {
 	BaseDenom        string `bson:"base_denom"`
@@ -34,7 +32,28 @@ type AggregateIBCChainDTO struct {
 	Count      int64   `bson:"count"`
 }
 
+type RelayerDenomStatisticsDTO struct {
+	Signer      string  `bson:"signer"`
+	Status      int64   `bson:"status"`
+	TxType      string  `bson:"tx_type"`
+	Denom       string  `bson:"denom"`
+	ScChannel   string  `bson:"sc_channel"`
+	DcChannel   string  `bson:"dc_channel"`
+	DenomAmount float64 `bson:"denom_amount"`
+	TxsCount    int64   `bson:"txs_count"`
+}
+
+type RelayerFeeStatisticsDTO struct {
+	Signer      string  `bson:"signer"`
+	Status      int64   `bson:"status"`
+	TxType      string  `bson:"tx_type"`
+	Denom       string  `bson:"denom"`
+	DenomAmount float64 `bson:"denom_amount"`
+	TxsCount    int64   `bson:"txs_count"`
+}
+
 type GetRelayerInfoDTO struct {
+	ScChainAddress string `bson:"sc_chain_address"`
 	DcChainAddress string `bson:"dc_chain_address"`
 	ScChainId      string `bson:"sc_chain_id"`
 	ScChannel      string `bson:"sc_channel"`
@@ -74,11 +93,31 @@ func (dto *CountRelayerPacketAmountDTO) Valid() bool {
 }
 
 type CountRelayerBaseDenomAmtDTO struct {
-	StatisticId      string  `bson:"statistic_id"`
-	Address          string  `bson:"address"`
-	Amount           float64 `bson:"amount"`
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	TxStatus       int     `bson:"tx_status"`
+	Amount         float64 `bson:"amount"`
+	TotalTxs       int64   `bson:"total_txs"`
+}
+
+type AggrRelayerTxTypeDTO struct {
+	TxType   string `bson:"tx_type"`
+	TotalTxs int64  `bson:"total_txs"`
+}
+
+type CountRelayerBaseDenomAmtBySegmentDTO struct {
 	BaseDenom        string  `bson:"base_denom"`
-	BaseDenomChainId string  `bson:"base_denom_chain_id"`
+	BaseDenomChain   string  `bson:"base_denom_chain"`
+	SegmentStartTime int64   `bson:"segment_start_time"`
+	Amount           float64 `bson:"amount"`
+	TotalTxs         int64   `bson:"total_txs"`
+}
+
+type AggrRelayerTxsAmtDTo struct {
+	FeeDenom string  `bson:"fee_denom"`
+	ChainId  string  `bson:"chain_id"`
+	Amount   float64 `bson:"amount"`
+	TotalTxs int64   `bson:"total_txs"`
 }
 
 type AggRelayerTxsDTO struct {
@@ -175,6 +214,40 @@ type IbcTxQuery struct {
 	BaseDenom        []string
 	BaseDenomChainId string
 	Denom            string
+}
+
+type (
+	TxsAmtItem struct {
+		Txs        int64
+		TxsSuccess int64
+		Denom      string
+		ChainId    string
+		Amt        decimal.Decimal
+		AmtValue   decimal.Decimal
+	}
+
+	CoinItem struct {
+		Price float64
+		Scale int
+	}
+)
+
+func CaculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsDataMap map[string]TxsAmtItem) decimal.Decimal {
+	totalValue := decimal.NewFromFloat(0)
+
+	for key, data := range relayerTxsDataMap {
+		baseDenomValue := decimal.NewFromFloat(0)
+		decAmt := data.Amt
+		if coin, ok := denomPriceMap[key]; ok {
+			if coin.Scale > 0 {
+				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+				data.AmtValue = baseDenomValue
+				relayerTxsDataMap[key] = data
+			}
+		}
+		totalValue = totalValue.Add(baseDenomValue)
+	}
+	return totalValue
 }
 
 type BaseDenomAmountDTO struct {

@@ -21,6 +21,7 @@ import (
 )
 
 func Serve(cfg *conf.Config) {
+	time.Local = time.UTC
 	initCore(cfg)
 	defer repository.Close()
 
@@ -46,6 +47,7 @@ func initCore(cfg *conf.Config) {
 	global.Config = cfg
 	initLogger(&cfg.Log)
 	repository.InitMgo(cfg.Mongo, context.Background())
+	repository.LoadIndexNameConf(cfg.HintIndexName)
 	cache.InitRedisClient(cfg.Redis)
 	task.LoadTaskConf(cfg.Task)
 }

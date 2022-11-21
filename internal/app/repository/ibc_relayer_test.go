@@ -1,15 +1,14 @@
 package repository
 
 import (
-	"encoding/json"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"testing"
 )
 
-func TestIbcRelayerRepo_CountChannelRelayers(t *testing.T) {
-	data, err := new(IbcRelayerRepo).CountChannelRelayers()
+func TestIbcRelayerRepo_FindAllRelayerForCache(t *testing.T) {
+	data, err := new(IbcRelayerRepo).FindAllRelayerForCache()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	ret, _ := json.Marshal(data)
-	t.Log(string(ret))
+	t.Log(string(utils.MarshalJsonIgnoreErr(data)))
 }

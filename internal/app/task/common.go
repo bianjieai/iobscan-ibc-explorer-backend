@@ -69,6 +69,23 @@ func getSegment(step int64) ([]*segment, error) {
 	return segments, nil
 }
 
+func segmentTool(step int64, startTime, endTime int64) []*segment {
+	start := time.Unix(startTime, 0)
+	startUnix := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.Local).Unix()
+	end := time.Unix(endTime, 0)
+	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
+
+	var segments []*segment
+	for temp := startUnix; temp < endUnix; temp += step {
+		segments = append(segments, &segment{
+			StartTime: temp,
+			EndTime:   temp + step - 1,
+		})
+	}
+
+	return segments
+}
+
 // todayUnix 获取今日第一秒和最后一秒的时间戳
 func todayUnix() (int64, int64) {
 	now := time.Now()
@@ -356,9 +373,9 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, isTarge
 		return
 	}
 	st := time.Now().Unix()
-	logrus.Infof("task %s worker group start, target hirtoty: %t", taskName, isTargetHistory)
+	logrus.Infof("task %s worker group start, target history: %t", taskName, isTargetHistory)
 	defer func() {
-		logrus.Infof("task %s worker group end, target hirtoty: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
+		logrus.Infof("task %s worker group end, target history: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
 	}()
 	var wg sync.WaitGroup
 	wg.Add(workNum)

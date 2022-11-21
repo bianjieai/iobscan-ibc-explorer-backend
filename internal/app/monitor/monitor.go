@@ -17,31 +17,24 @@ import (
 )
 
 var (
-	cronTaskStatusMetric     metrics.Guage
-	lcdConnectStatsMetric    metrics.Guage
-	redisStatusMetric        metrics.Guage
-	relayerStatusCheckMetric metrics.Guage
-	TagName                  = "taskname"
-	ChainTag                 = "chain_id"
-	relayerTag               = "relayer_id"
+	cronTaskStatusMetric  metrics.Guage
+	lcdConnectStatsMetric metrics.Guage
+	redisStatusMetric     metrics.Guage
+	TagName               = "taskname"
+	ChainTag              = "chain_id"
 
 	chainConfigRepo   repository.IChainConfigRepo   = new(repository.ChainConfigRepo)
 	chainRegistryRepo repository.IChainRegistryRepo = new(repository.ChainRegistryRepo)
-	relayerRepo       repository.IRelayerRepo       = new(repository.IbcRelayerRepo)
 )
 
 const (
 	v1beta1        = "v1beta1"
 	v1             = "v1"
+	nodeInfo       = "/node_info"
 	v1Channels     = "/ibc/core/channel/v1/channels?pagination.limit=1"
 	apiChannels    = "/ibc/core/channel/%s/channels?pagination.offset=OFFSET&pagination.limit=LIMIT&pagination.count_total=true"
 	apiClientState = "/ibc/core/channel/%s/channels/CHANNEL/ports/PORT/client_state"
 )
-
-// unbelievableLcd 不可信的lcd
-var unbelievableLcd = map[string][]string{
-	"sifchain_1": {"https://api.sifchain.chaintools.tech/"},
-}
 
 func NewMetricCronWorkStatus() metrics.Guage {
 	syncWorkStatusMetric := metrics.NewGuage(
@@ -79,18 +72,6 @@ func NewMetricLcdStatus() metrics.Guage {
 	return connectionStatus
 }
 
-func NewMetricRelayerStatusCheck() metrics.Guage {
-	lcdConnectionStatusMetric := metrics.NewGuage(
-		"ibc_explorer_backend",
-		"relayer",
-		"status_check",
-		"ibc_explorer_backend relayer status check result(1:Normal  -1:UNormal)",
-		[]string{relayerTag},
-	)
-	connectionStatus, _ := metrics.CovertGuage(lcdConnectionStatusMetric)
-	return connectionStatus
-}
-
 func SetCronTaskStatusMetricValue(taskName string, value float64) {
 	if cronTaskStatusMetric != nil {
 		cronTaskStatusMetric.With(TagName, taskName).Set(value)
@@ -108,7 +89,7 @@ func lcdConnectionStatus(quit chan bool) {
 				return
 			}
 			for _, val := range chainCfgs {
-				if checkAndUpdateLcd(val.Lcd, val) {
+				if checkLcd(val.Lcd) {
 					lcdConnectStatsMetric.With(ChainTag, val.ChainId).Set(float64(1))
 				} else {
 					if switchLcd(val) {
@@ -128,10 +109,33 @@ func lcdConnectionStatus(quit chan bool) {
 	}
 }
 
+func checkLcd(lcd string) bool {
+	if _, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, v1Channels)); err != nil {
+		return false
+	}
+
+	return true
+}
+
 // checkAndUpdateLcd If lcd is ok, update db and return true. Else return false
 func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
-	unLcds, ex := unbelievableLcd[cf.ChainId]
-	if ex && utils.InArray(unLcds, lcd) {
+	if resp, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, nodeInfo)); err == nil {
+		var data struct {
+			NodeInfo struct {
+				Network string `json:"network"`
+			} `json:"node_info"`
+		}
+		if err := json.Unmarshal(resp, &data); err != nil {
+			return false
+		}
+		network := strings.ReplaceAll(data.NodeInfo.Network, "-", "_")
+		if network != cf.ChainId {
+			//return false, if lcd node_info network no match chain_id
+			return false
+		}
+
+	} else {
+		// return false,if lcd node_ifo api is not reach
 		return false
 	}
 
@@ -156,7 +160,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 		cf.LcdApiPath.ChannelsPath = fmt.Sprintf(apiChannels, version)
 		cf.LcdApiPath.ClientStatePath = fmt.Sprintf(apiClientState, version)
 		if err := chainConfigRepo.UpdateLcdApi(cf); err != nil {
-			logrus.Error("lcd monitor update api error: %v", err)
+			logrus.Errorf("lcd monitor update api error: %v", err)
 			return false
 		} else {
 			return true
@@ -208,56 +212,6 @@ func redisClientStatus(quit chan bool) {
 	}
 }
 
-func relayerStatusCheck(quit chan bool) {
-	for {
-		t := time.NewTimer(time.Duration(600) * time.Second)
-		select {
-		case <-t.C:
-			logrus.Info("monitor relayer start")
-			relayerStatusCheckHandler()
-		case <-quit:
-			logrus.Debug("quit signal recv relayerStatusCheck")
-			return
-		}
-	}
-}
-
-func relayerStatusCheckHandler() {
-	var skip int64 = 0
-	var limit int64 = 1000
-	var timeOffset int64 = 1800
-	for {
-		relayerList, err := relayerRepo.FindAll(skip, limit)
-		if err != nil {
-			logrus.Errorf("monitor relayerStatusCheck relayerRepo.FindAll err, %v", err)
-			return
-		}
-
-		for _, v := range relayerList {
-			if v.Status == entity.RelayerRunning { // running
-				if time.Now().Unix()-v.UpdateTime < v.TimePeriod+timeOffset {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(1))
-				} else {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(-1))
-					logrus.Warnf("monitor relayerStatusCheck relayer(%s) status(%d) may be incorrect", v.RelayerId, v.Status)
-				}
-			} else { // stop
-				if time.Now().Unix()-v.UpdateTime > v.TimePeriod {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(1))
-				} else {
-					relayerStatusCheckMetric.With(relayerTag, v.RelayerId).Set(float64(-1))
-					logrus.Warnf("monitor relayerStatusCheck relayer(%s) status(%d) may be incorrect", v.RelayerId, v.Status)
-				}
-			}
-		}
-
-		if len(relayerList) < int(limit) {
-			break
-		}
-		skip += limit
-	}
-}
-
 func Start(port string) {
 	quit := make(chan bool)
 	defer func() {
@@ -273,10 +227,8 @@ func Start(port string) {
 	cronTaskStatusMetric = NewMetricCronWorkStatus()
 	redisStatusMetric = NewMetricRedisStatus()
 	lcdConnectStatsMetric = NewMetricLcdStatus()
-	relayerStatusCheckMetric = NewMetricRelayerStatusCheck()
 	server.Report(func() {
 		go redisClientStatus(quit)
 		go lcdConnectionStatus(quit)
-		go relayerStatusCheck(quit)
 	})
 }

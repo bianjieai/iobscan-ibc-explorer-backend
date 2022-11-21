@@ -53,7 +53,7 @@ func homePage(r *gin.RouterGroup) {
 func txsPage(r *gin.RouterGroup) {
 	ctl := rest.IbcTransferController{}
 	r.GET("/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxs))
-	r.GET("/txs/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetail))
+	r.GET("/txs/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetail)) // [Deprecated]
 	r.GET("/txs_detail/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetailNew))
 	r.GET("/trace_source/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TraceSource))
 	r.GET("/txs/searchCondition", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.SearchCondition))
@@ -78,7 +78,14 @@ func chainPage(r *gin.RouterGroup) {
 func relayerPage(r *gin.RouterGroup) {
 	ctl := rest.RelayerController{}
 	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+	r.GET("/relayer/:relayer_id", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Detail))
+	r.GET("/relayer/:relayer_id/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.DetailRelayerTxs))
+	r.GET("/relayer/names", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerNameList))
+	r.GET("/relayer/:relayer_id/relayedTrend", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTrend))
 	r.POST("/relayerCollect", ctl.Collect)
+	r.GET("/relayer/:relayer_id/transferTypeTxs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTypeTxs))
+	r.GET("/relayer/:relayer_id/totalRelayedValue", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalRelayedValue))
+	r.GET("/relayer/:relayer_id/totalFeeCost", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalFeeCost))
 }
 
 func cacheTools(r *gin.RouterGroup) {

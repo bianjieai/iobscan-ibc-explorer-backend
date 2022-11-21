@@ -33,6 +33,7 @@ const (
 
 	syncTransferTxTaskWorkerNum    = 5
 	ibcTxRelateTaskWorkerNum       = 5
+	relayerStatisticsWorkerNum     = 4
 	fixDenomTraceDataTaskWorkerNum = 8
 	fixIbxTxWorkerNum              = 5
 	defaultMaxHandlerTx            = 2000
@@ -50,39 +51,41 @@ const (
 
 var (
 	//cache
-	tokenPriceRepo      cache.TokenPriceCacheRepo
-	denomDataRepo       cache.DenomDataCacheRepo
-	unbondTimeCache     cache.UnbondTimeCacheRepo
-	statisticsCheckRepo cache.StatisticsCheckCacheRepo
-	chainCache          cache.ChainCacheRepo
-	baseDenomCache      cache.BaseDenomCacheRepo
-	storageCache        cache.StorageCacheRepo
-	lcdTxDataCacheRepo  cache.LcdTxDataCacheRepo
-
-	// mongo
-	tokenRepo                repository.ITokenRepo                = new(repository.TokenRepo)
-	tokenTraceRepo           repository.ITokenTraceRepo           = new(repository.TokenTraceRepo)
-	tokenStatisticsRepo      repository.ITokenStatisticsRepo      = new(repository.TokenStatisticsRepo)
-	tokenTraceStatisticsRepo repository.ITokenTraceStatisticsRepo = new(repository.TokenTraceStatisticsRepo)
-	baseDenomRepo            repository.IBaseDenomRepo            = new(repository.BaseDenomRepo)
-	denomRepo                repository.IDenomRepo                = new(repository.DenomRepo)
-	denomCalculateRepo       repository.IDenomCalculateRepo       = new(repository.DenomCalculateRepo)
-	chainConfigRepo          repository.IChainConfigRepo          = new(repository.ChainConfigRepo)
-	ibcTxRepo                repository.IExIbcTxRepo              = new(repository.ExIbcTxRepo)
-	chainRepo                repository.IChainRepo                = new(repository.IbcChainRepo)
-	relayerRepo              repository.IRelayerRepo              = new(repository.IbcRelayerRepo)
-	txRepo                   repository.ITxRepo                   = new(repository.TxRepo)
-	channelRepo              repository.IChannelRepo              = new(repository.ChannelRepo)
-	channelStatisticsRepo    repository.IChannelStatisticsRepo    = new(repository.ChannelStatisticsRepo)
-	channelConfigRepo        repository.IChannelConfigRepo        = new(repository.ChannelConfigRepo)
-	relayerStatisticsRepo    repository.IRelayerStatisticsRepo    = new(repository.RelayerStatisticsRepo)
-	statisticsRepo           repository.IStatisticRepo            = new(repository.IbcStatisticRepo)
-	taskRecordRepo           repository.ITaskRecordRepo           = new(repository.TaskRecordRepo)
-	syncTaskRepo             repository.ISyncTaskRepo             = new(repository.SyncTaskRepo)
-	syncBlockRepo            repository.ISyncBlockRepo            = new(repository.SyncBlockRepo)
-	txNewRepo                repository.ITxNewRepo                = new(repository.TxNewRepo)
-	chainRegistryRepo        repository.IChainRegistryRepo        = new(repository.ChainRegistryRepo)
-	relayerStatisticsTask    RelayerStatisticsTask
+	tokenPriceRepo             cache.TokenPriceCacheRepo
+	denomDataRepo              cache.DenomDataCacheRepo
+	unbondTimeCache            cache.UnbondTimeCacheRepo
+	relayerDataCache           cache.RelayerDataCacheRepo
+	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
+	chainCache                 cache.ChainCacheRepo
+	baseDenomCache             cache.BaseDenomCacheRepo
+	storageCache               cache.StorageCacheRepo
+	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
+	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
+	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
+	tokenStatisticsRepo        repository.ITokenStatisticsRepo        = new(repository.TokenStatisticsRepo)
+	tokenTraceStatisticsRepo   repository.ITokenTraceStatisticsRepo   = new(repository.TokenTraceStatisticsRepo)
+	baseDenomRepo              repository.IBaseDenomRepo              = new(repository.BaseDenomRepo)
+	denomRepo                  repository.IDenomRepo                  = new(repository.DenomRepo)
+	denomCalculateRepo         repository.IDenomCalculateRepo         = new(repository.DenomCalculateRepo)
+	chainConfigRepo            repository.IChainConfigRepo            = new(repository.ChainConfigRepo)
+	ibcTxRepo                  repository.IExIbcTxRepo                = new(repository.ExIbcTxRepo)
+	chainRepo                  repository.IChainRepo                  = new(repository.IbcChainRepo)
+	relayerRepo                repository.IRelayerRepo                = new(repository.IbcRelayerRepo)
+	txRepo                     repository.ITxRepo                     = new(repository.TxRepo)
+	channelRepo                repository.IChannelRepo                = new(repository.ChannelRepo)
+	channelStatisticsRepo      repository.IChannelStatisticsRepo      = new(repository.ChannelStatisticsRepo)
+	channelConfigRepo          repository.IChannelConfigRepo          = new(repository.ChannelConfigRepo)
+	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
+	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
+	relayerAddressChannelRepo  repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
+	statisticsRepo             repository.IStatisticRepo              = new(repository.IbcStatisticRepo)
+	taskRecordRepo             repository.ITaskRecordRepo             = new(repository.TaskRecordRepo)
+	syncTaskRepo               repository.ISyncTaskRepo               = new(repository.SyncTaskRepo)
+	syncBlockRepo              repository.ISyncBlockRepo              = new(repository.SyncBlockRepo)
+	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
+	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
+	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
+	relayerStatisticsTask      RelayerStatisticsTask
 )
 
 type chainQueueCoordinator struct {

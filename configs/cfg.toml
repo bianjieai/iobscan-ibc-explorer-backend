@@ -22,6 +22,12 @@ log_output = "std"
 url = "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805"
 database = "iobscan-ibc_0805"
 
+[hint_index_name]
+count_relayer_txs_hint_index="msgs.msg.signer_1_msgs.type_1_time_1"
+get_relayer_txs_hint_index="time_-1_msgs.type_-1"
+get_relayer_update_time_hint_index="msgs.msg.signer_1_msgs.type_1_time_1"
+get_latest_recv_packet_time_hint_index="msgs.msg.signer_1_msgs.type_1_time_1"
+
 [redis]
 addrs = "127.0.0.1:6379"
 user = ""
@@ -33,7 +39,6 @@ db = 0
 coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
 
 [task]
-cron_job_relayer_addr="0 0 */6 * * ?"
 cron_time_statistic_task=5
 cron_time_chain_task = 5
 cron_time_channel_task = 5
