@@ -51,8 +51,9 @@ func (repo *RelayerDenomStatisticsRepo) CreateNew() error {
 		return err
 	}
 
+	indexOpts2 := officialOpts.Index()
 	key2 := []string{"chain_address_comb", "segment_start_time", "segment_end_time"}
-	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key2, IndexOptions: indexOpts}); err != nil {
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key2, IndexOptions: indexOpts2}); err != nil {
 		return err
 	}
 
