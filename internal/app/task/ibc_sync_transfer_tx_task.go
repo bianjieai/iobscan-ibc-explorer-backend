@@ -264,8 +264,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 					Signers:   tx.Signers,
 					Log:       tx.Log,
 				},
-				DcTxInfo:       nil,
-				RefundedTxInfo: nil,
+				DcTxInfo:         nil,
+				AckTimeoutTxInfo: nil,
 				//Log: &entity.Log{
 				//	ScLog: tx.Log,
 				//},

@@ -93,7 +93,7 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 	if len(ackTxs) > 0 {
 		//"成功"状态IBC，第三段取最新的ack tx交易
 		ackTx := ackTxs[0]
-		ibcTx.RefundedTxInfo = &entity.TxInfo{
+		ibcTx.AckTimeoutTxInfo = &entity.TxInfo{
 			Hash:      ackTx.TxHash,
 			Height:    ackTx.Height,
 			Time:      ackTx.Time,
@@ -106,7 +106,7 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 		}
 		return ibcTxRepo.UpdateOne(ibcTx.Id, history, bson.M{
 			"$set": bson.M{
-				"refunded_tx_info": ibcTx.RefundedTxInfo,
+				"ack_timeout_tx_info": ibcTx.AckTimeoutTxInfo,
 			},
 		})
 	}

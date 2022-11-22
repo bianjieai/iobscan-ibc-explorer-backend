@@ -139,7 +139,7 @@ db.ex_ibc_tx.createIndex({
 });
 
 db.ex_ibc_tx.createIndex({
-    "refunded_tx_info.hash": -1,
+    "ack_timeout_tx_info.hash": -1,
 }, {
     background: true
 });
@@ -223,7 +223,7 @@ db.ex_ibc_tx_latest.createIndex({
 });
 
 db.ex_ibc_tx_latest.createIndex({
-    "refunded_tx_info.hash": -1,
+    "ack_timeout_tx_info.hash": -1,
 }, {
     background: true
 });
