@@ -105,6 +105,11 @@ type AggrRelayerTxTypeDTO struct {
 	TotalTxs int64  `bson:"total_txs"`
 }
 
+type AggrChainAddrDTO struct {
+	Chain   string `bson:"chain"`
+	Address string `bson:"address"`
+}
+
 type CountRelayerBaseDenomAmtBySegmentDTO struct {
 	BaseDenom        string  `bson:"base_denom"`
 	BaseDenomChain   string  `bson:"base_denom_chain"`

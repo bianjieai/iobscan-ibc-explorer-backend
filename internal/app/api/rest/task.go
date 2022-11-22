@@ -118,6 +118,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			}
 		case ibcStatisticCronTask.Name():
 			ibcStatisticCronTask.NewRun()
+		case fixRelayerStatisticsTask.Name():
+			fixRelayerStatisticsTask.Run()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}
