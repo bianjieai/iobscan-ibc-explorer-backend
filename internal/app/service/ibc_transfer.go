@@ -318,7 +318,7 @@ func getUnAuthToken() ([]string, error) {
 		return unAuthTokens, nil
 	}
 	//获取ibc_base_denom表数据
-	ibcBaseDenoms, err := baseDenomRepo.FindAll()
+	ibcBaseDenoms, err := authDenomRepo.FindAll()
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ type (
 		Status         entity.ChainStatus `json:"status"`
 	}
 
-	IbcBaseDenomsResp struct {
+	AuthDenomsResp struct {
 		Items     []AuthDenomDto `json:"items"`
 		TimeStamp int64          `json:"time_stamp"`
 	}

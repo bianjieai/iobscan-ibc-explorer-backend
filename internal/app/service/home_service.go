@@ -12,7 +12,7 @@ import (
 
 type IHomeService interface {
 	DailyChains() (vo.DailyChainsResp, errors.Error)
-	IbcBaseDenoms() (vo.IbcBaseDenomsResp, errors.Error)
+	AuthDenoms() (vo.AuthDenomsResp, errors.Error)
 	IbcDenoms() (vo.IbcDenomsResp, errors.Error)
 	Statistics() (vo.StatisticsCntResp, errors.Error)
 	SearchPoint(req *vo.SearchPointReq) errors.Error
@@ -21,7 +21,7 @@ type IHomeService interface {
 var _ IHomeService = new(HomeService)
 
 type HomeService struct {
-	baseDenomdto    vo.AuthDenomDto
+	authDenomdto    vo.AuthDenomDto
 	denomDto        vo.IbcDenomDto
 	statisticCntDto vo.StatisticsCntDto
 }
@@ -70,14 +70,14 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	return resp, nil
 }
 
-func (svc HomeService) IbcBaseDenoms() (vo.IbcBaseDenomsResp, errors.Error) {
-	var resp vo.IbcBaseDenomsResp
-	rets, err := baseDenomRepo.FindAll()
+func (svc HomeService) AuthDenoms() (vo.AuthDenomsResp, errors.Error) {
+	var resp vo.AuthDenomsResp
+	rets, err := authDenomRepo.FindAll()
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
 	for _, val := range rets {
-		resp.Items = append(resp.Items, svc.baseDenomdto.LoadDto(val))
+		resp.Items = append(resp.Items, svc.authDenomdto.LoadDto(val))
 	}
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
