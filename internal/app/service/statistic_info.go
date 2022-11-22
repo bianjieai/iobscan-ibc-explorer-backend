@@ -46,20 +46,11 @@ func (svc *StatisticInfoService) AccountsDailyStatistic() (vo.AccountsDailyResp,
 	var data map[string][]string
 	utils.UnmarshalJsonIgnoreErr([]byte(ret.StatisticsInfo), &data)
 
-	datas, err := chainConfigRepo.FindAllChainIds()
-	if err != nil {
-		return resp, errors.Wrap(err)
-	}
-	chainNameMap := make(map[string]string, len(data))
-	for _, val := range datas {
-		chainNameMap[val.ChainId] = val.ChainName
-	}
-
 	resp.Items = make([]vo.AccountsDailyDto, 0, len(data))
-	for chainId, val := range data {
+	for chain, val := range data {
 		item := vo.AccountsDailyDto{
 			Address:   val,
-			ChainName: chainNameMap[chainId],
+			ChainName: chain,
 		}
 		resp.Items = append(resp.Items, item)
 	}

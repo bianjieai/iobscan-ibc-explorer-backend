@@ -38,7 +38,7 @@ definitions:
     type: object
   vo.ChainDto:
     properties:
-      chain_id:
+      chain:
         type: string
       channels:
         type: integer
@@ -71,7 +71,7 @@ definitions:
     type: object
   vo.FailTxsListDto:
     properties:
-      chain_id:
+      chain:
         type: string
       recv_chain:
         type: string
@@ -114,7 +114,7 @@ definitions:
     type: object
   vo.RelayerTxFeeDto:
     properties:
-      chain_id:
+      chain:
         type: string
       fee:
         $ref: '#/definitions/model.Fee'
@@ -260,9 +260,9 @@ paths:
         in: query
         name: tx_hash
         type: string
-      - description: chain_id
+      - description: chain
         in: query
-        name: chain_id
+        name: chain
         type: string
       produces:
       - application/json

@@ -170,8 +170,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "chain_id",
-                        "name": "chain_id",
+                        "description": "chain",
+                        "name": "chain",
                         "in": "query"
                     }
                 ],
@@ -272,7 +272,7 @@
         "vo.ChainDto": {
             "type": "object",
             "properties": {
-                "chain_id": {
+                "chain": {
                     "type": "string"
                 },
                 "channels": {
@@ -322,7 +322,7 @@
         "vo.FailTxsListDto": {
             "type": "object",
             "properties": {
-                "chain_id": {
+                "chain": {
                     "type": "string"
                 },
                 "recv_chain": {
@@ -388,7 +388,7 @@
         "vo.RelayerTxFeeDto": {
             "type": "object",
             "properties": {
-                "chain_id": {
+                "chain": {
                     "type": "string"
                 },
                 "fee": {

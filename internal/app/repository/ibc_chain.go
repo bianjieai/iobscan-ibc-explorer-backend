@@ -56,7 +56,7 @@ func (repo *IbcChainRepo) UpdateRelayers(chainId string, relayers int64) error {
 
 func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 	var res *entity.IBCChain
-	err := repo.coll().Find(context.Background(), bson.M{ChainFieldChainId: chain.ChainId}).
+	err := repo.coll().Find(context.Background(), bson.M{ChainFieldChainId: chain.Chain}).
 		Select(bson.M{ChainFieldChainId: 1}).One(&res)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
@@ -67,7 +67,7 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 		}
 		return err
 	}
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: res.ChainId},
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: res.Chain},
 		bson.M{
 			"$set": bson.M{
 				ChainFieldChannels:        chain.Channels,

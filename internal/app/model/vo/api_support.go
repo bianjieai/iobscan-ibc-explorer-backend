@@ -27,7 +27,7 @@ type (
 	}
 	FailTxsListDto struct {
 		TxHash     string `json:"tx_hash"`
-		ChainId    string `json:"chain_id"`
+		Chain      string `json:"chain"`
 		TxErrorLog string `json:"tx_error_log"`
 		SendChain  string `json:"send_chain"`
 		RecvChain  string `json:"recv_chain"`
@@ -35,8 +35,8 @@ type (
 
 	RelayerTxFeesReq struct {
 		Page
-		TxHash  string `form:"tx_hash" json:"tx_hash"`
-		ChainId string `form:"chain_id" json:"chain_id"`
+		TxHash string `form:"tx_hash" json:"tx_hash"`
+		Chain  string `form:"chain" json:"chain"`
 	}
 
 	RelayerTxFeesResp struct {
@@ -46,7 +46,7 @@ type (
 	}
 	RelayerTxFeeDto struct {
 		TxHash      string     `json:"tx_hash"`
-		ChainId     string     `json:"chain_id"`
+		Chain       string     `json:"chain"`
 		Fee         *model.Fee `json:"fee"`
 		RelayerAddr string     `json:"relayer_addr"`
 	}

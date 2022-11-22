@@ -5,7 +5,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 )
 
-type TxStatus int
+type TxStatus int64
 
 const (
 	TxStatusSuccess TxStatus = 1
