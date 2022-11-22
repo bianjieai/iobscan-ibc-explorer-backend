@@ -171,8 +171,8 @@ func getRelayerAddrAndChains(channelPairInfo []entity.ChannelPairInfo) (addrs []
 
 //获取每个relayer的txs、txs_success、amount
 func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
-	addrs, _ := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
-	res, err := relayerDenomStatisticsRepo.AggrRelayerBaseDenomAmtAndTxs(addrs)
+	combs := entity.ChannelPairInfoList(relayerNew.ChannelPairInfo).GetChainAddrCombs()
+	res, err := relayerDenomStatisticsRepo.AggrRelayerBaseDenomAmtAndTxs(combs)
 	if err != nil {
 		logrus.Error("aggregate relayer txs have fail, ", err.Error(),
 			" relayer_id: ", relayerNew.RelayerId,

@@ -18,9 +18,11 @@ type IRelayerDenomStatisticsRepo interface {
 	InsertMany(batch []*entity.IBCRelayerDenomStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerDenomStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
-	AggrRelayerBaseDenomAmtAndTxs(relayAddrs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
+	AggrRelayerBaseDenomAmtAndTxs(combs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
 	AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error)
 	AggrAmtByTxType(relayAddrs []string) ([]*dto.AggrRelayerTxTypeDTO, error)
+	AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error)
+	UpdateChainAddressComb(chain, address, chainAddressComb string) error
 }
 
 var _ IRelayerDenomStatisticsRepo = new(RelayerDenomStatisticsRepo)
@@ -38,7 +40,7 @@ func (repo *RelayerDenomStatisticsRepo) collNew() *qmgo.Collection {
 
 func (repo *RelayerDenomStatisticsRepo) CreateNew() error {
 	ukOpts := officialOpts.Index().SetUnique(true).SetName("statistics_unique")
-	uk := []string{"relayer_address", "tx_type", "tx_status", "base_denom", "base_denom_chain", "segment_start_time", "segment_end_time"}
+	uk := []string{"chain_address_comb", "tx_type", "tx_status", "base_denom", "base_denom_chain", "segment_start_time", "segment_end_time"}
 	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: uk, IndexOptions: ukOpts}); err != nil {
 		return err
 	}
@@ -46,6 +48,11 @@ func (repo *RelayerDenomStatisticsRepo) CreateNew() error {
 	indexOpts := officialOpts.Index()
 	key := []string{"statistics_chain", "segment_start_time", "segment_end_time"}
 	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts}); err != nil {
+		return err
+	}
+
+	key2 := []string{"chain_address_comb", "segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key2, IndexOptions: indexOpts}); err != nil {
 		return err
 	}
 
@@ -96,10 +103,10 @@ func (repo *RelayerDenomStatisticsRepo) BatchSwap(chain string, segmentStartTime
 	return err
 }
 
-func (repo *RelayerDenomStatisticsRepo) AggrRelayerBaseDenomAmtAndTxs(relayAddrs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error) {
+func (repo *RelayerDenomStatisticsRepo) AggrRelayerBaseDenomAmtAndTxs(combs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"relayer_address": bson.M{"$in": relayAddrs},
+			"chain_address_comb": bson.M{"$in": combs},
 		},
 	}
 	group := bson.M{
@@ -134,17 +141,10 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerBaseDenomAmtAndTxs(relayAddrs
 	return res, err
 }
 
-/***
-db.ibc_relayer_denom_statistics.createIndex({
-    "relayer_address": 1,
-    "segment_start_time": 1,
-    "segment_end_time": 1,
-}, {background: true});
-*/
 func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"relayer_address":    bson.M{"$in": relayAddrs},
+			"chain_address_comb": bson.M{"$in": relayAddrs},
 			"segment_start_time": bson.M{"$gte": segmentStartTime},
 			"segment_end_time":   bson.M{"$lte": segmentEndTime},
 		},
@@ -206,4 +206,40 @@ func (repo *RelayerDenomStatisticsRepo) AggrAmtByTxType(relayAddrs []string) ([]
 	var res []*dto.AggrRelayerTxTypeDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *RelayerDenomStatisticsRepo) AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error) {
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"chain":   "$statistics_chain",
+				"address": "$relayer_address",
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":     0,
+			"chain":   "$_id.chain",
+			"address": "$_id.address",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, group, project)
+	var res []*dto.AggrChainAddrDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *RelayerDenomStatisticsRepo) UpdateChainAddressComb(chain, address, chainAddressComb string) error {
+	query := bson.M{
+		"statistics_chain": chain, "relayer_address": address,
+	}
+	set := bson.M{
+		"$set": bson.M{
+			"chain_address_comb": chainAddressComb,
+		},
+	}
+	_, err := repo.coll().UpdateAll(context.Background(), query, set)
+	return err
 }

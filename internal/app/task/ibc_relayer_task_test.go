@@ -26,7 +26,7 @@ func Test_RelayerStatisticRunIncrement(t *testing.T) {
 }
 
 func Test_RelayerStatisticsRunWithParam(t *testing.T) {
-	relayerStatisticsTask.RunWithParam("kichain_2", 1636761600, 1636847999)
+	relayerStatisticsTask.RunWithParam("cosmoshub_4", 1640995200, 1641081599)
 }
 
 func TestIbcRelayerCronTask_getUpdateTime(t *testing.T) {

@@ -19,6 +19,8 @@ type IRelayerFeeStatisticsRepo interface {
 	InsertManyToNew(batch []*entity.IBCRelayerFeeStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
 	AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error)
+	AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error)
+	UpdateChainAddressComb(chain, address, chainAddressComb string) error
 }
 
 var _ IRelayerFeeStatisticsRepo = new(RelayerFeeStatisticsRepo)
@@ -130,4 +132,40 @@ func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string
 	var res []*dto.AggrRelayerTxsAmtDTo
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *RelayerFeeStatisticsRepo) AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error) {
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"chain":   "$statistics_chain",
+				"address": "$relayer_address",
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":     0,
+			"chain":   "$_id.chain",
+			"address": "$_id.address",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, group, project)
+	var res []*dto.AggrChainAddrDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *RelayerFeeStatisticsRepo) UpdateChainAddressComb(chain, address, chainAddressComb string) error {
+	query := bson.M{
+		"statistics_chain": chain, "relayer_address": address,
+	}
+	set := bson.M{
+		"$set": bson.M{
+			"chain_address_comb": chainAddressComb,
+		},
+	}
+	_, err := repo.coll().UpdateAll(context.Background(), query, set)
+	return err
 }
