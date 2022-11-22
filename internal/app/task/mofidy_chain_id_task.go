@@ -116,7 +116,7 @@ func (h *ModifyChainIdHandlerOne) name() string {
 func (h *ModifyChainIdHandlerOne) defaultColls() []string {
 	return []string{
 		entity.ChainRegistry{}.CollectionName(),
-		entity.IBCBaseDenom{}.CollectionName(),
+		entity.AuthDenom{}.CollectionName(),
 		entity.IBCChain{}.CollectionName(),
 		entity.IBCChannelConfig{}.CollectionName(),
 		entity.IBCDenom{}.CollectionName(false),
@@ -316,7 +316,7 @@ func (h *ModifyChainIdHandlerOne) updateColl(collName string) {
 	switch collName {
 	case entity.ChainRegistry{}.CollectionName():
 		err = singleChainIdFunc()
-	case entity.IBCBaseDenom{}.CollectionName():
+	case entity.AuthDenom{}.CollectionName():
 		err = singleChainIdFunc()
 	case entity.IBCChain{}.CollectionName():
 		err = singleChainIdFunc()

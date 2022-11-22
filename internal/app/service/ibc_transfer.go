@@ -229,7 +229,7 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if val.DcTxInfo == nil && val.RefundedTxInfo == nil {
+	if val.DcTxInfo == nil && val.AckTimeoutTxInfo == nil {
 		return nil, nil
 	}
 	var relayerInfo vo.RelayerInfo
@@ -237,8 +237,8 @@ func getRelayerInfo(val *entity.ExIbcTx) (*vo.RelayerInfo, error) {
 		dcRelayerAddr := val.DcTxInfo.Msg.CommonMsg().Signer
 		relayerInfo.DcRelayer.RelayerAddr = dcRelayerAddr
 	}
-	if val.RefundedTxInfo != nil && val.RefundedTxInfo.Msg != nil {
-		scRelayerAddr := val.RefundedTxInfo.Msg.CommonMsg().Signer
+	if val.AckTimeoutTxInfo != nil && val.AckTimeoutTxInfo.Msg != nil {
+		scRelayerAddr := val.AckTimeoutTxInfo.Msg.CommonMsg().Signer
 		relayerInfo.ScRelayer.RelayerAddr = scRelayerAddr
 	}
 	chainA, _ := entity.ConfirmRelayerPair(val.ScChain, val.DcChain)
@@ -318,7 +318,7 @@ func getUnAuthToken() ([]string, error) {
 		return unAuthTokens, nil
 	}
 	//获取ibc_base_denom表数据
-	ibcBaseDenoms, err := baseDenomRepo.FindAll()
+	ibcBaseDenoms, err := authDenomRepo.FindAll()
 	if err != nil {
 		return nil, err
 	}

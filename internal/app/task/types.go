@@ -57,14 +57,14 @@ var (
 	relayerDataCache           cache.RelayerDataCacheRepo
 	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
 	chainCache                 cache.ChainCacheRepo
-	baseDenomCache             cache.BaseDenomCacheRepo
+	baseDenomCache             cache.AuthDenomCacheRepo
 	storageCache               cache.StorageCacheRepo
 	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
 	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
 	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
 	tokenStatisticsRepo        repository.ITokenStatisticsRepo        = new(repository.TokenStatisticsRepo)
 	tokenTraceStatisticsRepo   repository.ITokenTraceStatisticsRepo   = new(repository.TokenTraceStatisticsRepo)
-	baseDenomRepo              repository.IBaseDenomRepo              = new(repository.BaseDenomRepo)
+	baseDenomRepo              repository.IAuthDenomRepo              = new(repository.AuthDenomRepo)
 	denomRepo                  repository.IDenomRepo                  = new(repository.DenomRepo)
 	chainConfigRepo            repository.IChainConfigRepo            = new(repository.ChainConfigRepo)
 	ibcTxRepo                  repository.IExIbcTxRepo                = new(repository.ExIbcTxRepo)

@@ -44,7 +44,7 @@ func Routers(Router *gin.Engine) {
 func homePage(r *gin.RouterGroup) {
 	ctl := rest.HomeController{}
 	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.DailyChains))
-	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcBaseDenoms))
+	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AuthDenoms))
 	r.GET("/denoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcDenoms))
 	r.GET("/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Statistics))
 	r.POST("/searchPoint", ctl.SearchPoint)

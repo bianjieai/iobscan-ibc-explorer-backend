@@ -24,34 +24,34 @@ const (
 
 type (
 	ExIbcTx struct {
-		Id             primitive.ObjectID `bson:"_id"`
-		RecordId       string             `bson:"record_id"`
-		TxTime         int64              `bson:"tx_time"`
-		ScAddr         string             `bson:"sc_addr"`
-		DcAddr         string             `bson:"dc_addr"`
-		ScPort         string             `bson:"sc_port"`
-		ScChannel      string             `bson:"sc_channel"`
-		ScConnectionId string             `bson:"sc_connection_id"`
-		ScClientId     string             `bson:"sc_client_id"`
-		ScChain        string             `bson:"sc_chain"`
-		DcPort         string             `bson:"dc_port"`
-		DcChannel      string             `bson:"dc_channel"`
-		DcConnectionId string             `bson:"dc_connection_id"`
-		DcClientId     string             `bson:"dc_client_id"`
-		DcChain        string             `bson:"dc_chain"`
-		Sequence       string             `bson:"sequence"`
-		Status         IbcTxStatus        `bson:"status"`
-		ScTxInfo       *TxInfo            `bson:"sc_tx_info"`
-		DcTxInfo       *TxInfo            `bson:"dc_tx_info"`
-		RefundedTxInfo *TxInfo            `bson:"refunded_tx_info"`
-		Denoms         *Denoms            `bson:"denoms"`
-		BaseDenom      string             `bson:"base_denom"`
-		BaseDenomChain string             `bson:"base_denom_chain"`
-		ProcessInfo    string             `bson:"process_info"`
-		RetryTimes     int64              `bson:"retry_times"`
-		NextTryTime    int64              `bson:"next_try_time"`
-		CreateAt       int64              `bson:"create_at"`
-		UpdateAt       int64              `bson:"update_at"`
+		Id               primitive.ObjectID `bson:"_id"`
+		RecordId         string             `bson:"record_id"`
+		TxTime           int64              `bson:"tx_time"`
+		ScAddr           string             `bson:"sc_addr"`
+		DcAddr           string             `bson:"dc_addr"`
+		ScPort           string             `bson:"sc_port"`
+		ScChannel        string             `bson:"sc_channel"`
+		ScConnectionId   string             `bson:"sc_connection_id"`
+		ScClientId       string             `bson:"sc_client_id"`
+		ScChain          string             `bson:"sc_chain"`
+		DcPort           string             `bson:"dc_port"`
+		DcChannel        string             `bson:"dc_channel"`
+		DcConnectionId   string             `bson:"dc_connection_id"`
+		DcClientId       string             `bson:"dc_client_id"`
+		DcChain          string             `bson:"dc_chain"`
+		Sequence         string             `bson:"sequence"`
+		Status           IbcTxStatus        `bson:"status"`
+		ScTxInfo         *TxInfo            `bson:"sc_tx_info"`
+		DcTxInfo         *TxInfo            `bson:"dc_tx_info"`
+		AckTimeoutTxInfo *TxInfo            `bson:"ack_timeout_tx_info"`
+		Denoms           *Denoms            `bson:"denoms"`
+		BaseDenom        string             `bson:"base_denom"`
+		BaseDenomChain   string             `bson:"base_denom_chain"`
+		ProcessInfo      string             `bson:"process_info"`
+		RetryTimes       int64              `bson:"retry_times"`
+		NextTryTime      int64              `bson:"next_try_time"`
+		CreateAt         int64              `bson:"create_at"`
+		UpdateAt         int64              `bson:"update_at"`
 	}
 	Log struct {
 		ScLog string `bson:"sc_log"`

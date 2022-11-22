@@ -192,15 +192,15 @@ func (repo *ExIbcTxRepo) FindProcessingHistoryTxs(chain string, limit int64) ([]
 
 func (repo *ExIbcTxRepo) parseUpdateIbcTxSql(ibcTx *entity.ExIbcTx, repaired bool) bson.M {
 	set := bson.M{
-		"status":           ibcTx.Status,
-		"dc_connection_id": ibcTx.DcConnectionId,
-		"denoms.dc_denom":  ibcTx.Denoms.DcDenom,
-		"dc_tx_info":       ibcTx.DcTxInfo,
-		"refunded_tx_info": ibcTx.RefundedTxInfo,
-		"retry_times":      ibcTx.RetryTimes,
-		"next_try_time":    ibcTx.NextTryTime,
-		"process_info":     ibcTx.ProcessInfo,
-		"update_at":        ibcTx.UpdateAt,
+		"status":              ibcTx.Status,
+		"dc_connection_id":    ibcTx.DcConnectionId,
+		"denoms.dc_denom":     ibcTx.Denoms.DcDenom,
+		"dc_tx_info":          ibcTx.DcTxInfo,
+		"ack_timeout_tx_info": ibcTx.AckTimeoutTxInfo,
+		"retry_times":         ibcTx.RetryTimes,
+		"next_try_time":       ibcTx.NextTryTime,
+		"process_info":        ibcTx.ProcessInfo,
+		"update_at":           ibcTx.UpdateAt,
 	}
 	if repaired {
 		set["sc_client_id"] = ibcTx.ScClientId
@@ -355,7 +355,7 @@ func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
-				"sc_relayer": "$refunded_tx_info.msg.msg.signer",
+				"sc_relayer": "$ack_timeout_tx_info.msg.msg.signer",
 				"dc_relayer": "$dc_tx_info.msg.msg.signer",
 				"sc_chain":   "$sc_chain",
 				"sc_channel": "$sc_channel",
@@ -1012,7 +1012,7 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 		"$or": []bson.M{
 			{"sc_tx_info.hash": hash},
 			{"dc_tx_info.hash": hash},
-			{"refunded_tx_info.hash": hash},
+			{"ack_timeout_tx_info.hash": hash},
 		},
 	}
 	if history {
@@ -1025,13 +1025,13 @@ func (repo *ExIbcTxRepo) TxDetail(hash string, history bool) ([]*entity.ExIbcTx,
 
 func (repo *ExIbcTxRepo) GetNeedAcknowledgeTxs(history bool, startTime int64) ([]*entity.ExIbcTx, error) {
 	var res []*entity.ExIbcTx
-	//查询"成功"状态的没有refunded_tx_info的数据
+	//查询"成功"状态的没有ack_timeout_tx_info的数据
 	query := bson.M{
 		"create_at": bson.M{
 			"$gte": startTime,
 		},
-		"status":               entity.IbcTxStatusSuccess,
-		"refunded_tx_info.msg": bson.M{"$exists": false},
+		"status":                  entity.IbcTxStatusSuccess,
+		"ack_timeout_tx_info.msg": bson.M{"$exists": false},
 	}
 	if history {
 		err := repo.collHistory().Find(context.Background(), query).Limit(constant.DefaultLimit).Sort("-update_at").Hint("create_at_-1").All(&res)

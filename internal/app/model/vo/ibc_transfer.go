@@ -241,13 +241,13 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 				endTime = ibcTx.ScTxInfo.Time
 			}
 		} else {
-			if ibcTx.RefundedTxInfo != nil {
-				endTime = ibcTx.RefundedTxInfo.Time
+			if ibcTx.AckTimeoutTxInfo != nil {
+				endTime = ibcTx.AckTimeoutTxInfo.Time
 			}
 		}
 	case entity.IbcTxStatusRefunded:
-		if ibcTx.RefundedTxInfo != nil {
-			endTime = ibcTx.RefundedTxInfo.Time
+		if ibcTx.AckTimeoutTxInfo != nil {
+			endTime = ibcTx.AckTimeoutTxInfo.Time
 		}
 	}
 	return IbcTxDto{
@@ -279,8 +279,8 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	case entity.IbcTxStatusRefunded:
 		if ibcTx.DcTxInfo != nil {
 			if ibcTx.DcTxInfo.Status == entity.TxStatusSuccess {
-				if ibcTx.RefundedTxInfo != nil {
-					errLog = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+				if ibcTx.AckTimeoutTxInfo != nil {
+					errLog = ibcTx.AckTimeoutTxInfo.Msg.AckPacketMsg().Acknowledgement
 				}
 			} else {
 				errLog = ibcTx.DcTxInfo.Log
@@ -293,12 +293,12 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	}
 	if ibcTx.DcTxInfo != nil {
 		ibcTxInfo.DcTxInfo = loadTxDetailDto(ibcTx.DcTxInfo)
-		if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
-			ibcTxInfo.DcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+		if ibcTx.AckTimeoutTxInfo != nil && ibcTx.AckTimeoutTxInfo.Msg != nil {
+			ibcTxInfo.DcTxInfo.Ack = ibcTx.AckTimeoutTxInfo.Msg.AckPacketMsg().Acknowledgement
 		}
 	}
-	if ibcTx.RefundedTxInfo != nil {
-		ibcTxInfo.AckTimeoutTxInfo = loadTxDetailDto(ibcTx.RefundedTxInfo)
+	if ibcTx.AckTimeoutTxInfo != nil {
+		ibcTxInfo.AckTimeoutTxInfo = loadTxDetailDto(ibcTx.AckTimeoutTxInfo)
 	}
 	return TranaferTxDetailNewResp{
 		ErrorLog:  errLog,

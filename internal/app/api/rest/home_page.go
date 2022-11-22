@@ -20,8 +20,8 @@ func (ctl *HomeController) DailyChains(c *gin.Context) {
 	c.JSON(http.StatusOK, response.Success(resp))
 }
 
-func (ctl *HomeController) IbcBaseDenoms(c *gin.Context) {
-	resp, err := homeService.IbcBaseDenoms()
+func (ctl *HomeController) AuthDenoms(c *gin.Context) {
+	resp, err := homeService.AuthDenoms()
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailError(err))
 		return

@@ -402,7 +402,7 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPri
 			segmentTxsValueMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId:  item.BaseDenomChain,
+				Chain:    item.BaseDenomChain,
 				Denom:    item.BaseDenom,
 				Txs:      item.TotalTxs,
 				AmtValue: baseDenomValue,

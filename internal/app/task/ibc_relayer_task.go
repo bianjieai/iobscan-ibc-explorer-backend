@@ -192,10 +192,10 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAm
 			relayerTxsAmtMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChain,
-				Denom:   item.BaseDenom,
-				Txs:     item.TotalTxs,
-				Amt:     decimal.NewFromFloat(item.Amount),
+				Chain: item.BaseDenomChain,
+				Denom: item.BaseDenom,
+				Txs:   item.TotalTxs,
+				Amt:   decimal.NewFromFloat(item.Amount),
 			}
 			if item.TxStatus == int(entity.TxStatusSuccess) {
 				data.TxsSuccess = item.TotalTxs
@@ -217,17 +217,17 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 	}
 	relayerTxsAmtMap := make(map[string]dto.TxsAmtItem, 20)
 	for _, item := range res {
-		key := fmt.Sprintf("%s%s", item.FeeDenom, item.ChainId)
+		key := fmt.Sprintf("%s%s", item.FeeDenom, item.Chain)
 		value, exist := relayerTxsAmtMap[key]
 		if exist {
 			value.Amt = value.Amt.Add(decimal.NewFromFloat(item.Amount))
 			relayerTxsAmtMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.ChainId,
-				Denom:   item.FeeDenom,
-				Txs:     item.TotalTxs,
-				Amt:     decimal.NewFromFloat(item.Amount),
+				Chain: item.Chain,
+				Denom: item.FeeDenom,
+				Txs:   item.TotalTxs,
+				Amt:   decimal.NewFromFloat(item.Amount),
 			}
 			relayerTxsAmtMap[key] = data
 		}

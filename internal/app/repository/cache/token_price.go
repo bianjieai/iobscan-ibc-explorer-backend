@@ -41,7 +41,7 @@ func (repo *TokenPriceCacheRepo) GetAll() (map[string]float64, error) {
 
 func TokenPriceMap() map[string]dto.CoinItem {
 	coinIdPriceMap, _ := new(TokenPriceCacheRepo).GetAll()
-	baseDenoms, err := new(BaseDenomCacheRepo).FindAll()
+	baseDenoms, err := new(AuthDenomCacheRepo).FindAll()
 	if err != nil {
 		logrus.Error("find base_denom fail, ", err.Error())
 		return nil
