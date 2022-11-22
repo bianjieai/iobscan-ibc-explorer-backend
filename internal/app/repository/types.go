@@ -27,9 +27,9 @@ func GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB string) 
 	chainAChannelMap := make(map[string]string)
 	chainBChannelMap := make(map[string]string)
 	for _, c := range addrChannels {
-		if c.RelayerAddress == addressA {
+		if c.RelayerAddress == addressA && c.Chain == chainA {
 			chainAChannelMap[c.Channel] = c.CounterPartyChannel
-		} else if c.RelayerAddress == addressB {
+		} else if c.RelayerAddress == addressB && c.Chain == chainB {
 			chainBChannelMap[c.Channel] = c.CounterPartyChannel
 		}
 	}

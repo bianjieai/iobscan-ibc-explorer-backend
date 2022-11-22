@@ -73,21 +73,17 @@ func (svc *RelayerService) Collect(operatorFile string) errors.Error {
 }
 
 func (svc *RelayerService) TransferTypeTxs(relayerId string) (*vo.TransferTypeTxsResp, errors.Error) {
-	if res, err := relayerDataCache.GetTransferTypeTxs(relayerId); err == nil {
-		return res, nil
-	}
-
-	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	one, err := relayerRepo.FindOneByRelayerId(relayerId)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
-
-	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
-	for _, val := range servedChainsInfoMap {
-		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	//未注册的relayer的名字为空
+	if one.RelayerName == "" {
+		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
 	}
+	addrCombs := entity.ChannelPairInfoList(one.ChannelPairInfo).GetChainAddrCombs()
 
-	aggrRes, e := relayerDenomStatisticsRepo.AggrAmtByTxType(relayerAddrs)
+	aggrRes, e := relayerDenomStatisticsRepo.AggrAmtByTxType(addrCombs)
 	if e != nil {
 		return nil, errors.Wrap(e)
 	}

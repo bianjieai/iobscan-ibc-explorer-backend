@@ -20,7 +20,7 @@ type IRelayerDenomStatisticsRepo interface {
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
 	AggrRelayerBaseDenomAmtAndTxs(combs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
 	AggrRelayerAmtAndTxsBySegment(combs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error)
-	AggrAmtByTxType(relayAddrs []string) ([]*dto.AggrRelayerTxTypeDTO, error)
+	AggrAmtByTxType(combs []string) ([]*dto.AggrRelayerTxTypeDTO, error)
 	AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error)
 	UpdateChainAddressComb(chain, address, chainAddressComb string) error
 }
@@ -181,10 +181,10 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(combs []st
 	return res, err
 }
 
-func (repo *RelayerDenomStatisticsRepo) AggrAmtByTxType(relayAddrs []string) ([]*dto.AggrRelayerTxTypeDTO, error) {
+func (repo *RelayerDenomStatisticsRepo) AggrAmtByTxType(combs []string) ([]*dto.AggrRelayerTxTypeDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"relayer_address": bson.M{"$in": relayAddrs},
+			"chain_address_comb": bson.M{"$in": combs},
 		},
 	}
 	group := bson.M{

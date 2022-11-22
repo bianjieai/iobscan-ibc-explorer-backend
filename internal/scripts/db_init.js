@@ -280,7 +280,7 @@ db.ibc_relayer_fee_statistics.createIndex({
     "fee_denom": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
-}, {background: true, unique: true});
+}, {name: "statistics_unique", background: true, unique: true});
 
 db.ibc_relayer_fee_statistics.createIndex({
     "statistics_chain": 1,
@@ -302,7 +302,7 @@ db.ibc_relayer_denom_statistics.createIndex({
     "base_denom_chain_id": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
-}, {background: true, unique: true});
+}, {name: "statistics_unique", background: true, unique: true});
 
 db.ibc_relayer_denom_statistics.createIndex({
     "statistics_chain": 1,

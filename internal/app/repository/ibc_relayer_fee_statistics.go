@@ -38,7 +38,7 @@ func (repo *RelayerFeeStatisticsRepo) collNew() *qmgo.Collection {
 
 func (repo *RelayerFeeStatisticsRepo) CreateNew() error {
 	ukOpts := officialOpts.Index().SetUnique(true).SetName("statistics_unique")
-	uk := []string{"relayer_address", "tx_type", "tx_status", "fee_denom", "segment_start_time", "segment_end_time"}
+	uk := []string{"chain_address_comb", "tx_type", "tx_status", "fee_denom", "segment_start_time", "segment_end_time"}
 	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: uk, IndexOptions: ukOpts}); err != nil {
 		return err
 	}
