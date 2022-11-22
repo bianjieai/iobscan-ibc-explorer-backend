@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"strings"
 	"time"
 
@@ -29,12 +30,14 @@ func caculateActiveAddrsOfChains() {
 	configList, err := chainConfigRepo.FindAllChains()
 	if err != nil {
 		logrus.Errorf("find chain_config error, %v", err)
+		monitor.SetCronTaskStatusMetricValue("caculateActiveAddrsOfChains", float64(-1))
 		return
 	}
 	//获取relayer地址
 	relayerAddrs, err := relayerAddrCache.FindAll()
 	if err != nil {
 		logrus.Errorf("find cache relayer error, %v", err)
+		monitor.SetCronTaskStatusMetricValue("caculateActiveAddrsOfChains", float64(-1))
 		return
 	}
 	relayerMap := make(map[string]struct{}, len(relayerAddrs))
@@ -66,5 +69,8 @@ func caculateActiveAddrsOfChains() {
 	cache.GetRedisClient().Set(cache.DailyAccountsDate, utils.FmtTime(dailyDate, utils.DateFmtYYYYMMDD), -1)
 	if err := statisticsRepo.UpdateOneData(constant.AccountsDailyStatisticName, string(utils.MarshalJsonIgnoreErr(mapChainAddrs))); err != nil && !qmgo.IsDup(err) {
 		logrus.Errorf("update statistic data error, %v", err)
+		monitor.SetCronTaskStatusMetricValue("caculateActiveAddrsOfChains", float64(-1))
+		return
 	}
+	monitor.SetCronTaskStatusMetricValue("caculateActiveAddrsOfChains", float64(11))
 }

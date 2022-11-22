@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"os"
 	"path"
 	"strings"
@@ -28,13 +29,8 @@ func Serve(cfg *conf.Config) {
 
 	r := gin.Default()
 	api.Routers(r)
-	//go monitor.Start(cfg.App.Prometheus)
-	//if cfg.App.StartTask {
+	go monitor.Start(cfg.App.Prometheus)
 	task.Start()
-	//}
-	//if cfg.App.StartOneOffTask {
-	//	startOneOffTask()
-	//}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
 
@@ -75,24 +71,3 @@ func initLogger(logCfg *conf.Log) {
 		logrus.SetOutput(os.Stdout)
 	}
 }
-
-//func startTask() {
-//	task.RegisterTasks(
-//		&task.TokenTask{},
-//		&task.ChannelTask{},
-//		&task.IbcChainCronTask{},
-//		&task.IbcRelayerCronTask{},
-//		&task.TokenPriceTask{},
-//		&task.IbcStatisticCronTask{},
-//	)
-//	task.Start()
-//}
-
-//func startOneOffTask() {
-//	task.RegisterOneOffTasks(
-//		&task.ChannelStatisticsTask{},
-//		&task.RelayerStatisticsTask{},
-//		&task.TokenStatisticsTask{},
-//	)
-//	task.StartOneOffTask()
-//}
