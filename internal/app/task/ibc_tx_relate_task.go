@@ -536,9 +536,9 @@ func (w *ibcTxRelateWorker) packetIdTx(scChain string, ibcTxList []*entity.ExIbc
 	}
 
 	if len(timeoutTxPacketIds) > 0 {
-		refundedTxList, err := txRepo.FindByPacketIds(scChain, constant.MsgTypeTimeoutPacket, timeoutTxPacketIds, &status)
+		timeoutTxList, err := txRepo.FindByPacketIds(scChain, constant.MsgTypeTimeoutPacket, timeoutTxPacketIds, &status)
 		if err == nil {
-			for _, tx := range refundedTxList {
+			for _, tx := range timeoutTxList {
 				for _, msg := range tx.DocTxMsgs {
 					if msg.Type == constant.MsgTypeTimeoutPacket {
 						if timeoutMsg := msg.TimeoutPacketMsg(); timeoutMsg.PacketId != "" {

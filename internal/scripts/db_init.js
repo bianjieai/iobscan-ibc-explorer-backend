@@ -333,7 +333,7 @@ db.ibc_relayer_denom_statistics.createIndex({
     "tx_type": 1,
     "tx_status": 1,
     "base_denom": 1,
-    "base_denom_chain_id": 1,
+    "base_denom_chain": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
 }, {background: true, unique: true});

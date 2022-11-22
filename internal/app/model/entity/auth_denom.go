@@ -16,7 +16,7 @@ type AuthDenom struct {
 }
 
 func (i AuthDenom) CollectionName() string {
-	return "ibc_base_denom"
+	return "auth_denom"
 }
 
 type AuthDenomList []*AuthDenom
