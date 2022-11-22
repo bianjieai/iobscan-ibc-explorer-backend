@@ -19,7 +19,7 @@ type IRelayerDenomStatisticsRepo interface {
 	InsertManyToNew(batch []*entity.IBCRelayerDenomStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerDenomStatistics) error
 	AggrRelayerBaseDenomAmtAndTxs(combs []string) ([]*dto.CountRelayerBaseDenomAmtDTO, error)
-	AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error)
+	AggrRelayerAmtAndTxsBySegment(combs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error)
 	AggrAmtByTxType(relayAddrs []string) ([]*dto.AggrRelayerTxTypeDTO, error)
 	AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error)
 	UpdateChainAddressComb(chain, address, chainAddressComb string) error
@@ -141,10 +141,10 @@ func (repo *RelayerDenomStatisticsRepo) AggrRelayerBaseDenomAmtAndTxs(combs []st
 	return res, err
 }
 
-func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(relayAddrs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error) {
+func (repo *RelayerDenomStatisticsRepo) AggrRelayerAmtAndTxsBySegment(combs []string, segmentStartTime, segmentEndTime int64) ([]*dto.CountRelayerBaseDenomAmtBySegmentDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"chain_address_comb": bson.M{"$in": relayAddrs},
+			"chain_address_comb": bson.M{"$in": combs},
 			"segment_start_time": bson.M{"$gte": segmentStartTime},
 			"segment_end_time":   bson.M{"$lte": segmentEndTime},
 		},
