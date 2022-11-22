@@ -100,7 +100,7 @@ type CountRelayerBaseDenomAmtBySegmentDTO struct {
 
 type AggrRelayerTxsAmtDTo struct {
 	FeeDenom string  `bson:"fee_denom"`
-	ChainId  string  `bson:"chain_id"`
+	Chain    string  `bson:"chain"`
 	Amount   float64 `bson:"amount"`
 	TotalTxs int64   `bson:"total_txs"`
 }
@@ -206,7 +206,7 @@ type (
 		Txs        int64
 		TxsSuccess int64
 		Denom      string
-		ChainId    string
+		Chain      string
 		Amt        decimal.Decimal
 		AmtValue   decimal.Decimal
 	}

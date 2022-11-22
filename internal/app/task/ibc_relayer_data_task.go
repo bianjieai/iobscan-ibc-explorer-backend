@@ -440,7 +440,7 @@ func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity
 			relayedFeeTotalTxs += val.Txs
 			txsItem = append(txsItem, vo.DenomFeeItem{
 				Denom:      val.Denom,
-				DenomChain: val.ChainId,
+				DenomChain: val.Chain,
 				Txs:        val.Txs,
 				FeeValue:   val.AmtValue.String(),
 			})
@@ -462,7 +462,7 @@ func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity
 		for _, val := range relayerTxsAmt {
 			txsItem = append(txsItem, vo.DenomTxsItem{
 				BaseDenom:      val.Denom,
-				BaseDenomChain: val.ChainId,
+				BaseDenomChain: val.Chain,
 				Txs:            val.Txs,
 				TxsValue:       val.AmtValue.String(),
 			})
