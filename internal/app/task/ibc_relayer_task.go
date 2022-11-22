@@ -207,8 +207,8 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAm
 }
 
 func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
-	addrs, _ := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
-	res, err := relayerFeeStatisticsRepo.AggrRelayerFeeDenomAmt(addrs)
+	addrCombs := entity.ChannelPairInfoList(relayerNew.ChannelPairInfo).GetChainAddrCombs()
+	res, err := relayerFeeStatisticsRepo.AggrRelayerFeeDenomAmt(addrCombs)
 	if err != nil {
 		logrus.Error("aggregate relayer txs have fail, ", err.Error(),
 			" relayer_id: ", relayerNew.RelayerId,

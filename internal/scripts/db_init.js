@@ -274,7 +274,7 @@ db.ex_search_record.createIndex({
 
 // relayer statistics
 db.ibc_relayer_fee_statistics.createIndex({
-    "relayer_address": 1,
+    "chain_address_comb": 1,
     "tx_type": 1,
     "tx_status": 1,
     "fee_denom": 1,
