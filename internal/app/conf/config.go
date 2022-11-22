@@ -8,14 +8,15 @@ import (
 )
 
 type Config struct {
-	App         App
-	Mongo       Mongo
-	Mysql       Mysql
-	Redis       Redis
-	Log         Log
-	Spi         Spi
-	Task        Task
-	ChainConfig ChainConfig `mapstructure:"chain_config"`
+	App           App
+	Mongo         Mongo
+	HintIndexName HintIndexName `mapstructure:"hint_index_name"`
+	Mysql         Mysql
+	Redis         Redis
+	Log           Log
+	Spi           Spi
+	Task          Task
+	ChainConfig   ChainConfig `mapstructure:"chain_config"`
 }
 
 type Mysql struct {
@@ -31,6 +32,13 @@ type Mysql struct {
 type Mongo struct {
 	Url      string
 	Database string
+}
+
+type HintIndexName struct {
+	GetRelayerTxsHintIndex           string `mapstructure:"get_relayer_txs_hint_index"`
+	CountRelayerTxsHintIndex         string `mapstructure:"count_relayer_txs_hint_index"`
+	GetRelayerUpdateTimeHintIndex    string `mapstructure:"get_relayer_update_time_hint_index"`
+	GetLatestRecvPacketTimeHintIndex string `mapstructure:"get_latest_recv_packet_time_hint_index"`
 }
 
 type App struct {

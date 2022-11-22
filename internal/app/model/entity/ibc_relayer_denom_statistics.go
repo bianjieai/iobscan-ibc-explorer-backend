@@ -1,5 +1,7 @@
 package entity
 
+import "fmt"
+
 type TxType string
 
 const (
@@ -15,6 +17,7 @@ const (
 type IBCRelayerDenomStatistics struct {
 	StatisticChain   string   `bson:"statistics_chain"`
 	RelayerAddress   string   `bson:"relayer_address"`
+	ChainAddressComb string   `bson:"chain_address_comb"`
 	TxStatus         TxStatus `bson:"tx_status"`
 	TxType           TxType   `bson:"tx_type"`
 	BaseDenom        string   `bson:"base_denom"`
@@ -32,4 +35,8 @@ func (i IBCRelayerDenomStatistics) CollectionName(isNew bool) string {
 		return IBCRelayerDenomStatisticsNewCollName
 	}
 	return IBCRelayerDenomStatisticsCollName
+}
+
+func GenerateChainAddressComb(chain, address string) string {
+	return fmt.Sprintf("%s|%s", chain, address)
 }

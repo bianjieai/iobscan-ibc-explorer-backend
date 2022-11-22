@@ -309,13 +309,13 @@ db.uba_search_record.createIndex({
 
 // relayer statistics
 db.ibc_relayer_fee_statistics.createIndex({
-    "relayer_address": 1,
+    "chain_address_comb": 1,
     "tx_type": 1,
     "tx_status": 1,
     "fee_denom": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
-}, {background: true, unique: true});
+}, {name: "statistics_unique", background: true, unique: true});
 
 db.ibc_relayer_fee_statistics.createIndex({
     "statistics_chain": 1,
@@ -324,20 +324,20 @@ db.ibc_relayer_fee_statistics.createIndex({
 }, {background: true});
 
 db.ibc_relayer_denom_statistics.createIndex({
-    "relayer_address": 1,
+    "chain_address_comb": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
 }, {background: true});
 
 db.ibc_relayer_denom_statistics.createIndex({
-    "relayer_address": 1,
+    "chain_address_comb": 1,
     "tx_type": 1,
     "tx_status": 1,
     "base_denom": 1,
     "base_denom_chain": 1,
     "segment_start_time": 1,
     "segment_end_time": 1,
-}, {background: true, unique: true});
+}, {name: "statistics_unique", background: true, unique: true});
 
 db.ibc_relayer_denom_statistics.createIndex({
     "statistics_chain": 1,

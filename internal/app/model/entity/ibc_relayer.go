@@ -43,18 +43,20 @@ func (i ChannelPairInfo) Valid() bool {
 
 type ChannelPairInfoList []ChannelPairInfo
 
-func (c ChannelPairInfoList) GetAddrs() []string {
-	addrMap := make(map[string]struct{})
+func (c ChannelPairInfoList) GetChainAddrCombs() []string {
+	combMap := make(map[string]struct{})
 	for _, v := range c {
-		addrMap[v.ChainAAddress] = struct{}{}
-		addrMap[v.ChainBAddress] = struct{}{}
+		combA := GenerateChainAddressComb(v.ChainA, v.ChainAAddress)
+		combB := GenerateChainAddressComb(v.ChainB, v.ChainBAddress)
+		combMap[combA] = struct{}{}
+		combMap[combB] = struct{}{}
 	}
 
-	addrs := make([]string, 0, len(addrMap))
-	for k, _ := range addrMap {
-		addrs = append(addrs, k)
+	combs := make([]string, 0, len(combMap))
+	for k, _ := range combMap {
+		combs = append(combs, k)
 	}
-	return addrs
+	return combs
 }
 
 func (c ChannelPairInfoList) GetChains() []string {

@@ -8,6 +8,7 @@ const (
 type IBCRelayerFeeStatistics struct {
 	StatisticChain   string   `bson:"statistics_chain"`
 	RelayerAddress   string   `bson:"relayer_address"`
+	ChainAddressComb string   `bson:"chain_address_comb"`
 	TxStatus         TxStatus `bson:"tx_status"`
 	TxType           TxType   `bson:"tx_type"`
 	FeeDenom         string   `bson:"fee_denom"`
