@@ -171,8 +171,8 @@ func getRelayerAddrAndChains(channelPairInfo []entity.ChannelPairInfo) (addrs []
 
 //获取每个relayer的txs、txs_success、amount
 func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
-	addrs, _ := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
-	res, err := relayerDenomStatisticsRepo.AggrRelayerBaseDenomAmtAndTxs(addrs)
+	combs := entity.ChannelPairInfoList(relayerNew.ChannelPairInfo).GetChainAddrCombs()
+	res, err := relayerDenomStatisticsRepo.AggrRelayerBaseDenomAmtAndTxs(combs)
 	if err != nil {
 		logrus.Error("aggregate relayer txs have fail, ", err.Error(),
 			" relayer_id: ", relayerNew.RelayerId,
@@ -207,8 +207,8 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAm
 }
 
 func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
-	addrs, _ := getRelayerAddrAndChains(relayerNew.ChannelPairInfo)
-	res, err := relayerFeeStatisticsRepo.AggrRelayerFeeDenomAmt(addrs)
+	addrCombs := entity.ChannelPairInfoList(relayerNew.ChannelPairInfo).GetChainAddrCombs()
+	res, err := relayerFeeStatisticsRepo.AggrRelayerFeeDenomAmt(addrCombs)
 	if err != nil {
 		logrus.Error("aggregate relayer txs have fail, ", err.Error(),
 			" relayer_id: ", relayerNew.RelayerId,
@@ -220,6 +220,7 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 		key := fmt.Sprintf("%s%s", item.FeeDenom, item.Chain)
 		value, exist := relayerTxsAmtMap[key]
 		if exist {
+			value.Txs += item.TotalTxs
 			value.Amt = value.Amt.Add(decimal.NewFromFloat(item.Amount))
 			relayerTxsAmtMap[key] = value
 		} else {

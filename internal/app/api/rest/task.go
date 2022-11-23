@@ -71,6 +71,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			ibcStatisticCronTask.NewRun()
 		case modifyChainIdTask.Name():
 			modifyChainIdTask.RunWithParam(c.PostForm("category"), c.PostForm("coll"))
+		case fixRelayerStatisticsTask.Name():
+			fixRelayerStatisticsTask.Run()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

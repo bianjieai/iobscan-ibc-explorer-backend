@@ -192,8 +192,7 @@ func distinctRelayerArr(data map[string]entity.IBCRelayerNew, existInDb bool) []
 				pairIds := make([]string, 0, len(value.ChannelPairInfo))
 				for i := range value.ChannelPairInfo {
 					item := value.ChannelPairInfo[i]
-					pairId := entity.GenerateRelayerPairId(item.ChainA, item.ChannelA, item.ChainAAddress,
-						item.ChainB, item.ChannelB, item.ChainBAddress)
+					pairId := item.PairId
 					if !utils.InArray(pairIds, pairId) {
 						pairIds = append(pairIds, pairId)
 					}
@@ -202,8 +201,7 @@ func distinctRelayerArr(data map[string]entity.IBCRelayerNew, existInDb bool) []
 				//获取差异的channel_pair合并到一起
 				for i := range val.ChannelPairInfo {
 					item := val.ChannelPairInfo[i]
-					pairId := entity.GenerateRelayerPairId(item.ChainA, item.ChannelA, item.ChainAAddress,
-						item.ChainB, item.ChannelB, item.ChainBAddress)
+					pairId := item.PairId
 					if !utils.InArray(pairIds, pairId) {
 						pairIds = append(pairIds, pairId)
 						value.ChannelPairInfo = append(value.ChannelPairInfo, val.ChannelPairInfo[i])
@@ -287,15 +285,8 @@ func (t *RelayerDataTask) handleIbcTxHistory(startTime, endTime int64) []*entity
 }
 
 func (t *RelayerDataTask) createChannelPairInfoData(dto *dto.GetRelayerInfoDTO) entity.ChannelPairInfo {
-	channelPairInfo := entity.ChannelPairInfo{
-		ChainA:        dto.ScChain,
-		ChainB:        dto.DcChain,
-		ChannelA:      dto.ScChannel,
-		ChannelB:      dto.DcChannel,
-		ChainAAddress: dto.ScChainAddress,
-		ChainBAddress: dto.DcChainAddress,
-	}
-	return channelPairInfo
+	return entity.GenerateChannelPairInfo(dto.ScChain, dto.ScChannel, dto.ScChainAddress,
+		dto.DcChain, dto.DcChannel, dto.DcChainAddress)
 }
 
 func checkNoExist(pairId string, data entity.IBCRelayerNew) bool {
@@ -318,8 +309,7 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 		}
 		key := entity.GenerateDistRelayerId(channelPairInfos[i].ChainA, channelPairInfos[i].ChainAAddress,
 			channelPairInfos[i].ChainB, channelPairInfos[i].ChainBAddress)
-		pairId := entity.GenerateRelayerPairId(channelPairInfos[i].ChainA, channelPairInfos[i].ChannelA,
-			channelPairInfos[i].ChainAAddress, channelPairInfos[i].ChainB, channelPairInfos[i].ChannelB, channelPairInfos[i].ChainBAddress)
+		pairId := channelPairInfos[i].PairId
 		if relayerId, ok := t.distRelayerMap[key]; ok {
 			//数据库已存在，更新channel_pair_info
 			dbData, cacheOk := dbRelayerMap[key]
@@ -331,14 +321,12 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 				}
 				channelpairNoExist := checkNoExist(pairId, *data)
 				if channelpairNoExist {
-					channelPairInfos[i].PairId = pairId
 					data.ChannelPairInfo = append(data.ChannelPairInfo, *channelPairInfos[i])
 				}
 				dbRelayerMap[key] = *data
 			} else {
 				channelpairNoExist := checkNoExist(pairId, dbData)
 				if channelpairNoExist {
-					channelPairInfos[i].PairId = pairId
 					dbData.ChannelPairInfo = append(dbData.ChannelPairInfo, *channelPairInfos[i])
 				}
 				dbRelayerMap[key] = dbData
@@ -349,12 +337,10 @@ func (t *RelayerDataTask) handleChannelPairInfo(channelPairInfos []*entity.Chann
 			if data, exist := newRelayerMap[key]; exist {
 				channelpairNoExist := checkNoExist(pairId, data)
 				if channelpairNoExist {
-					channelPairInfos[i].PairId = pairId
 					data.ChannelPairInfo = append(data.ChannelPairInfo, *channelPairInfos[i])
 					newRelayerMap[key] = data
 				}
 			} else {
-				channelPairInfos[i].PairId = pairId
 				newRelayerMap[key] = entity.IBCRelayerNew{
 					RelayerId:       primitive.NewObjectID().Hex(),
 					ServedChains:    2,

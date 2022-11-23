@@ -73,21 +73,17 @@ func (svc *RelayerService) Collect(operatorFile string) errors.Error {
 }
 
 func (svc *RelayerService) TransferTypeTxs(relayerId string) (*vo.TransferTypeTxsResp, errors.Error) {
-	if res, err := relayerDataCache.GetTransferTypeTxs(relayerId); err == nil {
-		return res, nil
-	}
-
-	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	one, err := relayerRepo.FindOneByRelayerId(relayerId)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
-
-	relayerAddrs := make([]string, 0, len(servedChainsInfoMap))
-	for _, val := range servedChainsInfoMap {
-		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	//未注册的relayer的名字为空
+	if one.RelayerName == "" {
+		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
 	}
+	addrCombs := entity.ChannelPairInfoList(one.ChannelPairInfo).GetChainAddrCombs()
 
-	aggrRes, e := relayerDenomStatisticsRepo.AggrAmtByTxType(relayerAddrs)
+	aggrRes, e := relayerDenomStatisticsRepo.AggrAmtByTxType(addrCombs)
 	if e != nil {
 		return nil, errors.Wrap(e)
 	}
@@ -326,14 +322,15 @@ func (svc *RelayerService) RelayerNameList() ([]string, errors.Error) {
 }
 
 func (svc *RelayerService) RelayerTrend(relayerId string, req *vo.RelayerTrendReq) (vo.RelayerTrendResp, errors.Error) {
-	servedChainsInfoMap, err := getRelayerChainsInfo(relayerId)
+	one, err := relayerRepo.FindOneByRelayerId(relayerId)
 	if err != nil {
-		return vo.RelayerTrendResp{}, err
+		return nil, errors.Wrap(err)
 	}
-	relayerAddrs := make([]string, 0, 10)
-	for _, val := range servedChainsInfoMap {
-		relayerAddrs = append(relayerAddrs, val.Addresses...)
+	//未注册的relayer的名字为空
+	if one.RelayerName == "" {
+		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
 	}
+	addrCombs := entity.ChannelPairInfoList(one.ChannelPairInfo).GetChainAddrCombs()
 	if req.Days <= 0 {
 		req.Days = 30
 	}
@@ -347,15 +344,15 @@ func (svc *RelayerService) RelayerTrend(relayerId string, req *vo.RelayerTrendRe
 		return data, nil
 	}
 	segments := svc.getSegmentOfDay(req.Days)
-	retData := svc.doHandleDaySegments(relayerAddrs, segments)
+	retData := svc.doHandleDaySegments(addrCombs, segments)
 	_ = relayerDataCache.SetRelayedTrend(relayerId, strconv.Itoa(req.Days), utils.MustMarshalJsonToStr(retData))
 
 	return retData, nil
 }
 
-func (svc *RelayerService) doHandleDaySegments(relayerAddrs []string, segments []*vo.DaySegment) vo.RelayerTrendResp {
+func (svc *RelayerService) doHandleDaySegments(addrCombs []string, segments []*vo.DaySegment) vo.RelayerTrendResp {
 	denomPriceMap := cache.TokenPriceMap()
-	retData := svc.getDayofRelayerTxsAmt(relayerAddrs, denomPriceMap, segments)
+	retData := svc.getDayofRelayerTxsAmt(addrCombs, denomPriceMap, segments)
 	return retData
 }
 
@@ -375,8 +372,8 @@ func (svc *RelayerService) getSegmentOfDay(days int) []*vo.DaySegment {
 	return segments
 }
 
-func (svc *RelayerService) getDayofRelayerTxsAmt(relayerAddrs []string, denomPriceMap map[string]dto.CoinItem, segments []*vo.DaySegment) vo.RelayerTrendResp {
-	res, err := relayerDenomStatisticsRepo.AggrRelayerAmtAndTxsBySegment(relayerAddrs, segments[0].StartTime, segments[len(segments)-1].EndTime)
+func (svc *RelayerService) getDayofRelayerTxsAmt(addrCombs []string, denomPriceMap map[string]dto.CoinItem, segments []*vo.DaySegment) vo.RelayerTrendResp {
+	res, err := relayerDenomStatisticsRepo.AggrRelayerAmtAndTxsBySegment(addrCombs, segments[0].StartTime, segments[len(segments)-1].EndTime)
 	if err != nil {
 		logrus.Errorf("aggr  relayer amount and txs by segment  %d-%d  fail,%s", segments[0].StartTime, segments[len(segments)-1].EndTime, err.Error())
 		return vo.RelayerTrendResp{}

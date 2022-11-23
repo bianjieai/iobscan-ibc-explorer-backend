@@ -18,7 +18,9 @@ type IRelayerFeeStatisticsRepo interface {
 	InsertMany(batch []*entity.IBCRelayerFeeStatistics) error
 	InsertManyToNew(batch []*entity.IBCRelayerFeeStatistics) error
 	BatchSwap(chain string, segmentStartTime, segmentEndTime int64, batch []*entity.IBCRelayerFeeStatistics) error
-	AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error)
+	AggrRelayerFeeDenomAmt(combs []string) ([]*dto.AggrRelayerTxsAmtDTo, error)
+	AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error)
+	UpdateChainAddressComb(chain, address, chainAddressComb string) error
 }
 
 var _ IRelayerFeeStatisticsRepo = new(RelayerFeeStatisticsRepo)
@@ -36,7 +38,7 @@ func (repo *RelayerFeeStatisticsRepo) collNew() *qmgo.Collection {
 
 func (repo *RelayerFeeStatisticsRepo) CreateNew() error {
 	ukOpts := officialOpts.Index().SetUnique(true).SetName("statistics_unique")
-	uk := []string{"relayer_address", "tx_type", "tx_status", "fee_denom", "segment_start_time", "segment_end_time"}
+	uk := []string{"chain_address_comb", "tx_type", "tx_status", "fee_denom", "segment_start_time", "segment_end_time"}
 	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: uk, IndexOptions: ukOpts}); err != nil {
 		return err
 	}
@@ -96,10 +98,10 @@ func (repo *RelayerFeeStatisticsRepo) BatchSwap(chain string, segmentStartTime, 
 	return err
 }
 
-func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string) ([]*dto.AggrRelayerTxsAmtDTo, error) {
+func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(combs []string) ([]*dto.AggrRelayerTxsAmtDTo, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"relayer_address": bson.M{"$in": relayAddrs},
+			"chain_address_comb": bson.M{"$in": combs},
 		},
 	}
 	group := bson.M{
@@ -130,4 +132,40 @@ func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(relayAddrs []string
 	var res []*dto.AggrRelayerTxsAmtDTo
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *RelayerFeeStatisticsRepo) AggrChainAddressPair() ([]*dto.AggrChainAddrDTO, error) {
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"chain":   "$statistics_chain",
+				"address": "$relayer_address",
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":     0,
+			"chain":   "$_id.chain",
+			"address": "$_id.address",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, group, project)
+	var res []*dto.AggrChainAddrDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *RelayerFeeStatisticsRepo) UpdateChainAddressComb(chain, address, chainAddressComb string) error {
+	query := bson.M{
+		"statistics_chain": chain, "relayer_address": address,
+	}
+	set := bson.M{
+		"$set": bson.M{
+			"chain_address_comb": chainAddressComb,
+		},
+	}
+	_, err := repo.coll().UpdateAll(context.Background(), query, set)
+	return err
 }

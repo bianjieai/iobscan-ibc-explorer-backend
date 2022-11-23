@@ -228,6 +228,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chainId string, segment *segment
 			denomStatMap[dsmk] = &entity.IBCRelayerDenomStatistics{
 				StatisticChain:   chainId,
 				RelayerAddress:   v.Signer,
+				ChainAddressComb: entity.GenerateChainAddressComb(chainId, v.Signer),
 				TxStatus:         entity.TxStatus(v.Status),
 				TxType:           entity.TxType(v.TxType),
 				BaseDenom:        denomEntity.BaseDenom,
@@ -302,6 +303,7 @@ func (w *relayerStatisticsWorker) saveFeeStat(chainId string, feeStats []*dto.Re
 		feeStatList = append(feeStatList, &entity.IBCRelayerFeeStatistics{
 			StatisticChain:   chainId,
 			RelayerAddress:   v.Signer,
+			ChainAddressComb: entity.GenerateChainAddressComb(chainId, v.Signer),
 			TxStatus:         entity.TxStatus(v.Status),
 			TxType:           entity.TxType(v.TxType),
 			FeeDenom:         v.Denom,
@@ -344,4 +346,55 @@ func (w *relayerStatisticsWorker) saveAddrChannel(addrChannelMap map[string]*ent
 	}
 
 	return nil
+}
+
+// ===============================================================
+// ===============================================================
+// ===============================================================
+// fix task
+
+type FixRelayerStatisticsTask struct {
+}
+
+func (t *FixRelayerStatisticsTask) Name() string {
+	return "fix_relayer_statistics_task"
+}
+
+func (t *FixRelayerStatisticsTask) Switch() bool {
+	return false
+}
+
+// Run 全量更新
+func (t *FixRelayerStatisticsTask) Run() int {
+	st := time.Now().Unix()
+	chainAddressList, err := relayerDenomStatisticsRepo.AggrChainAddressPair()
+	if err != nil {
+		logrus.Errorf("%s relayerDenomStatisticsRepo.AggrChainAddressPair err, %v", t.Name(), err)
+		return -1
+	}
+
+	for _, v := range chainAddressList {
+		chainAddressComb := entity.GenerateChainAddressComb(v.Chain, v.Address)
+		if err = relayerDenomStatisticsRepo.UpdateChainAddressComb(v.Chain, v.Address, chainAddressComb); err != nil {
+			logrus.Errorf("%s relayerDenomStatisticsRepo.UpdateChainAddressComb %s-%s-%s err, %v", t.Name(), v.Chain, v.Address, chainAddressComb, err)
+		}
+	}
+	logrus.Infof("%s fix denom end, time use: %d[s]", t.Name(), time.Now().Unix()-st)
+
+	st = time.Now().Unix()
+	chainAddressList, err = relayerFeeStatisticsRepo.AggrChainAddressPair()
+	if err != nil {
+		logrus.Errorf("%s relayerFeeStatisticsRepo.AggrChainAddressPair err, %v", t.Name(), err)
+		return -1
+	}
+
+	for _, v := range chainAddressList {
+		chainAddressComb := entity.GenerateChainAddressComb(v.Chain, v.Address)
+		if err = relayerFeeStatisticsRepo.UpdateChainAddressComb(v.Chain, v.Address, chainAddressComb); err != nil {
+			logrus.Errorf("%s relayerFeeStatisticsRepo.UpdateChainAddressComb %s-%s-%s err, %v", t.Name(), v.Chain, v.Address, chainAddressComb, err)
+		}
+	}
+	logrus.Infof("%s fix fee end, time use: %d[s]", t.Name(), time.Now().Unix()-st)
+
+	return 1
 }
