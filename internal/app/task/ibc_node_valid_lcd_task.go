@@ -71,8 +71,8 @@ func (t *IbcNodeLcdCronTask) doHandleChains(workNum int, chaincfgs []*entity.Cha
 				if id%workNum != num {
 					continue
 				}
-				logrus.Infof("task %s worker %d chain-id: %s", t.Name(), num, v.CurrentChainId)
-				t.CheckAndUpdateTraceSourceNode(v.CurrentChainId)
+				logrus.Infof("task %s worker %d chain-id: %s", t.Name(), num, v.ChainName)
+				t.CheckAndUpdateTraceSourceNode(v.ChainName)
 			}
 		}(num)
 	}

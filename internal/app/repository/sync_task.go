@@ -9,7 +9,7 @@ import (
 )
 
 type ISyncTaskRepo interface {
-	CheckFollowingStatus(chainId string) (bool, error)
+	CheckFollowingStatus(chain string) (bool, error)
 }
 
 var _ ISyncTaskRepo = new(SyncTaskRepo)
@@ -17,11 +17,11 @@ var _ ISyncTaskRepo = new(SyncTaskRepo)
 type SyncTaskRepo struct {
 }
 
-func (repo *SyncTaskRepo) coll(chainId string) *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.SyncTask{}.CollectionName(chainId))
+func (repo *SyncTaskRepo) coll(chain string) *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.SyncTask{}.CollectionName(chain))
 }
 
-func (repo *SyncTaskRepo) CheckFollowingStatus(chainId string) (bool, error) {
-	count, err := repo.coll(chainId).Find(context.Background(), bson.M{"status": entity.SyncTaskStatusUnderway, "end_height": 0}).Count()
+func (repo *SyncTaskRepo) CheckFollowingStatus(chain string) (bool, error) {
+	count, err := repo.coll(chain).Find(context.Background(), bson.M{"status": entity.SyncTaskStatusUnderway, "end_height": 0}).Count()
 	return count == 1, err
 }

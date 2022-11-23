@@ -12,6 +12,6 @@ type SyncBlock struct {
 	Proposer string `bson:"proposer"`
 }
 
-func (s SyncBlock) CollectionName(chainId string) string {
-	return fmt.Sprintf("sync_%s_block", chainId)
+func (s SyncBlock) CollectionName(chain string) string {
+	return fmt.Sprintf("sync_%s_block", chain)
 }

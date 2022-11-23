@@ -85,10 +85,10 @@ func (t *ChannelTask) Run() int {
 	}
 
 	// 更新ibc_chain
-	for chainId, txs := range t.chainTxsMap {
-		txsValue := t.chainTxsValueMap[chainId].Round(constant.DefaultValuePrecision).String()
-		if err = chainRepo.UpdateTransferTxs(chainId, txs, txsValue); err != nil && err != mongo.ErrNoDocuments {
-			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chainId, err)
+	for chain, txs := range t.chainTxsMap {
+		txsValue := t.chainTxsValueMap[chain].Round(constant.DefaultValuePrecision).String()
+		if err = chainRepo.UpdateTransferTxs(chain, txs, txsValue); err != nil && err != mongo.ErrNoDocuments {
+			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chain, err)
 		}
 	}
 	return 1
@@ -111,7 +111,7 @@ func (t *ChannelTask) analyzeChainConfig() error {
 
 	var chainA, channelA, chainB, channelB string
 	for _, v := range confList {
-		chainA = v.CurrentChainId
+		chainA = v.ChainName
 		for _, info := range v.IbcInfo {
 			chainB = info.Chain
 			for _, p := range info.Paths {
@@ -353,8 +353,8 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 	return txsCount, txsValue
 }
 
-func (t *ChannelTask) calculateValue(amount float64, baseDenom, baseDenomChainId string) decimal.Decimal {
-	denom, ok := t.baseDenomMap[fmt.Sprintf("%s%s", baseDenomChainId, baseDenom)]
+func (t *ChannelTask) calculateValue(amount float64, baseDenom, baseDenomChain string) decimal.Decimal {
+	denom, ok := t.baseDenomMap[fmt.Sprintf("%s%s", baseDenomChain, baseDenom)]
 	if !ok || denom.CoinId == "" {
 		return decimal.Zero
 	}

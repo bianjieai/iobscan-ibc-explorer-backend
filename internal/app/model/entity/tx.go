@@ -48,6 +48,6 @@ type (
 	}
 )
 
-func (i Tx) CollectionName(chainId string) string {
-	return fmt.Sprintf("sync_%v_tx", chainId)
+func (i Tx) CollectionName(chain string) string {
+	return fmt.Sprintf("sync_%v_tx", chain)
 }

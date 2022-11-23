@@ -95,13 +95,13 @@ func lcdConnectionStatus(quit chan bool) {
 			}
 			for _, val := range chainCfgs {
 				if checkAndUpdateLcd(val.GrpcRestGateway, val) {
-					lcdConnectStatsMetric.With(ChainTag, val.CurrentChainId).Set(float64(1))
+					lcdConnectStatsMetric.With(ChainTag, val.ChainName).Set(float64(1))
 				} else {
 					if switchLcd(val) {
-						lcdConnectStatsMetric.With(ChainTag, val.CurrentChainId).Set(float64(1))
+						lcdConnectStatsMetric.With(ChainTag, val.ChainName).Set(float64(1))
 					} else {
-						lcdConnectStatsMetric.With(ChainTag, val.CurrentChainId).Set(float64(-1))
-						logrus.Errorf("monitor chain %s lcd is unavailable", val.CurrentChainId)
+						lcdConnectStatsMetric.With(ChainTag, val.ChainName).Set(float64(-1))
+						logrus.Errorf("monitor chain %s lcd is unavailable", val.ChainName)
 					}
 				}
 			}

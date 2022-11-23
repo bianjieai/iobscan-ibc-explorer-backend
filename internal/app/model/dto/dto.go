@@ -179,13 +179,13 @@ type RelayerPairIdDTO struct {
 }
 
 type DenomSimpleDTO struct {
-	Denom   string
-	ChainId string
+	Denom string
+	Chain string
 }
 
 type PacketIdDTO struct {
-	RecordId      string
-	DcChainId     string
+	ObjectId      string
+	DcChain       string
 	TimeoutHeight int64
 	PacketId      string
 	TimeOutTime   int64
