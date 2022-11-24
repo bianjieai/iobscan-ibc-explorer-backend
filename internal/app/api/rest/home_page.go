@@ -11,6 +11,15 @@ import (
 type HomeController struct {
 }
 
+func (ctl *HomeController) ChainsConnection(c *gin.Context) {
+	resp, err := homeService.ChainsConnection()
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(resp))
+}
+
 func (ctl *HomeController) DailyChains(c *gin.Context) {
 	resp, err := homeService.DailyChains()
 	if err != nil {
