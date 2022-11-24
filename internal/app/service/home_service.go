@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"strings"
 	"time"
@@ -62,7 +63,7 @@ func (svc HomeService) ChainsConnection() (vo.ChainsConnectionResp, errors.Error
 			ChainName:      one.ChainName,
 			PrettyName:     one.PrettyName,
 			CurrentChainId: one.CurrentChainId,
-			Icon:           one.Icon,
+			Icon:           fmt.Sprintf(constant.IBCConnectionChainsIconUri, one.ChainName),
 		}
 		connectionChains := make([]vo.IobConnectionChain, 0, len(one.IbcInfo))
 		for _, val := range one.IbcInfo {
