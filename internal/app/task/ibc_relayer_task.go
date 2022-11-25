@@ -365,10 +365,10 @@ func (t *IbcRelayerCronTask) getUpdateTime(relayer *entity.IBCRelayerNew) int64 
 	return relayerUpdateTime
 }
 
-func (t *IbcRelayerCronTask) getChannelClient(chainId, channelId string) (string, error) {
-	chainConf, ok := t.chainConfigMap[chainId]
+func (t *IbcRelayerCronTask) getChannelClient(chain, channelId string) (string, error) {
+	chainConf, ok := t.chainConfigMap[chain]
 	if !ok {
-		return "", fmt.Errorf("%s config not found", chainId)
+		return "", fmt.Errorf("%s config not found", chain)
 	}
 
 	port := chainConf.GetPortId(channelId)

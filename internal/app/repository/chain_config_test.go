@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"testing"
 )
 
@@ -35,32 +34,4 @@ func TestChainConfigRepo_FindOne(t *testing.T) {
 	}
 	ret, _ := json.Marshal(data)
 	t.Log(string(ret))
-}
-
-func Test_Update(t *testing.T) {
-	conf := entity.ChainConfig{
-		CurrentChainId: "qa_iris_snapshot",
-		IbcInfo: []*entity.IbcInfo{
-			{
-				Chain: "cosmoshub_4",
-				Paths: []*entity.ChannelPath{
-					{
-						State:     "OPEN",
-						PortId:    "transfer",
-						ChannelId: "channel-1",
-						Chain:     "cosmos",
-						ScChain:   "qa_iris_snapshot",
-						Counterparty: entity.CounterParty{
-							State:     "OPEN",
-							PortId:    "transfer",
-							ChannelId: "channel-9",
-						},
-					},
-				},
-			},
-		},
-		IbcInfoHashLcd: "4bda2cdb211fbad4de8dc26ba03abaccc",
-	}
-	err := new(ChainConfigRepo).UpdateIbcInfo(&conf)
-	t.Log(err)
 }

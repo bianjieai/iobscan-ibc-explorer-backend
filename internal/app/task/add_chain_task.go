@@ -114,7 +114,6 @@ func (t *AddChainTask) updateIbcTx(chain string, chainConfig *entity.ChainConfig
 				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdate(counterpartyChain, counterpartyChannelId, counterpartyClientId, chain, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdate error, counterpartyChain: %s, counterpartyChannelId: %s", t.Name(), chain, counterpartyChain, counterpartyChannelId)
-					_ = storageCache.AddChainError(chain, counterpartyChain, counterpartyChannelId)
 				}
 			}()
 
@@ -122,7 +121,6 @@ func (t *AddChainTask) updateIbcTx(chain string, chainConfig *entity.ChainConfig
 				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdateFailedTx(counterpartyChain, counterpartyChannelId, counterpartyClientId, chain, channelId, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateFailedTx error, counterpartyChain: %s, counterpartyChannelId: %s", t.Name(), chain, counterpartyChain, counterpartyChannelId)
-					_ = storageCache.AddChainError(chain, counterpartyChain, counterpartyChannelId)
 				}
 			}()
 
@@ -130,7 +128,6 @@ func (t *AddChainTask) updateIbcTx(chain string, chainConfig *entity.ChainConfig
 				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdateHistory(counterpartyChain, counterpartyChannelId, counterpartyClientId, chain, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateHistory error, counterpartyChain: %s, counterpartyChannelId: %s", t.Name(), chain, counterpartyChain, counterpartyChannelId)
-					_ = storageCache.AddChainError(chain, counterpartyChain, counterpartyChannelId)
 				}
 			}()
 
@@ -138,7 +135,6 @@ func (t *AddChainTask) updateIbcTx(chain string, chainConfig *entity.ChainConfig
 				defer waitGroup.Done()
 				if err := ibcTxRepo.AddNewChainUpdateHistoryFailedTx(counterpartyChain, counterpartyChannelId, counterpartyClientId, chain, channelId, clientId); err != nil {
 					logrus.Errorf("task %s %s AddNewChainUpdateHistoryFailedTx error, counterpartyChain: %s, counterpartyChannelId: %s", t.Name(), chain, counterpartyChain, counterpartyChannelId)
-					_ = storageCache.AddChainError(chain, counterpartyChain, counterpartyChannelId)
 				}
 			}()
 
@@ -170,11 +166,9 @@ func (t *AddChainTask) updateDenom(denomList entity.IBCDenomList, chainMap map[s
 		if v.BaseDenom != denomNew.BaseDenom || v.BaseDenomChain != denomNew.BaseDenomChain {
 			if err := ibcTxRepo.UpdateBaseDenomInfo(v.BaseDenom, v.BaseDenomChain, denomNew.BaseDenom, denomNew.BaseDenomChain); err != nil {
 				logrus.Errorf("task %s UpdateBaseDenomInfo error, %s-%s => %s-%s", t.Name(), v.BaseDenomChain, v.BaseDenom, denomNew.BaseDenomChain, denomNew.BaseDenom)
-				_ = storageCache.UpdateBaseDenomError(v.BaseDenom, v.BaseDenomChain, denomNew.BaseDenom, denomNew.BaseDenomChain)
 			}
 			if err := ibcTxRepo.UpdateBaseDenomInfoHistory(v.BaseDenom, v.BaseDenomChain, denomNew.BaseDenom, denomNew.BaseDenomChain); err != nil {
 				logrus.Errorf("task %s UpdateBaseDenomInfoHistory error, %s-%s => %s-%s", t.Name(), v.BaseDenomChain, v.BaseDenom, denomNew.BaseDenomChain, denomNew.BaseDenom)
-				_ = storageCache.UpdateBaseDenomError(v.BaseDenom, v.BaseDenomChain, denomNew.BaseDenom, denomNew.BaseDenomChain)
 			}
 		}
 	}

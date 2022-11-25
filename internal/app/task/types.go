@@ -53,12 +53,10 @@ var (
 	//cache
 	tokenPriceRepo             cache.TokenPriceCacheRepo
 	denomDataRepo              cache.DenomDataCacheRepo
-	unbondTimeCache            cache.UnbondTimeCacheRepo
 	relayerDataCache           cache.RelayerDataCacheRepo
 	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
 	chainCache                 cache.ChainCacheRepo
 	baseDenomCache             cache.AuthDenomCacheRepo
-	storageCache               cache.StorageCacheRepo
 	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
 	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
 	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)

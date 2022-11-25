@@ -205,11 +205,11 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChain string, ibcTxList []*entity.Ex
 func (w *ibcTxRelateWorker) updateProcessInfo(ibcTx *entity.ExIbcTx, timeOutMap map[string]struct{}, noFoundAckMap map[string]struct{}) *entity.ExIbcTx {
 	if ibcTx.Status == entity.IbcTxStatusProcessing {
 		if ibcTx.DcChain == "" {
-			ibcTx.ProcessInfo = constant.NoFoundDcChainId
+			ibcTx.ProcessInfo = constant.NoFoundDcChain
 		} else {
-			if _, ok := timeOutMap[ibcTx.RecordId]; ok {
+			if _, ok := timeOutMap[ibcTx.Id.Hex()]; ok {
 				ibcTx.ProcessInfo = constant.NoFoundSuccessTimeoutPacket
-			} else if _, ok := noFoundAckMap[ibcTx.RecordId]; ok {
+			} else if _, ok := noFoundAckMap[ibcTx.Id.Hex()]; ok {
 				ibcTx.ProcessInfo = constant.NoFoundSuccessAcknowledgePacket
 			} else {
 				ibcTx.ProcessInfo = constant.NoFoundSuccessRecvPacket
@@ -468,8 +468,8 @@ func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx
 	return ibcTx, repaired
 }
 
-func (w *ibcTxRelateWorker) genPacketTxMapKey(chainId, packetId string) string {
-	return fmt.Sprintf("%s_%s", chainId, packetId)
+func (w *ibcTxRelateWorker) genPacketTxMapKey(chain, packetId string) string {
+	return fmt.Sprintf("%s_%s", chain, packetId)
 }
 
 func (w *ibcTxRelateWorker) packetIdTx(scChain string, ibcTxList []*entity.ExIbcTx) (recvPacketTxMap, ackTxMap map[string][]*entity.Tx, timeoutTxMap map[string]*entity.Tx, timeoutIbcTxMap, noFoundAckMap map[string]struct{}) {
@@ -488,13 +488,13 @@ func (w *ibcTxRelateWorker) packetIdTx(scChain string, ibcTxList []*entity.ExIbc
 		latestBlock := chainLatestBlockMap[dcChain]
 		var recvPacketIds []string
 		for _, packet := range packetIds { // recv && refunded
-			packetIdRecordMap[dcChain+packet.PacketId] = packet.RecordId
+			packetIdRecordMap[dcChain+packet.PacketId] = packet.ObjectId
 			recvPacketIds = append(recvPacketIds, packet.PacketId)
 			timeoutStr := strconv.FormatInt(packet.TimeOutTime, 10)
 			if len(timeoutStr) > 10 { // 非秒级时间
 				if len(timeoutStr) == 19 && time.Now().UnixNano() > packet.TimeOutTime { // Nano
 					timeoutTxPacketIds = append(timeoutTxPacketIds, packet.PacketId)
-					timeoutIbcTxMap[packet.RecordId] = struct{}{}
+					timeoutIbcTxMap[packet.ObjectId] = struct{}{}
 				} else {
 					//logrus.Warningf("unkonwn timeout time %s, chain: %s, packet id: %s", timeoutStr, dcChain, packet.PacketId)
 					timeoutTxPacketIds = append(timeoutTxPacketIds, packet.PacketId)
@@ -502,7 +502,7 @@ func (w *ibcTxRelateWorker) packetIdTx(scChain string, ibcTxList []*entity.ExIbc
 			} else if latestBlock != nil {
 				if latestBlock.Height > packet.TimeoutHeight || latestBlock.Time > packet.TimeOutTime {
 					timeoutTxPacketIds = append(timeoutTxPacketIds, packet.PacketId)
-					timeoutIbcTxMap[packet.RecordId] = struct{}{}
+					timeoutIbcTxMap[packet.ObjectId] = struct{}{}
 				}
 			}
 		}
@@ -523,8 +523,8 @@ func (w *ibcTxRelateWorker) packetIdTx(scChain string, ibcTxList []*entity.ExIbc
 						// recv_packet成功时查询ack
 						if tx.Status == entity.TxStatusSuccess {
 							ackPacketIds = append(ackPacketIds, recvMsg.PacketId)
-							if recordId, ok := packetIdRecordMap[dcChain+recvMsg.PacketId]; ok {
-								noFoundAckMap[recordId] = struct{}{}
+							if oid, ok := packetIdRecordMap[dcChain+recvMsg.PacketId]; ok {
+								noFoundAckMap[oid] = struct{}{}
 							}
 						}
 					} else {
@@ -591,11 +591,11 @@ func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string
 		}
 
 		res[tx.DcChain] = append(res[tx.DcChain], &dto.PacketIdDTO{
-			DcChainId:     tx.DcChain,
+			DcChain:       tx.DcChain,
 			TimeoutHeight: transferMsg.TimeoutHeight.RevisionHeight,
 			PacketId:      transferMsg.PacketId,
 			TimeOutTime:   transferMsg.TimeoutTimestamp,
-			RecordId:      tx.RecordId,
+			ObjectId:      tx.Id.Hex(),
 		})
 	}
 	return res
@@ -604,12 +604,12 @@ func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string
 func (w *ibcTxRelateWorker) findLatestBlock(scChain string, ibcTxList []*entity.ExIbcTx) map[string]*dto.HeightTimeDTO {
 	blockMap := make(map[string]*dto.HeightTimeDTO)
 
-	findFunc := func(chainId string) {
-		block, err := syncBlockRepo.FindLatestBlock(chainId)
+	findFunc := func(chain string) {
+		block, err := syncBlockRepo.FindLatestBlock(chain)
 		if err != nil {
-			logrus.Errorf("task %s worker %s chain %s findLatestBlock error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s chain %s findLatestBlock error, %v", w.taskName, w.workerName, chain, err)
 		} else {
-			blockMap[chainId] = &dto.HeightTimeDTO{
+			blockMap[chain] = &dto.HeightTimeDTO{
 				Height: block.Height,
 				Time:   block.Time,
 			}
