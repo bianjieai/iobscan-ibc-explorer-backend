@@ -72,7 +72,7 @@ func (repo *ChainConfigRepo) FindOne(chain string) (*entity.ChainConfig, error) 
 }
 
 func (repo *ChainConfigRepo) UpdateIbcInfo(config *entity.ChainConfig) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainConfigFieldCurrentChainId: config.CurrentChainId}, bson.M{
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainConfigFieldChainName: config.ChainName}, bson.M{
 		"$set": bson.M{
 			ChainConfigFieldIbcInfo:        config.IbcInfo,
 			ChainConfigFieldIbcInfoHashLcd: config.IbcInfoHashLcd,
@@ -80,7 +80,7 @@ func (repo *ChainConfigRepo) UpdateIbcInfo(config *entity.ChainConfig) error {
 }
 
 func (repo *ChainConfigRepo) UpdateLcdApi(config *entity.ChainConfig) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainConfigFieldCurrentChainId: config.CurrentChainId}, bson.M{
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainConfigFieldChainName: config.ChainName}, bson.M{
 		"$set": bson.M{
 			ChainConfigFieldGrpcRestGateway:  config.GrpcRestGateway,
 			"lcd_api_path.channels_path":     config.LcdApiPath.ChannelsPath,

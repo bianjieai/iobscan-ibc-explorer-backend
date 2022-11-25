@@ -59,12 +59,12 @@ func Test_CheckFollowingStatus(t *testing.T) {
 	var notFollowingStatus []string
 
 	for _, v := range chainList {
-		checkFollowingStatus, err := w.checkFollowingStatus(v.CurrentChainId)
+		checkFollowingStatus, err := w.checkFollowingStatus(v.ChainName)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !checkFollowingStatus {
-			notFollowingStatus = append(notFollowingStatus, v.CurrentChainId)
+			notFollowingStatus = append(notFollowingStatus, v.ChainName)
 		}
 	}
 
@@ -79,18 +79,18 @@ func Test_CheckTransferStatus(t *testing.T) {
 	}
 
 	for _, v := range chainList {
-		taskRecord, err := taskRecordRepo.FindByTaskName(fmt.Sprintf(entity.TaskNameFmt, v.CurrentChainId))
+		taskRecord, err := taskRecordRepo.FindByTaskName(fmt.Sprintf(entity.TaskNameFmt, v.ChainName))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		block, err := syncBlockRepo.FindLatestBlock(v.CurrentChainId)
+		block, err := syncBlockRepo.FindLatestBlock(v.ChainName)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		if block.Height-taskRecord.Height > 20 {
-			logrus.Warningf("chain %s trasnfer fall behind, latest block: %d, transfer block: %d", v.CurrentChainId, block.Height, taskRecord.Height)
+			logrus.Warningf("chain %s trasnfer fall behind, latest block: %d, transfer block: %d", v.ChainName, block.Height, taskRecord.Height)
 		}
 	}
 }

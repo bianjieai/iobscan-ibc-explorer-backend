@@ -28,6 +28,6 @@ type WorkerLog struct {
 	BeginTime time.Time `bson:"begin_time"`
 }
 
-func (s SyncTask) CollectionName(chainId string) string {
-	return fmt.Sprintf("sync_%s_task", chainId)
+func (s SyncTask) CollectionName(chain string) string {
+	return fmt.Sprintf("sync_%s_task", chain)
 }

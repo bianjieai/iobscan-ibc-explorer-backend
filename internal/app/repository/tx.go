@@ -10,22 +10,22 @@ import (
 )
 
 type ITxRepo interface {
-	GetFirstTx(chainId string) (*entity.Tx, error)
-	GetUpdateTimeByUpdateClient(chainId, address, clientId string, startTime int64) (int64, error)
-	GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error)
-	GetChannelOpenConfirmTime(chainId, channelId string) (int64, error)
-	GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error)
-	FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error)
-	GetTxByHash(chainId string, hash string) (entity.Tx, error)
+	GetFirstTx(chain string) (*entity.Tx, error)
+	GetUpdateTimeByUpdateClient(chain, address, clientId string, startTime int64) (int64, error)
+	GetLatestRecvPacketTime(chain, address, channelId string, startTime int64) (int64, error)
+	GetChannelOpenConfirmTime(chain, channelId string) (int64, error)
+	GetTransferTx(chain string, height, limit int64) ([]*entity.Tx, error)
+	FindByTypeAndHeight(chain, txType string, height int64) ([]*entity.Tx, error)
+	GetTxByHash(chain string, hash string) (entity.Tx, error)
 	GetTxByHashes(chain string, hashs []string) ([]*entity.Tx, error)
-	GetAcknowledgeTxs(chainId, packetId string) ([]*entity.Tx, error)
-	GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, error)
-	FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
-	RelayerDenomStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error)
-	RelayerFeeStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error)
-	GetRelayerTxs(chainId string, relayerAddrs []string, txTypes []string,
+	GetAcknowledgeTxs(chain, packetId string) ([]*entity.Tx, error)
+	GetRecvPacketTxs(chain, packetId string) ([]*entity.Tx, error)
+	FindByPacketIds(chain, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
+	RelayerDenomStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error)
+	RelayerFeeStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error)
+	GetRelayerTxs(chain string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error)
-	CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string,
+	CountRelayerTxs(chain string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd int64) (int64, error)
 }
 
@@ -34,20 +34,20 @@ var _ ITxRepo = new(TxRepo)
 type TxRepo struct {
 }
 
-func (repo *TxRepo) coll(chainId string) *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.Tx{}.CollectionName(chainId))
+func (repo *TxRepo) coll(chain string) *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.Tx{}.CollectionName(chain))
 }
 
-func (repo *TxRepo) GetFirstTx(chainId string) (*entity.Tx, error) {
+func (repo *TxRepo) GetFirstTx(chain string) (*entity.Tx, error) {
 	var res entity.Tx
-	err := repo.coll(chainId).Find(context.Background(), bson.M{}).Sort("time").One(&res)
+	err := repo.coll(chain).Find(context.Background(), bson.M{}).Sort("time").One(&res)
 	return &res, err
 }
 
 // return value description
 //1: latest update_client tx_time
 //2: error
-func (repo *TxRepo) GetUpdateTimeByUpdateClient(chainId, address, clientId string, startTime int64) (int64, error) {
+func (repo *TxRepo) GetUpdateTimeByUpdateClient(chain, address, clientId string, startTime int64) (int64, error) {
 	var res *entity.Tx
 	query := bson.M{
 		"msgs.type":          constant.MsgTypeUpdateClient,
@@ -57,7 +57,7 @@ func (repo *TxRepo) GetUpdateTimeByUpdateClient(chainId, address, clientId strin
 			"$gte": startTime,
 		},
 	}
-	err := repo.coll(chainId).Find(context.Background(), query).
+	err := repo.coll(chain).Find(context.Background(), query).
 		Select(bson.M{"time": 1, "msgs.type": 1}).Sort("-time").Hint(GetRelayerUpdateTimeHintIndexName()).Limit(1).One(&res)
 	if err != nil {
 		return 0, err
@@ -69,7 +69,7 @@ func (repo *TxRepo) GetUpdateTimeByUpdateClient(chainId, address, clientId strin
 	return 0, nil
 }
 
-func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address, channelId string, startTime int64) (int64, error) {
+func (repo *TxRepo) GetLatestRecvPacketTime(chain, address, channelId string, startTime int64) (int64, error) {
 	var res []*entity.Tx
 	query := bson.M{
 		"msgs.type":                      constant.MsgTypeRecvPacket,
@@ -79,7 +79,7 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address, channelId string, 
 			"$gte": startTime,
 		},
 	}
-	err := repo.coll(chainId).Find(context.Background(), query).
+	err := repo.coll(chain).Find(context.Background(), query).
 		Select(bson.M{"time": 1}).Sort("-time").Hint(GetLatestRecvPacketTimeHintIndexName()).Limit(1).All(&res)
 	if err != nil {
 		return 0, err
@@ -91,13 +91,13 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chainId, address, channelId string, 
 	return 0, nil
 }
 
-func (repo *TxRepo) GetChannelOpenConfirmTime(chainId, channelId string) (int64, error) {
+func (repo *TxRepo) GetChannelOpenConfirmTime(chain, channelId string) (int64, error) {
 	var res entity.Tx
 	query := bson.M{
 		"msgs.type":           constant.MsgTypeChannelOpenConfirm,
 		"msgs.msg.channel_id": channelId,
 	}
-	err := repo.coll(chainId).Find(context.Background(), query).
+	err := repo.coll(chain).Find(context.Background(), query).
 		Select(bson.M{"time": 1}).Sort("-time").Limit(1).One(&res)
 
 	if err != nil {
@@ -106,7 +106,7 @@ func (repo *TxRepo) GetChannelOpenConfirmTime(chainId, channelId string) (int64,
 	return res.Time, nil
 }
 
-func (repo *TxRepo) GetTransferTx(chainId string, height, limit int64) ([]*entity.Tx, error) {
+func (repo *TxRepo) GetTransferTx(chain string, height, limit int64) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := bson.M{
 		"types": constant.MsgTypeTransfer,
@@ -115,22 +115,22 @@ func (repo *TxRepo) GetTransferTx(chainId string, height, limit int64) ([]*entit
 		},
 	}
 
-	err := repo.coll(chainId).Find(context.Background(), query).Sort("height").Limit(limit).All(&res)
+	err := repo.coll(chain).Find(context.Background(), query).Sort("height").Limit(limit).All(&res)
 	return res, err
 }
 
-func (repo *TxRepo) FindByTypeAndHeight(chainId, txType string, height int64) ([]*entity.Tx, error) {
+func (repo *TxRepo) FindByTypeAndHeight(chain, txType string, height int64) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := bson.M{
 		"types":  txType,
 		"height": height,
 	}
 
-	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
+	err := repo.coll(chain).Find(context.Background(), query).All(&res)
 	return res, err
 }
 
-func (repo *TxRepo) FindByPacketIds(chainId, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error) {
+func (repo *TxRepo) FindByPacketIds(chain, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error) {
 	if len(packetIds) == 0 {
 		return nil, nil
 	}
@@ -146,13 +146,13 @@ func (repo *TxRepo) FindByPacketIds(chainId, txType string, packetIds []string, 
 		query["status"] = status
 	}
 
-	err := repo.coll(chainId).Find(context.Background(), query).All(&res)
+	err := repo.coll(chain).Find(context.Background(), query).All(&res)
 	return res, err
 }
 
-func (repo *TxRepo) GetTxByHash(chainId string, hash string) (entity.Tx, error) {
+func (repo *TxRepo) GetTxByHash(chain string, hash string) (entity.Tx, error) {
 	var res entity.Tx
-	err := repo.coll(chainId).Find(context.Background(), bson.M{"tx_hash": hash}).Sort("-height").One(&res)
+	err := repo.coll(chain).Find(context.Background(), bson.M{"tx_hash": hash}).Sort("-height").One(&res)
 	return res, err
 }
 func (repo *TxRepo) GetTxByHashes(chain string, hashs []string) ([]*entity.Tx, error) {
@@ -163,7 +163,7 @@ func (repo *TxRepo) GetTxByHashes(chain string, hashs []string) ([]*entity.Tx, e
 	return res, err
 }
 
-func (repo *TxRepo) GetAcknowledgeTxs(chainId, packetId string) ([]*entity.Tx, error) {
+func (repo *TxRepo) GetAcknowledgeTxs(chain, packetId string) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := bson.M{
 		"msgs.msg.packet_id": packetId,
@@ -171,7 +171,7 @@ func (repo *TxRepo) GetAcknowledgeTxs(chainId, packetId string) ([]*entity.Tx, e
 		"status":             entity.TxStatusSuccess,
 	}
 	//取"成功"状态最新的acknowledge_tx交易
-	err := repo.coll(chainId).Find(context.Background(), query).Sort("-height").All(&res)
+	err := repo.coll(chain).Find(context.Background(), query).Sort("-height").All(&res)
 
 	if err != nil {
 		return res, err
@@ -179,13 +179,13 @@ func (repo *TxRepo) GetAcknowledgeTxs(chainId, packetId string) ([]*entity.Tx, e
 	return res, nil
 }
 
-func (repo *TxRepo) GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, error) {
+func (repo *TxRepo) GetRecvPacketTxs(chain, packetId string) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := bson.M{
 		"msgs.type":          constant.MsgTypeRecvPacket,
 		"msgs.msg.packet_id": packetId,
 	}
-	err := repo.coll(chainId).Find(context.Background(), query).Sort("-height").All(&res)
+	err := repo.coll(chain).Find(context.Background(), query).Sort("-height").All(&res)
 
 	if err != nil {
 		return res, err
@@ -193,7 +193,7 @@ func (repo *TxRepo) GetRecvPacketTxs(chainId, packetId string) ([]*entity.Tx, er
 	return res, nil
 }
 
-func (repo *TxRepo) RelayerDenomStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error) {
+func (repo *TxRepo) RelayerDenomStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
 			"time": bson.M{
@@ -256,11 +256,11 @@ func (repo *TxRepo) RelayerDenomStatistics(chainId string, startTime, endTime in
 	var pipe []bson.M
 	pipe = append(pipe, match, unwind, match2, group, project)
 	var res []*dto.RelayerDenomStatisticsDTO
-	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
+	err := repo.coll(chain).Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
-func (repo *TxRepo) RelayerFeeStatistics(chainId string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error) {
+func (repo *TxRepo) RelayerFeeStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
 			"time": bson.M{
@@ -323,7 +323,7 @@ func (repo *TxRepo) RelayerFeeStatistics(chainId string, startTime, endTime int6
 	var pipe []bson.M
 	pipe = append(pipe, match, unwind, match2, unwind2, group, project)
 	var res []*dto.RelayerFeeStatisticsDTO
-	err := repo.coll(chainId).Aggregate(context.Background(), pipe).All(&res)
+	err := repo.coll(chain).Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 func createQueryRelayerTxs(relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) bson.M {
@@ -356,15 +356,15 @@ func createQueryRelayerTxs(relayerAddrs []string, txTypes []string, txTimeStart,
 	}
 	return query
 }
-func (repo *TxRepo) GetRelayerTxs(chainId string, relayerAddrs []string, txTypes []string,
+func (repo *TxRepo) GetRelayerTxs(chain string, relayerAddrs []string, txTypes []string,
 	txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error) {
 	var res []*entity.Tx
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
-	err := repo.coll(chainId).Find(context.Background(), query).Sort("-time").Hint(GetRelayerTxsHintIndexName()).Skip(skip).Limit(limit).All(&res)
+	err := repo.coll(chain).Find(context.Background(), query).Sort("-time").Hint(GetRelayerTxsHintIndexName()).Skip(skip).Limit(limit).All(&res)
 	return res, err
 }
 
-func (repo *TxRepo) CountRelayerTxs(chainId string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
+func (repo *TxRepo) CountRelayerTxs(chain string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
-	return repo.coll(chainId).Find(context.Background(), query).Hint(CountRelayerTxsHintIndexName()).Count()
+	return repo.coll(chain).Find(context.Background(), query).Hint(CountRelayerTxsHintIndexName()).Count()
 }
