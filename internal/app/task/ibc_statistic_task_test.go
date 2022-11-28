@@ -29,9 +29,3 @@ func TestIbcStatisticCronTask_updateTxsIncre(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 }
-
-func TestIbcStatisticCronTask_updateDenomIncre(t *testing.T) {
-	if err := _statistic.updateDenomIncre(); err != nil {
-		t.Fatal(err.Error())
-	}
-}

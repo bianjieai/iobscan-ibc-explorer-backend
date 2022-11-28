@@ -21,8 +21,8 @@ type IDenomRepo interface {
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
 	FindSymbolDenoms() (entity.IBCDenomList, error)
 	GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error)
-	Count(createAt int64, record bool) (int64, error)
-	BasedDenomCount(createAt int64, record bool) (int64, error)
+	Count() (int64, error)
+	BasedDenomCount() (int64, error)
 	LatestCreateAt() (int64, error)
 	UpdateSymbol(chain, denom, symbol string) error
 	Insert(denom *entity.IBCDenom) error
@@ -160,34 +160,12 @@ func (repo *DenomRepo) LatestCreateAt() (int64, error) {
 	return res.CreateAt, nil
 }
 
-func (repo *DenomRepo) Count(createAt int64, record bool) (int64, error) {
-	query := bson.M{"create_at": bson.M{
-		"$gte": createAt,
-	}}
-	//记录create_at时间点统计的数量
-	if record {
-		query = bson.M{
-			"create_at": createAt,
-		}
-	}
-	return repo.coll().Find(context.Background(), query).Count()
+func (repo *DenomRepo) Count() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{}).Count()
 }
 
-func (repo *DenomRepo) BasedDenomCount(createAt int64, record bool) (int64, error) {
-	query := bson.M{
-		"is_base_denom": true,
-		"create_at": bson.M{
-			"$gte": createAt,
-		},
-	}
-	//记录create_at时间点统计的数量
-	if record {
-		query = bson.M{
-			"is_base_denom": true,
-			"create_at":     createAt,
-		}
-	}
-	return repo.coll().Find(context.Background(), query).Count()
+func (repo *DenomRepo) BasedDenomCount() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{"is_base_denom": true}).Count()
 }
 
 func (repo *DenomRepo) GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error) {

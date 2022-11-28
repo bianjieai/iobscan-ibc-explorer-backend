@@ -49,8 +49,8 @@ func (t *IbcStatisticCronTask) Run() int {
 		return -1
 	}
 
-	if err := t.updateDenomIncre(); err != nil {
-		logrus.Error("updateDenomIncre have error,"+err.Error(), " task:", t.Name())
+	if err := t.NewDataDenom(); err != nil {
+		logrus.Error("NewDataDenom have error,"+err.Error(), " task:", t.Name())
 		return -1
 	}
 
@@ -109,38 +109,19 @@ func (t *IbcStatisticCronTask) updateChains() error {
 }
 
 func (t *IbcStatisticCronTask) NewDataDenom() error {
-	saveDenomFunc := func(statisticName string, call func(createAt int64, record bool) (int64, error)) error {
-		statisticData := entity.IbcStatistic{
-			StatisticsName: statisticName,
-			Count:          0,
-		}
-		denomAllCnt, err := call(0, false)
-		if err != nil {
-			return err
-		}
-		statisticData.Count = denomAllCnt
-
-		latestCreateAt, err := denomRepo.LatestCreateAt()
-		if err != nil {
-			return err
-		}
-		currentDenomCnt, err := call(latestCreateAt, true)
-		if err != nil {
-			return err
-		}
-		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentDenomCnt, CreateAt: latestCreateAt}))
-		statisticData.CreateAt = time.Now().Unix()
-		statisticData.UpdateAt = time.Now().Unix()
-		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
-			return err
-		}
-		return nil
+	baseDenomAllCnt, err := denomRepo.BasedDenomCount()
+	if err != nil {
+		return err
 	}
-	if err := saveDenomFunc(constant.BaseDenomAllStatisticName, denomRepo.BasedDenomCount); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.BaseDenomAllStatisticName, baseDenomAllCnt); err != nil {
 		return err
 	}
 
-	if err := saveDenomFunc(constant.DenomAllStatisticName, denomRepo.Count); err != nil {
+	denomAllCnt, err := denomRepo.Count()
+	if err != nil {
+		return err
+	}
+	if err := statisticsRepo.UpdateOne(constant.DenomAllStatisticName, denomAllCnt); err != nil {
 		return err
 	}
 	return nil
@@ -217,17 +198,6 @@ func (t *IbcStatisticCronTask) NewDataTxs() error {
 		return err
 	}
 
-	return nil
-}
-
-func (t *IbcStatisticCronTask) updateDenomIncre() error {
-	if err := t.handleDenomIncre(constant.BaseDenomAllStatisticName, denomRepo.BasedDenomCount); err != nil {
-		return err
-	}
-
-	if err := t.handleDenomIncre(constant.DenomAllStatisticName, denomRepo.Count); err != nil {
-		return err
-	}
 	return nil
 }
 
