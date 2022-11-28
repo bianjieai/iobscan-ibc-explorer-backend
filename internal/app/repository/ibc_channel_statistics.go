@@ -90,6 +90,14 @@ func (repo *ChannelStatisticsRepo) BatchInsertToNew(batch []*entity.IBCChannelSt
 }
 
 func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, error) {
+	ibcTxUseStatus := []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusProcessing, entity.IbcTxStatusRefunded}
+	match := bson.M{
+		"$match": bson.M{
+			"status": bson.M{
+				"$in": ibcTxUseStatus,
+			},
+		},
+	}
 	group := bson.M{
 		"$group": bson.M{
 			"_id": bson.M{
@@ -119,7 +127,7 @@ func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, erro
 	}
 
 	var pipe []bson.M
-	pipe = append(pipe, group, project)
+	pipe = append(pipe,match, group, project)
 	var res []*dto.ChannelStatisticsAggrDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err

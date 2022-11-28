@@ -109,7 +109,8 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 		isExisted := false
 		ChannelId := generateChannelId(v.ScChainId, v.ScChannel, v.DcChainId, v.DcChannel)
 		for _, c := range cl {
-			if c.ChannelId == ChannelId && v.BaseDenom == c.BaseDenom && v.BaseDenomChainId == c.BaseDenomChainId { // 同一个channel
+			if c.ChannelId == ChannelId && v.BaseDenom == c.BaseDenom && v.BaseDenomChainId == c.BaseDenomChainId &&
+				v.Status == c.Status { // 同一个channel
 				c.TxsCount += v.Count
 				c.TxsAmount = c.TxsAmount.Add(decimal.NewFromFloat(v.Amount))
 				isExisted = true
@@ -124,6 +125,7 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 				BaseDenomChainId: v.BaseDenomChainId,
 				TxsCount:         v.Count,
 				TxsAmount:        decimal.NewFromFloat(v.Amount),
+				Status:           v.Status,
 			})
 		}
 	}
@@ -140,6 +142,7 @@ func (t *ChannelStatisticsTask) saveData(dtoList []*dto.ChannelStatisticsDTO, se
 			BaseDenomChainId: v.BaseDenomChainId,
 			TransferTxs:      v.TxsCount,
 			TransferAmount:   v.TxsAmount.String(),
+			Status:           entity.IbcTxStatus(v.Status),
 			SegmentStartTime: segmentStart,
 			SegmentEndTime:   segmentEnd,
 			CreateAt:         time.Now().Unix(),
