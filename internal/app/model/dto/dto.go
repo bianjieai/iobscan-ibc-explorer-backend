@@ -138,6 +138,7 @@ type AggrIBCChannelTxsDTO struct {
 	DcChannel      string  `bson:"dc_channel"`
 	Count          int64   `bson:"count"`
 	Amount         float64 `bson:"amount"`
+	Status         int64   `bson:"status"`
 }
 
 type ChannelStatisticsDTO struct {
@@ -146,6 +147,7 @@ type ChannelStatisticsDTO struct {
 	BaseDenomChain string          `bson:"base_denom_chain"`
 	TxsCount       int64           `bson:"count"`
 	TxsAmount      decimal.Decimal `bson:"amount"`
+	Status         int64           `bson:"status"`
 }
 
 type ChannelStatisticsAggrDTO struct {
