@@ -524,6 +524,7 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.
 				"dc_chain":         "$dc_chain",
 				"sc_channel":       "$sc_channel",
 				"dc_channel":       "$dc_channel",
+				"status":           "$status",
 			},
 			"count": bson.M{
 				"$sum": 1,
@@ -544,6 +545,7 @@ func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.
 			"dc_chain":         "$_id.dc_chain",
 			"sc_channel":       "$_id.sc_channel",
 			"dc_channel":       "$_id.dc_channel",
+			"status":           "$_id.status",
 			"count":            "$count",
 			"amount":           "$amount",
 		},

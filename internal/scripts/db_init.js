@@ -72,6 +72,7 @@ db.ibc_channel_statistics.createIndex({
     "channel_id": 1,
     "base_denom": 1,
     "base_denom_chain": 1,
+    "status": 1,
     "segment_start_time": -1,
     "segment_end_time": -1
 }, {
@@ -171,7 +172,7 @@ db.ex_ibc_tx.createIndex({
 });
 
 db.ex_ibc_tx.createIndex({
-    "sc_chain":1,
+    "sc_chain": 1,
     "sc_channel": 1,
     "status": 1
 }, {
@@ -293,12 +294,12 @@ db.getCollection("ex_ibc_tx_latest").createIndex({
 });
 
 // sync_{chain}_tx表
-db.sync_xxxx_tx.createIndex({"tx_hash": -1,"height": -1},{unique: true, background: true});
-db.sync_xxxx_tx.createIndex({"height": -1},{background: true});
-db.sync_xxxx_tx.createIndex({"types": -1,"height": -1},{background: true});
-db.sync_xxxx_tx.createIndex({"msgs.msg.packet_id":-1},{background: true});
-db.sync_xxxx_tx.createIndex({"msgs.msg.signer": 1,"msgs.type": 1,"time": 1},{background: true});
-db.sync_xxxx_tx.createIndex({"time": -1,"msgs.type": -1},{background: true});
+db.sync_xxxx_tx.createIndex({"tx_hash": -1, "height": -1}, {unique: true, background: true});
+db.sync_xxxx_tx.createIndex({"height": -1}, {background: true});
+db.sync_xxxx_tx.createIndex({"types": -1, "height": -1}, {background: true});
+db.sync_xxxx_tx.createIndex({"msgs.msg.packet_id": -1}, {background: true});
+db.sync_xxxx_tx.createIndex({"msgs.msg.signer": 1, "msgs.type": 1, "time": 1}, {background: true});
+db.sync_xxxx_tx.createIndex({"time": -1, "msgs.type": -1}, {background: true});
 
 // uba_search_record
 db.uba_search_record.createIndex({
