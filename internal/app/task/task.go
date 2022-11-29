@@ -42,21 +42,10 @@ func Start() {
 		return
 	}
 
-	_ibcChainConfigTask.Run() // run chain config task immediately
 	for _, v := range GetTasks() {
 		task := v
 		RunOnce(task)
 	}
-
-	//c := cron.New(cron.WithSeconds())
-	//if taskConf.CronJobRelayerAddr == "" {
-	//	taskConf.CronJobRelayerAddr = ThreeHourCronJobTime
-	//}
-	//_, err := c.AddFunc(taskConf.CronJobRelayerAddr, checkAndUpdateRelayerSrcChainAddr)
-	//if err != nil {
-	//	logrus.Fatal("cron job err", err)
-	//}
-	//c.Start()
 }
 
 func RunOnce(task Task) {
@@ -103,7 +92,6 @@ func StartOneOffTask() {
 		return
 	}
 
-	_ibcChainConfigTask.Run() // run chain config task immediately
 	for _, v := range oneOffTasks {
 		task := v
 		go OneOffTaskRun(task)

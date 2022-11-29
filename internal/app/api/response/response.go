@@ -13,37 +13,16 @@ func Success(data interface{}) vo.BaseResponse {
 	}
 }
 
-func SuccessWithMsg(msg string, data interface{}) vo.BaseResponse {
-	return vo.BaseResponse{
-		Code:    0,
-		Message: msg,
-		Data:    data,
-	}
-}
-
-func Fail(code int, msg string, data interface{}) vo.BaseResponse {
-	return vo.BaseResponse{
-		Code:    code,
-		Message: msg,
-		Data:    data,
-	}
-}
-
-func FailMsg(msg string) vo.BaseResponse {
+func FailSystemError() vo.BaseResponse {
 	return vo.BaseResponse{
 		Code:    errors.ErrSystemError,
-		Message: msg,
-		Data:    nil,
+		Message: "System error",
 	}
 }
 
-func FailError(err errors.Error) vo.BaseResponse {
+func FailBadRequest(msg string) vo.BaseResponse {
 	return vo.BaseResponse{
-		Code:    err.Code(),
-		Message: err.Msg(),
+		Code:    errors.ErrBadRequest,
+		Message: msg,
 	}
-}
-
-func FailBadRequest(err error) vo.BaseResponse {
-	return FailError(errors.WrapBadRequest(err))
 }
