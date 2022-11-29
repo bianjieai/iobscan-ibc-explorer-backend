@@ -50,8 +50,7 @@ const (
 	BaseDenomAllStatisticName = "base_denom_all"
 	DenomAllStatisticName     = "denom_all"
 
-	IbcCoreConnectionUri = "%s/ibc/core/connection/%s/client_connections/%s"
-	IbcCoreChannelsUri   = "%s/ibc/core/channel/%s/connections/%s/channels"
+	IBCConnectionChainsIconUri = "https://iobscan.io/resources/home/connection-chains/%s.png"
 )
 
 var HomeStatistics = []string{

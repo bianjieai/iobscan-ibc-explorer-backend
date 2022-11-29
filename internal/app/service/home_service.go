@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"strings"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 )
 
 type IHomeService interface {
+	ChainsConnection() (vo.ChainsConnectionResp, errors.Error)
 	DailyChains() (vo.DailyChainsResp, errors.Error)
 	AuthDenoms() (vo.AuthDenomsResp, errors.Error)
 	IbcDenoms() (vo.IbcDenomsResp, errors.Error)
@@ -26,6 +29,58 @@ type HomeService struct {
 	statisticCntDto vo.StatisticsCntDto
 }
 
+func (svc HomeService) ChainsConnection() (vo.ChainsConnectionResp, errors.Error) {
+	var resp vo.ChainsConnectionResp
+
+	if value, err := chainCache.GetChainsConnection(); err == nil {
+		utils.UnmarshalJsonIgnoreErr([]byte(value), &resp.Items)
+		resp.TimeStamp = time.Now().Unix()
+		return resp, nil
+	}
+
+	chainCfgs, err := chainCfgRepo.FindAll()
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+
+	getIobConnectionChain := func(ibcInfo *entity.IbcInfo) vo.IobConnectionChain {
+		status := entity.ChannelStatusClosed
+		for _, val := range ibcInfo.Paths {
+			if val.State == constant.ChannelStateOpen && val.Counterparty.State == constant.ChannelStateOpen {
+				status = entity.ChannelStatusOpened
+				break
+			}
+		}
+		return vo.IobConnectionChain{
+			ChainName:        ibcInfo.Chain,
+			ConnectionStatus: status,
+		}
+	}
+
+	iobChains := make([]vo.IobChainDto, 0, len(chainCfgs))
+	for _, one := range chainCfgs {
+		item := vo.IobChainDto{
+			ChainName:      one.ChainName,
+			PrettyName:     one.PrettyName,
+			CurrentChainId: one.CurrentChainId,
+			Icon:           fmt.Sprintf(constant.IBCConnectionChainsIconUri, one.ChainName),
+		}
+		connectionChains := make([]vo.IobConnectionChain, 0, len(one.IbcInfo))
+		for _, val := range one.IbcInfo {
+			connectChain := getIobConnectionChain(val)
+			connectionChains = append(connectionChains, connectChain)
+		}
+		item.ConnectionChains = connectionChains
+
+		iobChains = append(iobChains, item)
+	}
+	if len(iobChains) > 0 {
+		_ = chainCache.SetChainsConnection(string(utils.MarshalJsonIgnoreErr(iobChains)))
+	}
+	resp.Items = iobChains
+	resp.TimeStamp = time.Now().Unix()
+	return resp, nil
+}
 func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	var resp vo.DailyChainsResp
 

@@ -5,6 +5,23 @@ import (
 )
 
 type (
+	ChainsConnectionResp struct {
+		Items     []IobChainDto `json:"items"`
+		TimeStamp int64         `json:"time_stamp"`
+	}
+
+	IobChainDto struct {
+		CurrentChainId   string               `json:"current_chain_id"`
+		ChainName        string               `json:"chain_name"`
+		PrettyName       string               `json:"pretty_name"`
+		Icon             string               `json:"icon"`
+		ConnectionChains []IobConnectionChain `json:"connection_chains"`
+	}
+	IobConnectionChain struct {
+		ChainName        string `json:"chain_name"`
+		ConnectionStatus int    `json:"connection_status"`
+	}
+
 	DailyChainsResp struct {
 		Items     []DailyChainDto `json:"items"`
 		TimeStamp int64           `json:"time_stamp"`
