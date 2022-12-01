@@ -229,16 +229,25 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 
 func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) error {
 	for _, v := range newChannelList {
-		if openTime, err := t.getChannelLatestOpenTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
-			v.LatestOpenTime = openTime
+		if chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+			v.LatestOpenTime = chanConf.ChannelOpenAt
+			continue
+		}
+
+		if ct, err := t.queryChannelOpenConfirmTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+			v.LatestOpenTime = ct
 		}
 	}
 
 	for _, v := range existedChannelList {
 		// 之前没有设置open 时间且是open状态的
 		if v.LatestOpenTime == 0 && v.Status == entity.ChannelStatusOpened {
-			if openTime, err := t.getChannelLatestOpenTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
-				v.LatestOpenTime = openTime
+			if chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+				v.LatestOpenTime = chanConf.ChannelOpenAt
+			} else if time.Now().Unix()-v.CreateAt < int64(48*time.Hour) {
+				if ct, err := t.queryChannelOpenConfirmTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+					v.LatestOpenTime = ct
+				}
 			}
 		}
 
@@ -250,16 +259,6 @@ func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChann
 		}
 	}
 	return nil
-}
-
-// getChannelLatestOpenTime 查询,初始的LatestOpenTime 为channel的 open confirm 时间
-// channel open confirm 时间的优先从配置读取，没有配置时，从tx表查询
-func (t *ChannelTask) getChannelLatestOpenTime(chainA, channelA, chainB, channelB string) (int64, error) {
-	if chanConf, err := channelConfigRepo.Find(chainA, channelA, chainB, channelB); err != nil {
-		return t.queryChannelOpenConfirmTime(chainA, channelA, chainB, channelB)
-	} else {
-		return chanConf.ChannelOpenAt, nil
-	}
 }
 
 func (t *ChannelTask) queryChannelOpenConfirmTime(chainA, channelA, chainB, channelB string) (int64, error) {
