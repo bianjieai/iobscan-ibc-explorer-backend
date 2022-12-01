@@ -414,7 +414,7 @@ func (h *ModifyChainIdHandlerThree) exec() {
 		return
 	}
 
-	doHandleSegments(h.name(), 5, segments, true, h.updateColl)
+	doHandleSegments(h.name(), 16, segments, true, h.updateColl)
 
 	// ex_ibc_tx_latest
 	latestSegments, err := h.getTxSegments(false)
@@ -423,7 +423,7 @@ func (h *ModifyChainIdHandlerThree) exec() {
 		return
 	}
 
-	doHandleSegments(h.name(), 3, latestSegments, false, h.updateColl)
+	doHandleSegments(h.name(), 8, latestSegments, false, h.updateColl)
 }
 
 func (h *ModifyChainIdHandlerThree) updateColl(seg *segment, isTargetHistory bool) {
