@@ -41,7 +41,7 @@ const (
 	ibcTxTargetHistory             = "history"
 
 	segmentStepLatest  = 24 * 3600
-	segmentStepHistory = 12 * 3600
+	segmentStepHistory = 24 * 3600
 )
 const (
 	channelMatchSuccess = 1

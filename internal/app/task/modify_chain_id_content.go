@@ -165,11 +165,11 @@ func (t *fixIbcRelayerTask) UpdateIbcRelayerData(relayer entity.IBCRelayerNew) e
 	for _, val := range relayer.ChannelPairInfo {
 		chainA, ok := t.chainIdNameMap[val.ChainA]
 		if !ok {
-			return fmt.Errorf("chainA[%s] no found in chain_config", val.ChainA)
+			chainA = strings.ReplaceAll(val.ChainA, "_", "-")
 		}
 		chainB, ok := t.chainIdNameMap[val.ChainB]
 		if !ok {
-			return fmt.Errorf("chainB[%s] no found in chain_config", val.ChainB)
+			chainB = strings.ReplaceAll(val.ChainB, "_", "-")
 		}
 		val.PairId = entity.GenerateRelayerPairId(chainA, val.ChannelA, val.ChainAAddress,
 			chainB, val.ChannelB, val.ChainBAddress)

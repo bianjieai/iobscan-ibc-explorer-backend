@@ -81,10 +81,10 @@ func (h *RelayerHandler) fetchSave(filepath string) {
 		var chainA, chainAAddress, chainB, chainBAddress string
 		for k, v := range addrMap {
 			if index == 0 {
-				chainA = strings.ReplaceAll(k, "-", "_")
+				chainA = k
 				chainAAddress = v
 			} else {
-				chainB = strings.ReplaceAll(k, "-", "_")
+				chainB = k
 				chainBAddress = v
 			}
 
