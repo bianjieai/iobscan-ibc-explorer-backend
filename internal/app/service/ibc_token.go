@@ -22,17 +22,17 @@ type TokenService struct {
 var _ ITokenService = new(TokenService)
 
 func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.Error) {
-	if req.BaseDenomChainId != "" && req.Chain != "" && req.BaseDenomChainId != req.Chain {
+	if req.BaseDenomChain != "" && req.Chain != "" && req.BaseDenomChain != req.Chain {
 		return &vo.TokenListResp{
 			Items: make([]vo.TokenItem, 0, 0),
 		}, nil
 	}
 
-	var chainId string
-	if req.BaseDenomChainId != "" {
-		chainId = req.BaseDenomChainId
+	var chain string
+	if req.BaseDenomChain != "" {
+		chain = req.BaseDenomChain
 	} else {
-		chainId = req.Chain
+		chain = req.Chain
 	}
 
 	baseDenomList, err := svc.analyzeBaseDenom(req.BaseDenom)
@@ -41,7 +41,7 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 	}
 
 	skip, limit := vo.ParseParamPage(req.PageNum, req.PageSize)
-	list, err := tokenRepo.List(baseDenomList, chainId, req.TokenType, skip, limit)
+	list, err := tokenRepo.List(baseDenomList, chain, req.TokenType, skip, limit)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -50,7 +50,7 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 	for _, v := range list {
 		items = append(items, vo.TokenItem{
 			BaseDenom:         v.BaseDenom,
-			ChainId:           v.ChainId,
+			Chain:             v.Chain,
 			TokenType:         v.Type,
 			Supply:            v.Supply,
 			Currency:          v.Currency,
@@ -67,7 +67,7 @@ func (svc *TokenService) List(req *vo.TokenListReq) (*vo.TokenListResp, errors.E
 }
 
 func (svc *TokenService) ListCount(req *vo.TokenListReq) (int64, errors.Error) {
-	if req.BaseDenomChainId != "" && req.Chain != "" && req.BaseDenomChainId != req.Chain {
+	if req.BaseDenomChain != "" && req.Chain != "" && req.BaseDenomChain != req.Chain {
 		return 0, nil
 	}
 
@@ -137,7 +137,7 @@ func (svc *TokenService) IBCTokenList(req *vo.IBCTokenListReq) (*vo.IBCTokenList
 		items = append(items, vo.IBCTokenItem{
 			Denom:      v.Denom,
 			DenomPath:  v.DenomPath,
-			ChainId:    v.ChainId,
+			Chain:      v.Chain,
 			TokenType:  v.Type,
 			IBCHops:    v.IBCHops,
 			Amount:     v.DenomAmount,

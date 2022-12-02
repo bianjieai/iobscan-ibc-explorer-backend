@@ -85,10 +85,10 @@ func (t *ChannelTask) Run() int {
 	}
 
 	// 更新ibc_chain
-	for chainId, txs := range t.chainTxsMap {
-		txsValue := t.chainTxsValueMap[chainId].Round(constant.DefaultValuePrecision).String()
-		if err = chainRepo.UpdateTransferTxs(chainId, txs, txsValue); err != nil && err != mongo.ErrNoDocuments {
-			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chainId, err)
+	for chain, txs := range t.chainTxsMap {
+		txsValue := t.chainTxsValueMap[chain].Round(constant.DefaultValuePrecision).String()
+		if err = chainRepo.UpdateTransferTxs(chain, txs, txsValue); err != nil && err != mongo.ErrNoDocuments {
+			logrus.Errorf("task %s update chain %s error, %v", t.Name(), chain, err)
 		}
 	}
 	return 1
@@ -111,9 +111,9 @@ func (t *ChannelTask) analyzeChainConfig() error {
 
 	var chainA, channelA, chainB, channelB string
 	for _, v := range confList {
-		chainA = v.ChainId
+		chainA = v.ChainName
 		for _, info := range v.IbcInfo {
-			chainB = info.ChainId
+			chainB = info.Chain
 			for _, p := range info.Paths {
 				channelA = p.ChannelId
 				channelB = p.Counterparty.ChannelId
@@ -229,16 +229,25 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 
 func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) error {
 	for _, v := range newChannelList {
-		if openTime, err := t.getChannelLatestOpenTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
-			v.LatestOpenTime = openTime
+		if chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+			v.LatestOpenTime = chanConf.ChannelOpenAt
+			continue
+		}
+
+		if ct, err := t.queryChannelOpenConfirmTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+			v.LatestOpenTime = ct
 		}
 	}
 
 	for _, v := range existedChannelList {
 		// 之前没有设置open 时间且是open状态的
 		if v.LatestOpenTime == 0 && v.Status == entity.ChannelStatusOpened {
-			if openTime, err := t.getChannelLatestOpenTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
-				v.LatestOpenTime = openTime
+			if chanConf, err := channelConfigRepo.Find(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+				v.LatestOpenTime = chanConf.ChannelOpenAt
+			} else if time.Now().Unix()-v.CreateAt < int64(48*time.Hour) {
+				if ct, err := t.queryChannelOpenConfirmTime(v.ChainA, v.ChannelA, v.ChainB, v.ChannelB); err == nil {
+					v.LatestOpenTime = ct
+				}
 			}
 		}
 
@@ -250,16 +259,6 @@ func (t *ChannelTask) setLatestSettlementTime(existedChannelList entity.IBCChann
 		}
 	}
 	return nil
-}
-
-// getChannelLatestOpenTime 查询,初始的LatestOpenTime 为channel的 open confirm 时间
-// channel open confirm 时间的优先从配置读取，没有配置时，从tx表查询
-func (t *ChannelTask) getChannelLatestOpenTime(chainA, channelA, chainB, channelB string) (int64, error) {
-	if chanConf, err := channelConfigRepo.Find(chainA, channelA, chainB, channelB); err != nil {
-		return t.queryChannelOpenConfirmTime(chainA, channelA, chainB, channelB)
-	} else {
-		return chanConf.ChannelOpenAt, nil
-	}
 }
 
 func (t *ChannelTask) queryChannelOpenConfirmTime(chainA, channelA, chainB, channelB string) (int64, error) {
@@ -327,7 +326,7 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 
 	for _, v := range statistics {
 		if channelId == v.ChannelId {
-			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom, v.BaseDenomChainId)
+			valueDecimal := t.calculateValue(v.TxsAmount, v.BaseDenom, v.BaseDenomChain)
 			txsCount += v.TxsCount
 			txsValue = txsValue.Add(valueDecimal)
 
@@ -353,8 +352,8 @@ func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []
 	return txsCount, txsValue
 }
 
-func (t *ChannelTask) calculateValue(amount float64, baseDenom, baseDenomChainId string) decimal.Decimal {
-	denom, ok := t.baseDenomMap[fmt.Sprintf("%s%s", baseDenomChainId, baseDenom)]
+func (t *ChannelTask) calculateValue(amount float64, baseDenom, baseDenomChain string) decimal.Decimal {
+	denom, ok := t.baseDenomMap[fmt.Sprintf("%s%s", baseDenomChain, baseDenom)]
 	if !ok || denom.CoinId == "" {
 		return decimal.Zero
 	}

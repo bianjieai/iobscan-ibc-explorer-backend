@@ -8,7 +8,7 @@ import (
 )
 
 type ITxNewRepo interface {
-	GetTransferTx(chainId string, height, limit int64) ([]*oneoff.TxNew, error)
+	GetTransferTx(chain string, height, limit int64) ([]*oneoff.TxNew, error)
 }
 
 var _ ITxNewRepo = new(TxNewRepo)
@@ -16,10 +16,10 @@ var _ ITxNewRepo = new(TxNewRepo)
 type TxNewRepo struct {
 }
 
-func (repo *TxNewRepo) GetTransferTx(chainId string, height, limit int64) ([]*oneoff.TxNew, error) {
+func (repo *TxNewRepo) GetTransferTx(chain string, height, limit int64) ([]*oneoff.TxNew, error) {
 	var res []*oneoff.TxNew
 	query := bson.M{
-		"chain_id": chainId,
+		"chain": chain,
 		"height": bson.M{
 			"$gt": height,
 		},

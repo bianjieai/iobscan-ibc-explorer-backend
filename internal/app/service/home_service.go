@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"strings"
 	"time"
 
@@ -11,8 +13,9 @@ import (
 )
 
 type IHomeService interface {
+	ChainsConnection() (vo.ChainsConnectionResp, errors.Error)
 	DailyChains() (vo.DailyChainsResp, errors.Error)
-	IbcBaseDenoms() (vo.IbcBaseDenomsResp, errors.Error)
+	AuthDenoms() (vo.AuthDenomsResp, errors.Error)
 	IbcDenoms() (vo.IbcDenomsResp, errors.Error)
 	Statistics() (vo.StatisticsCntResp, errors.Error)
 	SearchPoint(req *vo.SearchPointReq) errors.Error
@@ -21,11 +24,63 @@ type IHomeService interface {
 var _ IHomeService = new(HomeService)
 
 type HomeService struct {
-	baseDenomdto    vo.IbcBaseDenomDto
+	authDenomdto    vo.AuthDenomDto
 	denomDto        vo.IbcDenomDto
 	statisticCntDto vo.StatisticsCntDto
 }
 
+func (svc HomeService) ChainsConnection() (vo.ChainsConnectionResp, errors.Error) {
+	var resp vo.ChainsConnectionResp
+
+	if value, err := chainCache.GetChainsConnection(); err == nil {
+		utils.UnmarshalJsonIgnoreErr([]byte(value), &resp.Items)
+		resp.TimeStamp = time.Now().Unix()
+		return resp, nil
+	}
+
+	chainCfgs, err := chainCfgRepo.FindAll()
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+
+	getIobConnectionChain := func(ibcInfo *entity.IbcInfo) vo.IobConnectionChain {
+		status := entity.ChannelStatusClosed
+		for _, val := range ibcInfo.Paths {
+			if val.State == constant.ChannelStateOpen && val.Counterparty.State == constant.ChannelStateOpen {
+				status = entity.ChannelStatusOpened
+				break
+			}
+		}
+		return vo.IobConnectionChain{
+			ChainName:        ibcInfo.Chain,
+			ConnectionStatus: status,
+		}
+	}
+
+	iobChains := make([]vo.IobChainDto, 0, len(chainCfgs))
+	for _, one := range chainCfgs {
+		item := vo.IobChainDto{
+			ChainName:      one.ChainName,
+			PrettyName:     one.PrettyName,
+			CurrentChainId: one.CurrentChainId,
+			Icon:           fmt.Sprintf(constant.IBCConnectionChainsIconUri, one.ChainName),
+		}
+		connectionChains := make([]vo.IobConnectionChain, 0, len(one.IbcInfo))
+		for _, val := range one.IbcInfo {
+			connectChain := getIobConnectionChain(val)
+			connectionChains = append(connectionChains, connectChain)
+		}
+		item.ConnectionChains = connectionChains
+
+		iobChains = append(iobChains, item)
+	}
+	if len(iobChains) > 0 {
+		_ = chainCache.SetChainsConnection(string(utils.MarshalJsonIgnoreErr(iobChains)))
+	}
+	resp.Items = iobChains
+	resp.TimeStamp = time.Now().Unix()
+	return resp, nil
+}
 func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	var resp vo.DailyChainsResp
 
@@ -33,9 +88,9 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
-	chainIds := strings.Split(data.StatisticsInfo, ",")
-	activeChainsMap := make(map[string]struct{}, len(chainIds))
-	for _, val := range chainIds {
+	chains := strings.Split(data.StatisticsInfo, ",")
+	activeChainsMap := make(map[string]struct{}, len(chains))
+	for _, val := range chains {
 		activeChainsMap[val] = struct{}{}
 	}
 
@@ -44,20 +99,21 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 		return resp, errors.Wrap(err)
 	}
 	allChainsLen := len(chainCfgs)
-	activeChainsLen := len(chainIds)
+	activeChainsLen := len(chains)
 	allChains := make([]vo.DailyData, 0, len(chainCfgs))
-	activeChains := make([]vo.DailyData, 0, len(chainIds))
+	activeChains := make([]vo.DailyData, 0, len(chains))
 	inActiveChains := make([]vo.DailyData, 0, allChainsLen-activeChainsLen)
 	for _, one := range chainCfgs {
 		item := vo.DailyData{
-			ChainName: one.ChainName,
-			ChainId:   one.ChainId,
-			Icon:      one.Icon,
-			Status:    one.Status,
+			ChainName:      one.ChainName,
+			PrettyName:     one.PrettyName,
+			CurrentChainId: one.CurrentChainId,
+			Icon:           one.Icon,
+			Status:         one.Status,
 		}
 		allChains = append(allChains, item)
 
-		_, exist := activeChainsMap[one.ChainId]
+		_, exist := activeChainsMap[one.ChainName]
 		if exist {
 			activeChains = append(activeChains, item)
 		} else {
@@ -69,14 +125,14 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 	return resp, nil
 }
 
-func (svc HomeService) IbcBaseDenoms() (vo.IbcBaseDenomsResp, errors.Error) {
-	var resp vo.IbcBaseDenomsResp
-	rets, err := baseDenomRepo.FindAll()
+func (svc HomeService) AuthDenoms() (vo.AuthDenomsResp, errors.Error) {
+	var resp vo.AuthDenomsResp
+	rets, err := authDenomRepo.FindAll()
 	if err != nil {
 		return resp, errors.Wrap(err)
 	}
 	for _, val := range rets {
-		resp.Items = append(resp.Items, svc.baseDenomdto.LoadDto(val))
+		resp.Items = append(resp.Items, svc.authDenomdto.LoadDto(val))
 	}
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
@@ -109,7 +165,7 @@ func (svc HomeService) Statistics() (vo.StatisticsCntResp, errors.Error) {
 }
 
 func (svc HomeService) SearchPoint(req *vo.SearchPointReq) errors.Error {
-	if err := exSearchRecordRepo.Insert(&entity.ExSearchRecord{
+	if err := exSearchRecordRepo.Insert(&entity.UbaSearchRecord{
 		Ip:       req.Ip,
 		Content:  req.Content,
 		CreateAt: time.Now().Unix(),

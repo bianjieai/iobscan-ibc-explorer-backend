@@ -1,11 +1,11 @@
 package entity
 
-type ExSearchRecord struct {
+type UbaSearchRecord struct {
 	Ip       string `bson:"ip"`
 	Content  string `bson:"content"`
 	CreateAt int64  `bson:"create_at"`
 }
 
-func (e ExSearchRecord) CollectionName() string {
-	return "ex_search_record"
+func (e UbaSearchRecord) CollectionName() string {
+	return "uba_search_record"
 }

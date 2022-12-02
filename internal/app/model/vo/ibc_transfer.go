@@ -10,13 +10,13 @@ import (
 type (
 	TranaferTxsReq struct {
 		Page
-		UseCount         bool   `json:"use_count" form:"use_count"`
-		DateRange        string `json:"date_range" form:"date_range"`
-		Status           string `json:"status" form:"status"`
-		ChainId          string `json:"chain_id" form:"chain_id"`
-		Denom            string `json:"denom" form:"denom"`
-		BaseDenom        string `json:"base_denom" form:"base_denom"`
-		BaseDenomChainId string `json:"base_denom_chain_id" form:"base_denom_chain_id"`
+		UseCount       bool   `json:"use_count" form:"use_count"`
+		DateRange      string `json:"date_range" form:"date_range"`
+		Status         string `json:"status" form:"status"`
+		Chain          string `json:"chain" form:"chain"`
+		Denom          string `json:"denom" form:"denom"`
+		BaseDenom      string `json:"base_denom" form:"base_denom"`
+		BaseDenomChain string `json:"base_denom_chain" form:"base_denom_chain"`
 	}
 	TranaferTxsResp struct {
 		Items     []IbcTxDto `json:"items"`
@@ -39,50 +39,23 @@ type (
 		Err   error
 	}
 
-	TranaferTxDetailResp struct {
-		Items     []IbcTxDetailDto `json:"items"`
-		TimeStamp int64            `json:"time_stamp"`
-	}
 	IbcTxDto struct {
-		RecordId         string    `json:"record_id"`
-		ScAddr           string    `json:"sc_addr"`
-		DcAddr           string    `json:"dc_addr"`
-		Status           int       `json:"status"`
-		ScChainId        string    `json:"sc_chain_id"`
-		DcChainId        string    `json:"dc_chain_id"`
-		ScChannel        string    `json:"sc_channel"`
-		DcChannel        string    `json:"dc_channel"`
-		Sequence         string    `json:"sequence"`
-		ScTxInfo         TxInfoDto `json:"sc_tx_info"`
-		DcTxInfo         TxInfoDto `json:"dc_tx_info"`
-		BaseDenom        string    `json:"base_denom"`
-		BaseDenomChainId string    `json:"base_denom_chain_id"`
-		Denoms           Denoms    `json:"denoms"`
-		TxTime           int64     `json:"tx_time"`
-		EndTime          int64     `json:"end_time"`
-	}
-	IbcTxDetailDto struct {
-		ScSigners        []string  `json:"sc_signers"`
-		DcSigners        []string  `json:"dc_signers"`
-		ScAddr           string    `json:"sc_addr"`
-		DcAddr           string    `json:"dc_addr"`
-		Status           int       `json:"status"`
-		ScChainId        string    `json:"sc_chain_id"`
-		ScChannel        string    `json:"sc_channel"`
-		ScPort           string    `json:"sc_port"`
-		ScConnect        string    `json:"sc_connect"`
-		DcChainId        string    `json:"dc_chain_id"`
-		DcChannel        string    `json:"dc_channel"`
-		DcPort           string    `json:"dc_port"`
-		DcConnect        string    `json:"dc_connect"`
-		Sequence         string    `json:"sequence"`
-		ScTxInfo         TxInfoDto `json:"sc_tx_info"`
-		DcTxInfo         TxInfoDto `json:"dc_tx_info"`
-		BaseDenom        string    `json:"base_denom"`
-		BaseDenomChainId string    `json:"base_denom_chain_id"`
-		Denoms           Denoms    `json:"denoms"`
-		TxTime           int64     `json:"tx_time"`
-		Ack              string    `json:"ack"`
+		RecordId       string    `json:"record_id"`
+		ScAddr         string    `json:"sc_addr"`
+		DcAddr         string    `json:"dc_addr"`
+		Status         int       `json:"status"`
+		ScChain        string    `json:"sc_chain"`
+		DcChain        string    `json:"dc_chain"`
+		ScChannel      string    `json:"sc_channel"`
+		DcChannel      string    `json:"dc_channel"`
+		Sequence       string    `json:"sequence"`
+		ScTxInfo       TxInfoDto `json:"sc_tx_info"`
+		DcTxInfo       TxInfoDto `json:"dc_tx_info"`
+		BaseDenom      string    `json:"base_denom"`
+		BaseDenomChain string    `json:"base_denom_chain"`
+		Denoms         Denoms    `json:"denoms"`
+		TxTime         int64     `json:"tx_time"`
+		EndTime        int64     `json:"end_time"`
 	}
 
 	TranaferTxDetailNewResp struct {
@@ -100,7 +73,7 @@ type (
 	}
 
 	TraceSourceReq struct {
-		ChainId string `json:"chain_id" form:"chain_id"`
+		Chain   string `json:"chain" form:"chain"`
 		MsgType string `json:"msg_type" form:"msg_type"`
 	}
 
@@ -119,18 +92,18 @@ type (
 	}
 	ChainInfo struct {
 		Address      string `json:"address"`
-		ChainId      string `json:"chain_id"`
+		Chain        string `json:"chain"`
 		ChannelId    string `json:"channel_id"`
 		PortId       string `json:"port_id"`
 		ConnectionId string `json:"connection_id"`
 		ClientId     string `json:"client_id"`
 	}
 	TokenInfo struct {
-		BaseDenom        string      `json:"base_denom"`
-		BaseDenomChainId string      `json:"base_denom_chain_id"`
-		SendToken        DetailToken `json:"send_token"`
-		RecvToken        DetailToken `json:"recv_token"`
-		Amount           string      `json:"amount"`
+		BaseDenom      string      `json:"base_denom"`
+		BaseDenomChain string      `json:"base_denom_chain"`
+		SendToken      DetailToken `json:"send_token"`
+		RecvToken      DetailToken `json:"recv_token"`
+		Amount         string      `json:"amount"`
 	}
 	DetailToken struct {
 		Denom     string `json:"denom"`
@@ -146,9 +119,9 @@ type (
 		RelayerAddr string `json:"relayer_addr"`
 	}
 	IbcTxInfo struct {
-		ScTxInfo     *TxDetailDto `json:"sc_tx_info"`
-		DcTxInfo     *TxDetailDto `json:"dc_tx_info"`
-		RefundTxInfo *TxDetailDto `json:"refund_tx_info"`
+		ScTxInfo         *TxDetailDto `json:"sc_tx_info"`
+		DcTxInfo         *TxDetailDto `json:"dc_tx_info"`
+		AckTimeoutTxInfo *TxDetailDto `json:"ack_timeout_tx_info"`
 	}
 	TxInfoDto struct {
 		Hash      string       `json:"hash,omitempty"`
@@ -194,14 +167,14 @@ func loadTxInfoDto(info *entity.TxInfo) TxInfoDto {
 func loadChainInfo(tx *entity.ExIbcTx) (*ChainInfo, *ChainInfo) {
 	return &ChainInfo{
 			Address:      tx.ScAddr,
-			ChainId:      tx.ScChainId,
+			Chain:        tx.ScChain,
 			ChannelId:    tx.ScChannel,
 			PortId:       tx.ScPort,
 			ConnectionId: tx.ScConnectionId,
 			ClientId:     tx.ScClientId,
 		}, &ChainInfo{
 			Address:      tx.DcAddr,
-			ChainId:      tx.DcChainId,
+			Chain:        tx.DcChain,
 			ChannelId:    tx.DcChannel,
 			PortId:       tx.DcPort,
 			ConnectionId: tx.DcConnectionId,
@@ -268,32 +241,32 @@ func (dto IbcTxDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDto {
 				endTime = ibcTx.ScTxInfo.Time
 			}
 		} else {
-			if ibcTx.RefundedTxInfo != nil {
-				endTime = ibcTx.RefundedTxInfo.Time
+			if ibcTx.AckTimeoutTxInfo != nil {
+				endTime = ibcTx.AckTimeoutTxInfo.Time
 			}
 		}
 	case entity.IbcTxStatusRefunded:
-		if ibcTx.RefundedTxInfo != nil {
-			endTime = ibcTx.RefundedTxInfo.Time
+		if ibcTx.AckTimeoutTxInfo != nil {
+			endTime = ibcTx.AckTimeoutTxInfo.Time
 		}
 	}
 	return IbcTxDto{
-		RecordId:         ibcTx.RecordId,
-		ScAddr:           ibcTx.ScAddr,
-		DcAddr:           ibcTx.DcAddr,
-		Status:           int(ibcTx.Status),
-		ScChainId:        ibcTx.ScChainId,
-		DcChainId:        ibcTx.DcChainId,
-		ScChannel:        ibcTx.ScChannel,
-		DcChannel:        ibcTx.DcChannel,
-		Sequence:         ibcTx.Sequence,
-		ScTxInfo:         loadTxInfoDto(ibcTx.ScTxInfo),
-		DcTxInfo:         loadTxInfoDto(ibcTx.DcTxInfo),
-		BaseDenom:        ibcTx.BaseDenom,
-		BaseDenomChainId: ibcTx.BaseDenomChainId,
-		Denoms:           Denoms{ScDenom: ibcTx.Denoms.ScDenom, DcDenom: ibcTx.Denoms.DcDenom},
-		TxTime:           ibcTx.TxTime,
-		EndTime:          endTime,
+		RecordId:       ibcTx.RecordId,
+		ScAddr:         ibcTx.ScAddr,
+		DcAddr:         ibcTx.DcAddr,
+		Status:         int(ibcTx.Status),
+		ScChain:        ibcTx.ScChain,
+		DcChain:        ibcTx.DcChain,
+		ScChannel:      ibcTx.ScChannel,
+		DcChannel:      ibcTx.DcChannel,
+		Sequence:       ibcTx.Sequence,
+		ScTxInfo:       loadTxInfoDto(ibcTx.ScTxInfo),
+		DcTxInfo:       loadTxInfoDto(ibcTx.DcTxInfo),
+		BaseDenom:      ibcTx.BaseDenom,
+		BaseDenomChain: ibcTx.BaseDenomChain,
+		Denoms:         Denoms{ScDenom: ibcTx.Denoms.ScDenom, DcDenom: ibcTx.Denoms.DcDenom},
+		TxTime:         ibcTx.TxTime,
+		EndTime:        endTime,
 	}
 }
 
@@ -306,8 +279,8 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	case entity.IbcTxStatusRefunded:
 		if ibcTx.DcTxInfo != nil {
 			if ibcTx.DcTxInfo.Status == entity.TxStatusSuccess {
-				if ibcTx.RefundedTxInfo != nil {
-					errLog = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+				if ibcTx.AckTimeoutTxInfo != nil {
+					errLog = ibcTx.AckTimeoutTxInfo.Msg.AckPacketMsg().Acknowledgement
 				}
 			} else {
 				errLog = ibcTx.DcTxInfo.Log
@@ -320,12 +293,12 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 	}
 	if ibcTx.DcTxInfo != nil {
 		ibcTxInfo.DcTxInfo = loadTxDetailDto(ibcTx.DcTxInfo)
-		if ibcTx.RefundedTxInfo != nil && ibcTx.RefundedTxInfo.Msg != nil {
-			ibcTxInfo.DcTxInfo.Ack = ibcTx.RefundedTxInfo.Msg.AckPacketMsg().Acknowledgement
+		if ibcTx.AckTimeoutTxInfo != nil && ibcTx.AckTimeoutTxInfo.Msg != nil {
+			ibcTxInfo.DcTxInfo.Ack = ibcTx.AckTimeoutTxInfo.Msg.AckPacketMsg().Acknowledgement
 		}
 	}
-	if ibcTx.RefundedTxInfo != nil {
-		ibcTxInfo.RefundTxInfo = loadTxDetailDto(ibcTx.RefundedTxInfo)
+	if ibcTx.AckTimeoutTxInfo != nil {
+		ibcTxInfo.AckTimeoutTxInfo = loadTxDetailDto(ibcTx.AckTimeoutTxInfo)
 	}
 	return TranaferTxDetailNewResp{
 		ErrorLog:  errLog,
@@ -334,27 +307,5 @@ func LoadTranaferTxDetail(ibcTx *entity.ExIbcTx) TranaferTxDetailNewResp {
 		ScInfo:    scChainInfo,
 		DcInfo:    dcChainInfo,
 		IbcTxInfo: ibcTxInfo,
-	}
-}
-
-// [Deprecated]
-func (dto IbcTxDetailDto) LoadDto(ibcTx *entity.ExIbcTx) IbcTxDetailDto {
-	return IbcTxDetailDto{
-		ScAddr:           ibcTx.ScAddr,
-		DcAddr:           ibcTx.DcAddr,
-		Status:           int(ibcTx.Status),
-		ScChainId:        ibcTx.ScChainId,
-		ScChannel:        ibcTx.ScChannel,
-		ScPort:           ibcTx.ScPort,
-		DcChainId:        ibcTx.DcChainId,
-		DcChannel:        ibcTx.DcChannel,
-		DcPort:           ibcTx.DcPort,
-		Sequence:         ibcTx.Sequence,
-		ScTxInfo:         loadTxInfoDto(ibcTx.ScTxInfo),
-		DcTxInfo:         loadTxInfoDto(ibcTx.DcTxInfo),
-		BaseDenom:        ibcTx.BaseDenom,
-		BaseDenomChainId: ibcTx.BaseDenomChainId,
-		Denoms:           Denoms{ScDenom: ibcTx.Denoms.ScDenom, DcDenom: ibcTx.Denoms.DcDenom},
-		TxTime:           ibcTx.TxTime,
 	}
 }

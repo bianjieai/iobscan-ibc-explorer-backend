@@ -116,21 +116,36 @@ func getAllChainMap() (map[string]*entity.ChainConfig, error) {
 
 	allChainMap := make(map[string]*entity.ChainConfig)
 	for _, v := range allChainList {
-		allChainMap[v.ChainId] = v
+		allChainMap[v.ChainName] = v
 	}
 
 	return allChainMap, err
 }
 
-func matchDcInfo(scChainId, scPort, scChannel string, allChainMap map[string]*entity.ChainConfig) (dcChainId, dcPort, dcChannel string) {
-	if allChainMap == nil || allChainMap[scChainId] == nil {
+// getChainIdNameMap, map key: chain id, value: chain name
+func getChainIdNameMap() (map[string]string, error) {
+	allChainList, err := chainConfigRepo.FindAllChainInfos()
+	if err != nil {
+		return nil, err
+	}
+
+	allChainMap := make(map[string]string)
+	for _, v := range allChainList {
+		allChainMap[v.CurrentChainId] = v.ChainName
+	}
+
+	return allChainMap, err
+}
+
+func matchDcInfo(scChain, scPort, scChannel string, allChainMap map[string]*entity.ChainConfig) (dcChain, dcPort, dcChannel string) {
+	if allChainMap == nil || allChainMap[scChain] == nil {
 		return
 	}
 
-	for _, ibcInfo := range allChainMap[scChainId].IbcInfo {
+	for _, ibcInfo := range allChainMap[scChain].IbcInfo {
 		for _, path := range ibcInfo.Paths {
 			if path.PortId == scPort && path.ChannelId == scChannel {
-				dcChainId = path.ChainId
+				dcChain = path.Chain
 				dcPort = path.Counterparty.PortId
 				dcChannel = path.Counterparty.ChannelId
 				return
@@ -170,41 +185,41 @@ func calculateIbcHash(fullPath string) string {
 
 // traceDenom trace denom path, parse denom info
 //   - fullDenomPath denom full path，eg："transfer/channel-1/uiris", "uatom"
-func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.ChainConfig) *entity.IBCDenom {
+func traceDenom(fullDenomPath, chain string, allChainMap map[string]*entity.ChainConfig) *entity.IBCDenom {
 	unix := time.Now().Unix()
 	denom := calculateIbcHash(fullDenomPath)
 	rootDenom := getRootDenom(fullDenomPath)
 	if !strings.HasPrefix(denom, constant.IBCTokenPrefix) { // base denom
 		return &entity.IBCDenom{
-			ChainId:          chainId,
-			Denom:            denom,
-			PrevDenom:        "",
-			PrevChainId:      "",
-			BaseDenom:        denom,
-			BaseDenomChainId: chainId,
-			DenomPath:        "",
-			RootDenom:        rootDenom,
-			IsBaseDenom:      true,
-			CreateAt:         unix,
-			UpdateAt:         unix,
+			Chain:          chain,
+			Denom:          denom,
+			PrevDenom:      "",
+			PrevChain:      "",
+			BaseDenom:      denom,
+			BaseDenomChain: chain,
+			DenomPath:      "",
+			RootDenom:      rootDenom,
+			IsBaseDenom:    true,
+			CreateAt:       unix,
+			UpdateAt:       unix,
 		}
 	}
 
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Errorf("trace denom: %s, chain: %s, full path: %s, error. %v ", denom, chainId, fullDenomPath, err)
+			logrus.Errorf("trace denom: %s, chain: %s, full path: %s, error. %v ", denom, chain, fullDenomPath, err)
 		}
 	}()
 
-	var currentChainId string
+	var currentChain string
 	var isBaseDenom bool
-	currentChainId = chainId
+	currentChain = chain
 	pathSplits := strings.Split(fullDenomPath, "/")
 	denomPath := strings.Join(pathSplits[0:len(pathSplits)-1], "/")
 	var TraceDenomList []*dto.DenomSimpleDTO
 	TraceDenomList = append(TraceDenomList, &dto.DenomSimpleDTO{
-		Denom:   denom,
-		ChainId: chainId,
+		Denom: denom,
+		Chain: chain,
 	})
 
 	for {
@@ -213,45 +228,45 @@ func traceDenom(fullDenomPath, chainId string, allChainMap map[string]*entity.Ch
 		}
 
 		currentPort, currentChannel := pathSplits[0], pathSplits[1]
-		tempPrevChainId, tempPrevPort, tempPrevChannel := matchDcInfo(currentChainId, currentPort, currentChannel, allChainMap)
-		if tempPrevChainId == "" { // trace to end
+		tempPrevChain, tempPrevPort, tempPrevChannel := matchDcInfo(currentChain, currentPort, currentChannel, allChainMap)
+		if tempPrevChain == "" { // trace to end
 			break
 		} else {
 			TraceDenomList = append(TraceDenomList, &dto.DenomSimpleDTO{
-				Denom:   calculateIbcHash(strings.Join(pathSplits[2:], "/")),
-				ChainId: tempPrevChainId,
+				Denom: calculateIbcHash(strings.Join(pathSplits[2:], "/")),
+				Chain: tempPrevChain,
 			})
 		}
 
-		currentChainId, currentPort, currentChannel = tempPrevChainId, tempPrevPort, tempPrevChannel
+		currentChain, currentPort, currentChannel = tempPrevChain, tempPrevPort, tempPrevChannel
 		pathSplits = pathSplits[2:]
 	}
 
-	var prevDenom, prevChainId, baseDenom, baseDenomChainId string
+	var prevDenom, prevChain, baseDenom, baseDenomChain string
 	if len(TraceDenomList) == 1 { // denom is base denom
 		isBaseDenom = true
 		baseDenom = denom
-		baseDenomChainId = chainId
+		baseDenomChain = chain
 	} else {
 		isBaseDenom = false
 		prevDenom = TraceDenomList[1].Denom
-		prevChainId = TraceDenomList[1].ChainId
+		prevChain = TraceDenomList[1].Chain
 		baseDenom = TraceDenomList[len(TraceDenomList)-1].Denom
-		baseDenomChainId = TraceDenomList[len(TraceDenomList)-1].ChainId
+		baseDenomChain = TraceDenomList[len(TraceDenomList)-1].Chain
 	}
 
 	return &entity.IBCDenom{
-		ChainId:          chainId,
-		Denom:            denom,
-		PrevDenom:        prevDenom,
-		PrevChainId:      prevChainId,
-		BaseDenom:        baseDenom,
-		BaseDenomChainId: baseDenomChainId,
-		DenomPath:        denomPath,
-		RootDenom:        rootDenom,
-		IsBaseDenom:      isBaseDenom,
-		CreateAt:         unix,
-		UpdateAt:         unix,
+		Chain:          chain,
+		Denom:          denom,
+		PrevDenom:      prevDenom,
+		PrevChain:      prevChain,
+		BaseDenom:      baseDenom,
+		BaseDenomChain: baseDenomChain,
+		DenomPath:      denomPath,
+		RootDenom:      rootDenom,
+		IsBaseDenom:    isBaseDenom,
+		CreateAt:       unix,
+		UpdateAt:       unix,
 	}
 }
 

@@ -7,7 +7,7 @@ const (
 
 type IBCTokenTraceStatistics struct {
 	Denom            string `bson:"denom"`
-	ChainId          string `bson:"chain_id"`
+	Chain            string `bson:"chain"`
 	ReceiveTxs       int64  `bson:"receive_txs"`
 	SegmentStartTime int64  `bson:"segment_start_time"`
 	SegmentEndTime   int64  `bson:"segment_end_time"`

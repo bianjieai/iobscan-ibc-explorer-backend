@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ChainFieldChainId          = "chain_id"
+	ChainFieldChain            = "chain"
 	ChainFieldIbcTokens        = "ibc_tokens"
 	ChainFieldRelayers         = "relayers"
 	ChainFieldChannels         = "channels"
@@ -23,9 +23,9 @@ const (
 
 type IChainRepo interface {
 	InserOrUpdate(chain entity.IBCChain) error
-	UpdateIbcTokenValue(chainId string, tokens int64, tokenValue string) error
-	UpdateTransferTxs(chainId string, txs int64, txsValue string) error
-	UpdateRelayers(chainId string, relayers int64) error
+	UpdateIbcTokenValue(chain string, tokens int64, tokenValue string) error
+	UpdateTransferTxs(chain string, txs int64, txsValue string) error
+	UpdateRelayers(chain string, relayers int64) error
 	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
 	Count() (int64, error)
 }
@@ -45,8 +45,8 @@ func (repo *IbcChainRepo) FindAll(skip, limit int64) ([]*entity.IBCChain, error)
 	return res, err
 }
 
-func (repo *IbcChainRepo) UpdateRelayers(chainId string, relayers int64) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
+func (repo *IbcChainRepo) UpdateRelayers(chain string, relayers int64) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChain: chain},
 		bson.M{
 			"$set": bson.M{
 				ChainFieldRelayers: relayers,
@@ -56,8 +56,8 @@ func (repo *IbcChainRepo) UpdateRelayers(chainId string, relayers int64) error {
 
 func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 	var res *entity.IBCChain
-	err := repo.coll().Find(context.Background(), bson.M{ChainFieldChainId: chain.ChainId}).
-		Select(bson.M{ChainFieldChainId: 1}).One(&res)
+	err := repo.coll().Find(context.Background(), bson.M{ChainFieldChain: chain.Chain}).
+		Select(bson.M{ChainFieldChain: 1}).One(&res)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
 			if _, err := repo.coll().InsertOne(context.Background(), chain); err != nil {
@@ -67,7 +67,7 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 		}
 		return err
 	}
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: res.ChainId},
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChain: res.Chain},
 		bson.M{
 			"$set": bson.M{
 				ChainFieldChannels:        chain.Channels,
@@ -77,21 +77,21 @@ func (repo *IbcChainRepo) InserOrUpdate(chain entity.IBCChain) error {
 		})
 }
 
-func (repo *IbcChainRepo) UpdateIbcTokenValue(chainId string, tokens int64, tokenValue string) error {
+func (repo *IbcChainRepo) UpdateIbcTokenValue(chain string, tokens int64, tokenValue string) error {
 	updateData := bson.M{
 		ChainFieldIbcTokens:      tokens,
 		ChainFieldUpdateAt:       time.Now().Unix(),
 		ChainFieldIbcTokensValue: tokenValue,
 	}
 
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChain: chain},
 		bson.M{
 			"$set": updateData,
 		})
 }
 
-func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue string) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChainId: chainId},
+func (repo *IbcChainRepo) UpdateTransferTxs(chain string, txs int64, txsValue string) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{ChainFieldChain: chain},
 		bson.M{
 			"$set": bson.M{
 				ChainFieldTransferTxs:      txs,
@@ -104,13 +104,3 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chainId string, txs int64, txsValue 
 func (repo *IbcChainRepo) Count() (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{}).Count()
 }
-
-//func (repo *IbcChainRepo) EnsureIndexes() {
-//	var indexes []options.IndexModel
-//	indexes = append(indexes, options.IndexModel{
-//		Key:          []string{"-" + ChainFieldChainId},
-//		IndexOptions: new(moptions.IndexOptions).SetUnique(true),
-//	})
-//
-//	ensureIndexes(entity.IBCChain{}.CollectionName(), indexes)
-//}

@@ -49,8 +49,8 @@ func (t *IbcStatisticCronTask) Run() int {
 		return -1
 	}
 
-	if err := t.updateDenomIncre(); err != nil {
-		logrus.Error("updateDenomIncre have error,"+err.Error(), " task:", t.Name())
+	if err := t.NewDataDenom(); err != nil {
+		logrus.Error("NewDataDenom have error,"+err.Error(), " task:", t.Name())
 		return -1
 	}
 
@@ -73,26 +73,26 @@ func (t *IbcStatisticCronTask) updateChains() error {
 	if err != nil {
 		return err
 	}
-	chainIdMap := make(map[string]struct{}, len(chainDtos))
-	var chainIds []string
+	chainMap := make(map[string]struct{}, len(chainDtos))
+	var chains []string
 	for _, val := range chainDtos {
-		if val.ScChainId != "" {
-			if _, exist := chainIdMap[val.ScChainId]; !exist {
-				chainIds = append(chainIds, val.ScChainId)
-				chainIdMap[val.ScChainId] = struct{}{}
+		if val.ScChain != "" {
+			if _, exist := chainMap[val.ScChain]; !exist {
+				chains = append(chains, val.ScChain)
+				chainMap[val.ScChain] = struct{}{}
 			}
 		}
-		if val.DcChainId != "" {
-			if _, exist := chainIdMap[val.DcChainId]; !exist {
-				chainIds = append(chainIds, val.DcChainId)
-				chainIdMap[val.DcChainId] = struct{}{}
+		if val.DcChain != "" {
+			if _, exist := chainMap[val.DcChain]; !exist {
+				chains = append(chains, val.DcChain)
+				chainMap[val.DcChain] = struct{}{}
 			}
 		}
 	}
-	chains24hInfo := strings.Join(chainIds, ",")
+	chains24hInfo := strings.Join(chains, ",")
 	data := entity.IbcStatistic{
 		StatisticsName: constant.Chains24hStatisticName,
-		Count:          int64(len(chainIdMap)),
+		Count:          int64(len(chainMap)),
 		StatisticsInfo: chains24hInfo,
 		CreateAt:       time.Now().Unix(),
 		UpdateAt:       time.Now().Unix(),
@@ -109,38 +109,19 @@ func (t *IbcStatisticCronTask) updateChains() error {
 }
 
 func (t *IbcStatisticCronTask) NewDataDenom() error {
-	saveDenomFunc := func(statisticName string, call func(createAt int64, record bool) (int64, error)) error {
-		statisticData := entity.IbcStatistic{
-			StatisticsName: statisticName,
-			Count:          0,
-		}
-		denomAllCnt, err := call(0, false)
-		if err != nil {
-			return err
-		}
-		statisticData.Count = denomAllCnt
-
-		latestCreateAt, err := denomRepo.LatestCreateAt()
-		if err != nil {
-			return err
-		}
-		currentDenomCnt, err := call(latestCreateAt, true)
-		if err != nil {
-			return err
-		}
-		statisticData.StatisticsInfo = string(utils.MarshalJsonIgnoreErr(IncreInfo{Count: currentDenomCnt, CreateAt: latestCreateAt}))
-		statisticData.CreateAt = time.Now().Unix()
-		statisticData.UpdateAt = time.Now().Unix()
-		if err := statisticsRepo.UpdateOneIncre(statisticData); err != nil {
-			return err
-		}
-		return nil
+	baseDenomAllCnt, err := denomRepo.BasedDenomCount()
+	if err != nil {
+		return err
 	}
-	if err := saveDenomFunc(constant.BaseDenomAllStatisticName, denomRepo.BasedDenomCount); err != nil {
+	if err := statisticsRepo.UpdateOne(constant.BaseDenomAllStatisticName, baseDenomAllCnt); err != nil {
 		return err
 	}
 
-	if err := saveDenomFunc(constant.DenomAllStatisticName, denomRepo.Count); err != nil {
+	denomAllCnt, err := denomRepo.Count()
+	if err != nil {
+		return err
+	}
+	if err := statisticsRepo.UpdateOne(constant.DenomAllStatisticName, denomAllCnt); err != nil {
 		return err
 	}
 	return nil
@@ -220,17 +201,6 @@ func (t *IbcStatisticCronTask) NewDataTxs() error {
 	return nil
 }
 
-func (t *IbcStatisticCronTask) updateDenomIncre() error {
-	if err := t.handleDenomIncre(constant.BaseDenomAllStatisticName, denomRepo.BasedDenomCount); err != nil {
-		return err
-	}
-
-	if err := t.handleDenomIncre(constant.DenomAllStatisticName, denomRepo.Count); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (t *IbcStatisticCronTask) updateTxsIncre() error {
 	//统计最新表数据
 	txAll, err := ibcTxRepo.CountAll(entity.IbcTxUsefulStatus)
@@ -307,8 +277,8 @@ func (t *IbcStatisticCronTask) updateChannelAndChains24h() error {
 	setChannelMap := make(map[string]struct{}, len(channelDtos))
 	count := int64(0)
 	for _, val := range channelDtos {
-		channelIdPrefix := fmt.Sprintf("%s|%s", val.ScChainId, val.ScChannel)
-		channelIdEndwith := fmt.Sprintf("%s|%s", val.DcChainId, val.DcChannel)
+		channelIdPrefix := fmt.Sprintf("%s|%s", val.ScChain, val.ScChannel)
+		channelIdEndwith := fmt.Sprintf("%s|%s", val.DcChain, val.DcChannel)
 		_, existPrefix := setChannelMap[channelIdPrefix]
 		_, existEndWith := setChannelMap[channelIdEndwith]
 		if !existEndWith && !existPrefix {

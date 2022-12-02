@@ -17,15 +17,16 @@ const (
 
 type (
 	ChainConfig struct {
-		ChainId        string      `bson:"chain_id"`
-		Icon           string      `bson:"icon"`
-		ChainName      string      `bson:"chain_name"`
-		LcdApiPath     ApiPath     `bson:"lcd_api_path"`
-		Lcd            string      `bson:"lcd"`
-		AddrPrefix     string      `bson:"addr_prefix"`
-		IbcInfo        []*IbcInfo  `bson:"ibc_info"`
-		IbcInfoHashLcd string      `bson:"ibc_info_hash_lcd"`
-		Status         ChainStatus `bson:"status"`
+		CurrentChainId  string      `bson:"current_chain_id"`
+		Icon            string      `bson:"icon"`
+		ChainName       string      `bson:"chain_name"`
+		PrettyName      string      `bson:"pretty_name"`
+		LcdApiPath      ApiPath     `bson:"lcd_api_path"`
+		GrpcRestGateway string      `bson:"grpc_rest_gateway"`
+		AddrPrefix      string      `bson:"addr_prefix"`
+		IbcInfo         []*IbcInfo  `bson:"ibc_info"`
+		IbcInfoHashLcd  string      `bson:"ibc_info_hash_lcd"`
+		Status          ChainStatus `bson:"status"`
 	}
 	ApiPath struct {
 		ChannelsPath    string `bson:"channels_path"`
@@ -35,15 +36,15 @@ type (
 		ParamsPath      string `bson:"params_path"`
 	}
 	IbcInfo struct {
-		ChainId string         `bson:"chain_id"`
-		Paths   []*ChannelPath `bson:"paths"`
+		Chain string         `bson:"chain"`
+		Paths []*ChannelPath `bson:"paths"`
 	}
 	ChannelPath struct {
 		State        string       `bson:"state"`
 		PortId       string       `bson:"port_id"`
 		ChannelId    string       `bson:"channel_id"`
-		ChainId      string       `bson:"chain_id"`
-		ScChainId    string       `bson:"sc_chain_id"`
+		Chain        string       `bson:"chain"`
+		ScChain      string       `bson:"sc_chain"`
 		ClientId     string       `bson:"client_id"`
 		Counterparty CounterParty `bson:"counterparty"`
 	}
@@ -58,11 +59,11 @@ func (c ChainConfig) CollectionName() string {
 	return "chain_config"
 }
 
-func (c *ChainConfig) GetDcChainId(scChannel, dcChannel string) string {
+func (c *ChainConfig) GetDcChain(scChannel, dcChannel string) string {
 	for _, ibcInfo := range c.IbcInfo {
 		for _, path := range ibcInfo.Paths {
 			if path.ChannelId == scChannel && path.Counterparty.ChannelId == dcChannel {
-				return path.ChainId
+				return path.Chain
 			}
 		}
 	}

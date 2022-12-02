@@ -20,7 +20,7 @@ type IbcTxRelateTask struct {
 }
 
 var _ Task = new(IbcTxRelateTask)
-var relateCoordinator *chainQueueCoordinator
+var relateCoordinator *stringQueueCoordinator
 
 func (t *IbcTxRelateTask) Name() string {
 	return "ibc_tx_relate_task"
@@ -50,10 +50,10 @@ func (t *IbcTxRelateTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.ChainName)
 	}
-	relateCoordinator = &chainQueueCoordinator{
-		chainQueue: chainQueue,
+	relateCoordinator = &stringQueueCoordinator{
+		stringQueue: chainQueue,
 	}
 
 	workerNum := t.workerNum()
@@ -94,35 +94,35 @@ type ibcTxRelateWorker struct {
 func (w *ibcTxRelateWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := w.getChain()
+		chain, err := w.getChain()
 		if err != nil {
 			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
-		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
-			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+		if cf, ok := w.chainMap[chain]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chain)
 			continue
 		}
 
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chain)
 		startTime := time.Now().Unix()
-		if err = w.relateTx(chainId); err != nil {
-			logrus.Errorf("task %s worker %s relate chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)
+		if err = w.relateTx(chain); err != nil {
+			logrus.Errorf("task %s worker %s relate chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chain, time.Now().Unix()-startTime, err)
 		} else {
-			logrus.Infof("task %s worker %s relate chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
+			logrus.Infof("task %s worker %s relate chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chain, time.Now().Unix()-startTime)
 		}
 	}
 }
 
 func (w *ibcTxRelateWorker) getChain() (string, error) {
 	if w.target == ibcTxTargetHistory {
-		return relateHistoryCoordinator.getChain()
+		return relateHistoryCoordinator.getOne()
 	}
-	return relateCoordinator.getChain()
+	return relateCoordinator.getOne()
 }
 
-func (w *ibcTxRelateWorker) relateTx(chainId string) error {
+func (w *ibcTxRelateWorker) relateTx(chain string) error {
 	totalRelateTx := 0
 	//const limit = 500
 	maxParseTx := global.Config.Task.SingleChainIbcTxRelateMax
@@ -130,15 +130,15 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 		maxParseTx = defaultMaxHandlerTx
 	}
 
-	denomMap, err := w.getChainDenomMap(chainId)
+	denomMap, err := w.getChainDenomMap(chain)
 	if err != nil {
 		return err
 	}
 
 	for {
-		txList, err := w.getToBeRelatedTxs(chainId, constant.DefaultLimit)
+		txList, err := w.getToBeRelatedTxs(chain, constant.DefaultLimit)
 		if err != nil {
-			logrus.Errorf("task %s worker %s chain %s getToBeRelatedTxs error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s chain %s getToBeRelatedTxs error, %v", w.taskName, w.workerName, chain, err)
 			return err
 		}
 
@@ -146,7 +146,7 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 			return nil
 		}
 
-		w.handlerIbcTxs(chainId, txList, denomMap)
+		w.handlerIbcTxs(chain, txList, denomMap)
 
 		totalRelateTx += len(txList)
 		if len(txList) < constant.DefaultLimit || totalRelateTx >= maxParseTx {
@@ -158,17 +158,17 @@ func (w *ibcTxRelateWorker) relateTx(chainId string) error {
 	return nil
 }
 
-func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.ExIbcTx, denomMap map[string]*entity.IBCDenom) {
-	recvPacketTxMap, ackTxMap, refundedTxMap, timeoutIbcTxMap, noFoundAckMap := w.packetIdTx(scChainId, ibcTxList)
+func (w *ibcTxRelateWorker) handlerIbcTxs(scChain string, ibcTxList []*entity.ExIbcTx, denomMap map[string]*entity.IBCDenom) {
+	recvPacketTxMap, ackTxMap, timeoutTxMap, timeoutIbcTxMap, noFoundAckMap := w.packetIdTx(scChain, ibcTxList)
 
 	var ibcDenomNewList entity.IBCDenomList
 	for _, ibcTx := range ibcTxList {
-		if ibcTx.DcChainId == "" || ibcTx.ScTxInfo == nil || ibcTx.ScTxInfo.Msg == nil {
+		if ibcTx.DcChain == "" || ibcTx.ScTxInfo == nil || ibcTx.ScTxInfo.Msg == nil {
 			w.setNextTryTime(ibcTx)
 		} else {
 			packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-			if syncTxs, ok := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChainId, packetId)]; ok {
-				ackSyncTxs := ackTxMap[w.genPacketTxMapKey(ibcTx.ScChainId, packetId)]
+			if syncTxs, ok := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChain, packetId)]; ok {
+				ackSyncTxs := ackTxMap[w.genPacketTxMapKey(ibcTx.ScChain, packetId)]
 				ibcDenom := w.loadRecvPacketTx(ibcTx, syncTxs, ackSyncTxs)
 				if ibcDenom != nil && denomMap[ibcDenom.Denom] == nil {
 					denomMap[ibcDenom.Denom] = ibcDenom
@@ -176,8 +176,8 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 				}
 			}
 
-			if syncTxs, ok := refundedTxMap[w.genPacketTxMapKey(ibcTx.ScChainId, packetId)]; ok && ibcTx.Status == entity.IbcTxStatusProcessing {
-				recvSyncTxs := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChainId, packetId)]
+			if syncTxs, ok := timeoutTxMap[w.genPacketTxMapKey(ibcTx.ScChain, packetId)]; ok && ibcTx.Status == entity.IbcTxStatusProcessing {
+				recvSyncTxs := recvPacketTxMap[w.genPacketTxMapKey(ibcTx.DcChain, packetId)]
 				w.loadTimeoutPacketTx(ibcTx, syncTxs, recvSyncTxs)
 			}
 		}
@@ -190,26 +190,26 @@ func (w *ibcTxRelateWorker) handlerIbcTxs(scChainId string, ibcTxList []*entity.
 		var repaired bool
 		ibcTx, repaired = w.repairTxInfo(ibcTx)
 		if err := w.updateIbcTx(ibcTx, repaired); err != nil {
-			logrus.Errorf("task %s worker %s chain %s updateIbcTx error, record_id: %s, %v", w.taskName, w.workerName, scChainId, ibcTx.RecordId, err)
+			logrus.Errorf("task %s worker %s chain %s updateIbcTx error, _id: %s, %v", w.taskName, w.workerName, scChain, ibcTx.Id, err)
 		}
 	}
 
 	// add denom
 	if len(ibcDenomNewList) > 0 {
 		if err := denomRepo.InsertBatch(ibcDenomNewList); err != nil {
-			logrus.Errorf("task %s worker %s chain %s insert denoms error, %v", w.taskName, w.workerName, scChainId, err)
+			logrus.Errorf("task %s worker %s chain %s insert denoms error, %v", w.taskName, w.workerName, scChain, err)
 		}
 	}
 }
 
 func (w *ibcTxRelateWorker) updateProcessInfo(ibcTx *entity.ExIbcTx, timeOutMap map[string]struct{}, noFoundAckMap map[string]struct{}) *entity.ExIbcTx {
 	if ibcTx.Status == entity.IbcTxStatusProcessing {
-		if ibcTx.DcChainId == "" {
-			ibcTx.ProcessInfo = constant.NoFoundDcChainId
+		if ibcTx.DcChain == "" {
+			ibcTx.ProcessInfo = constant.NoFoundDcChain
 		} else {
-			if _, ok := timeOutMap[ibcTx.RecordId]; ok {
+			if _, ok := timeOutMap[ibcTx.Id.Hex()]; ok {
 				ibcTx.ProcessInfo = constant.NoFoundSuccessTimeoutPacket
-			} else if _, ok := noFoundAckMap[ibcTx.RecordId]; ok {
+			} else if _, ok := noFoundAckMap[ibcTx.Id.Hex()]; ok {
 				ibcTx.ProcessInfo = constant.NoFoundSuccessAcknowledgePacket
 			} else {
 				ibcTx.ProcessInfo = constant.NoFoundSuccessRecvPacket
@@ -305,18 +305,18 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 				if !isCrossBack {
 					dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
 					ibcDenom = &entity.IBCDenom{
-						Symbol:           "",
-						ChainId:          ibcTx.DcChainId,
-						Denom:            dcDenom,
-						PrevDenom:        ibcTx.Denoms.ScDenom,
-						PrevChainId:      ibcTx.ScChainId,
-						BaseDenom:        ibcTx.BaseDenom,
-						BaseDenomChainId: ibcTx.BaseDenomChainId,
-						DenomPath:        dcDenomPath,
-						IsBaseDenom:      false,
-						RootDenom:        rootDenom,
-						CreateAt:         time.Now().Unix(),
-						UpdateAt:         time.Now().Unix(),
+						Symbol:         "",
+						Chain:          ibcTx.DcChain,
+						Denom:          dcDenom,
+						PrevDenom:      ibcTx.Denoms.ScDenom,
+						PrevChain:      ibcTx.ScChain,
+						BaseDenom:      ibcTx.BaseDenom,
+						BaseDenomChain: ibcTx.BaseDenomChain,
+						DenomPath:      dcDenomPath,
+						IsBaseDenom:    false,
+						RootDenom:      rootDenom,
+						CreateAt:       time.Now().Unix(),
+						UpdateAt:       time.Now().Unix(),
 					}
 				}
 			}
@@ -328,7 +328,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 			if msg.Type != constant.MsgTypeAcknowledgement || msg.CommonMsg().PacketId != ibcTx.ScTxInfo.Msg.CommonMsg().PacketId {
 				continue
 			}
-			ibcTx.RefundedTxInfo = &entity.TxInfo{
+			ibcTx.AckTimeoutTxInfo = &entity.TxInfo{
 				Hash:      matchAckTx.TxHash,
 				Status:    matchAckTx.Status,
 				Time:      matchAckTx.Time,
@@ -350,7 +350,7 @@ func (w *ibcTxRelateWorker) loadAckPacketTx(ibcTx *entity.ExIbcTx, tx *entity.Tx
 		if msg.Type == constant.MsgTypeAcknowledgement && msg.CommonMsg().PacketId == ibcTx.ScTxInfo.Msg.CommonMsg().PacketId {
 			if strings.Contains(msg.AckPacketMsg().Acknowledgement, "error") { // ack error
 				ibcTx.Status = entity.IbcTxStatusRefunded
-				ibcTx.RefundedTxInfo = &entity.TxInfo{
+				ibcTx.AckTimeoutTxInfo = &entity.TxInfo{
 					Hash:      tx.TxHash,
 					Status:    tx.Status,
 					Time:      tx.Time,
@@ -376,7 +376,7 @@ func (w *ibcTxRelateWorker) loadTimeoutPacketTx(ibcTx *entity.ExIbcTx, tx *entit
 	for _, msg := range tx.DocTxMsgs {
 		if msg.Type == constant.MsgTypeTimeoutPacket && msg.CommonMsg().PacketId == packetId {
 			ibcTx.Status = entity.IbcTxStatusRefunded
-			ibcTx.RefundedTxInfo = &entity.TxInfo{
+			ibcTx.AckTimeoutTxInfo = &entity.TxInfo{
 				Hash:      tx.TxHash,
 				Status:    tx.Status,
 				Time:      tx.Time,
@@ -439,14 +439,14 @@ func (w *ibcTxRelateWorker) setNextTryTime(ibcTx *entity.ExIbcTx) {
 func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx, bool) {
 	var repaired bool
 	if ibcTx.DcClientId == "" {
-		if cf, ok := w.chainMap[ibcTx.DcChainId]; ok {
+		if cf, ok := w.chainMap[ibcTx.DcChain]; ok {
 			ibcTx.DcClientId = cf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
 			repaired = true
 		}
 	}
 
 	if ibcTx.ScClientId == "" {
-		if cf, ok := w.chainMap[ibcTx.ScChainId]; ok {
+		if cf, ok := w.chainMap[ibcTx.ScChain]; ok {
 			ibcTx.ScClientId = cf.GetChannelClient(ibcTx.ScPort, ibcTx.ScChannel)
 			repaired = true
 		}
@@ -455,7 +455,7 @@ func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx
 	if ibcTx.ScConnectionId == "" {
 		packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
 		status := entity.TxStatusSuccess
-		if transferTxs, err := txRepo.FindByPacketIds(ibcTx.ScChainId, constant.MsgTypeTransfer, []string{packetId}, &status); err == nil && len(transferTxs) > 0 {
+		if transferTxs, err := txRepo.FindByPacketIds(ibcTx.ScChain, constant.MsgTypeTransfer, []string{packetId}, &status); err == nil && len(transferTxs) > 0 {
 			for msgIndex, msg := range transferTxs[0].DocTxMsgs {
 				if msg.Type == constant.MsgTypeTransfer && msg.CommonMsg().PacketId == packetId {
 					_, _, _, _, ibcTx.ScConnectionId = parseTransferTxEvents(msgIndex, transferTxs[0])
@@ -468,49 +468,49 @@ func (w *ibcTxRelateWorker) repairTxInfo(ibcTx *entity.ExIbcTx) (*entity.ExIbcTx
 	return ibcTx, repaired
 }
 
-func (w *ibcTxRelateWorker) genPacketTxMapKey(chainId, packetId string) string {
-	return fmt.Sprintf("%s_%s", chainId, packetId)
+func (w *ibcTxRelateWorker) genPacketTxMapKey(chain, packetId string) string {
+	return fmt.Sprintf("%s_%s", chain, packetId)
 }
 
-func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExIbcTx) (recvPacketTxMap, ackTxMap map[string][]*entity.Tx, refundedTxMap map[string]*entity.Tx, timeoutIbcTxMap, noFoundAckMap map[string]struct{}) {
+func (w *ibcTxRelateWorker) packetIdTx(scChain string, ibcTxList []*entity.ExIbcTx) (recvPacketTxMap, ackTxMap map[string][]*entity.Tx, timeoutTxMap map[string]*entity.Tx, timeoutIbcTxMap, noFoundAckMap map[string]struct{}) {
 	packetIdsMap := w.packetIdsMap(ibcTxList)
-	chainLatestBlockMap := w.findLatestBlock(scChainId, ibcTxList)
-	var refundedTxPacketIds, ackPacketIds []string
+	chainLatestBlockMap := w.findLatestBlock(scChain, ibcTxList)
+	var timeoutTxPacketIds, ackPacketIds []string
 	recvPacketTxMap = make(map[string][]*entity.Tx)
 	ackTxMap = make(map[string][]*entity.Tx)
-	refundedTxMap = make(map[string]*entity.Tx)
+	timeoutTxMap = make(map[string]*entity.Tx)
 	timeoutIbcTxMap = make(map[string]struct{})
 	noFoundAckMap = make(map[string]struct{})
 	packetIdRecordMap := make(map[string]string, len(packetIdsMap))
 	status := entity.TxStatusSuccess
 
-	for dcChainId, packetIds := range packetIdsMap {
-		latestBlock := chainLatestBlockMap[dcChainId]
+	for dcChain, packetIds := range packetIdsMap {
+		latestBlock := chainLatestBlockMap[dcChain]
 		var recvPacketIds []string
 		for _, packet := range packetIds { // recv && refunded
-			packetIdRecordMap[dcChainId+packet.PacketId] = packet.RecordId
+			packetIdRecordMap[dcChain+packet.PacketId] = packet.ObjectId
 			recvPacketIds = append(recvPacketIds, packet.PacketId)
 			timeoutStr := strconv.FormatInt(packet.TimeOutTime, 10)
 			if len(timeoutStr) > 10 { // 非秒级时间
 				if len(timeoutStr) == 19 && time.Now().UnixNano() > packet.TimeOutTime { // Nano
-					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
-					timeoutIbcTxMap[packet.RecordId] = struct{}{}
+					timeoutTxPacketIds = append(timeoutTxPacketIds, packet.PacketId)
+					timeoutIbcTxMap[packet.ObjectId] = struct{}{}
 				} else {
-					//logrus.Warningf("unkonwn timeout time %s, chain: %s, packet id: %s", timeoutStr, dcChainId, packet.PacketId)
-					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
+					//logrus.Warningf("unkonwn timeout time %s, chain: %s, packet id: %s", timeoutStr, dcChain, packet.PacketId)
+					timeoutTxPacketIds = append(timeoutTxPacketIds, packet.PacketId)
 				}
 			} else if latestBlock != nil {
 				if latestBlock.Height > packet.TimeoutHeight || latestBlock.Time > packet.TimeOutTime {
-					refundedTxPacketIds = append(refundedTxPacketIds, packet.PacketId)
-					timeoutIbcTxMap[packet.RecordId] = struct{}{}
+					timeoutTxPacketIds = append(timeoutTxPacketIds, packet.PacketId)
+					timeoutIbcTxMap[packet.ObjectId] = struct{}{}
 				}
 			}
 		}
 
 		// 处理 recv_packet tx
-		recvTxList, err := txRepo.FindByPacketIds(dcChainId, constant.MsgTypeRecvPacket, recvPacketIds, nil)
+		recvTxList, err := txRepo.FindByPacketIds(dcChain, constant.MsgTypeRecvPacket, recvPacketIds, nil)
 		if err != nil {
-			logrus.Errorf("task %s worker %s dc chain %s find recv txs error, %v", w.taskName, w.workerName, dcChainId, err)
+			logrus.Errorf("task %s worker %s dc chain %s find recv txs error, %v", w.taskName, w.workerName, dcChain, err)
 			continue
 		}
 
@@ -518,59 +518,59 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 			for _, msg := range tx.DocTxMsgs {
 				if msg.Type == constant.MsgTypeRecvPacket {
 					if recvMsg := msg.RecvPacketMsg(); recvMsg.PacketId != "" {
-						mk := w.genPacketTxMapKey(dcChainId, recvMsg.PacketId)
+						mk := w.genPacketTxMapKey(dcChain, recvMsg.PacketId)
 						recvPacketTxMap[mk] = append(recvPacketTxMap[mk], tx)
 						// recv_packet成功时查询ack
 						if tx.Status == entity.TxStatusSuccess {
 							ackPacketIds = append(ackPacketIds, recvMsg.PacketId)
-							if recordId, ok := packetIdRecordMap[dcChainId+recvMsg.PacketId]; ok {
-								noFoundAckMap[recordId] = struct{}{}
+							if oid, ok := packetIdRecordMap[dcChain+recvMsg.PacketId]; ok {
+								noFoundAckMap[oid] = struct{}{}
 							}
 						}
 					} else {
-						logrus.Errorf("%s recv packet tx(%s) packet id is empty", dcChainId, tx.TxHash)
+						logrus.Errorf("%s recv packet tx(%s) packet id is empty", dcChain, tx.TxHash)
 					}
 				}
 			}
 		}
 	}
 
-	if len(refundedTxPacketIds) > 0 {
-		refundedTxList, err := txRepo.FindByPacketIds(scChainId, constant.MsgTypeTimeoutPacket, refundedTxPacketIds, &status)
+	if len(timeoutTxPacketIds) > 0 {
+		timeoutTxList, err := txRepo.FindByPacketIds(scChain, constant.MsgTypeTimeoutPacket, timeoutTxPacketIds, &status)
 		if err == nil {
-			for _, tx := range refundedTxList {
+			for _, tx := range timeoutTxList {
 				for _, msg := range tx.DocTxMsgs {
 					if msg.Type == constant.MsgTypeTimeoutPacket {
 						if timeoutMsg := msg.TimeoutPacketMsg(); timeoutMsg.PacketId != "" {
-							refundedTxMap[w.genPacketTxMapKey(scChainId, timeoutMsg.PacketId)] = tx
+							timeoutTxMap[w.genPacketTxMapKey(scChain, timeoutMsg.PacketId)] = tx
 						} else {
-							logrus.Errorf("%s timeout packet tx(%s) packet id is empty", scChainId, tx.TxHash)
+							logrus.Errorf("%s timeout packet tx(%s) packet id is empty", scChain, tx.TxHash)
 						}
 					}
 				}
 			}
 		} else {
-			logrus.Errorf("task %s worker %s sc chain %s find timeout txs error, %v", w.taskName, w.workerName, scChainId, err)
+			logrus.Errorf("task %s worker %s sc chain %s find timeout txs error, %v", w.taskName, w.workerName, scChain, err)
 		}
 	}
 
 	if len(ackPacketIds) > 0 {
-		ackTxList, err := txRepo.FindByPacketIds(scChainId, constant.MsgTypeAcknowledgement, ackPacketIds, &status)
+		ackTxList, err := txRepo.FindByPacketIds(scChain, constant.MsgTypeAcknowledgement, ackPacketIds, &status)
 		if err == nil {
 			for _, tx := range ackTxList {
 				for _, msg := range tx.DocTxMsgs {
 					if msg.Type == constant.MsgTypeAcknowledgement {
 						if ackMsg := msg.AckPacketMsg(); ackMsg.PacketId != "" {
-							mk := w.genPacketTxMapKey(scChainId, ackMsg.PacketId)
+							mk := w.genPacketTxMapKey(scChain, ackMsg.PacketId)
 							ackTxMap[mk] = append(ackTxMap[mk], tx)
 						} else {
-							logrus.Errorf("%s ack packet tx(%s) packet id is empty", scChainId, tx.TxHash)
+							logrus.Errorf("%s ack packet tx(%s) packet id is empty", scChain, tx.TxHash)
 						}
 					}
 				}
 			}
 		} else {
-			logrus.Errorf("task %s worker %s sc chain %s find ack txs error, %v", w.taskName, w.workerName, scChainId, err)
+			logrus.Errorf("task %s worker %s sc chain %s find ack txs error, %v", w.taskName, w.workerName, scChain, err)
 		}
 	}
 	return
@@ -579,8 +579,8 @@ func (w *ibcTxRelateWorker) packetIdTx(scChainId string, ibcTxList []*entity.ExI
 func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string][]*dto.PacketIdDTO {
 	res := make(map[string][]*dto.PacketIdDTO)
 	for _, tx := range ibcTxList {
-		if tx.DcChainId == "" || tx.ScTxInfo == nil || tx.ScTxInfo.Msg == nil {
-			logrus.Warningf("ibc tx dc_chain_id or sc_tx_info exception, record_id: %s", tx.RecordId)
+		if tx.DcChain == "" || tx.ScTxInfo == nil || tx.ScTxInfo.Msg == nil {
+			logrus.Warningf("ibc tx dc_chain_id or sc_tx_info exception, record_id: %s", tx.Id)
 			continue
 		}
 
@@ -590,51 +590,51 @@ func (w *ibcTxRelateWorker) packetIdsMap(ibcTxList []*entity.ExIbcTx) map[string
 			continue
 		}
 
-		res[tx.DcChainId] = append(res[tx.DcChainId], &dto.PacketIdDTO{
-			DcChainId:     tx.DcChainId,
+		res[tx.DcChain] = append(res[tx.DcChain], &dto.PacketIdDTO{
+			DcChain:       tx.DcChain,
 			TimeoutHeight: transferMsg.TimeoutHeight.RevisionHeight,
 			PacketId:      transferMsg.PacketId,
 			TimeOutTime:   transferMsg.TimeoutTimestamp,
-			RecordId:      tx.RecordId,
+			ObjectId:      tx.Id.Hex(),
 		})
 	}
 	return res
 }
 
-func (w *ibcTxRelateWorker) findLatestBlock(scChainId string, ibcTxList []*entity.ExIbcTx) map[string]*dto.HeightTimeDTO {
+func (w *ibcTxRelateWorker) findLatestBlock(scChain string, ibcTxList []*entity.ExIbcTx) map[string]*dto.HeightTimeDTO {
 	blockMap := make(map[string]*dto.HeightTimeDTO)
 
-	findFunc := func(chainId string) {
-		block, err := syncBlockRepo.FindLatestBlock(chainId)
+	findFunc := func(chain string) {
+		block, err := syncBlockRepo.FindLatestBlock(chain)
 		if err != nil {
-			logrus.Errorf("task %s worker %s chain %s findLatestBlock error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s chain %s findLatestBlock error, %v", w.taskName, w.workerName, chain, err)
 		} else {
-			blockMap[chainId] = &dto.HeightTimeDTO{
+			blockMap[chain] = &dto.HeightTimeDTO{
 				Height: block.Height,
 				Time:   block.Time,
 			}
 		}
 	}
 
-	findFunc(scChainId)
+	findFunc(scChain)
 	for _, tx := range ibcTxList {
-		if tx.DcChainId == "" {
+		if tx.DcChain == "" {
 			continue
 		}
 
-		if _, ok := blockMap[tx.DcChainId]; !ok {
-			findFunc(tx.DcChainId)
+		if _, ok := blockMap[tx.DcChain]; !ok {
+			findFunc(tx.DcChain)
 		}
 	}
 
 	return blockMap
 }
 
-func (w *ibcTxRelateWorker) getToBeRelatedTxs(chainId string, limit int64) ([]*entity.ExIbcTx, error) {
+func (w *ibcTxRelateWorker) getToBeRelatedTxs(chain string, limit int64) ([]*entity.ExIbcTx, error) {
 	if w.target == ibcTxTargetHistory {
-		return ibcTxRepo.FindProcessingHistoryTxs(chainId, limit)
+		return ibcTxRepo.FindProcessingHistoryTxs(chain, limit)
 	}
-	return ibcTxRepo.FindProcessingTxs(chainId, limit)
+	return ibcTxRepo.FindProcessingTxs(chain, limit)
 }
 
 func (w *ibcTxRelateWorker) updateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) error {
@@ -644,10 +644,10 @@ func (w *ibcTxRelateWorker) updateIbcTx(ibcTx *entity.ExIbcTx, repaired bool) er
 	return ibcTxRepo.UpdateIbcTx(ibcTx, repaired)
 }
 
-func (w *ibcTxRelateWorker) getChainDenomMap(chainId string) (map[string]*entity.IBCDenom, error) {
-	denomList, err := denomRepo.FindByChainId(chainId)
+func (w *ibcTxRelateWorker) getChainDenomMap(chain string) (map[string]*entity.IBCDenom, error) {
+	denomList, err := denomRepo.FindByChain(chain)
 	if err != nil {
-		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chain, err)
 		return nil, err
 	}
 

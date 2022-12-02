@@ -11,7 +11,7 @@ const (
 
 type IBCToken struct {
 	BaseDenom      string    `bson:"base_denom"`
-	ChainId        string    `bson:"chain_id"`
+	Chain          string    `bson:"chain"`
 	Type           TokenType `bson:"type"`
 	Price          float64   `bson:"price"`
 	Currency       string    `bson:"currency"`
@@ -33,7 +33,7 @@ type IBCTokenMap map[string]*IBCToken
 func (l IBCTokenList) ConvertToMap() IBCTokenMap {
 	res := make(map[string]*IBCToken)
 	for _, v := range l {
-		res[fmt.Sprintf("%s%s", v.ChainId, v.BaseDenom)] = v
+		res[fmt.Sprintf("%s%s", v.Chain, v.BaseDenom)] = v
 	}
 	return res
 }

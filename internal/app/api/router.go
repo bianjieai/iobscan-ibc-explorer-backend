@@ -44,7 +44,8 @@ func Routers(Router *gin.Engine) {
 func homePage(r *gin.RouterGroup) {
 	ctl := rest.HomeController{}
 	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.DailyChains))
-	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcBaseDenoms))
+	r.GET("/chains_connection", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChainsConnection))
+	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AuthDenoms))
 	r.GET("/denoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcDenoms))
 	r.GET("/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Statistics))
 	r.POST("/searchPoint", ctl.SearchPoint)
@@ -53,7 +54,6 @@ func homePage(r *gin.RouterGroup) {
 func txsPage(r *gin.RouterGroup) {
 	ctl := rest.IbcTransferController{}
 	r.GET("/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxs))
-	r.GET("/txs/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetail)) // [Deprecated]
 	r.GET("/txs_detail/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetailNew))
 	r.GET("/trace_source/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TraceSource))
 	r.GET("/txs/searchCondition", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.SearchCondition))

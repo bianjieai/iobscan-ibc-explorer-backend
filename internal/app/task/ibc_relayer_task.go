@@ -26,7 +26,7 @@ import (
 
 type IbcRelayerCronTask struct {
 	chainConfigMap map[string]*entity.ChainConfig
-	//key: BaseDenom+ChainId
+	//key: BaseDenom+Chain
 	denomPriceMap        map[string]dto.CoinItem
 	channelUpdateTimeMap *sync.Map
 }
@@ -192,10 +192,10 @@ func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAm
 			relayerTxsAmtMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.BaseDenomChain,
-				Denom:   item.BaseDenom,
-				Txs:     item.TotalTxs,
-				Amt:     decimal.NewFromFloat(item.Amount),
+				Chain: item.BaseDenomChain,
+				Denom: item.BaseDenom,
+				Txs:   item.TotalTxs,
+				Amt:   decimal.NewFromFloat(item.Amount),
 			}
 			if item.TxStatus == int(entity.TxStatusSuccess) {
 				data.TxsSuccess = item.TotalTxs
@@ -217,7 +217,7 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 	}
 	relayerTxsAmtMap := make(map[string]dto.TxsAmtItem, 20)
 	for _, item := range res {
-		key := fmt.Sprintf("%s%s", item.FeeDenom, item.ChainId)
+		key := fmt.Sprintf("%s%s", item.FeeDenom, item.Chain)
 		value, exist := relayerTxsAmtMap[key]
 		if exist {
 			value.Txs += item.TotalTxs
@@ -225,10 +225,10 @@ func AggrRelayerFeeAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtIt
 			relayerTxsAmtMap[key] = value
 		} else {
 			data := dto.TxsAmtItem{
-				ChainId: item.ChainId,
-				Denom:   item.FeeDenom,
-				Txs:     item.TotalTxs,
-				Amt:     decimal.NewFromFloat(item.Amount),
+				Chain: item.Chain,
+				Denom: item.FeeDenom,
+				Txs:   item.TotalTxs,
+				Amt:   decimal.NewFromFloat(item.Amount),
 			}
 			relayerTxsAmtMap[key] = data
 		}
@@ -248,12 +248,12 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		return
 	}
 	for _, val := range res {
-		relayerCnt, err := relayerRepo.CountChainRelayers(val.ChainId)
+		relayerCnt, err := relayerRepo.CountChainRelayers(val.Chain)
 		if err != nil {
 			logrus.Error("count relayers of chain fail, ", err.Error())
 			continue
 		}
-		if err := chainRepo.UpdateRelayers(val.ChainId, relayerCnt); err != nil {
+		if err := chainRepo.UpdateRelayers(val.Chain, relayerCnt); err != nil {
 			logrus.Error("update ibc_chain relayers fail, ", err.Error())
 		}
 	}
@@ -287,13 +287,7 @@ func (t *IbcRelayerCronTask) getUpdateTime(relayer *entity.IBCRelayerNew) int64 
 	startTime = time.Now().Add(-24 * 21 * time.Hour).Unix()
 	if relayer.UpdateTime > 0 && relayer.UpdateTime <= startTime {
 		startTime = relayer.UpdateTime
-		//} else {
-		//	unbondTime, _ := unbondTimeCache.GetUnbondTime(relayer.ChainA)
-		//	if unbondTime != "" {
-		//		if unbondTimeSeconds, err := strconv.ParseInt(strings.ReplaceAll(unbondTime, "s", ""), 10, 64); err == nil && unbondTimeSeconds > 0 && unbondTimeSeconds < startTime {
-		//			startTime = time.Now().Add(time.Duration(-unbondTimeSeconds) * time.Second).Unix()
-		//		}
-		//	}
+
 	}
 
 	getChannelPairUpdateTime := func(channelPair entity.ChannelPairInfo) (int64, string) {
@@ -371,14 +365,14 @@ func (t *IbcRelayerCronTask) getUpdateTime(relayer *entity.IBCRelayerNew) int64 
 	return relayerUpdateTime
 }
 
-func (t *IbcRelayerCronTask) getChannelClient(chainId, channelId string) (string, error) {
-	chainConf, ok := t.chainConfigMap[chainId]
+func (t *IbcRelayerCronTask) getChannelClient(chain, channelId string) (string, error) {
+	chainConf, ok := t.chainConfigMap[chain]
 	if !ok {
-		return "", fmt.Errorf("%s config not found", chainId)
+		return "", fmt.Errorf("%s config not found", chain)
 	}
 
 	port := chainConf.GetPortId(channelId)
-	state, err := queryClientState(chainConf.Lcd, chainConf.LcdApiPath.ClientStatePath, port, channelId)
+	state, err := queryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
 	if err != nil {
 		return "", err
 	}
