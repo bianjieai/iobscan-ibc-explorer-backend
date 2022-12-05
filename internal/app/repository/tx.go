@@ -94,7 +94,7 @@ func (repo *TxRepo) GetLatestRecvPacketTime(chain, address, channelId string, st
 func (repo *TxRepo) GetChannelOpenConfirmTime(chain, channelId string) (int64, error) {
 	var res entity.Tx
 	query := bson.M{
-		"msgs.type":           constant.MsgTypeChannelOpenConfirm,
+		"types":               constant.MsgTypeChannelOpenConfirm,
 		"msgs.msg.channel_id": channelId,
 	}
 	err := repo.coll(chain).Find(context.Background(), query).

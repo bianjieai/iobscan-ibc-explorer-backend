@@ -26,6 +26,7 @@ const (
 	clientIdInfo                = "client_id_info:%s"
 	ibcRelayerCfg               = "ibc_relayer_config"
 	ibcRelayerCfgPairIds        = "ibc_relayer_config_pair_ids"
+	ibcChainsConnection         = "ibc_chains_connection"
 	ibcRelayerTotalTxs          = "relayer_total_txs"
 	ibcRelayerTransferTypeTxs   = "relayer_transfer_type_txs"
 	ibcRelayerTotalRelayedValue = "relayer_total_relayed_value"
