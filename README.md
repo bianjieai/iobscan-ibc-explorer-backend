@@ -1,4 +1,4 @@
-# iobscan-ibc-explorer-backend
+# iobscan-ibc-openapi
 
 
 ## Run
@@ -12,13 +12,13 @@ make build
 then start with
 
 ```bash
-./iobscan-ibc-explorer-backend start
+./iobscan-ibc-openapi start
 ```
 
 or
 
 ```bash
-./iobscan-ibc-explorer-backend start test -c configFilePath
+./iobscan-ibc-openapi start test -c configFilePath
 ```
 
 ## Run with docker
@@ -26,13 +26,13 @@ or
 You can run application with docker.
 
 ```bash
-docker build -t iobscan-ibc-explorer-backend .
+docker build -t iobscan-ibc-openapi .
 ```
 
 then
 
 ```bash
-docker run --name iobscan-ibc-explorer-backend -p 8080:8080 iobscan-ibc-explorer-backend
+docker run --name iobscan-ibc-openapi -p 8080:8080 iobscan-ibc-openapi
 ```
 
 ## env params

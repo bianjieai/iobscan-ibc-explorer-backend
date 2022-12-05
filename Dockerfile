@@ -11,6 +11,6 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositorie
 
 FROM alpine:3.15
 
-COPY --from=builder /go/src/iobscan-ibc-open-api /usr/local/bin/
+COPY --from=builder /go/src/iobscan-ibc-openapi /usr/local/bin/
 
-CMD ["iobscan-ibc-open-api", "start"]
+CMD ["iobscan-ibc-openapi", "start"]
