@@ -38,8 +38,8 @@ func (t *IBCTxFailLogTask) Run() {
 		EndTime:   endTime,
 	}
 
-	_ = t.deal(seg, true)
-	_ = t.deal(seg, false)
+	_ = t.deal(seg, true, opUpdate)
+	_ = t.deal(seg, false, opUpdate)
 }
 
 func (t *IBCTxFailLogTask) RunWithParam(startTime, endTime int64, isTargetHistory bool) int {
@@ -56,7 +56,7 @@ func (t *IBCTxFailLogTask) RunWithParam(startTime, endTime int64, isTargetHistor
 	}
 
 	for _, v := range segs {
-		_ = t.deal(v, isTargetHistory)
+		_ = t.deal(v, isTargetHistory, opInsert)
 	}
 
 	return 0
@@ -72,7 +72,7 @@ func (t *IBCTxFailLogTask) getTxSegments(step int64, isTargetHistory bool) ([]*s
 	return segs, nil
 }
 
-func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool) error {
+func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool, op int) error {
 	const limit = 2000
 	var skip int64 = 0
 	knownTypeFailLogMap := make(map[string]*entity.IBCTxFailLog)
@@ -140,19 +140,25 @@ func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool) error {
 		skip += limit
 	}
 
+	var allFailLogList []*entity.IBCTxFailLog
 	if len(knownTypeFailLogMap) > 0 {
-		knownTypeFailLogList := make([]*entity.IBCTxFailLog, 0, len(knownTypeFailLogMap))
+		allFailLogList = make([]*entity.IBCTxFailLog, 0, len(knownTypeFailLogMap))
 		for k, v := range knownTypeFailLogMap {
 			v.TxsNumber = knownTypeFailLogCountMap[k]
-			knownTypeFailLogList = append(knownTypeFailLogList, v)
-		}
-		if err := ibcTxFailLogRepo.BatchInsert(knownTypeFailLogList); err != nil {
-			logrus.Errorf("task %s BatchInsert err, %v", err)
+			allFailLogList = append(allFailLogList, v)
 		}
 	}
 	if len(otherTypeFailLogList) > 0 {
-		if err := ibcTxFailLogRepo.BatchInsert(otherTypeFailLogList); err != nil {
-			logrus.Errorf("task %s BatchInsert err, %v", err)
+		allFailLogList = append(allFailLogList, otherTypeFailLogList...)
+	}
+
+	if op == opInsert {
+		if err := ibcTxFailLogRepo.BatchInsert(allFailLogList); err != nil {
+			logrus.Errorf("task %s BatchInsert err, %v", t.Name(), err)
+		}
+	} else {
+		if err := ibcTxFailLogRepo.BatchSwap(seg.StartTime, seg.EndTime, allFailLogList); err != nil {
+			logrus.Errorf("task %s BatchSwap err, %v", t.Name(), err)
 		}
 	}
 

@@ -129,3 +129,9 @@ type (
 		TxTimeEnd   int64 `json:"tx_time_end"`
 	}
 )
+
+type TaskReq struct {
+	StartTime       int64 `json:"start_time"`
+	EndTime         int64 `json:"end_time"`
+	IsTargetHistory bool  `json:"is_target_history"`
+}
