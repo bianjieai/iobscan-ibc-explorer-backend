@@ -57,6 +57,7 @@ func startTask(c conf.Redis, tc conf.Task) {
 	}
 
 	distributionTask.RegisterTasks(new(task.IBCTxFailLogTask))
+	distributionTask.Start()
 }
 
 func initLogger(logCfg *conf.Log) {
