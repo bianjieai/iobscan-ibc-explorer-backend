@@ -41,3 +41,10 @@ const (
 	baseDenomSymbol             = "base_denom:%s"
 	clientState                 = "client_state:%s"
 )
+
+// Keys of open api
+// The prefix is "oa"
+const (
+	openApiKey = "oa_open_api_key:%s"
+	rateLimit  = "oa_rate_limit:%s"
+)

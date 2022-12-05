@@ -25,72 +25,35 @@ func SetApiCacheAliveTime(duration int) {
 
 func Routers(Router *gin.Engine) {
 	Router.Use(middleware.Cors())
+	if global.Config.App.EnableSignature {
+		Router.Use(middleware.SignatureVerification())
+	}
+	if global.Config.App.EnableRateLimit {
+		Router.Use(middleware.RateLimit())
+	}
+
+	//Router.Use(middleware.Logger())
+
 	Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	Router.GET("", func(c *gin.Context) {
 		c.JSON(http.StatusOK, global.Config.App.Version)
 	})
 
 	ibcRouter := Router.Group("ibc")
-	homePage(ibcRouter)
-	txsPage(ibcRouter)
-	tokenPage(ibcRouter)
-	channelPage(ibcRouter)
-	chainPage(ibcRouter)
-	relayerPage(ibcRouter)
-	cacheTools(ibcRouter)
+	txCtl(ibcRouter)
+	chainCtl(ibcRouter)
 	taskTools(ibcRouter)
 }
 
-func homePage(r *gin.RouterGroup) {
-	ctl := rest.HomeController{}
-	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.DailyChains))
-	r.GET("/chains_connection", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChainsConnection))
-	r.GET("/baseDenoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AuthDenoms))
-	r.GET("/denoms", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcDenoms))
-	r.GET("/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Statistics))
-	r.POST("/searchPoint", ctl.SearchPoint)
+func txCtl(r *gin.RouterGroup) {
+	ctl := rest.IbcTxController{}
+	r.GET("/txs/:tx_hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Query))
+	r.GET("/transfers/statistics/:chain/failure", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.FailureStatistics))
 }
 
-func txsPage(r *gin.RouterGroup) {
-	ctl := rest.IbcTransferController{}
-	r.GET("/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxs))
-	r.GET("/txs_detail/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTxDetailNew))
-	r.GET("/trace_source/:hash", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TraceSource))
-	r.GET("/txs/searchCondition", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.SearchCondition))
-}
-
-func tokenPage(r *gin.RouterGroup) {
-	ctl := rest.TokenController{}
-	r.GET("/tokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-	r.GET("/ibcTokenList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IBCTokenList))
-}
-
-func channelPage(r *gin.RouterGroup) {
-	ctl := rest.ChannelController{}
-	r.GET("/channelList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-}
-
-func chainPage(r *gin.RouterGroup) {
+func chainCtl(r *gin.RouterGroup) {
 	ctl := rest.ChainController{}
-	r.GET("/chainList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-}
-
-func relayerPage(r *gin.RouterGroup) {
-	ctl := rest.RelayerController{}
-	r.GET("/relayerList", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-	r.GET("/relayer/:relayer_id", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.Detail))
-	r.GET("/relayer/:relayer_id/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.DetailRelayerTxs))
-	r.GET("/relayer/names", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerNameList))
-	r.GET("/relayer/:relayer_id/relayedTrend", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.RelayerTrend))
-	r.POST("/relayerCollect", ctl.Collect)
-	r.GET("/relayer/:relayer_id/transferTypeTxs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTypeTxs))
-	r.GET("/relayer/:relayer_id/totalRelayedValue", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalRelayedValue))
-	r.GET("/relayer/:relayer_id/totalFeeCost", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalFeeCost))
-}
-
-func cacheTools(r *gin.RouterGroup) {
-	ctl := rest.CacheController{}
-	r.DELETE("/cache/:key", ctl.Del)
+	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
 }
 
 func taskTools(r *gin.RouterGroup) {

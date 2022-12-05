@@ -6,13 +6,14 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/sirupsen/logrus"
 )
 
 // StringTemplate for string
@@ -46,6 +47,23 @@ func (r *Client) StringTemplateUnmarshal(key string, expiration time.Duration, d
 	return nil
 }
 
+// EvalInt execute command `eval`
+func (r *Client) EvalInt(ctx context.Context, script string, keys []string, args ...interface{}) (int64, error) {
+	val, err := r.redisClient.Eval(ctx, script, keys, args).Result()
+	if err != nil {
+		logrus.Errorf("redis eval error, %v", err)
+		return 0, err
+	}
+
+	res, err := formatInt(reflect.ValueOf(val))
+	if err != nil {
+		logrus.Errorf("redis eval formatInt error, %v", err)
+		return 0, err
+	}
+
+	return res, nil
+}
+
 func formatAny(v reflect.Value) string {
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -58,9 +76,29 @@ func formatAny(v reflect.Value) string {
 		return fmt.Sprintf("%v", v)
 	case reflect.String:
 		return v.String()
-	case reflect.Slice, reflect.Map, reflect.Struct:
-		return utils.MustMarshalJsonToStr(v.Interface())
+	case reflect.Slice, reflect.Map, reflect.Struct, reflect.Pointer:
+		bz, err := json.Marshal(v)
+		if err != nil {
+			panic(err)
+		}
+		return string(bz)
 	default:
 		panic(fmt.Errorf("stringTemplate not handle this Kind: %s", v.String()))
+	}
+}
+
+func formatInt(v reflect.Value) (int64, error) {
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int(), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return int64(v.Uint()), nil
+	case reflect.Float32, reflect.Float64:
+		return int64(v.Float()), nil
+	case reflect.String:
+		val, err := strconv.Atoi(v.String())
+		return int64(val), err
+	default:
+		return 0, fmt.Errorf("can't convert type %s to int64", v.String())
 	}
 }

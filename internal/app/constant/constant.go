@@ -50,7 +50,15 @@ const (
 	BaseDenomAllStatisticName = "base_denom_all"
 	DenomAllStatisticName     = "denom_all"
 
-	IBCConnectionChainsIconUri = "https://iobscan.io/resources/home/connection-chains/%s.png"
+	IbcCoreConnectionUri = "%s/ibc/core/connection/%s/client_connections/%s"
+	IbcCoreChannelsUri   = "%s/ibc/core/channel/%s/connections/%s/channels"
+
+	HeaderTimestamp = "X-Timestamp"
+	HeaderSignature = "X-Signature"
+	HeaderApiKey    = "X-Api-Key"
+	NetworkDelay    = 15
+
+	ContactUs = "If you don't find the chain you need, you can contact us by twitter(https://twitter.com/iobscan_ibc)"
 )
 
 var HomeStatistics = []string{
@@ -65,16 +73,4 @@ var RelayerDetailTxsType = []string{MsgTypeRecvPacket, MsgTypeAcknowledgement, M
 const (
 	UnAuth = "Others"
 	//AllChain = "allchain"
-)
-
-const (
-	//packet没有过期且没有发现成功的RecvPacket
-	NoFoundSuccessRecvPacket = "NoFoundSuccessRecvPacket"
-
-	//packet没有过期且没有发现成功的AcknowledgePacket
-	NoFoundSuccessAcknowledgePacket = "NoFoundSuccessAcknowledgePacket"
-	//packet已过期
-	NoFoundSuccessTimeoutPacket = "NoFoundSuccessTimeoutPacket"
-	//dc_chain_id为空,历史setting未处理的数据
-	NoFoundDcChain = "NoFoundDcChainId"
 )

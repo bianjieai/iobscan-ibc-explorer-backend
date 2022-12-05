@@ -93,6 +93,29 @@ func HttpGet(url string) (bz []byte, err error) {
 	return
 }
 
+func HttpDo(method, url string, reqBody interface{}, header map[string]string) (statusCode int, bz []byte, err error) {
+	reqBz := MarshalJsonIgnoreErr(reqBody)
+	reader := strings.NewReader(string(reqBz))
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		return 0, nil, err
+	}
+	for k, v := range header {
+		req.Header.Add(k, v)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	defer resp.Body.Close()
+	bz, err = ioutil.ReadAll(resp.Body)
+	return resp.StatusCode, bz, err
+}
+
 func HttpPost(url string, reqBody interface{}) (bz []byte, err error) {
 	reqBz := MarshalJsonIgnoreErr(reqBody)
 	reader := strings.NewReader(string(reqBz))

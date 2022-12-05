@@ -18,12 +18,12 @@ type TaskController struct {
 func (ctl *TaskController) Run(c *gin.Context) {
 	taskName := c.Param("task_name")
 	if taskName == "" {
-		c.JSON(http.StatusOK, response.FailBadRequest(fmt.Errorf("task name is empty")))
+		c.JSON(http.StatusBadRequest, response.FailBadRequest("parameter task_name is required"))
 		return
 	}
 	lockKey := fmt.Sprintf("%s:%s", "TaskController", taskName)
 	if err := cache.GetRedisClient().Lock(lockKey, time.Now().Unix(), time.Hour); err != nil {
-		c.JSON(http.StatusTooManyRequests, response.FailMsg("Please try again later"))
+		c.JSON(http.StatusTooManyRequests, response.FailBadRequest("Please try again later"))
 		return
 	}
 
@@ -33,46 +33,24 @@ func (ctl *TaskController) Run(c *gin.Context) {
 		logrus.Infof("TaskController task %s start", taskName)
 
 		switch taskName {
-		case addChainTask.Name():
-			res = addChainTask.RunWithParam(c.PostForm("new_chains"))
-		case tokenStatisticsTask.Name():
-			res = tokenStatisticsTask.Run()
-		case channelStatisticsTask.Name():
-			res = channelStatisticsTask.Run()
-		case relayerStatisticsTask.Name():
-			chain := c.PostForm("chain")
-			if chain == "" {
-				res = relayerStatisticsTask.Run()
-			} else {
-				startTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
-				if err != nil {
-					logrus.Errorf("TaskController run %s err, %v", taskName, err)
-					return
-				}
-				endTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
-				if err != nil {
-					logrus.Errorf("TaskController run %s err, %v", taskName, err)
-					return
-				}
-				res = relayerStatisticsTask.RunWithParam(chain, startTime, endTime)
+		case ibcTxFailLogTask.Name():
+			startTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
+			if err != nil {
+				logrus.Errorf("TaskController run %s err, %v", taskName, err)
+				return
 			}
-		case relayerDataTask.Name():
-			res = relayerDataTask.Run()
-		case addTransferDataTask.Name():
-			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
-		case ibcNodeLcdCronTask.Name():
-			value := c.PostForm("chains")
-			if len(value) > 0 {
-				ibcNodeLcdCronTask.RunWithParam(value)
-			} else {
-				ibcNodeLcdCronTask.Run()
+			endTime, err := strconv.ParseInt(c.PostForm("end_time"), 10, 64)
+			if err != nil {
+				logrus.Errorf("TaskController run %s err, %v", taskName, err)
+				return
 			}
-		case ibcStatisticCronTask.Name():
-			ibcStatisticCronTask.NewRun()
-		case modifyChainIdTask.Name():
-			modifyChainIdTask.RunWithParam(c.PostForm("category"), c.PostForm("coll"))
-		case fixRelayerStatisticsTask.Name():
-			fixRelayerStatisticsTask.Run()
+			isTargetHistory, err := strconv.ParseBool(c.PostForm("is_target_history"))
+			if err != nil {
+				logrus.Errorf("TaskController run %s err, %v", taskName, err)
+				return
+			}
+			res = ibcTxFailLogTask.RunWithParam(startTime, endTime, isTargetHistory)
+
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

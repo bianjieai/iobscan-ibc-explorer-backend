@@ -29,24 +29,24 @@ func WrapDetail(code int, msg string) Error {
 	}
 }
 
-func WrapRelayerNoAccessDetailErr(err error) Error {
+func WrapBadRequest(msg string) Error {
 	return vsErr{
-		code: ErrRelayerNoAccessDetail,
-		msg:  err.Error(),
+		code: ErrBadRequest,
+		msg:  msg,
 	}
 }
 
-func WrapBadRequest(err error) Error {
+func WrapTxNotFound() Error {
 	return vsErr{
-		code: ErrInvalidParams,
-		msg:  err.Error(),
+		code: ErrTxNotFound,
+		msg:  "Tx not found",
 	}
 }
 
-func WrapLcdNodeErr(errMsg string) Error {
+func WrapTxNotUnique(msg string) Error {
 	return vsErr{
-		code: ErrLcdNodeError,
-		msg:  errMsg,
+		code: ErrTxNotUnique,
+		msg:  msg,
 	}
 }
 

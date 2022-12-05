@@ -11,7 +11,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -19,54 +18,6 @@ import (
 type segment struct {
 	StartTime int64 `json:"start_time"`
 	EndTime   int64 `json:"end_time"`
-}
-
-func getHistorySegment(step int64) ([]*segment, error) {
-	first, err := ibcTxRepo.FirstHistory()
-	if err != nil {
-		return nil, err
-	}
-
-	latest, err := ibcTxRepo.LatestHistory()
-	if err != nil {
-		return nil, err
-	}
-
-	start := time.Unix(first.CreateAt, 0)
-	startUnix := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.Local).Unix()
-	end := time.Unix(latest.CreateAt, 0)
-	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
-
-	var segments []*segment
-	for temp := startUnix; temp < endUnix; temp += step {
-		segments = append(segments, &segment{
-			StartTime: temp,
-			EndTime:   temp + step - 1,
-		})
-	}
-	return segments, nil
-}
-
-func getSegment(step int64) ([]*segment, error) {
-	first, err := ibcTxRepo.First()
-	if err != nil {
-		return nil, err
-	}
-
-	start := time.Unix(first.CreateAt, 0)
-	startUnix := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.Local).Unix()
-	end := time.Now()
-	endUnix := time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 59, time.Local).Unix()
-
-	var segments []*segment
-	for temp := startUnix; temp < endUnix; temp += step {
-		segments = append(segments, &segment{
-			StartTime: temp,
-			EndTime:   temp + step - 1,
-		})
-	}
-
-	return segments, nil
 }
 
 func segmentTool(step int64, startTime, endTime int64) []*segment {
@@ -86,55 +37,10 @@ func segmentTool(step int64, startTime, endTime int64) []*segment {
 	return segments
 }
 
-// todayUnix 获取今日第一秒和最后一秒的时间戳
-func todayUnix() (int64, int64) {
-	now := time.Now()
-	startUnix := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix()
-	endUnix := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 59, time.Local).Unix()
-	return startUnix, endUnix
-}
-
-// yesterdayUnix 获取昨日第一秒和最后一秒的时间戳
-func yesterdayUnix() (int64, int64) {
-	date := time.Now().AddDate(0, 0, -1)
-	startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
-	endUnix := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 59, time.Local).Unix()
-	return startUnix, endUnix
-}
-
 func isConnectionErr(err error) bool {
 	return true // 直接return true, 避免task被各种奇怪的返回值问题卡死
 	//return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||
 	//	strings.Contains(err.Error(), "unsupported protocol scheme")
-}
-
-func getAllChainMap() (map[string]*entity.ChainConfig, error) {
-	allChainList, err := chainConfigRepo.FindAll()
-	if err != nil {
-		return nil, err
-	}
-
-	allChainMap := make(map[string]*entity.ChainConfig)
-	for _, v := range allChainList {
-		allChainMap[v.ChainName] = v
-	}
-
-	return allChainMap, err
-}
-
-// getChainIdNameMap, map key: chain id, value: chain name
-func getChainIdNameMap() (map[string]string, error) {
-	allChainList, err := chainConfigRepo.FindAllChainInfos()
-	if err != nil {
-		return nil, err
-	}
-
-	allChainMap := make(map[string]string)
-	for _, v := range allChainList {
-		allChainMap[v.CurrentChainId] = v.ChainName
-	}
-
-	return allChainMap, err
 }
 
 func matchDcInfo(scChain, scPort, scChannel string, allChainMap map[string]*entity.ChainConfig) (dcChain, dcPort, dcChannel string) {
@@ -283,31 +189,6 @@ func calculateNextDenomPath(packet model.Packet) (string, bool) {
 		denomPath = fmt.Sprintf("%s%s", prefixDc, denomPath)
 		return denomPath, false
 	}
-}
-
-// queryClientState 查询lcd client_state_path接口
-func queryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
-	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
-	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
-	url := fmt.Sprintf("%s%s", lcd, apiPath)
-
-	if state, err := lcdTxDataCacheRepo.GetClientState(utils.Md5(url)); err == nil {
-		return state, nil
-	}
-
-	bz, err := utils.HttpGet(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp vo.ClientStateResp
-	err = json.Unmarshal(bz, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = lcdTxDataCacheRepo.SetClientState(utils.Md5(url), &resp)
-	return &resp, nil
 }
 
 // parseTransferTxEvents parse ibc info from events of transfer tx
