@@ -125,7 +125,7 @@ type (
 	}
 
 	FailureStatisticCaliber struct {
-		TxTimeMin int64 `json:"tx_time_min"`
-		TxTimeMax int64 `json:"tx_time_max"`
+		TxTimeStart int64 `json:"tx_time_start"`
+		TxTimeEnd   int64 `json:"tx_time_end"`
 	}
 )

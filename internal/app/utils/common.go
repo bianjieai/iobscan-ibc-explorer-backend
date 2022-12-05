@@ -98,7 +98,10 @@ func HttpDo(method, url string, reqBody interface{}, header map[string]string) (
 	reader := strings.NewReader(string(reqBz))
 
 	client := &http.Client{}
-	req, _ := http.NewRequest(method, url, reader)
+	req, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		return 0, nil, err
+	}
 	for k, v := range header {
 		req.Header.Add(k, v)
 	}

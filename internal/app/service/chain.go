@@ -27,6 +27,9 @@ func (svc *ChainService) List() (*vo.ChainListResp, errors.Error) {
 	}
 
 	var registryMap = make(map[string]string, len(registryList))
+	for _, v := range registryList {
+		registryMap[v.Chain] = v.ChainJsonUrl
+	}
 	chainItems := make([]vo.ChainItem, 0, len(chainList))
 	for _, c := range chainList {
 		chainItems = append(chainItems, vo.ChainItem{

@@ -18,7 +18,7 @@ type TaskController struct {
 func (ctl *TaskController) Run(c *gin.Context) {
 	taskName := c.Param("task_name")
 	if taskName == "" {
-		c.JSON(http.StatusBadRequest, response.FailBadRequest("task name is required"))
+		c.JSON(http.StatusBadRequest, response.FailBadRequest("parameter task_name is required"))
 		return
 	}
 	lockKey := fmt.Sprintf("%s:%s", "TaskController", taskName)

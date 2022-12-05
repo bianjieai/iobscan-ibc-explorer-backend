@@ -112,6 +112,10 @@ func (svc *TxService) locateTx(txs []*entity.Tx, req vo.TxReq) (*entity.Tx, *dto
 }
 
 func (svc *TxService) ics20Transfer(scChain, dcChain, packetId string) (*vo.Ics20Transfer, errors.Error) {
+	if packetId == "" || scChain == "" {
+		return nil, nil
+	}
+
 	scTxs, err := txRepo.FindByPacketId(scChain, packetId)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -122,12 +126,15 @@ func (svc *TxService) ics20Transfer(scChain, dcChain, packetId string) (*vo.Ics2
 		return nil, nil
 	}
 
-	DcTxs, err := txRepo.FindByPacketId(dcChain, packetId)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
+	recvPacketTxs := make([]vo.SimpleTxExt, 0)
+	if dcChain != "" {
+		DcTxs, err := txRepo.FindByPacketId(dcChain, packetId)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
 
-	recvPacketTxs := svc.parseDcChainTxs(dcChain, DcTxs)
+		recvPacketTxs = svc.parseDcChainTxs(dcChain, DcTxs)
+	}
 
 	transferMsg := transferTx.Msg.TransferMsg()
 	var modelPacket model.Packet
@@ -416,7 +423,7 @@ func (svc *TxService) FailureStatistics(chain string, startTime, endTime int64) 
 	items := make([]vo.FailureStatisticsItem, 0, len(statistics))
 	for _, v := range statistics {
 		items = append(items, vo.FailureStatisticsItem{
-			FailureReason:         v.Code,
+			FailureReason:         strings.ReplaceAll(v.Code, "_", " "),
 			FailureTransferNumber: v.TxsNum,
 		})
 	}
@@ -424,8 +431,8 @@ func (svc *TxService) FailureStatistics(chain string, startTime, endTime int64) 
 	return &vo.FailureStatisticsResp{
 		Items: items,
 		StatisticCaliber: vo.FailureStatisticCaliber{
-			TxTimeMin: startTime,
-			TxTimeMax: endTime,
+			TxTimeStart: startTime,
+			TxTimeEnd:   endTime,
 		},
 	}, nil
 }

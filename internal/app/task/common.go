@@ -37,22 +37,6 @@ func segmentTool(step int64, startTime, endTime int64) []*segment {
 	return segments
 }
 
-// todayUnix 获取今日第一秒和最后一秒的时间戳
-func todayUnix() (int64, int64) {
-	now := time.Now()
-	startUnix := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix()
-	endUnix := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 59, time.Local).Unix()
-	return startUnix, endUnix
-}
-
-// yesterdayUnix 获取昨日第一秒和最后一秒的时间戳
-func yesterdayUnix() (int64, int64) {
-	date := time.Now().AddDate(0, 0, -1)
-	startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
-	endUnix := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 59, time.Local).Unix()
-	return startUnix, endUnix
-}
-
 func isConnectionErr(err error) bool {
 	return true // 直接return true, 避免task被各种奇怪的返回值问题卡死
 	//return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||

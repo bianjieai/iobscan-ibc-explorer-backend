@@ -8,6 +8,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,9 +74,11 @@ func (ctl *IbcTxController) FailureStatistics(c *gin.Context) {
 			return
 		}
 		endTime = endTimeParse.Unix()
+	} else {
+		_, endTime = utils.YesterdayUnix()
 	}
 
-	if startTime >= endTime {
+	if startTime > endTime {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest("end_date must be greater than start_date"))
 		return
 	}

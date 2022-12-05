@@ -7,9 +7,13 @@ const (
 type TxFailCode string
 
 const (
-	TxFailCodeTimeout  TxFailCode = "timeout"
-	TxFailCodeOther    TxFailCode = "other"
-	TxFailCodeWrongSeq TxFailCode = "wrong_sequence"
+	TxFailCodeTimeout                     TxFailCode = "timeout"
+	TxFailCodeOther                       TxFailCode = "other"
+	TxFailCodeWrongSeq                    TxFailCode = "wrong_sequence"
+	TxFailCodeOutOfGas                    TxFailCode = "out_of_gas"
+	TxFailCodeInsufficientFunds           TxFailCode = "insufficient_funds"
+	TxFailCodeClientNotActive             TxFailCode = "client_is_not_active"
+	TxFailCodeParsePacketFowradingInfoErr TxFailCode = "cannot_parse_packet_fowrading_information"
 )
 
 type IBCTxFailLog struct {

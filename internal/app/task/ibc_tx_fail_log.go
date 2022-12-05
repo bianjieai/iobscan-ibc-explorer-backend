@@ -2,10 +2,12 @@ package task
 
 import (
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/distributiontask"
+	"strings"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/distributiontask"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,7 +32,7 @@ func (t *IBCTxFailLogTask) BeforeHook() error {
 }
 
 func (t *IBCTxFailLogTask) Run() {
-	startTime, endTime := yesterdayUnix()
+	startTime, endTime := utils.YesterdayUnix()
 	seg := &segment{
 		StartTime: startTime,
 		EndTime:   endTime,
@@ -44,7 +46,7 @@ func (t *IBCTxFailLogTask) RunWithParam(startTime, endTime int64, isTargetHistor
 	const step = 3600 * 24
 	var segs []*segment
 	var err error
-	if startTime != 0 && endTime != 0 {
+	if startTime > 0 && endTime > 0 {
 		segs = segmentTool(step, startTime, endTime)
 	} else {
 		segs, err = t.getTxSegments(step, isTargetHistory)
@@ -66,7 +68,7 @@ func (t *IBCTxFailLogTask) getTxSegments(step int64, isTargetHistory bool) ([]*s
 		return nil, err
 	}
 
-	segs := segmentTool(step, startTime, time.Now().Unix())
+	segs := segmentTool(step, startTime, time.Now().Unix()-86400)
 	return segs, nil
 }
 
@@ -159,6 +161,17 @@ func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool) error {
 }
 
 func (t *IBCTxFailLogTask) failType(log string) entity.TxFailCode {
-	// TODO 完善各个类型判断
-	return entity.TxFailCodeOther
+	if strings.Contains(log, "packet timeout") {
+		return entity.TxFailCodeTimeout
+	} else if strings.Contains(log, "out of gas") {
+		return entity.TxFailCodeOutOfGas
+	} else if strings.Contains(log, "insufficient funds") {
+		return entity.TxFailCodeInsufficientFunds
+	} else if strings.Contains(log, "client is not active") {
+		return entity.TxFailCodeClientNotActive
+	} else if strings.Contains(log, "cannot parse packet fowrading information") {
+		return entity.TxFailCodeParsePacketFowradingInfoErr
+	} else {
+		return entity.TxFailCodeOther
+	}
 }
