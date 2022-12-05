@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/shopspring/decimal"
 	"math"
 )
@@ -244,4 +245,17 @@ type BaseDenomAmountDTO struct {
 	BaseDenom      string  `bson:"base_denom"`
 	BaseDenomChain string  `bson:"base_denom_chain"`
 	Amount         float64 `bson:"amount"`
+}
+
+type MatchTxPacketDTO struct {
+	TxType   entity.TxType
+	Channel  string
+	Port     string
+	Sequence string
+	PacketId string
+}
+
+type FailureStatisticsSDTO struct {
+	Code   string `bson:"_id"`
+	TxsNum int64  `bson:"txs_num"`
 }

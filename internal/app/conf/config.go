@@ -41,12 +41,12 @@ type HintIndexName struct {
 }
 
 type App struct {
-	Name                 string
-	Addr                 string
-	Env                  string
-	StartMonitor         bool  `mapstructure:"start_monitor"`
-	StartTask            bool  `mapstructure:"start_task"`
-	StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
+	Name         string
+	Addr         string
+	Env          string
+	StartMonitor bool `mapstructure:"start_monitor"`
+	StartTask    bool `mapstructure:"start_task"`
+	//StartOneOffTask      bool  `mapstructure:"start_one_off_task"`
 	ApiCacheAliveSeconds int   `mapstructure:"api_cache_alive_seconds"`
 	MaxPageSize          int64 `mapstructure:"max_page_size"`
 	Version              string
@@ -74,7 +74,7 @@ type Log struct {
 }
 
 type Task struct {
-	RedisLockExpireTime int `mapstructure:"redis_lock_expire_time"`
+	IBCTxFailLogTask string `mapstructure:"ibc_tx_fail_log_task"`
 }
 
 type Spi struct {

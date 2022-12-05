@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/gin-gonic/gin"
@@ -89,7 +92,7 @@ func SignatureVerification() gin.HandlerFunc {
 				c.Next()
 				return
 			} else {
-				c.AbortWithStatusJSON(http.StatusBadRequest, fmt.Sprintf("Invalid %s", constant.HeaderSignature))
+				c.AbortWithStatusJSON(http.StatusUnauthorized, fmt.Sprintf("Invalid %s", constant.HeaderSignature))
 			}
 		}
 	}
@@ -161,4 +164,38 @@ func parseRateLimitPolicy() (frequency, cycleTime int) {
 	}
 
 	return frequency, cycleTime
+}
+
+type ResponseWriterWrapper struct {
+	gin.ResponseWriter
+	Body *bytes.Buffer // 缓存
+}
+
+func (w ResponseWriterWrapper) Write(b []byte) (int, error) {
+	w.Body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func (w ResponseWriterWrapper) WriteString(s string) (int, error) {
+	w.Body.WriteString(s)
+	return w.ResponseWriter.WriteString(s)
+}
+
+func Logger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		blw := &ResponseWriterWrapper{Body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+		c.Writer = blw
+
+		c.Next()
+
+		if c.Writer.Status() != http.StatusOK {
+			var resp vo.BaseResponse
+			_ = json.Unmarshal(blw.Body.Bytes(), &resp)
+
+			logrus.WithField("uri", c.Request.URL).WithField("req", c.Request.Body).WithField("resp", resp).
+				Errorf("[%d]open api exception, msg: %s", c.Writer.Status(), resp.Message)
+
+			//c.JSON().
+		}
+	}
 }

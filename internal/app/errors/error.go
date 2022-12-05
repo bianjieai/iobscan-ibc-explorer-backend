@@ -29,10 +29,24 @@ func WrapDetail(code int, msg string) Error {
 	}
 }
 
-func WrapBadRequest(err error) Error {
+func WrapBadRequest(msg string) Error {
 	return vsErr{
 		code: ErrBadRequest,
-		msg:  err.Error(),
+		msg:  msg,
+	}
+}
+
+func WrapTxNotFound() Error {
+	return vsErr{
+		code: ErrTxNotFound,
+		msg:  "Tx not found",
+	}
+}
+
+func WrapTxNotUnique(msg string) Error {
+	return vsErr{
+		code: ErrTxNotUnique,
+		msg:  msg,
 	}
 }
 

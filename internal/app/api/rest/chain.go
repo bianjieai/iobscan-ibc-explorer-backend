@@ -10,7 +10,11 @@ type ChainController struct {
 }
 
 func (ctl *ChainController) List(c *gin.Context) {
+	list, e := chainService.List()
+	if e != nil {
+		c.JSON(response.HttpCode(e), response.FailError(e))
+		return
+	}
 
-	// todo
-	c.JSON(http.StatusOK, response.Success(nil))
+	c.JSON(http.StatusOK, response.Success(list))
 }

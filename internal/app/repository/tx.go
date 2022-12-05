@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,12 +21,12 @@ type ITxRepo interface {
 	GetAcknowledgeTxs(chain, packetId string) ([]*entity.Tx, error)
 	GetRecvPacketTxs(chain, packetId string) ([]*entity.Tx, error)
 	FindByPacketIds(chain, txType string, packetIds []string, status *entity.TxStatus) ([]*entity.Tx, error)
-	RelayerDenomStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error)
-	RelayerFeeStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error)
 	GetRelayerTxs(chain string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error)
 	CountRelayerTxs(chain string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd int64) (int64, error)
+	GetIbcTxsByHash(chain string, hash string) ([]*entity.Tx, error)
+	FindByPacketId(chain, packetId string) ([]*entity.Tx, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -193,139 +193,6 @@ func (repo *TxRepo) GetRecvPacketTxs(chain, packetId string) ([]*entity.Tx, erro
 	return res, nil
 }
 
-func (repo *TxRepo) RelayerDenomStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerDenomStatisticsDTO, error) {
-	match := bson.M{
-		"$match": bson.M{
-			"time": bson.M{
-				"$lte": endTime,
-				"$gte": startTime,
-			},
-			"msgs.type": bson.M{
-				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
-			},
-		},
-	}
-
-	unwind := bson.M{
-		"$unwind": "$msgs",
-	}
-
-	match2 := bson.M{
-		"$match": bson.M{
-			"msgs.type": bson.M{
-				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
-			},
-		},
-	}
-
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"signer":     "$msgs.msg.signer",
-				"status":     "$status",
-				"tx_type":    "$msgs.type",
-				"denom":      "$msgs.msg.packet.data.denom",
-				"sc_channel": "$msgs.msg.packet.source_channel",
-				"dc_channel": "$msgs.msg.packet.destination_channel",
-			},
-			"denom_amount": bson.M{
-				"$sum": bson.M{
-					"$toDouble": "$msgs.msg.packet.data.amount",
-				},
-			},
-			"txs_count": bson.M{
-				"$sum": 1,
-			},
-		},
-	}
-
-	project := bson.M{
-		"$project": bson.M{
-			"_id":          0,
-			"signer":       "$_id.signer",
-			"status":       "$_id.status",
-			"tx_type":      "$_id.tx_type",
-			"denom":        "$_id.denom",
-			"sc_channel":   "$_id.sc_channel",
-			"dc_channel":   "$_id.dc_channel",
-			"denom_amount": "$denom_amount",
-			"txs_count":    "$txs_count",
-		},
-	}
-
-	var pipe []bson.M
-	pipe = append(pipe, match, unwind, match2, group, project)
-	var res []*dto.RelayerDenomStatisticsDTO
-	err := repo.coll(chain).Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *TxRepo) RelayerFeeStatistics(chain string, startTime, endTime int64) ([]*dto.RelayerFeeStatisticsDTO, error) {
-	match := bson.M{
-		"$match": bson.M{
-			"time": bson.M{
-				"$lte": endTime,
-				"$gte": startTime,
-			},
-			"msgs.type": bson.M{
-				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
-			},
-		},
-	}
-
-	unwind := bson.M{
-		"$unwind": "$msgs",
-	}
-
-	match2 := bson.M{
-		"$match": bson.M{
-			"msgs.type": bson.M{
-				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
-			},
-		},
-	}
-
-	unwind2 := bson.M{
-		"$unwind": "$fee.amount",
-	}
-
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"signer":  "$msgs.msg.signer",
-				"status":  "$status",
-				"tx_type": "$msgs.type",
-				"denom":   "$fee.amount.denom",
-			},
-			"denom_amount": bson.M{
-				"$sum": bson.M{
-					"$toDouble": "$fee.amount.amount",
-				},
-			},
-			"txs_count": bson.M{
-				"$sum": 1,
-			},
-		},
-	}
-
-	project := bson.M{
-		"$project": bson.M{
-			"_id":          0,
-			"signer":       "$_id.signer",
-			"status":       "$_id.status",
-			"tx_type":      "$_id.tx_type",
-			"denom":        "$_id.denom",
-			"denom_amount": "$denom_amount",
-			"txs_count":    "$txs_count",
-		},
-	}
-
-	var pipe []bson.M
-	pipe = append(pipe, match, unwind, match2, unwind2, group, project)
-	var res []*dto.RelayerFeeStatisticsDTO
-	err := repo.coll(chain).Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
 func createQueryRelayerTxs(relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) bson.M {
 	query := bson.M{}
 	if len(relayerAddrs) > 0 {
@@ -367,4 +234,29 @@ func (repo *TxRepo) GetRelayerTxs(chain string, relayerAddrs []string, txTypes [
 func (repo *TxRepo) CountRelayerTxs(chain string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
 	return repo.coll(chain).Find(context.Background(), query).Hint(CountRelayerTxsHintIndexName()).Count()
+}
+
+func (repo *TxRepo) GetIbcTxsByHash(chain string, hash string) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+
+	query := bson.M{
+		"msgs.type": bson.M{
+			"$in": []entity.TxType{entity.TxTypeTransfer, entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket},
+		},
+		"tx_hash": hash,
+	}
+
+	err := repo.coll(chain).Find(context.Background(), query).All(&res)
+	return res, err
+}
+
+func (repo *TxRepo) FindByPacketId(chain, packetId string) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+
+	query := bson.M{
+		"msgs.msg.packet_id": packetId,
+	}
+
+	err := repo.coll(chain).Find(context.Background(), query).All(&res)
+	return res, err
 }

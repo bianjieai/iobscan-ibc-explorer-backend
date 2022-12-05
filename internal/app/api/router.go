@@ -31,6 +31,9 @@ func Routers(Router *gin.Engine) {
 	if global.Config.App.EnableRateLimit {
 		Router.Use(middleware.RateLimit())
 	}
+
+	//Router.Use(middleware.Logger())
+
 	Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	Router.GET("", func(c *gin.Context) {
 		c.JSON(http.StatusOK, global.Config.App.Version)
@@ -39,6 +42,7 @@ func Routers(Router *gin.Engine) {
 	ibcRouter := Router.Group("ibc")
 	txCtl(ibcRouter)
 	chainCtl(ibcRouter)
+	taskTools(ibcRouter)
 }
 
 func txCtl(r *gin.RouterGroup) {
@@ -50,4 +54,9 @@ func txCtl(r *gin.RouterGroup) {
 func chainCtl(r *gin.RouterGroup) {
 	ctl := rest.ChainController{}
 	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+}
+
+func taskTools(r *gin.RouterGroup) {
+	ctl := rest.TaskController{}
+	r.POST("/task/:task_name", ctl.Run)
 }

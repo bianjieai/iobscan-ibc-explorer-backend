@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
@@ -14,25 +15,14 @@ const (
 	OneOffTaskLockTime   = 86400 * 30
 	ThreeHourCronJobTime = "0 0 */6 * * ?"
 	statisticsCheckTimes = 5
-)
 
-const (
 	opInsert = 1
 	opUpdate = 2
-
-	ibcTxCount = 500000
-
-	fixCreateAtErrTime = 1656950400
-
-	replaceHolderOffset  = "OFFSET"
-	replaceHolderLimit   = "LIMIT"
-	replaceHolderChannel = "CHANNEL"
-	replaceHolderPort    = "PORT"
 )
-const (
-	channelMatchSuccess = 1
-	channelNotFound     = 0
-	channelMatchFail    = -1
+
+var (
+	ibcTxRepo        repository.IExIbcTxRepo      = new(repository.ExIbcTxRepo)
+	ibcTxFailLogRepo repository.IIBCTxFailLogRepo = new(repository.IBCTxFailLogRepo)
 )
 
 type stringQueueCoordinator struct {

@@ -11,6 +11,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/distributiontask"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
@@ -33,12 +34,9 @@ func Serve(cfg *conf.Config) {
 	//if cfg.App.StartMonitor {
 	//	go monitor.Start(cfg.App.Prometheus)
 	//}
-	//if cfg.App.StartTask {
-	//	go startTask()
-	//}
-	//if cfg.App.StartOneOffTask {
-	//	go startOneOffTask()
-	//}
+	if cfg.App.StartTask {
+		go startTask(cfg.Redis, cfg.Task)
+	}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
 
@@ -48,7 +46,17 @@ func initCore(cfg *conf.Config) {
 	repository.InitMgo(cfg.Mongo, context.Background())
 	repository.LoadIndexNameConf(cfg.HintIndexName)
 	cache.InitRedisClient(cfg.Redis)
-	task.LoadTaskConf(cfg.Task)
+}
+
+func startTask(c conf.Redis, tc conf.Task) {
+	task.LoadTaskConf(tc)
+
+	distributionTask, err := distributiontask.NewDistributedTaskWithRedis(c.Addrs, c.User, c.Password, string(c.Mode), c.Db)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	distributionTask.RegisterTasks(new(task.IBCTxFailLogTask))
 }
 
 func initLogger(logCfg *conf.Log) {
@@ -79,14 +87,4 @@ func initLogger(logCfg *conf.Log) {
 	} else {
 		logrus.SetOutput(os.Stdout)
 	}
-}
-
-func startTask() {
-	task.RegisterTasks()
-	task.Start()
-}
-
-func startOneOffTask() {
-	task.RegisterOneOffTasks()
-	task.StartOneOffTask()
 }

@@ -4,13 +4,12 @@ addr = "0.0.0.0:8000"
 version = "0.1"
 env = "dev"
 start_task = false
-start_one_off_task = false
 start_monitor = false
 api_cache_alive_seconds = 3
 max_page_size = 3000
 prometheus_port = "9090"
-enable_signature = true
-enable_rate_limit = true
+enable_signature = false
+enable_rate_limit = false
 rate_limit_policy = "100/60" ## m/n  m: frequency; n: cycle time(unit: s)
 
 [log]
@@ -36,3 +35,6 @@ db = 0
 
 [spi]
 coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
+
+[task]
+ibc_tx_fail_log_task = "0 0 2 * * ?"

@@ -57,6 +57,8 @@ const (
 	HeaderSignature = "X-Signature"
 	HeaderApiKey    = "X-Api-Key"
 	NetworkDelay    = 15
+
+	ContactUs = "If you don't find the chain you need, you can contact us by twitter(https://twitter.com/iobscan_ibc)"
 )
 
 var HomeStatistics = []string{
