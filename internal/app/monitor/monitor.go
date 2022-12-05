@@ -128,8 +128,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 		if err := json.Unmarshal(resp, &data); err != nil {
 			return false
 		}
-		network := strings.ReplaceAll(data.NodeInfo.Network, "-", "_")
-		if network != cf.CurrentChainId {
+		if data.NodeInfo.Network != cf.CurrentChainId {
 			//return false, if lcd node_info network no match chain_id
 			return false
 		}
