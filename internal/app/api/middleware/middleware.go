@@ -92,7 +92,7 @@ func SignatureVerification() gin.HandlerFunc {
 				c.Next()
 				return
 			} else {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, fmt.Sprintf("Invalid %s", constant.HeaderSignature))
+				c.AbortWithStatusJSON(http.StatusUnauthorized, response.FailBadRequest(fmt.Sprintf("Invalid %s", constant.HeaderSignature)))
 			}
 		}
 	}
