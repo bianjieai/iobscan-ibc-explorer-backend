@@ -235,6 +235,10 @@ func matchTxPacket(txType entity.TxType, msg *model.TxMsg, channel, port, sequen
 			return false, nil
 		}
 
+		if sequence != "" {
+			return false, nil
+		}
+
 		return true, &dto.MatchTxPacketDTO{
 			TxType:   entity.TxTypeTransfer,
 			Channel:  transferTxMsg.SourceChannel,

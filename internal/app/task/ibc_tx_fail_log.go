@@ -118,6 +118,7 @@ func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool, op int) erro
 			if tx.Status == entity.IbcTxStatusFailed {
 				failCode := t.failType(tx.ScTxInfo.Log)
 				aggrFunc(failCode, tx.ScChain, tx.ScTxInfo.Log)
+				aggrFunc(failCode, tx.DcChain, tx.ScTxInfo.Log)
 			} else { // refund
 				var failCode entity.TxFailCode
 				var failLog string
