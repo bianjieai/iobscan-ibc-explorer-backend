@@ -122,21 +122,6 @@ func getAllChainMap() (map[string]*entity.ChainConfig, error) {
 	return allChainMap, err
 }
 
-// getChainIdNameMap, map key: chain id, value: chain name
-func getChainIdNameMap() (map[string]string, error) {
-	allChainList, err := chainConfigRepo.FindAllChainInfos()
-	if err != nil {
-		return nil, err
-	}
-
-	allChainMap := make(map[string]string)
-	for _, v := range allChainList {
-		allChainMap[v.CurrentChainId] = v.ChainName
-	}
-
-	return allChainMap, err
-}
-
 func matchDcInfo(scChain, scPort, scChannel string, allChainMap map[string]*entity.ChainConfig) (dcChain, dcPort, dcChannel string) {
 	if allChainMap == nil || allChainMap[scChain] == nil {
 		return

@@ -14,3 +14,10 @@ func TestMain(m *testing.M) {
 	}, context.Background())
 	m.Run()
 }
+
+func Test_checkLcd(t *testing.T) {
+	value := checkLcd("https://emoney.validator.network/api", "/ibc/core/channel/v1beta1/channels?pagination.offset=OFFSET&pagination.limit=LIMIT&pagination.count_total=true")
+	if value {
+		t.Log("pass")
+	}
+}

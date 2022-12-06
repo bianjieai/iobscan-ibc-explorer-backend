@@ -25,11 +25,19 @@ const (
 )
 
 type RelayerHandler struct {
+	chainIdNameMap map[string]string
 }
 
 func (h *RelayerHandler) Collect(filepath string) {
 	logrus.Infof("RelayerHandler collect %s", filepath)
 	st := time.Now().Unix()
+
+	chainIdNameMapData, err := repository.GetChainIdNameMap()
+	if err != nil {
+		logrus.Errorf("getChainIdNameMap err, %v", err)
+		return
+	}
+	h.chainIdNameMap = chainIdNameMapData
 
 	if filepath == "" {
 		h.xPathMainPage()
@@ -80,11 +88,17 @@ func (h *RelayerHandler) fetchSave(filepath string) {
 		index := 0
 		var chainA, chainAAddress, chainB, chainBAddress string
 		for k, v := range addrMap {
+			chainName := k
+			if len(h.chainIdNameMap) > 0 {
+				if name, ok := h.chainIdNameMap[k]; ok {
+					chainName = name
+				}
+			}
 			if index == 0 {
-				chainA = k
+				chainA = chainName
 				chainAAddress = v
 			} else {
-				chainB = k
+				chainB = chainName
 				chainBAddress = v
 			}
 

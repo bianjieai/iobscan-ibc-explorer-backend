@@ -51,3 +51,18 @@ func GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB string) 
 
 	return res, nil
 }
+
+// getChainIdNameMap, map key: chain id, value: chain name
+func GetChainIdNameMap() (map[string]string, error) {
+	allChainList, err := new(ChainConfigRepo).FindAllChainInfos()
+	if err != nil {
+		return nil, err
+	}
+
+	allChainMap := make(map[string]string)
+	for _, v := range allChainList {
+		allChainMap[v.CurrentChainId] = v.ChainName
+	}
+
+	return allChainMap, err
+}
