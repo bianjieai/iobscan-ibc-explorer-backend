@@ -4,11 +4,11 @@ import "github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/ent
 
 type TokenListReq struct {
 	Page
-	BaseDenom        string           `json:"base_denom" form:"base_denom"`
-	BaseDenomChainId string           `json:"base_denom_chain_id" form:"base_denom_chain_id"`
-	Chain            string           `json:"chain" form:"chain"`
-	TokenType        entity.TokenType `json:"token_type" form:"token_type"`
-	UseCount         bool             `json:"use_count" form:"use_count"`
+	BaseDenom      string           `json:"base_denom" form:"base_denom"`
+	BaseDenomChain string           `json:"base_denom_chain" form:"base_denom_chain"`
+	Chain          string           `json:"chain" form:"chain"`
+	TokenType      entity.TokenType `json:"token_type" form:"token_type"`
+	UseCount       bool             `json:"use_count" form:"use_count"`
 }
 
 type TokenListResp struct {
@@ -18,7 +18,7 @@ type TokenListResp struct {
 
 type TokenItem struct {
 	BaseDenom         string           `json:"base_denom"`
-	ChainId           string           `json:"chain_id"`
+	Chain             string           `json:"chain"`
 	TokenType         entity.TokenType `json:"token_type"`
 	Supply            string           `json:"supply"`
 	Currency          string           `json:"currency"`
@@ -30,11 +30,11 @@ type TokenItem struct {
 
 type IBCTokenListReq struct {
 	Page
-	BaseDenom        string                `json:"base_denom" form:"base_denom"`
-	BaseDenomChainId string                `json:"base_denom_chain_id" form:"base_denom_chain_id"`
-	Chain            string                `json:"chain" form:"chain"`
-	TokenType        entity.TokenTraceType `json:"token_type" form:"token_type"`
-	UseCount         bool                  `json:"use_count" form:"use_count"`
+	BaseDenom      string                `json:"base_denom" form:"base_denom"`
+	BaseDenomChain string                `json:"base_denom_chain" form:"base_denom_chain"`
+	Chain          string                `json:"chain" form:"chain"`
+	TokenType      entity.TokenTraceType `json:"token_type" form:"token_type"`
+	UseCount       bool                  `json:"use_count" form:"use_count"`
 }
 
 type IBCTokenListResp struct {
@@ -45,7 +45,7 @@ type IBCTokenListResp struct {
 type IBCTokenItem struct {
 	Denom      string                `json:"denom"`
 	DenomPath  string                `json:"denom_path"`
-	ChainId    string                `json:"chain_id"`
+	Chain      string                `json:"chain"`
 	TokenType  entity.TokenTraceType `json:"token_type"`
 	IBCHops    int                   `json:"ibc_hops"`
 	Amount     string                `json:"amount"`

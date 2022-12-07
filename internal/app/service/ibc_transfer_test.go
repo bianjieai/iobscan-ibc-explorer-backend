@@ -10,7 +10,7 @@ import (
 func TestTransferService_TraceSource(t *testing.T) {
 	data, err := new(TransferService).TraceSource("87DD9D44F64EC8E509508B99AD48554F9FCD3A79D775A400FE900CCA030290BE",
 		&vo.TraceSourceReq{
-			ChainId: "laozi_mainnet",
+			Chain:   "laozi_mainnet",
 			MsgType: constant.MsgTypeTransfer,
 		})
 	if err != nil {

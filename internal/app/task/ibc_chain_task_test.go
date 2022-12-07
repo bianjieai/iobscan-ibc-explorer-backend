@@ -37,12 +37,8 @@ func TestMain(m *testing.M) {
 	time.Local = time.UTC
 	global.Config = &conf.Config{
 		Task: conf.Task{
-			SingleChainSyncTransferTxMax:      1000,
-			SingleChainIbcTxRelateMax:         1000,
-			FixDenomTraceDataStartTime:        1634232199,
-			FixDenomTraceDataEndTime:          1660103712,
-			FixDenomTraceHistoryDataStartTime: 1620369550,
-			FixDenomTraceHistoryDataEndTime:   1658830692,
+			SingleChainSyncTransferTxMax: 1000,
+			SingleChainIbcTxRelateMax:    1000,
 		},
 		ChainConfig: conf.ChainConfig{
 			NewChains: "qa_iris_snapshot"}}
@@ -63,13 +59,12 @@ func Test_CheckFollowingStatus(t *testing.T) {
 	var notFollowingStatus []string
 
 	for _, v := range chainList {
-		checkFollowingStatus, err := w.checkFollowingStatus(v.ChainId)
+		checkFollowingStatus, err := w.checkFollowingStatus(v.ChainName)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !checkFollowingStatus {
-			notFollowingStatus = append(notFollowingStatus, v.ChainId)
-			//logrus.Warningf("chain %s is not follow status", v.Chain)
+			notFollowingStatus = append(notFollowingStatus, v.ChainName)
 		}
 	}
 
@@ -84,18 +79,18 @@ func Test_CheckTransferStatus(t *testing.T) {
 	}
 
 	for _, v := range chainList {
-		taskRecord, err := taskRecordRepo.FindByTaskName(fmt.Sprintf(entity.TaskNameFmt, v.ChainId))
+		taskRecord, err := taskRecordRepo.FindByTaskName(fmt.Sprintf(entity.TaskNameFmt, v.ChainName))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		block, err := syncBlockRepo.FindLatestBlock(v.ChainId)
+		block, err := syncBlockRepo.FindLatestBlock(v.ChainName)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		if block.Height-taskRecord.Height > 20 {
-			logrus.Warningf("chain %s trasnfer fall behind, latest block: %d, transfer block: %d", v.ChainId, block.Height, taskRecord.Height)
+			logrus.Warningf("chain %s trasnfer fall behind, latest block: %d, transfer block: %d", v.ChainName, block.Height, taskRecord.Height)
 		}
 	}
 }

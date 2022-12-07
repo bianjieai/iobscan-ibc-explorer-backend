@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/conf"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"testing"
 )
@@ -16,11 +15,9 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func Test_checkAndUpdateLcd(t *testing.T) {
-	lcd := "https://api.sifchain.finance:443"
-	chainId := "sifchain_1"
-	ok := checkAndUpdateLcd(lcd, &entity.ChainConfig{
-		ChainId: chainId,
-	})
-	t.Log(ok)
+func Test_checkLcd(t *testing.T) {
+	value := checkLcd("https://emoney.validator.network/api", "/ibc/core/channel/v1beta1/channels?pagination.offset=OFFSET&pagination.limit=LIMIT&pagination.count_total=true")
+	if value {
+		t.Log("pass")
+	}
 }

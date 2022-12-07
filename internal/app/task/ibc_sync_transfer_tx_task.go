@@ -10,6 +10,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -17,7 +18,7 @@ type IbcSyncTransferTxTask struct {
 }
 
 var _ Task = new(IbcSyncTransferTxTask)
-var transferTxCoordinator *chainQueueCoordinator
+var transferTxCoordinator *stringQueueCoordinator
 
 func (t *IbcSyncTransferTxTask) Name() string {
 	return "ibc_sync_transfer_tx_task"
@@ -47,10 +48,10 @@ func (t *IbcSyncTransferTxTask) Run() int {
 	// init coordinator
 	chainQueue := new(utils.QueueString)
 	for _, v := range chainMap {
-		chainQueue.Push(v.ChainId)
+		chainQueue.Push(v.ChainName)
 	}
-	transferTxCoordinator = &chainQueueCoordinator{
-		chainQueue: chainQueue,
+	transferTxCoordinator = &stringQueueCoordinator{
+		stringQueue: chainQueue,
 	}
 
 	workerNum := t.workerNum()
@@ -89,28 +90,28 @@ type syncTransferTxWorker struct {
 func (w *syncTransferTxWorker) exec() {
 	logrus.Infof("task %s worker %s start", w.taskName, w.workerName)
 	for {
-		chainId, err := transferTxCoordinator.getChain()
+		chain, err := transferTxCoordinator.getOne()
 		if err != nil {
 			logrus.Infof("task %s worker %s exit", w.taskName, w.workerName)
 			break
 		}
 
-		if cf, ok := w.chainMap[chainId]; ok && cf.Status == entity.ChainStatusClosed {
-			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chainId)
+		if cf, ok := w.chainMap[chain]; ok && cf.Status == entity.ChainStatusClosed {
+			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chain)
 			continue
 		}
 
-		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chainId)
+		logrus.Infof("task %s worker %s get chain: %v", w.taskName, w.workerName, chain)
 		startTime := time.Now().Unix()
-		if err = w.parseChainIbcTx(chainId); err != nil {
-			logrus.Errorf("task %s worker %s parse chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime, err)
+		if err = w.parseChainIbcTx(chain); err != nil {
+			logrus.Errorf("task %s worker %s parse chain %s tx error,time use: %d(s), %v", w.taskName, w.workerName, chain, time.Now().Unix()-startTime, err)
 		} else {
-			logrus.Infof("task %s worker %s parse chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chainId, time.Now().Unix()-startTime)
+			logrus.Infof("task %s worker %s parse chain %s tx end,time use: %d(s)", w.taskName, w.workerName, chain, time.Now().Unix()-startTime)
 		}
 	}
 }
 
-func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
+func (w *syncTransferTxWorker) parseChainIbcTx(chain string) error {
 	totalParseTx := 0
 	//const limit = 500
 	maxParseTx := global.Config.Task.SingleChainSyncTransferTxMax
@@ -118,7 +119,7 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 		maxParseTx = defaultMaxHandlerTx
 	}
 
-	taskRecord, err := w.checkTaskRecord(chainId)
+	taskRecord, err := w.checkTaskRecord(chain)
 	if err != nil {
 		return err
 	}
@@ -126,22 +127,22 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 		return nil
 	}
 
-	denomMap, err := w.getChainDenomMap(chainId)
+	denomMap, err := w.getChainDenomMap(chain)
 	if err != nil {
 		return err
 	}
 
 	for {
-		checkFollowingStatus, err := w.checkFollowingStatus(chainId)
+		checkFollowingStatus, err := w.checkFollowingStatus(chain)
 		if err != nil {
 			return err
 		}
 		if !checkFollowingStatus {
-			logrus.Warningf("chain %s is not follow status", chainId)
+			logrus.Warningf("chain %s is not follow status", chain)
 			return nil
 		}
 
-		txList, err := w.getTxList(chainId, taskRecord.Height, int64(constant.DefaultLimit))
+		txList, err := w.getTxList(chain, taskRecord.Height, int64(constant.DefaultLimit))
 		if err != nil {
 			return err
 		}
@@ -150,23 +151,23 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 			return nil
 		}
 
-		ibcTxList, ibcDenomList := w.handleSourceTx(chainId, txList, denomMap)
+		ibcTxList, ibcDenomList := w.handleSourceTx(chain, txList, denomMap)
 		if len(ibcDenomList) > 0 {
 			if err = denomRepo.InsertBatch(ibcDenomList); err != nil {
-				logrus.Errorf("task %s worker %s denomRepo.InsertBatch %s error, %v", w.taskName, w.workerName, chainId, err)
+				logrus.Errorf("task %s worker %s denomRepo.InsertBatch %s error, %v", w.taskName, w.workerName, chain, err)
 				return err
 			}
 		}
 		if len(ibcTxList) > 0 {
 			if err = ibcTxRepo.InsertBatch(ibcTxList); err != nil {
-				logrus.Errorf("task %s worker %s ibcTxRepo.InsertBatch %s error, %v", w.taskName, w.workerName, chainId, err)
+				logrus.Errorf("task %s worker %s ibcTxRepo.InsertBatch %s error, %v", w.taskName, w.workerName, chain, err)
 				return err
 			}
 		}
 
 		taskRecord.Height = txList[len(txList)-1].Height
 		if err = taskRecordRepo.UpdateHeight(taskRecord.TaskName, taskRecord.Height); err != nil {
-			logrus.Errorf("task %s worker %s taskRecordRepo.UpdateHeight %s error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s taskRecordRepo.UpdateHeight %s error, %v", w.taskName, w.workerName, chain, err)
 			return err
 		}
 
@@ -179,7 +180,7 @@ func (w *syncTransferTxWorker) parseChainIbcTx(chainId string) error {
 	return nil
 }
 
-func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.Tx, denomMap map[string]*entity.IBCDenom) ([]*entity.ExIbcTx, entity.IBCDenomList) {
+func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx, denomMap map[string]*entity.IBCDenom) ([]*entity.ExIbcTx, entity.IBCDenomList) {
 	var ibcTxList []*entity.ExIbcTx
 	var ibcDenomList entity.IBCDenomList
 	for _, tx := range txList {
@@ -200,18 +201,18 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			scPort := transferTxMsg.SourcePort
 			scChannel := transferTxMsg.SourceChannel
 			scDenom := transferTxMsg.Token.Denom
-			dcChainId, dcPort, dcChannel := matchDcInfo(chainId, scPort, scChannel, w.chainMap)
+			dcChain, dcPort, dcChannel := matchDcInfo(chain, scPort, scChannel, w.chainMap)
 
 			var fullDenomPath, sequence, scConnection string
 			ibcDenom, isExisted := denomMap[scDenom]
 			if ibcTxStatus != entity.IbcTxStatusFailed {
 				dcPort, dcChannel, fullDenomPath, sequence, scConnection = parseTransferTxEvents(msgIndex, tx)
 				if !isExisted { // denom 不存在
-					ibcDenom = traceDenom(fullDenomPath, chainId, w.chainMap)
+					ibcDenom = traceDenom(fullDenomPath, chain, w.chainMap)
 				}
 			}
 
-			if dcChainId == "" && ibcTxStatus != entity.IbcTxStatusFailed {
+			if dcChain == "" && ibcTxStatus != entity.IbcTxStatusFailed {
 				ibcTxStatus = entity.IbcTxStatusSetting
 			}
 
@@ -220,12 +221,12 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				denomMap[ibcDenom.Denom] = ibcDenom
 			}
 
-			var baseDemom, baseDenomChainId string
+			var baseDemom, baseDenomChain string
 			if ibcDenom != nil {
 				baseDemom = ibcDenom.BaseDenom
-				baseDenomChainId = ibcDenom.BaseDenomChainId
+				baseDenomChain = ibcDenom.BaseDenomChain
 			}
-			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chainId, tx.TxHash, msgIndex)
+			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chain, tx.TxHash, msgIndex)
 			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
 			createAt := nowUnix
@@ -234,6 +235,7 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 			}
 
 			exIbcTx := &entity.ExIbcTx{
+				Id:             primitive.NewObjectID(),
 				RecordId:       recordId,
 				TxTime:         tx.Time,
 				ScAddr:         transferTxMsg.Sender,
@@ -242,12 +244,12 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 				ScChannel:      scChannel,
 				ScConnectionId: scConnection,
 				ScClientId:     "",
-				ScChainId:      chainId,
+				ScChain:        chain,
 				DcPort:         dcPort,
 				DcChannel:      dcChannel,
 				DcConnectionId: "",
 				DcClientId:     "",
-				DcChainId:      dcChainId,
+				DcChain:        dcChain,
 				Sequence:       sequence,
 				Status:         ibcTxStatus,
 				ScTxInfo: &entity.TxInfo{
@@ -262,8 +264,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 					Signers:   tx.Signers,
 					Log:       tx.Log,
 				},
-				DcTxInfo:       nil,
-				RefundedTxInfo: nil,
+				DcTxInfo:         nil,
+				AckTimeoutTxInfo: nil,
 				//Log: &entity.Log{
 				//	ScLog: tx.Log,
 				//},
@@ -271,12 +273,12 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 					ScDenom: scDenom,
 					DcDenom: "",
 				},
-				BaseDenom:        baseDemom,
-				BaseDenomChainId: baseDenomChainId,
-				RetryTimes:       0,
-				NextTryTime:      nowUnix,
-				CreateAt:         createAt,
-				UpdateAt:         createAt,
+				BaseDenom:      baseDemom,
+				BaseDenomChain: baseDenomChain,
+				RetryTimes:     0,
+				NextTryTime:    nowUnix,
+				CreateAt:       createAt,
+				UpdateAt:       createAt,
 			}
 			w.setClientId(exIbcTx) // set ScClientId, DcClientId
 			ibcTxList = append(ibcTxList, exIbcTx)
@@ -286,14 +288,14 @@ func (w *syncTransferTxWorker) handleSourceTx(chainId string, txList []*entity.T
 }
 
 func (w *syncTransferTxWorker) setClientId(ibcTx *entity.ExIbcTx) {
-	chainConf, ok := w.chainMap[ibcTx.ScChainId]
+	chainConf, ok := w.chainMap[ibcTx.ScChain]
 	if ok {
 		client := chainConf.GetChannelClient(ibcTx.ScPort, ibcTx.ScChannel)
 		ibcTx.ScClientId = client
 	}
 
-	if ibcTx.DcChainId != "" {
-		chainConf, ok = w.chainMap[ibcTx.DcChainId]
+	if ibcTx.DcChain != "" {
+		chainConf, ok = w.chainMap[ibcTx.DcChain]
 		if ok {
 			client := chainConf.GetChannelClient(ibcTx.DcPort, ibcTx.DcChannel)
 			ibcTx.DcClientId = client
@@ -301,10 +303,10 @@ func (w *syncTransferTxWorker) setClientId(ibcTx *entity.ExIbcTx) {
 	}
 }
 
-func (w *syncTransferTxWorker) checkFollowingStatus(chainId string) (bool, error) {
-	status, err := syncTaskRepo.CheckFollowingStatus(chainId)
+func (w *syncTransferTxWorker) checkFollowingStatus(chain string) (bool, error) {
+	status, err := syncTaskRepo.CheckFollowingStatus(chain)
 	if err != nil {
-		logrus.Errorf("task %s worker %s checkFollowingStatus %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s checkFollowingStatus %s error, %v", w.taskName, w.workerName, chain, err)
 		return false, err
 	}
 
@@ -312,16 +314,16 @@ func (w *syncTransferTxWorker) checkFollowingStatus(chainId string) (bool, error
 }
 
 // checkTaskRecord 检查task_record的状态，如果不存在task_record 记录，则新增
-func (w *syncTransferTxWorker) checkTaskRecord(chainId string) (*entity.IbcTaskRecord, error) {
-	taskRecord, err := taskRecordRepo.FindByTaskName(fmt.Sprintf(entity.TaskNameFmt, chainId))
+func (w *syncTransferTxWorker) checkTaskRecord(chain string) (*entity.IbcTaskRecord, error) {
+	taskRecord, err := taskRecordRepo.FindByTaskName(fmt.Sprintf(entity.TaskNameFmt, chain))
 	if err != nil {
 		if err != mongo.ErrNoDocuments {
-			logrus.Errorf("task %s worker %s checkTaskRecord %s error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s checkTaskRecord %s error, %v", w.taskName, w.workerName, chain, err)
 			return nil, err
 		}
 
 		taskRecord = &entity.IbcTaskRecord{
-			TaskName: fmt.Sprintf(entity.TaskNameFmt, chainId),
+			TaskName: fmt.Sprintf(entity.TaskNameFmt, chain),
 			Height:   0,
 			Status:   entity.TaskRecordStatusOpen,
 			CreateAt: time.Now().Unix(),
@@ -329,7 +331,7 @@ func (w *syncTransferTxWorker) checkTaskRecord(chainId string) (*entity.IbcTaskR
 		}
 
 		if err := taskRecordRepo.Insert(taskRecord); err != nil {
-			logrus.Errorf("task %s worker %s checkTaskRecord %s error, %v", w.taskName, w.workerName, chainId, err)
+			logrus.Errorf("task %s worker %s checkTaskRecord %s error, %v", w.taskName, w.workerName, chain, err)
 			return nil, err
 		} else {
 			return taskRecord, nil
@@ -339,10 +341,10 @@ func (w *syncTransferTxWorker) checkTaskRecord(chainId string) (*entity.IbcTaskR
 	return taskRecord, nil
 }
 
-func (w *syncTransferTxWorker) getChainDenomMap(chainId string) (map[string]*entity.IBCDenom, error) {
-	denomList, err := denomRepo.FindByChainId(chainId)
+func (w *syncTransferTxWorker) getChainDenomMap(chain string) (map[string]*entity.IBCDenom, error) {
+	denomList, err := denomRepo.FindByChain(chain)
 	if err != nil {
-		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s getChainDenomMap %s error, %v", w.taskName, w.workerName, chain, err)
 		return nil, err
 	}
 
@@ -353,10 +355,10 @@ func (w *syncTransferTxWorker) getChainDenomMap(chainId string) (map[string]*ent
 	return denomMap, nil
 }
 
-func (w *syncTransferTxWorker) getTxList(chainId string, height, limit int64) ([]*entity.Tx, error) {
-	transferTxList, err := txRepo.GetTransferTx(chainId, height, limit)
+func (w *syncTransferTxWorker) getTxList(chain string, height, limit int64) ([]*entity.Tx, error) {
+	transferTxList, err := txRepo.GetTransferTx(chain, height, limit)
 	if err != nil {
-		logrus.Errorf("task %s worker %s GetTransferTx %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s GetTransferTx %s error, %v", w.taskName, w.workerName, chain, err)
 		return nil, err
 	}
 
@@ -372,9 +374,9 @@ func (w *syncTransferTxWorker) getTxList(chainId string, height, limit int64) ([
 		}
 	}
 
-	heightTxList, err := txRepo.FindByTypeAndHeight(chainId, constant.MsgTypeTransfer, maxHeight)
+	heightTxList, err := txRepo.FindByTypeAndHeight(chain, constant.MsgTypeTransfer, maxHeight)
 	if err != nil {
-		logrus.Errorf("task %s worker %s FindByTypeAndHeight %s error, %v", w.taskName, w.workerName, chainId, err)
+		logrus.Errorf("task %s worker %s FindByTypeAndHeight %s error, %v", w.taskName, w.workerName, chain, err)
 		return nil, err
 	}
 

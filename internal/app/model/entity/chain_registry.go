@@ -1,7 +1,7 @@
 package entity
 
 type ChainRegistry struct {
-	ChainId      string `bson:"chain_id"`
+	Chain        string `bson:"chain"`
 	ChainJsonUrl string `bson:"chain_json_url"`
 }
 

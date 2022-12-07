@@ -41,7 +41,7 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 				logrus.Warnf("task %s SaveAcknowledgeTx failed %s, chain_id:%s packet_id:%s",
 					t.Name(),
 					err.Error(),
-					val.ScChainId,
+					val.ScChain,
 					val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
@@ -59,7 +59,7 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 				logrus.Warnf("task %s SaveRecvPacketTx failed %s, chain_id:%s packet_id:%s",
 					t.Name(),
 					err.Error(),
-					val.ScChainId,
+					val.ScChain,
 					val.ScTxInfo.Msg.CommonMsg().PacketId)
 			}
 		}
@@ -86,14 +86,14 @@ func (t *IbcSyncAcknowledgeTxTask) Run() int {
 
 func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, history bool) error {
 	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChainId, packetId)
+	ackTxs, err := txRepo.GetAcknowledgeTxs(ibcTx.ScChain, packetId)
 	if err != nil {
 		return err
 	}
 	if len(ackTxs) > 0 {
 		//"成功"状态IBC，第三段取最新的ack tx交易
 		ackTx := ackTxs[0]
-		ibcTx.RefundedTxInfo = &entity.TxInfo{
+		ibcTx.AckTimeoutTxInfo = &entity.TxInfo{
 			Hash:      ackTx.TxHash,
 			Height:    ackTx.Height,
 			Time:      ackTx.Time,
@@ -104,9 +104,9 @@ func (t *IbcSyncAcknowledgeTxTask) SaveAcknowledgeTx(ibcTx *entity.ExIbcTx, hist
 			MsgAmount: nil,
 			Msg:       getMsgByType(*ackTx, constant.MsgTypeAcknowledgement, packetId),
 		}
-		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+		return ibcTxRepo.UpdateOne(ibcTx.Id, history, bson.M{
 			"$set": bson.M{
-				"refunded_tx_info": ibcTx.RefundedTxInfo,
+				"ack_timeout_tx_info": ibcTx.AckTimeoutTxInfo,
 			},
 		})
 	}
@@ -124,24 +124,11 @@ func getMsgByType(tx entity.Tx, msgType, packetId string) *model.TxMsg {
 
 func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 	packetId := ibcTx.ScTxInfo.Msg.CommonMsg().PacketId
-	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChainId, packetId)
+	recvTxs, err := txRepo.GetRecvPacketTxs(ibcTx.DcChain, packetId)
 	if err != nil {
 		return err
 	}
-	//dcAddrMap := make(map[string]struct{}, 20)
-	//if len(recvTxs) > 0 {
-	//	relayers, err := relayerRepo.FindRelayer(ibcTx.ScChainId, ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer, ibcTx.ScChannel)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	for _, val := range relayers {
-	//		if val.ChainAAddress == ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer && val.ChainBAddress != "" {
-	//			dcAddrMap[val.ChainBAddress] = struct{}{}
-	//		} else if val.ChainBAddress == ibcTx.RefundedTxInfo.Msg.CommonMsg().Signer && val.ChainAAddress != "" {
-	//			dcAddrMap[val.ChainAAddress] = struct{}{}
-	//		}
-	//	}
-	//}
+
 	var recvTx *entity.Tx
 	for _, val := range recvTxs {
 		if val.Status == entity.TxStatusSuccess {
@@ -181,7 +168,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 			MsgAmount: nil,
 			Msg:       getMsgByType(*recvTx, constant.MsgTypeRecvPacket, packetId),
 		}
-		return ibcTxRepo.UpdateOne(ibcTx.RecordId, history, bson.M{
+		return ibcTxRepo.UpdateOne(ibcTx.Id, history, bson.M{
 			"$set": bson.M{
 				"dc_tx_info":       ibcTx.DcTxInfo,
 				"dc_connection_id": ibcTx.DcConnectionId,
@@ -189,7 +176,7 @@ func SaveRecvPacketTx(ibcTx *entity.ExIbcTx, history bool) error {
 		})
 	} else {
 		logrus.Debugf("status:%d recv_packet(chain_id:%s)  no found transfer(hash:%s chain_id:%s)",
-			ibcTx.Status, ibcTx.DcChainId, ibcTx.ScTxInfo.Hash, ibcTx.ScChainId)
+			ibcTx.Status, ibcTx.DcChain, ibcTx.ScTxInfo.Hash, ibcTx.ScChain)
 	}
 	return nil
 }

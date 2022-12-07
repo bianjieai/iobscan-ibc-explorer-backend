@@ -14,7 +14,6 @@ const (
 	OneDay               = 86400
 	RedisLockExpireTime  = 300
 	OneOffTaskLockTime   = 86400 * 30
-	ThreeHourCronJobTime = "0 0 */6 * * ?"
 	statisticsCheckTimes = 5
 )
 
@@ -31,42 +30,32 @@ const (
 	replaceHolderChannel = "CHANNEL"
 	replaceHolderPort    = "PORT"
 
-	syncTransferTxTaskWorkerNum    = 5
-	ibcTxRelateTaskWorkerNum       = 5
-	relayerStatisticsWorkerNum     = 4
-	fixDenomTraceDataTaskWorkerNum = 8
-	fixIbxTxWorkerNum              = 5
-	defaultMaxHandlerTx            = 2000
-	ibcTxTargetLatest              = "latest"
-	ibcTxTargetHistory             = "history"
+	syncTransferTxTaskWorkerNum = 5
+	ibcTxRelateTaskWorkerNum    = 5
+	relayerStatisticsWorkerNum  = 4
+	defaultMaxHandlerTx         = 2000
+	ibcTxTargetLatest           = "latest"
+	ibcTxTargetHistory          = "history"
 
 	segmentStepLatest  = 24 * 3600
 	segmentStepHistory = 12 * 3600
-)
-const (
-	channelMatchSuccess = 1
-	channelNotFound     = 0
-	channelMatchFail    = -1
 )
 
 var (
 	//cache
 	tokenPriceRepo             cache.TokenPriceCacheRepo
 	denomDataRepo              cache.DenomDataCacheRepo
-	unbondTimeCache            cache.UnbondTimeCacheRepo
 	relayerDataCache           cache.RelayerDataCacheRepo
 	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
 	chainCache                 cache.ChainCacheRepo
-	baseDenomCache             cache.BaseDenomCacheRepo
-	storageCache               cache.StorageCacheRepo
+	baseDenomCache             cache.AuthDenomCacheRepo
 	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
 	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
 	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
 	tokenStatisticsRepo        repository.ITokenStatisticsRepo        = new(repository.TokenStatisticsRepo)
 	tokenTraceStatisticsRepo   repository.ITokenTraceStatisticsRepo   = new(repository.TokenTraceStatisticsRepo)
-	baseDenomRepo              repository.IBaseDenomRepo              = new(repository.BaseDenomRepo)
+	baseDenomRepo              repository.IAuthDenomRepo              = new(repository.AuthDenomRepo)
 	denomRepo                  repository.IDenomRepo                  = new(repository.DenomRepo)
-	denomCalculateRepo         repository.IDenomCalculateRepo         = new(repository.DenomCalculateRepo)
 	chainConfigRepo            repository.IChainConfigRepo            = new(repository.ChainConfigRepo)
 	ibcTxRepo                  repository.IExIbcTxRepo                = new(repository.ExIbcTxRepo)
 	chainRepo                  repository.IChainRepo                  = new(repository.IbcChainRepo)
@@ -88,14 +77,14 @@ var (
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 
-type chainQueueCoordinator struct {
-	chainQueue *utils.QueueString
+type stringQueueCoordinator struct {
+	stringQueue *utils.QueueString
 }
 
-func (coordinator *chainQueueCoordinator) getChain() (string, error) {
-	if coordinator.chainQueue == nil {
-		return "", fmt.Errorf("coordinator or chain queue is nil")
+func (coordinator *stringQueueCoordinator) getOne() (string, error) {
+	if coordinator.stringQueue == nil {
+		return "", fmt.Errorf("coordinator or string queue is nil")
 	}
 
-	return coordinator.chainQueue.Pop()
+	return coordinator.stringQueue.Pop()
 }

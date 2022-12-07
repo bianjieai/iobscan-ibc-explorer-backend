@@ -10,12 +10,12 @@ import (
 )
 
 type ITokenRepo interface {
-	List(baseDenoms []string, chainId string, tokenType entity.TokenType, skip, limit int64) (entity.IBCTokenList, error)
-	CountList(baseDenoms []string, chainId string, tokenType entity.TokenType) (int64, error)
+	List(baseDenoms []string, chain string, tokenType entity.TokenType, skip, limit int64) (entity.IBCTokenList, error)
+	CountList(baseDenoms []string, chain string, tokenType entity.TokenType) (int64, error)
 	FindAll() (entity.IBCTokenList, error)
 	InsertBatch(batch []*entity.IBCToken) error
 	UpdateToken(token *entity.IBCToken) error
-	Delete(baseDenom, chainId string) error
+	Delete(baseDenom, chain string) error
 }
 
 var _ ITokenRepo = new(TokenRepo)
@@ -27,7 +27,7 @@ func (repo *TokenRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCToken{}.CollectionName())
 }
 
-func (repo *TokenRepo) analyzeListParam(baseDenoms []string, chainId string, tokenType entity.TokenType) map[string]interface{} {
+func (repo *TokenRepo) analyzeListParam(baseDenoms []string, chain string, tokenType entity.TokenType) map[string]interface{} {
 	q := make(map[string]interface{})
 	if len(baseDenoms) > 0 {
 		q["base_denom"] = bson.M{
@@ -35,8 +35,8 @@ func (repo *TokenRepo) analyzeListParam(baseDenoms []string, chainId string, tok
 		}
 	}
 
-	if chainId != "" {
-		q["chain_id"] = chainId
+	if chain != "" {
+		q["chain"] = chain
 	}
 
 	if tokenType != "" {
@@ -46,15 +46,15 @@ func (repo *TokenRepo) analyzeListParam(baseDenoms []string, chainId string, tok
 	return q
 }
 
-func (repo *TokenRepo) List(baseDenoms []string, chainId string, tokenType entity.TokenType, skip, limit int64) (entity.IBCTokenList, error) {
-	param := repo.analyzeListParam(baseDenoms, chainId, tokenType)
+func (repo *TokenRepo) List(baseDenoms []string, chain string, tokenType entity.TokenType, skip, limit int64) (entity.IBCTokenList, error) {
+	param := repo.analyzeListParam(baseDenoms, chain, tokenType)
 	var res entity.IBCTokenList
 	err := repo.coll().Find(context.Background(), param).Limit(limit).Skip(skip).Sort("-chains_involved").All(&res)
 	return res, err
 }
 
-func (repo *TokenRepo) CountList(baseDenoms []string, chainId string, tokenType entity.TokenType) (int64, error) {
-	param := repo.analyzeListParam(baseDenoms, chainId, tokenType)
+func (repo *TokenRepo) CountList(baseDenoms []string, chain string, tokenType entity.TokenType) (int64, error) {
+	param := repo.analyzeListParam(baseDenoms, chain, tokenType)
 	count, err := repo.coll().Find(context.Background(), param).Count()
 	return count, err
 }
@@ -82,7 +82,7 @@ func (repo *TokenRepo) UpdateToken(token *entity.IBCToken) error {
 	token.UpdateAt = time.Now().Unix()
 	query := bson.M{
 		"base_denom": token.BaseDenom,
-		"chain_id":   token.ChainId,
+		"chain":      token.Chain,
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -99,6 +99,6 @@ func (repo *TokenRepo) UpdateToken(token *entity.IBCToken) error {
 	return repo.coll().UpdateOne(context.Background(), query, update)
 }
 
-func (repo *TokenRepo) Delete(baseDenom, chainId string) error {
-	return repo.coll().Remove(context.Background(), bson.M{"base_denom": baseDenom, "chain_id": chainId})
+func (repo *TokenRepo) Delete(baseDenom, chain string) error {
+	return repo.coll().Remove(context.Background(), bson.M{"base_denom": baseDenom, "chain": chain})
 }

@@ -13,18 +13,18 @@ import (
 type IDenomRepo interface {
 	FindAll() (entity.IBCDenomList, error)
 	FindBaseDenom() (entity.IBCDenomList, error)
-	FindByBaseDenom(baseDenom, baseDenomChainId string) (entity.IBCDenomList, error)
-	FindByChainId(chainId string) (entity.IBCDenomList, error)
+	FindByBaseDenom(baseDenom, baseDenomChain string) (entity.IBCDenomList, error)
+	FindByChain(chain string) (entity.IBCDenomList, error)
 	FindByDenom(denom string) (entity.IBCDenomList, error)
-	FindByDenomChainId(denom, chainId string) (*entity.IBCDenom, error)
-	GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error)
+	FindByDenomChain(denom, chain string) (*entity.IBCDenom, error)
+	GetDenomGroupByChain() ([]*dto.GetDenomGroupByChainDTO, error)
 	FindNoSymbolDenoms() (entity.IBCDenomList, error)
 	FindSymbolDenoms() (entity.IBCDenomList, error)
 	GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error)
-	Count(createAt int64, record bool) (int64, error)
-	BasedDenomCount(createAt int64, record bool) (int64, error)
+	Count() (int64, error)
+	BasedDenomCount() (int64, error)
 	LatestCreateAt() (int64, error)
-	UpdateSymbol(chainId, denom, symbol string) error
+	UpdateSymbol(chain, denom, symbol string) error
 	Insert(denom *entity.IBCDenom) error
 	InsertBatch(denoms entity.IBCDenomList) error
 	InsertBatchToNew(denoms entity.IBCDenomList) error
@@ -56,15 +56,15 @@ func (repo *DenomRepo) FindBaseDenom() (entity.IBCDenomList, error) {
 	return res, err
 }
 
-func (repo *DenomRepo) FindByBaseDenom(baseDenom, baseDenomChainId string) (entity.IBCDenomList, error) {
+func (repo *DenomRepo) FindByBaseDenom(baseDenom, baseDenomChain string) (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
-	err := repo.coll().Find(context.Background(), bson.M{"base_denom": baseDenom, "base_denom_chain_id": baseDenomChainId}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"base_denom": baseDenom, "base_denom_chain": baseDenomChain}).All(&res)
 	return res, err
 }
 
-func (repo *DenomRepo) FindByChainId(chainId string) (entity.IBCDenomList, error) {
+func (repo *DenomRepo) FindByChain(chain string) (entity.IBCDenomList, error) {
 	var res entity.IBCDenomList
-	err := repo.coll().Find(context.Background(), bson.M{"chain_id": chainId}).All(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"chain": chain}).All(&res)
 	return res, err
 }
 
@@ -74,16 +74,16 @@ func (repo *DenomRepo) FindByDenom(denom string) (entity.IBCDenomList, error) {
 	return res, err
 }
 
-func (repo *DenomRepo) FindByDenomChainId(denom, chainId string) (*entity.IBCDenom, error) {
+func (repo *DenomRepo) FindByDenomChain(denom, chain string) (*entity.IBCDenom, error) {
 	var res *entity.IBCDenom
-	err := repo.coll().Find(context.Background(), bson.M{"denom": denom, "chain_id": chainId}).One(&res)
+	err := repo.coll().Find(context.Background(), bson.M{"denom": denom, "chain": chain}).One(&res)
 	return res, err
 }
 
-func (repo *DenomRepo) GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDTO, error) {
+func (repo *DenomRepo) GetDenomGroupByChain() ([]*dto.GetDenomGroupByChainDTO, error) {
 	group := bson.M{
 		"$group": bson.M{
-			"_id": "$chain_id",
+			"_id": "$chain",
 			"denom": bson.M{
 				"$addToSet": "$denom",
 			},
@@ -92,7 +92,7 @@ func (repo *DenomRepo) GetDenomGroupByChainId() ([]*dto.GetDenomGroupByChainIdDT
 
 	var pipe []bson.M
 	pipe = append(pipe, group)
-	var res []*dto.GetDenomGroupByChainIdDTO
+	var res []*dto.GetDenomGroupByChainDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
@@ -109,8 +109,8 @@ func (repo *DenomRepo) FindSymbolDenoms() (entity.IBCDenomList, error) {
 	return res, err
 }
 
-func (repo *DenomRepo) UpdateSymbol(chainId, denom, symbol string) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": chainId, "denom": denom}, bson.M{
+func (repo *DenomRepo) UpdateSymbol(chain, denom, symbol string) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain": chain, "denom": denom}, bson.M{
 		"$set": bson.M{
 			"symbol": symbol,
 		}})
@@ -140,13 +140,13 @@ func (repo *DenomRepo) InsertBatchToNew(denoms entity.IBCDenomList) error {
 }
 
 func (repo *DenomRepo) UpdateDenom(denom *entity.IBCDenom) error {
-	return repo.coll().UpdateOne(context.Background(), bson.M{"chain_id": denom.ChainId, "denom": denom.Denom}, bson.M{
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain": denom.Chain, "denom": denom.Denom}, bson.M{
 		"$set": bson.M{
-			"base_denom":          denom.BaseDenom,
-			"base_denom_chain_id": denom.BaseDenomChainId,
-			"prev_denom":          denom.PrevDenom,
-			"prev_chain_id":       denom.PrevChainId,
-			"is_base_denom":       denom.IsBaseDenom,
+			"base_denom":       denom.BaseDenom,
+			"base_denom_chain": denom.BaseDenomChain,
+			"prev_denom":       denom.PrevDenom,
+			"prev_chain":       denom.PrevChain,
+			"is_base_denom":    denom.IsBaseDenom,
 		},
 	})
 }
@@ -160,34 +160,12 @@ func (repo *DenomRepo) LatestCreateAt() (int64, error) {
 	return res.CreateAt, nil
 }
 
-func (repo *DenomRepo) Count(createAt int64, record bool) (int64, error) {
-	query := bson.M{"create_at": bson.M{
-		"$gte": createAt,
-	}}
-	//记录create_at时间点统计的数量
-	if record {
-		query = bson.M{
-			"create_at": createAt,
-		}
-	}
-	return repo.coll().Find(context.Background(), query).Count()
+func (repo *DenomRepo) Count() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{}).Count()
 }
 
-func (repo *DenomRepo) BasedDenomCount(createAt int64, record bool) (int64, error) {
-	query := bson.M{
-		"is_base_denom": true,
-		"create_at": bson.M{
-			"$gte": createAt,
-		},
-	}
-	//记录create_at时间点统计的数量
-	if record {
-		query = bson.M{
-			"is_base_denom": true,
-			"create_at":     createAt,
-		}
-	}
-	return repo.coll().Find(context.Background(), query).Count()
+func (repo *DenomRepo) BasedDenomCount() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{"is_base_denom": true}).Count()
 }
 
 func (repo *DenomRepo) GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDTO, error) {

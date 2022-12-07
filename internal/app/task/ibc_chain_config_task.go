@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,10 +16,11 @@ import (
 )
 
 type IbcChainConfigTask struct {
-	allChainList    []string  // all chain id list
+	allChainList    []string  // all chain list
 	channelStateMap *sync.Map // channel -> state map
 	chainUpdateMap  *sync.Map // map[string]bool chain 最后是否能被更新map
 	chainChannelMap *sync.Map // chain -> chain的所有channel map
+	chainIdNameMap  map[string]string
 }
 
 var _ibcChainConfigTask Task = new(IbcChainConfigTask)
@@ -48,25 +50,25 @@ func (t *IbcChainConfigTask) Run() int {
 		chain := v
 		go func() {
 			defer wg.Done()
-			channelPathList, err := t.getIbcChannels(chain.ChainId, chain.Lcd, chain.LcdApiPath.ChannelsPath)
+			channelPathList, err := t.getIbcChannels(chain.ChainName, chain.GrpcRestGateway, chain.LcdApiPath.ChannelsPath)
 			if err != nil {
-				t.chainUpdateMap.Store(chain.ChainId, false) // 出错时，此链的信息将不会被更新
+				t.chainUpdateMap.Store(chain.ChainName, false) // 出错时，此链的信息将不会被更新
 			} else {
-				t.setChainIdAndCounterpartyState(chain, channelPathList)
-				t.chainUpdateMap.Store(chain.ChainId, true)
+				t.setChainAndCounterpartyState(chain, channelPathList)
+				t.chainUpdateMap.Store(chain.ChainName, true)
 			}
-			t.chainChannelMap.Store(chain.ChainId, channelPathList)
+			t.chainChannelMap.Store(chain.ChainName, channelPathList)
 		}()
 	}
 	wg.Wait()
 
 	// 为channel设置counterparty state
 	for _, chain := range chainConfList {
-		t.setCounterpartyState(chain.ChainId)
+		t.setCounterpartyState(chain.ChainName)
 	}
 
 	for _, chain := range chainConfList {
-		enableUpdate, ok := t.chainUpdateMap.Load(chain.ChainId)
+		enableUpdate, ok := t.chainUpdateMap.Load(chain.ChainName)
 		if ok {
 			if enableUpdate.(bool) {
 				t.updateChain(chain)
@@ -81,6 +83,11 @@ func (t *IbcChainConfigTask) init() {
 	t.channelStateMap = new(sync.Map)
 	t.chainUpdateMap = new(sync.Map)
 	t.chainChannelMap = new(sync.Map)
+	mapData, err := repository.GetChainIdNameMap()
+	if err != nil {
+		logrus.Fatal(err.Error())
+	}
+	t.chainIdNameMap = mapData
 }
 
 func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
@@ -91,7 +98,7 @@ func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
 
 	allChainList := make([]string, 0, len(chainConfList))
 	for _, v := range chainConfList {
-		allChainList = append(allChainList, v.ChainId)
+		allChainList = append(allChainList, v.ChainName)
 	}
 	t.allChainList = allChainList
 
@@ -99,9 +106,9 @@ func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
 }
 
 // getIbcChannels 通过lcd channels_path 接口获取链上存在的所有channel信息
-func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*entity.ChannelPath, error) {
+func (t *IbcChainConfigTask) getIbcChannels(chain, lcd, apiPath string) ([]*entity.ChannelPath, error) {
 	if lcd == "" {
-		logrus.Errorf("task %s %s getIbcChannels error, lcd error", t.Name(), chainId)
+		logrus.Errorf("task %s %s getIbcChannels error, lcd error", t.Name(), chain)
 		return nil, fmt.Errorf("lcd error")
 	}
 
@@ -115,14 +122,14 @@ func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*en
 		url := fmt.Sprintf("%s%s", lcd, apiPath)
 		bz, err := utils.HttpGet(url)
 		if err != nil {
-			logrus.Errorf("task %s %s getIbcChannels error, %v", t.Name(), chainId, err)
+			logrus.Errorf("task %s %s getIbcChannels error, %v", t.Name(), chain, err)
 			return nil, err
 		}
 
 		var resp vo.IbcChannelsResp
 		err = json.Unmarshal(bz, &resp)
 		if err != nil {
-			logrus.Errorf("task %s %s getIbcChannels error, %v", t.Name(), chainId, err)
+			logrus.Errorf("task %s %s getIbcChannels error, %v", t.Name(), chain, err)
 			return nil, err
 		}
 
@@ -131,15 +138,15 @@ func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*en
 				State:     v.State,
 				PortId:    v.PortId,
 				ChannelId: v.ChannelId,
-				ChainId:   "",
-				ScChainId: chainId,
+				Chain:     "",
+				ScChain:   chain,
 				Counterparty: entity.CounterParty{
 					State:     "",
 					PortId:    v.Counterparty.PortId,
 					ChannelId: v.Counterparty.ChannelId,
 				},
 			})
-			k := fmt.Sprintf("%s%s%s%s%s", chainId, v.PortId, v.ChannelId, v.Counterparty.PortId, v.Counterparty.ChannelId)
+			k := fmt.Sprintf("%s%s%s%s%s", chain, v.PortId, v.ChannelId, v.Counterparty.PortId, v.Counterparty.ChannelId)
 			t.channelStateMap.Store(k, v.State)
 		}
 
@@ -152,10 +159,10 @@ func (t *IbcChainConfigTask) getIbcChannels(chainId, lcd, apiPath string) ([]*en
 	return channelPathList, nil
 }
 
-// setChainIdAndCounterpartyState 设置channel path的目标链chain id 和 目标链channel state
+// setChainAndCounterpartyState 设置channel path的目标链chain 和 目标链channel state
 // 1. 对于之前已经存在的channel，取之前的值即可;对于新增的channel，需要查询lcd 接口获取
 // 2. 对于之前已经存在的channel，目标链channel state，暂取之前的值，后面 setCounterpartyState 方法会进一步处理
-func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainConfig, channelPathList []*entity.ChannelPath) {
+func (t *IbcChainConfigTask) setChainAndCounterpartyState(chain *entity.ChainConfig, channelPathList []*entity.ChannelPath) {
 	existChannelStateMap := make(map[string]*entity.ChannelPath)
 	for _, ibcInfo := range chain.IbcInfo {
 		for _, path := range ibcInfo.Paths {
@@ -172,17 +179,17 @@ func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainC
 			v.Counterparty.State = existChannelState.Counterparty.State
 		}
 
-		if ok && existChannelState.ChainId != "" && existChannelState.ClientId != "" {
-			v.ChainId = existChannelState.ChainId
+		if ok && existChannelState.Chain != "" && existChannelState.ClientId != "" {
+			v.Chain = existChannelState.Chain
 			v.ClientId = existChannelState.ClientId
 		} else {
 			if !lcdConnectionErr { // 如果遇到lcd连接问题，则不再请求lcd.
-				stateResp, err := queryClientState(chain.Lcd, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
+				stateResp, err := queryClientState(chain.GrpcRestGateway, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
 				if err != nil {
 					lcdConnectionErr = isConnectionErr(err)
-					logrus.Errorf("task %s %s queryClientState error, %v", t.Name(), chain.ChainId, err)
+					logrus.Errorf("task %s %s queryClientState error, %v", t.Name(), chain.ChainName, err)
 				} else {
-					v.ChainId = t.formatChainId(stateResp.IdentifiedClientState.ClientState.ChainId)
+					v.Chain = t.chainIdNameMap[stateResp.IdentifiedClientState.ClientState.ChainId]
 					v.ClientId = stateResp.IdentifiedClientState.ClientId
 				}
 			}
@@ -190,18 +197,14 @@ func (t *IbcChainConfigTask) setChainIdAndCounterpartyState(chain *entity.ChainC
 	}
 }
 
-func (t *IbcChainConfigTask) formatChainId(chainId string) string {
-	return strings.ReplaceAll(chainId, "-", "_")
-}
-
-func (t *IbcChainConfigTask) setCounterpartyState(chainId string) {
-	channels, ok := t.chainChannelMap.Load(chainId)
+func (t *IbcChainConfigTask) setCounterpartyState(chain string) {
+	channels, ok := t.chainChannelMap.Load(chain)
 	if !ok {
 		return
 	}
 
 	for _, v := range channels.([]*entity.ChannelPath) {
-		key := fmt.Sprintf("%s%s%s%s%s", v.ChainId, v.Counterparty.PortId, v.Counterparty.ChannelId, v.PortId, v.ChannelId)
+		key := fmt.Sprintf("%s%s%s%s%s", v.Chain, v.Counterparty.PortId, v.Counterparty.ChannelId, v.PortId, v.ChannelId)
 		counterpartyState, ok := t.channelStateMap.Load(key)
 		if ok {
 			v.Counterparty.State = counterpartyState.(string)
@@ -211,32 +214,32 @@ func (t *IbcChainConfigTask) setCounterpartyState(chainId string) {
 
 func (t *IbcChainConfigTask) updateChain(chainConf *entity.ChainConfig) {
 	channelGroupMap := make(map[string][]*entity.ChannelPath)
-	channels, ok := t.chainChannelMap.Load(chainConf.ChainId)
+	channels, ok := t.chainChannelMap.Load(chainConf.ChainName)
 	if !ok {
 		return
 	}
 
 	for _, v := range channels.([]*entity.ChannelPath) {
-		if !utils.InArray(t.allChainList, v.ChainId) {
+		if !utils.InArray(t.allChainList, v.Chain) {
 			continue
 		}
 
-		channelGroupMap[v.ChainId] = append(channelGroupMap[v.ChainId], v)
+		channelGroupMap[v.Chain] = append(channelGroupMap[v.Chain], v)
 	}
 
 	ibcInfoList := make([]*entity.IbcInfo, 0, len(channelGroupMap))
-	for dcChainid, paths := range channelGroupMap {
+	for dcChain, paths := range channelGroupMap {
 		sort.Slice(paths, func(i, j int) bool {
 			return paths[i].ChannelId < paths[j].ChannelId
 		})
 		ibcInfoList = append(ibcInfoList, &entity.IbcInfo{
-			ChainId: dcChainid,
-			Paths:   paths,
+			Chain: dcChain,
+			Paths: paths,
 		})
 	}
 
 	sort.Slice(ibcInfoList, func(i, j int) bool {
-		return ibcInfoList[i].ChainId < ibcInfoList[i].ChainId
+		return ibcInfoList[i].Chain < ibcInfoList[i].Chain
 	})
 
 	hashCode := utils.Md5(utils.MustMarshalJsonToStr(ibcInfoList))
@@ -247,6 +250,6 @@ func (t *IbcChainConfigTask) updateChain(chainConf *entity.ChainConfig) {
 	chainConf.IbcInfoHashLcd = hashCode
 	chainConf.IbcInfo = ibcInfoList
 	if err := chainConfigRepo.UpdateIbcInfo(chainConf); err != nil {
-		logrus.Errorf("task %s %s UpdateIbcInfo error, %v", t.Name(), chainConf.ChainId, err)
+		logrus.Errorf("task %s %s UpdateIbcInfo error, %v", t.Name(), chainConf.ChainName, err)
 	}
 }

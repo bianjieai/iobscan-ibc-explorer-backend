@@ -10,14 +10,14 @@ import (
 type LcdTxDataCacheRepo struct {
 }
 
-func (repo *LcdTxDataCacheRepo) Set(chainId, hash, msgEvents string) error {
-	_, err := rc.HSet(fmt.Sprintf(lcdTxData, chainId), hash, msgEvents)
-	rc.Expire(fmt.Sprintf(lcdTxData, chainId), oneHour)
+func (repo *LcdTxDataCacheRepo) Set(chain, hash, msgEvents string) error {
+	_, err := rc.HSet(fmt.Sprintf(lcdTxData, chain), hash, msgEvents)
+	rc.Expire(fmt.Sprintf(lcdTxData, chain), oneHour)
 	return err
 }
 
-func (repo *LcdTxDataCacheRepo) Get(chainId, hashVal string) (string, error) {
-	return rc.HGet(fmt.Sprintf(lcdTxData, chainId), hashVal)
+func (repo *LcdTxDataCacheRepo) Get(chain, hashVal string) (string, error) {
+	return rc.HGet(fmt.Sprintf(lcdTxData, chain), hashVal)
 }
 
 func (repo *LcdTxDataCacheRepo) SetClientState(clientKey string, data *vo.ClientStateResp) error {

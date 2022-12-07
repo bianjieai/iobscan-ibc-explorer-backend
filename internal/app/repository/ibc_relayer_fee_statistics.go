@@ -122,7 +122,7 @@ func (repo *RelayerFeeStatisticsRepo) AggrRelayerFeeDenomAmt(combs []string) ([]
 		"$project": bson.M{
 			"_id":       0,
 			"fee_denom": "$_id.fee_denom",
-			"chain_id":  "$_id.statistics_chain",
+			"chain":     "$_id.statistics_chain",
 			"amount":    "$amount",
 			"total_txs": "$total_txs",
 		},

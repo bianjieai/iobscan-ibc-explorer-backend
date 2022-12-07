@@ -5,6 +5,23 @@ import (
 )
 
 type (
+	ChainsConnectionResp struct {
+		Items     []IobChainDto `json:"items"`
+		TimeStamp int64         `json:"time_stamp"`
+	}
+
+	IobChainDto struct {
+		CurrentChainId   string               `json:"current_chain_id"`
+		ChainName        string               `json:"chain_name"`
+		PrettyName       string               `json:"pretty_name"`
+		Icon             string               `json:"icon"`
+		ConnectionChains []IobConnectionChain `json:"connection_chains"`
+	}
+	IobConnectionChain struct {
+		ChainName        string `json:"chain_name"`
+		ConnectionStatus int    `json:"connection_status"`
+	}
+
 	DailyChainsResp struct {
 		Items     []DailyChainDto `json:"items"`
 		TimeStamp int64           `json:"time_stamp"`
@@ -15,22 +32,23 @@ type (
 		Inactive []DailyData `json:"inactive"`
 	}
 	DailyData struct {
-		ChainId   string             `json:"chain_id"`
-		ChainName string             `json:"chain_name"`
-		Icon      string             `json:"icon"`
-		Status    entity.ChainStatus `json:"status"`
+		CurrentChainId string             `json:"current_chain_id"`
+		ChainName      string             `json:"chain_name"`
+		PrettyName     string             `json:"pretty_name"`
+		Icon           string             `json:"icon"`
+		Status         entity.ChainStatus `json:"status"`
 	}
 
-	IbcBaseDenomsResp struct {
-		Items     []IbcBaseDenomDto `json:"items"`
-		TimeStamp int64             `json:"time_stamp"`
+	AuthDenomsResp struct {
+		Items     []AuthDenomDto `json:"items"`
+		TimeStamp int64          `json:"time_stamp"`
 	}
-	IbcBaseDenomDto struct {
-		ChainId string `json:"chain_id"`
-		Denom   string `json:"denom"`
-		Symbol  string `json:"symbol"`
-		Scale   int    `json:"scale"`
-		Icon    string `json:"icon"`
+	AuthDenomDto struct {
+		Chain  string `json:"chain"`
+		Denom  string `json:"denom"`
+		Symbol string `json:"symbol"`
+		Scale  int    `json:"scale"`
+		Icon   string `json:"icon"`
 	}
 	IbcDenomsResp struct {
 		Items     []IbcDenomDto `json:"items"`
@@ -38,12 +56,12 @@ type (
 	}
 
 	IbcDenomDto struct {
-		ChainId          string `json:"chain_id"`
-		Denom            string `json:"denom"`
-		BaseDenom        string `json:"base_denom"`
-		BaseDenomChainId string `json:"base_denom_chain_id"`
-		DenomPath        string `json:"denom_path"`
-		Symbol           string `json:"symbol"`
+		Chain          string `json:"chain"`
+		Denom          string `json:"denom"`
+		BaseDenom      string `json:"base_denom"`
+		BaseDenomChain string `json:"base_denom_chain"`
+		DenomPath      string `json:"denom_path"`
+		Symbol         string `json:"symbol"`
 	}
 
 	StatisticsCntResp struct {
@@ -56,24 +74,24 @@ type (
 	}
 )
 
-func (dto IbcBaseDenomDto) LoadDto(baseDenom *entity.IBCBaseDenom) IbcBaseDenomDto {
-	return IbcBaseDenomDto{
-		ChainId: baseDenom.ChainId,
-		Denom:   baseDenom.Denom,
-		Symbol:  baseDenom.Symbol,
-		Scale:   baseDenom.Scale,
-		Icon:    baseDenom.Icon,
+func (dto AuthDenomDto) LoadDto(baseDenom *entity.AuthDenom) AuthDenomDto {
+	return AuthDenomDto{
+		Chain:  baseDenom.Chain,
+		Denom:  baseDenom.Denom,
+		Symbol: baseDenom.Symbol,
+		Scale:  baseDenom.Scale,
+		Icon:   baseDenom.Icon,
 	}
 }
 
 func (dto IbcDenomDto) LoadDto(denom *entity.IBCDenom) IbcDenomDto {
 	return IbcDenomDto{
-		ChainId:          denom.ChainId,
-		Denom:            denom.Denom,
-		BaseDenom:        denom.BaseDenom,
-		BaseDenomChainId: denom.BaseDenomChainId,
-		DenomPath:        denom.DenomPath,
-		Symbol:           denom.Symbol,
+		Chain:          denom.Chain,
+		Denom:          denom.Denom,
+		BaseDenom:      denom.BaseDenom,
+		BaseDenomChain: denom.BaseDenomChain,
+		DenomPath:      denom.DenomPath,
+		Symbol:         denom.Symbol,
 	}
 }
 

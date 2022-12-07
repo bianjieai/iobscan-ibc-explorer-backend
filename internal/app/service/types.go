@@ -18,15 +18,14 @@ var (
 	chainCfgRepo               repository.IChainConfigRepo            = new(repository.ChainConfigRepo)
 	ibcTxRepo                  repository.IExIbcTxRepo                = new(repository.ExIbcTxRepo)
 	txRepo                     repository.ITxRepo                     = new(repository.TxRepo)
-	exSearchRecordRepo         repository.IExSearchRecordRepo         = new(repository.ExSearchRecordRepo)
-	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
+	exSearchRecordRepo         repository.IUbaSearchRecordRepo        = new(repository.UbaSearchRecordRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
-	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
 	relayerDataCache           cache.RelayerDataCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
 	relayerCache               cache.RelayerCacheRepo
-	baseDenomRepo              cache.BaseDenomCacheRepo
+	authDenomRepo              cache.AuthDenomCacheRepo
+	chainCache                 cache.ChainCacheRepo
 )
 
 type (

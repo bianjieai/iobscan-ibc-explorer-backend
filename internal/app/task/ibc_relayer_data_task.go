@@ -285,8 +285,8 @@ func (t *RelayerDataTask) handleIbcTxHistory(startTime, endTime int64) []*entity
 }
 
 func (t *RelayerDataTask) createChannelPairInfoData(dto *dto.GetRelayerInfoDTO) entity.ChannelPairInfo {
-	return entity.GenerateChannelPairInfo(dto.ScChainId, dto.ScChannel, dto.ScChainAddress,
-		dto.DcChainId, dto.DcChannel, dto.DcChainAddress)
+	return entity.GenerateChannelPairInfo(dto.ScChain, dto.ScChannel, dto.ScChainAddress,
+		dto.DcChain, dto.DcChannel, dto.DcChainAddress)
 }
 
 func checkNoExist(pairId string, data entity.IBCRelayerNew) bool {
@@ -426,7 +426,7 @@ func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity
 			relayedFeeTotalTxs += val.Txs
 			txsItem = append(txsItem, vo.DenomFeeItem{
 				Denom:      val.Denom,
-				DenomChain: val.ChainId,
+				DenomChain: val.Chain,
 				Txs:        val.Txs,
 				FeeValue:   val.AmtValue.String(),
 			})
@@ -448,7 +448,7 @@ func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity
 		for _, val := range relayerTxsAmt {
 			txsItem = append(txsItem, vo.DenomTxsItem{
 				BaseDenom:      val.Denom,
-				BaseDenomChain: val.ChainId,
+				BaseDenomChain: val.Chain,
 				Txs:            val.Txs,
 				TxsValue:       val.AmtValue.String(),
 			})

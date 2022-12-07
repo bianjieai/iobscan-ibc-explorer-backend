@@ -92,7 +92,6 @@ func startTask() {
 		&task.IbcStatisticCronTask{},
 		&task.IbcSyncAcknowledgeTxTask{},
 		&task.IbcChainConfigTask{},
-		&task.IbcDenomCalculateTask{},
 		&task.IbcDenomUpdateTask{},
 		&task.IbcSyncTransferTxTask{},
 		&task.IbcTxRelateTask{},
@@ -109,17 +108,6 @@ func startOneOffTask() {
 		&task.ChannelStatisticsTask{},
 		&task.RelayerStatisticsTask{},
 		&task.TokenStatisticsTask{},
-		//&task.FixDenomTraceHistoryDataTask{},
-		//&task.FixDenomTraceDataTask{},
-		//&task.AddChainTask{},
-		//&task.FixDcChainIdTask{},
-		//&task.FixBaseDenomChainIdTask{},
-		//&task.RelayerDataTask{},
-		//&task.AddTransferDataTask{},
-		//&task.FixFailRecvPacketTask{},
-		//&task.FixFailTxTask{},
-		//&task.FixAcknowledgeTxTask{},
-		//&task.FixAckTxPacketIdTask{},
 	)
 	task.StartOneOffTask()
 }

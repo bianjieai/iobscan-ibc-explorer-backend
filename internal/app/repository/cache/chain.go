@@ -27,3 +27,19 @@ func (repo *ChainCacheRepo) FindAll() ([]*entity.IBCChain, error) {
 	utils.UnmarshalJsonIgnoreErr([]byte(value), &data)
 	return data, nil
 }
+
+func (repo *ChainCacheRepo) SetChainsConnection(value string) error {
+	err := rc.Set(ibcChainsConnection, value, oneDay)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *ChainCacheRepo) GetChainsConnection() (string, error) {
+	value, err := rc.Get(ibcChainsConnection)
+	if err != nil {
+		return "", err
+	}
+	return value, nil
+}
