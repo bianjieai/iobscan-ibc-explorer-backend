@@ -24,7 +24,7 @@ func (t *ModifyChainIdTask) Switch() bool {
 }
 
 func (t *ModifyChainIdTask) Run() int {
-	chainIdNameMap, err := getChainIdNameMap()
+	chainIdNameMap, err := repository.GetChainIdNameMap()
 	if err != nil {
 		logrus.Errorf("task %s getChainIdNameMap err, %v", t.Name(), err)
 		return -1
@@ -35,7 +35,7 @@ func (t *ModifyChainIdTask) Run() int {
 }
 
 func (t *ModifyChainIdTask) RunWithParam(category string, coll string) int {
-	chainIdNameMap, err := getChainIdNameMap()
+	chainIdNameMap, err := repository.GetChainIdNameMap()
 	if err != nil {
 		logrus.Errorf("task %s getChainIdNameMap err, %v", t.Name(), err)
 		return -1

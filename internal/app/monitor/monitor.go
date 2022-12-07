@@ -89,7 +89,7 @@ func lcdConnectionStatus(quit chan bool) {
 				return
 			}
 			for _, val := range chainCfgs {
-				if checkLcd(val.GrpcRestGateway) {
+				if checkLcd(val.GrpcRestGateway, val.LcdApiPath.ChannelsPath) {
 					lcdConnectStatsMetric.With(ChainTag, val.ChainName).Set(float64(1))
 				} else {
 					if switchLcd(val) {
@@ -109,8 +109,9 @@ func lcdConnectionStatus(quit chan bool) {
 	}
 }
 
-func checkLcd(lcd string) bool {
-	if _, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, v1Channels)); err != nil {
+func checkLcd(lcd string, channelPaths string) bool {
+	channelPathUri := strings.Split(channelPaths, "?")[0]
+	if _, err := utils.HttpGet(fmt.Sprintf("%s%s", lcd, channelPathUri)); err != nil {
 		return false
 	}
 
@@ -128,8 +129,7 @@ func checkAndUpdateLcd(lcd string, cf *entity.ChainConfig) bool {
 		if err := json.Unmarshal(resp, &data); err != nil {
 			return false
 		}
-		network := strings.ReplaceAll(data.NodeInfo.Network, "-", "_")
-		if network != cf.CurrentChainId {
+		if data.NodeInfo.Network != cf.CurrentChainId {
 			//return false, if lcd node_info network no match chain_id
 			return false
 		}

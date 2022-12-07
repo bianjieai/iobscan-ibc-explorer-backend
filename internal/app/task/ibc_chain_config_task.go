@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"sort"
 	"strconv"
 	"strings"
@@ -82,7 +83,7 @@ func (t *IbcChainConfigTask) init() {
 	t.channelStateMap = new(sync.Map)
 	t.chainUpdateMap = new(sync.Map)
 	t.chainChannelMap = new(sync.Map)
-	mapData, err := getChainIdNameMap()
+	mapData, err := repository.GetChainIdNameMap()
 	if err != nil {
 		logrus.Fatal(err.Error())
 	}
