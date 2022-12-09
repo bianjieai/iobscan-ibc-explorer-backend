@@ -49,7 +49,7 @@ func (ctl *TaskController) Run(c *gin.Context) {
 					logrus.Errorf("TaskController run %s err, %v", taskName, err)
 					return
 				}
-				endTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
+				endTime, err := strconv.ParseInt(c.PostForm("end_time"), 10, 64)
 				if err != nil {
 					logrus.Errorf("TaskController run %s err, %v", taskName, err)
 					return
@@ -69,8 +69,6 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			}
 		case ibcStatisticCronTask.Name():
 			ibcStatisticCronTask.NewRun()
-		case modifyChainIdTask.Name():
-			modifyChainIdTask.RunWithParam(c.PostForm("category"), c.PostForm("coll"))
 		case fixRelayerStatisticsTask.Name():
 			fixRelayerStatisticsTask.Run()
 		default:

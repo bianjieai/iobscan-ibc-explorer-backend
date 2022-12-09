@@ -23,6 +23,5 @@ var (
 	addTransferDataTask      task.AddTransferDataTask
 	ibcNodeLcdCronTask       task.IbcNodeLcdCronTask
 	ibcStatisticCronTask     task.IbcStatisticCronTask
-	modifyChainIdTask        task.ModifyChainIdTask
 	fixRelayerStatisticsTask task.FixRelayerStatisticsTask
 )
