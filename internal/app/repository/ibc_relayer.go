@@ -51,6 +51,7 @@ type IRelayerRepo interface {
 	RemoveDumpData(ids []string) error
 	FindUnknownByAddrPair(addrA, addrB string) ([]*entity.IBCRelayerNew, error)
 	FindAllRelayerForCache() ([]*entity.IBCRelayerNew, error)
+	FindAuthed() ([]*entity.IBCRelayerNew, error)
 }
 
 var _ IRelayerRepo = new(IbcRelayerRepo)
@@ -245,5 +246,11 @@ func (repo *IbcRelayerRepo) RelayerNameList() ([]*entity.IBCRelayerNew, error) {
 	var res []*entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldeRelayerName: bson.M{"$ne": ""}}).
 		Select(bson.M{RelayerFieldeRelayerName: 1}).Sort("-" + RelayerFieldeRelayerName).All(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindAuthed() ([]*entity.IBCRelayerNew, error) {
+	var res []*entity.IBCRelayerNew
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldeRelayerName: bson.M{"$ne": ""}}).All(&res)
 	return res, err
 }

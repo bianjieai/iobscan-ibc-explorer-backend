@@ -39,6 +39,7 @@ func Routers(Router *gin.Engine) {
 	relayerPage(ibcRouter)
 	cacheTools(ibcRouter)
 	taskTools(ibcRouter)
+	addressPage(ibcRouter)
 }
 
 func homePage(r *gin.RouterGroup) {
@@ -86,6 +87,11 @@ func relayerPage(r *gin.RouterGroup) {
 	r.GET("/relayer/:relayer_id/transferTypeTxs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TransferTypeTxs))
 	r.GET("/relayer/:relayer_id/totalRelayedValue", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalRelayedValue))
 	r.GET("/relayer/:relayer_id/totalFeeCost", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TotalFeeCost))
+}
+
+func addressPage(r *gin.RouterGroup) {
+	ctl := rest.AddressController{}
+	r.GET("/chain/:chain/address/:address", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.BaseInfo))
 }
 
 func cacheTools(r *gin.RouterGroup) {

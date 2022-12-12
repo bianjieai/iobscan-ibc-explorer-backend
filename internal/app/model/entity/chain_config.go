@@ -34,6 +34,7 @@ type (
 		SupplyPath      string `bson:"supply_path"`
 		BalancesPath    string `bson:"balances_path"`
 		ParamsPath      string `bson:"params_path"`
+		AccountsPath    string `bson:"accounts_path"`
 	}
 	IbcInfo struct {
 		Chain string         `bson:"chain"`

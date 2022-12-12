@@ -79,7 +79,7 @@ func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
 
 		if len(transferTxs) > 0 {
 			if err = t.saveTokenTransferData(transferTxs, v.StartTime, v.EndTime, opInsert); err != nil {
-				return err
+				logrus.Errorf("task %s dealHistory saveTokenTransferData err, %v", t.Name(), err)
 			}
 		}
 
@@ -91,7 +91,7 @@ func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
 
 		if len(traceReceiveTxs) > 0 {
 			if err = t.saveTraceReceiveData(traceReceiveTxs, v.StartTime, v.EndTime, opInsert); err != nil {
-				return err
+				logrus.Errorf("task %s dealHistory saveTraceReceiveData err, %v", t.Name(), err)
 			}
 		}
 		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
@@ -110,7 +110,7 @@ func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
 
 		if len(transferTxs) > 0 {
 			if err = t.saveTokenTransferData(transferTxs, v.StartTime, v.EndTime, op); err != nil {
-				return err
+				logrus.Errorf("task %s deal saveTokenTransferData err, %v", t.Name(), err)
 			}
 		}
 
@@ -122,7 +122,7 @@ func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
 
 		if len(traceReceiveTxs) > 0 {
 			if err = t.saveTraceReceiveData(traceReceiveTxs, v.StartTime, v.EndTime, op); err != nil {
-				return err
+				logrus.Errorf("task %s deal saveTraceReceiveData err, %v", t.Name(), err)
 			}
 		}
 		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)

@@ -9,6 +9,7 @@ var (
 	tokenService    service.ITokenService    = new(service.TokenService)
 	channelService  service.IChannelService  = new(service.ChannelService)
 	chainService    service.IChainService    = new(service.ChainService)
+	addressService  service.IAddressService  = new(service.AddressService)
 	relayerService  service.IRelayerService  = new(service.RelayerService)
 	homeService     service.IHomeService     = new(service.HomeService)
 	transferService service.ITransferService = new(service.TransferService)
@@ -23,6 +24,6 @@ var (
 	addTransferDataTask      task.AddTransferDataTask
 	ibcNodeLcdCronTask       task.IbcNodeLcdCronTask
 	ibcStatisticCronTask     task.IbcStatisticCronTask
-	modifyChainIdTask        task.ModifyChainIdTask
 	fixRelayerStatisticsTask task.FixRelayerStatisticsTask
+	relayerAddressInitTask   task.IbcRelayerAddressInitTask
 )

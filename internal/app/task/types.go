@@ -67,13 +67,13 @@ var (
 	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
 	relayerAddressChannelRepo  repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
+	relayerAddressRepo         repository.IRelayerAddressRepo         = new(repository.RelayerAddressRepo)
 	statisticsRepo             repository.IStatisticRepo              = new(repository.IbcStatisticRepo)
 	taskRecordRepo             repository.ITaskRecordRepo             = new(repository.TaskRecordRepo)
 	syncTaskRepo               repository.ISyncTaskRepo               = new(repository.SyncTaskRepo)
 	syncBlockRepo              repository.ISyncBlockRepo              = new(repository.SyncBlockRepo)
 	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
 	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
-	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 

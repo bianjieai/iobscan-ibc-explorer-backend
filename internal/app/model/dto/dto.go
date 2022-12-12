@@ -247,3 +247,8 @@ type BaseDenomAmountDTO struct {
 	BaseDenomChain string  `bson:"base_denom_chain"`
 	Amount         float64 `bson:"amount"`
 }
+
+type ChainAddressDTO struct {
+	Chain   string `bson:"chain"`
+	Address string `bson:"address"`
+}
