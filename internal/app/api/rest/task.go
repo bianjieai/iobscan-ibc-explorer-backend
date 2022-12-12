@@ -56,8 +56,6 @@ func (ctl *TaskController) Run(c *gin.Context) {
 				}
 				res = relayerStatisticsTask.RunWithParam(chain, startTime, endTime)
 			}
-		case relayerDataTask.Name():
-			res = relayerDataTask.Run()
 		case addTransferDataTask.Name():
 			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
 		case ibcNodeLcdCronTask.Name():

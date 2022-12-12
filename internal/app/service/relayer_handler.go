@@ -3,13 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"strings"
 	"time"
 
 	"github.com/antchfx/htmlquery"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/sirupsen/logrus"
@@ -107,11 +107,6 @@ func (h *RelayerHandler) fetchSave(filepath string) {
 		distRelayerIds = append(distRelayerIds, entity.GenerateDistRelayerId(chainA, chainAAddress, chainB, chainBAddress))
 	}
 
-	if err = h.removeDumpChannelPairs(distRelayerIds); err != nil {
-		logrus.Errorf("RelayerHandler removeDumpChannelPairs %s err, %v", relayerInfoResp.TeamName, err)
-		return
-	}
-
 	if err = h.saveRegistryRelayer(relayerInfoResp.TeamName, distRelayerIds); err != nil {
 		logrus.Errorf("RelayerHandler saveRegistryRelayer %s err, %v", relayerInfoResp.TeamName, err)
 		return
@@ -130,12 +125,13 @@ func (h *RelayerHandler) saveRegistryRelayer(relayerName string, nowDistRelayerI
 	return h.updateRelayer(relayer, nowDistRelayerIds)
 }
 
-func (h *RelayerHandler) removeDumpChannelPairs(nowDistRelayerIds []string) error {
+func (h *RelayerHandler) removeDumpChannelPairs(nowDistRelayerIds []string) ([]entity.ChannelPairInfo, error) {
+	var pairList []entity.ChannelPairInfo
 	for _, v := range nowDistRelayerIds {
 		_, addressA, _, addressB := entity.ParseDistRelayerId(v)
 		relayerList, err := relayerRepo.FindUnknownByAddrPair(addressA, addressB)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if len(relayerList) == 0 {
@@ -145,29 +141,48 @@ func (h *RelayerHandler) removeDumpChannelPairs(nowDistRelayerIds []string) erro
 		removeRelayerIds := make([]string, 0, len(relayerList))
 		for _, re := range relayerList {
 			removeRelayerIds = append(removeRelayerIds, re.RelayerId)
+			pairList = append(pairList, re.ChannelPairInfo...)
 		}
 
 		if err = relayerRepo.RemoveDumpData(removeRelayerIds); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return pairList, nil
 }
 
 func (h *RelayerHandler) insertNewRelayer(relayerName string, nowDistRelayerIds []string) error {
 	nowChannelPairInfo := make([]entity.ChannelPairInfo, 0, len(nowDistRelayerIds))
+	pairIdMap := make(map[string]struct{}, len(nowDistRelayerIds))
 	servedChainSet := utils.NewStringSet()
 	for _, v := range nowDistRelayerIds {
 		chainA, addressA, chainB, addressB := entity.ParseDistRelayerId(v)
-		pairs, err := repository.GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
+		pairs, _, err := repository.GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
 		if err != nil {
 			return err
 		}
 		nowChannelPairInfo = append(nowChannelPairInfo, pairs...)
 		servedChainSet.AddAll(chainA, chainB)
+		for _, p := range pairs {
+			pairIdMap[p.PairId] = struct{}{}
+		}
 	}
 
-	err := relayerRepo.InsertOne(&entity.IBCRelayerNew{
+	removeDumpChannelPairs, err := h.removeDumpChannelPairs(nowDistRelayerIds)
+	if err != nil {
+		logrus.Errorf("RelayerHandler removeDumpChannelPairs err, %v", err)
+		return err
+	}
+
+	// 将移除的unknown relayer的channel pair 加入到注册的relayer中
+	for _, v := range removeDumpChannelPairs {
+		if _, ok := pairIdMap[v.PairId]; !ok {
+			nowChannelPairInfo = append(nowChannelPairInfo, v)
+			pairIdMap[v.PairId] = struct{}{}
+		}
+	}
+
+	err = relayerRepo.InsertOne(&entity.IBCRelayerNew{
 		RelayerId:       primitive.NewObjectID().Hex(),
 		RelayerName:     relayerName,
 		RelayerIcon:     fmt.Sprintf(iconUrl, strings.ReplaceAll(relayerName, " ", "_")),
@@ -207,7 +222,7 @@ func (h *RelayerHandler) updateRelayer(relayer *entity.IBCRelayerNew, nowDistRel
 		// 新增pair
 		needUpdate = true
 		chainA, addressA, chainB, addressB := entity.ParseDistRelayerId(v)
-		pairs, err := repository.GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
+		pairs, _, err := repository.GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB)
 		if err != nil {
 			return err
 		}
@@ -220,6 +235,17 @@ func (h *RelayerHandler) updateRelayer(relayer *entity.IBCRelayerNew, nowDistRel
 	if !needUpdate {
 		logrus.Infof("RelayerHandler relayer %s don't chang", relayer.RelayerName)
 		return nil
+	}
+
+	removeDumpChannelPairs, err := h.removeDumpChannelPairs(nowDistRelayerIds)
+	if err != nil {
+		logrus.Errorf("RelayerHandler removeDumpChannelPairs err, %v", err)
+		return err
+	}
+
+	// 将移除的unknown relayer的channel pair 加入到注册的relayer中
+	for _, v := range removeDumpChannelPairs {
+		nowChannelPairInfoMap[v.PairId] = v
 	}
 
 	pairs := make([]entity.ChannelPairInfo, 0, len(nowChannelPairInfoMap))

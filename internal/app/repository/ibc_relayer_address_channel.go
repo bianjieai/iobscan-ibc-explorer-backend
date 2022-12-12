@@ -14,6 +14,7 @@ type IRelayerAddressChannelRepo interface {
 	InsertOne(ac *entity.IBCRelayerAddressChannel) error
 	InsertMany(batch []*entity.IBCRelayerAddressChannel) error
 	FindChannels(arrs []string) ([]*entity.IBCRelayerAddressChannel, error)
+	FindByAddressChain(address, chain string) ([]*entity.IBCRelayerAddressChannel, error)
 	DistinctAddr() ([]*dto.ChainAddressDTO, error)
 }
 
@@ -43,6 +44,16 @@ func (repo *RelayerAddressChannelRepo) FindChannels(arrs []string) ([]*entity.IB
 	var res []*entity.IBCRelayerAddressChannel
 	query := bson.M{
 		"relayer_address": bson.M{"$in": arrs},
+	}
+	err := repo.coll().Find(context.Background(), query).All(&res)
+	return res, err
+}
+
+func (repo *RelayerAddressChannelRepo) FindByAddressChain(address, chain string) ([]*entity.IBCRelayerAddressChannel, error) {
+	var res []*entity.IBCRelayerAddressChannel
+	query := bson.M{
+		"relayer_address": address,
+		"chain":           chain,
 	}
 	err := repo.coll().Find(context.Background(), query).All(&res)
 	return res, err

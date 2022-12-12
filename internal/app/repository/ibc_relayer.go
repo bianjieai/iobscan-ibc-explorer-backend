@@ -2,31 +2,32 @@ package repository
 
 import (
 	"context"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 const (
-	RelayerFieldelayerId      = "relayer_id"
-	RelayerFieldTotalTxs      = "relayed_total_txs"
-	RelayerFieldSuccessTxs    = "relayed_success_txs"
-	RelayerFieldTotalTxsValue = "relayed_total_txs_value"
-	RelayerFieldTotalFeeValue = "total_fee_value"
-	RelayerFieldServedChains  = "served_chains"
-	RelayerFieldeRelayerName  = "relayer_name"
-	RelayerFieldeRelayerIcon  = "relayer_icon"
-	RelayerFieldUpdateTime    = "update_time"
-	RelayerFieldChainA        = "channel_pair_info.chain_a"
-	RelayerFieldChainB        = "channel_pair_info.chain_b"
-	RelayerFieldChannelA      = "channel_pair_info.channel_a"
-	RelayerFieldChannelB      = "channel_pair_info.channel_b"
-	RelayerFieldChainAAddress = "channel_pair_info.chain_a_address"
-	RelayerFieldChainBAddress = "channel_pair_info.chain_b_address"
-	RelayerFieldUpdateAt      = "update_at"
+	RelayerFieldelayerId        = "relayer_id"
+	RelayerFieldTotalTxs        = "relayed_total_txs"
+	RelayerFieldSuccessTxs      = "relayed_success_txs"
+	RelayerFieldTotalTxsValue   = "relayed_total_txs_value"
+	RelayerFieldTotalFeeValue   = "total_fee_value"
+	RelayerFieldServedChains    = "served_chains"
+	RelayerFieldeRelayerName    = "relayer_name"
+	RelayerFieldeRelayerIcon    = "relayer_icon"
+	RelayerFieldUpdateTime      = "update_time"
+	RelayerFieldChannelPairInfo = "channel_pair_info"
+	RelayerFieldChainA          = "channel_pair_info.chain_a"
+	RelayerFieldChainB          = "channel_pair_info.chain_b"
+	RelayerFieldChannelA        = "channel_pair_info.channel_a"
+	RelayerFieldChannelB        = "channel_pair_info.channel_b"
+	RelayerFieldChainAAddress   = "channel_pair_info.chain_a_address"
+	RelayerFieldChainBAddress   = "channel_pair_info.chain_b_address"
+	RelayerFieldUpdateAt        = "update_at"
 
 	RelayerAllType      = 0
 	RelayerRegisterType = 1
@@ -46,12 +47,14 @@ type IRelayerRepo interface {
 	FindOneByRelayerId(relayerId string) (*entity.IBCRelayerNew, error)
 	FindOneByRelayerName(name string) (*entity.IBCRelayerNew, error)
 	RelayerNameList() ([]*entity.IBCRelayerNew, error)
-	UpdateChannelPairInfo(relayerId string, infos []entity.ChannelPairInfo) error
+	UpdateChannelPairInfo(relayerId string, infos entity.ChannelPairInfoList) error
 	Update(relayer *entity.IBCRelayerNew) error
 	RemoveDumpData(ids []string) error
 	FindUnknownByAddrPair(addrA, addrB string) ([]*entity.IBCRelayerNew, error)
 	FindAllRelayerForCache() ([]*entity.IBCRelayerNew, error)
 	FindAuthed() ([]*entity.IBCRelayerNew, error)
+	FindByChannelPairChainA(chain, address string) (*entity.IBCRelayerNew, error)
+	FindByChannelPairChainB(chain, address string) (*entity.IBCRelayerNew, error)
 }
 
 var _ IRelayerRepo = new(IbcRelayerRepo)
@@ -160,12 +163,15 @@ func (repo *IbcRelayerRepo) InsertBatch(relayer []entity.IBCRelayerNew) error {
 	}
 	return nil
 }
-func (repo *IbcRelayerRepo) UpdateChannelPairInfo(relayerId string, infos []entity.ChannelPairInfo) error {
-	updateData := bson.M{
-		RelayerFieldUpdateAt: time.Now().Unix(),
+func (repo *IbcRelayerRepo) UpdateChannelPairInfo(relayerId string, infos entity.ChannelPairInfoList) error {
+	if len(infos) == 0 {
+		return nil
 	}
-	if len(infos) > 0 {
-		updateData["channel_pair_info"] = infos
+
+	updateData := bson.M{
+		RelayerFieldUpdateAt:        time.Now().Unix(),
+		RelayerFieldChannelPairInfo: infos,
+		RelayerFieldServedChains:    len(infos.GetChains()),
 	}
 
 	return repo.coll().UpdateOne(context.Background(), bson.M{RelayerFieldelayerId: relayerId}, bson.M{
@@ -252,5 +258,17 @@ func (repo *IbcRelayerRepo) RelayerNameList() ([]*entity.IBCRelayerNew, error) {
 func (repo *IbcRelayerRepo) FindAuthed() ([]*entity.IBCRelayerNew, error) {
 	var res []*entity.IBCRelayerNew
 	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldeRelayerName: bson.M{"$ne": ""}}).All(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindByChannelPairChainA(chain, address string) (*entity.IBCRelayerNew, error) {
+	var res *entity.IBCRelayerNew
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainA: chain, RelayerFieldChainAAddress: address}).One(&res)
+	return res, err
+}
+
+func (repo *IbcRelayerRepo) FindByChannelPairChainB(chain, address string) (*entity.IBCRelayerNew, error) {
+	var res *entity.IBCRelayerNew
+	err := repo.coll().Find(context.Background(), bson.M{RelayerFieldChainB: chain, RelayerFieldChainBAddress: address}).One(&res)
 	return res, err
 }
