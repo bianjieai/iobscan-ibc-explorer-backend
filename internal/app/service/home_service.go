@@ -107,6 +107,7 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 		item := vo.DailyData{
 			ChainName:      one.ChainName,
 			PrettyName:     one.PrettyName,
+			AddrPrefix:     []string{one.AddrPrefix},
 			CurrentChainId: one.CurrentChainId,
 			Icon:           one.Icon,
 			Status:         one.Status,

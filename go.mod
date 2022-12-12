@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/antchfx/htmlquery v1.2.5
+	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
+	github.com/cosmos/cosmos-sdk v0.44.2
 	github.com/gin-contrib/cache v1.1.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-redis/redis/v8 v8.11.5
@@ -22,3 +24,5 @@ require (
 	gorm.io/driver/mysql v1.3.4
 	gorm.io/gorm v1.23.6
 )
+
+replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
