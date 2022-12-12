@@ -348,6 +348,36 @@ func (w *relayerStatisticsWorker) saveAddrChannel(addrChannelMap map[string]*ent
 	return nil
 }
 
+func (w *relayerStatisticsWorker) saveRelayerAddr(addrChannelMap map[string]*entity.IBCRelayerAddressChannel) error {
+	if len(addrChannelMap) == 0 {
+		return nil
+	}
+
+	nowTime := time.Now().Unix()
+	filterMap := make(map[string]struct{}, len(addrChannelMap))
+	addrList := make([]*entity.IBCRelayerAddress, 0, len(addrChannelMap))
+
+	for _, v := range addrChannelMap {
+		if _, ok := filterMap[fmt.Sprintf("%s:%s", v.Chain, v.RelayerAddress)]; !ok {
+			addrList = append(addrList, &entity.IBCRelayerAddress{
+				Address:      v.RelayerAddress,
+				Chain:        v.Chain,
+				PubKey:       "",
+				GatherStatus: entity.GatherStatusTODO,
+				CreateAt:     nowTime,
+				UpdateAt:     nowTime,
+			})
+		}
+	}
+
+	if err := relayerAddressRepo.InsertMany(addrList); err != nil {
+		logrus.Errorf("task %s relayerAddressRepo.InsertMany err, %v", w.taskName, err)
+		return err
+	}
+
+	return nil
+}
+
 // ===============================================================
 // ===============================================================
 // ===============================================================

@@ -11,23 +11,25 @@ package task
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"sync"
-	"time"
-
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var relayerDataTask RelayerDataTask
 var _ OneOffTask = new(RelayerDataTask)
+
+// TODO 考虑是否还需要此task
 
 type RelayerDataTask struct {
 	distRelayerMap map[string]string

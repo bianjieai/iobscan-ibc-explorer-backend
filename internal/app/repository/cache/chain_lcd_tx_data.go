@@ -32,3 +32,16 @@ func (repo *LcdTxDataCacheRepo) GetClientState(clientKey string) (*vo.ClientStat
 
 	return &data, nil
 }
+
+func (repo *LcdTxDataCacheRepo) SetAccount(chain, addr string, data *vo.AccountResp) error {
+	return rc.MarshalSet(fmt.Sprintf(lcdAccount, chain, addr), data, threeHours)
+}
+
+func (repo *LcdTxDataCacheRepo) GetAccount(chain, addr string) (*vo.AccountResp, error) {
+	var data vo.AccountResp
+	if err := rc.UnmarshalGet(fmt.Sprintf(lcdAccount, chain, addr), &data); err != nil {
+		return nil, err
+	}
+
+	return &data, nil
+}

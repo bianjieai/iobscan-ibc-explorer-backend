@@ -51,6 +51,9 @@ const (
 	DenomAllStatisticName     = "denom_all"
 
 	IBCConnectionChainsIconUri = "https://iobscan.io/resources/home/connection-chains/%s.png"
+
+	ETH_SECP256K1 = "eth_secp256k1"
+	SECP256K1     = "secp256k1"
 )
 
 var HomeStatistics = []string{
