@@ -175,14 +175,17 @@ func (t *RelayerAddressGatherTask) gather() {
 
 		var registeredRelayer, unknownRelayer *entity.IBCRelayerNew
 		for _, s := range samePubKeyList {
+			if s.Chain == v.Chain && s.Address == v.Address {
+				continue
+			}
 			switch s.GatherStatus {
 			case entity.GatherStatusPubKey:
 				if unknownRelayer == nil {
-					res, err := relayerRepo.FindByChannelPairChainA(v.Chain, v.Address)
+					res, err := relayerRepo.FindByChannelPairChainA(s.Chain, s.Address)
 					if err == nil {
 						unknownRelayer = res
 					} else {
-						res, err = relayerRepo.FindByChannelPairChainB(v.Chain, v.Address)
+						res, err = relayerRepo.FindByChannelPairChainB(s.Chain, s.Address)
 						if err == nil {
 							unknownRelayer = res
 						}
@@ -190,11 +193,11 @@ func (t *RelayerAddressGatherTask) gather() {
 				}
 			case entity.GatherStatusRegistry:
 				if registeredRelayer == nil {
-					res, err := relayerRepo.FindByChannelPairChainA(v.Chain, v.Address)
+					res, err := relayerRepo.FindByChannelPairChainA(s.Chain, s.Address)
 					if err == nil {
 						registeredRelayer = res
 					} else {
-						res, err = relayerRepo.FindByChannelPairChainB(v.Chain, v.Address)
+						res, err = relayerRepo.FindByChannelPairChainB(s.Chain, s.Address)
 						if err == nil {
 							registeredRelayer = res
 						}
@@ -209,7 +212,7 @@ func (t *RelayerAddressGatherTask) gather() {
 		if registeredRelayer != nil {
 			t.addRelayerChannelPair(registeredRelayer, v.Address, v.Chain, entity.GatherStatusRegistry)
 		} else if unknownRelayer != nil {
-			t.addRelayerChannelPair(registeredRelayer, v.Address, v.Chain, entity.GatherStatusPubKey)
+			t.addRelayerChannelPair(unknownRelayer, v.Address, v.Chain, entity.GatherStatusPubKey)
 		} else {
 			t.addRelayer(v.Address, v.Chain)
 		}
@@ -262,13 +265,18 @@ func (t *RelayerAddressGatherTask) addRelayer(address, chain string) {
 
 	now := time.Now().Unix()
 	newRelayer := &entity.IBCRelayerNew{
-		RelayerId:       primitive.NewObjectID().Hex(),
-		RelayerName:     "",
-		RelayerIcon:     "",
-		ServedChains:    1,
-		ChannelPairInfo: newPair,
-		CreateAt:        now,
-		UpdateAt:        now,
+		RelayerId:            primitive.NewObjectID().Hex(),
+		RelayerName:          "",
+		RelayerIcon:          "",
+		ServedChains:         1,
+		ChannelPairInfo:      newPair,
+		UpdateTime:           0,
+		RelayedTotalTxs:      0,
+		RelayedSuccessTxs:    0,
+		RelayedTotalTxsValue: "0",
+		TotalFeeValue:        "0",
+		CreateAt:             now,
+		UpdateAt:             now,
 	}
 
 	if err = relayerRepo.InsertOne(newRelayer); err != nil {

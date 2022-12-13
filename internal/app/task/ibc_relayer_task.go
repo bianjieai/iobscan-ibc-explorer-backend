@@ -460,13 +460,13 @@ func (t *IbcRelayerCronTask) handleRelayerStatistic(denomPriceMap map[string]dto
 }
 
 func singleSideAddressMatchPair(pairInfoList []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
-	genKey := func(chain, address, pairId string) string {
-		return fmt.Sprintf("%s:%s:%s", chain, address, pairId)
+	genKey := func(chain, channel, address, pairId string) string {
+		return fmt.Sprintf("%s:%s:%s:%s", chain, channel, address, pairId)
 	}
 
-	splitKey := func(key string) (string, string, string) {
+	splitKey := func(key string) (string, string, string, string) {
 		split := strings.Split(key, ":")
-		return split[0], split[1], split[2]
+		return split[0], split[1], split[2], split[3]
 	}
 
 	pairIdMap := make(map[string]struct{}, len(pairInfoList))
@@ -474,11 +474,11 @@ func singleSideAddressMatchPair(pairInfoList []entity.ChannelPairInfo) ([]entity
 	var singleSideAddrChainCombs []string
 	for _, v := range pairInfoList {
 		pairIdMap[v.PairId] = struct{}{}
-		allAddrChainCombs = append(allAddrChainCombs, genKey(v.ChainA, v.ChainAAddress, v.PairId))
+		allAddrChainCombs = append(allAddrChainCombs, genKey(v.ChainA, v.ChannelA, v.ChainAAddress, v.PairId))
 		if v.ChainB == "" {
-			singleSideAddrChainCombs = append(singleSideAddrChainCombs, genKey(v.ChainA, v.ChainAAddress, v.PairId))
+			singleSideAddrChainCombs = append(singleSideAddrChainCombs, genKey(v.ChainA, v.ChannelA, v.ChainAAddress, v.PairId))
 		} else {
-			allAddrChainCombs = append(allAddrChainCombs, genKey(v.ChainB, v.ChainBAddress, v.PairId))
+			allAddrChainCombs = append(allAddrChainCombs, genKey(v.ChainB, v.ChannelB, v.ChainBAddress, v.PairId))
 		}
 	}
 
@@ -488,9 +488,9 @@ func singleSideAddressMatchPair(pairInfoList []entity.ChannelPairInfo) ([]entity
 
 	matchedPairIdMap := make(map[string]struct{})
 	for _, sc := range singleSideAddrChainCombs {
-		chain1, address1, pairId1 := splitKey(sc)
+		chain1, channel1, address1, pairId1 := splitKey(sc)
 		for _, ac := range allAddrChainCombs {
-			chain2, address2, _ := splitKey(ac)
+			chain2, _, address2, _ := splitKey(ac)
 			if chain1 == chain2 {
 				continue
 			}
@@ -502,12 +502,17 @@ func singleSideAddressMatchPair(pairInfoList []entity.ChannelPairInfo) ([]entity
 			// 配对成功
 			if matched {
 				for _, t := range tempPairList {
-					if _, ok := pairIdMap[t.PairId]; !ok {
-						pairInfoList = append(pairInfoList, t)
-						pairIdMap[t.PairId] = struct{}{}
+					if (t.ChainA == chain1 && t.ChainAAddress == address1 && t.ChannelA == channel1) ||
+						(t.ChainB == chain1 && t.ChainBAddress == address1 && t.ChannelB == channel1) {
+
+						if _, ok := pairIdMap[t.PairId]; !ok {
+							pairInfoList = append(pairInfoList, t)
+							pairIdMap[t.PairId] = struct{}{}
+						}
+
+						matchedPairIdMap[pairId1] = struct{}{}
 					}
 				}
-				matchedPairIdMap[pairId1] = struct{}{}
 			}
 		}
 	}

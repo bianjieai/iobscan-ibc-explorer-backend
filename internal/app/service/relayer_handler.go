@@ -147,6 +147,7 @@ func (h *RelayerHandler) removeDumpChannelPairs(nowDistRelayerIds []string) ([]e
 		if err = relayerRepo.RemoveDumpData(removeRelayerIds); err != nil {
 			return nil, err
 		}
+		logrus.WithField("relayer_ids", removeRelayerIds).Infof("RelayerHandler RemoveDumpData Notice")
 	}
 	return pairList, nil
 }

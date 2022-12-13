@@ -69,6 +69,9 @@ func (repo *RelayerAddressRepo) FindByPubKey(pubKey string) ([]*entity.IBCRelaye
 func (repo *RelayerAddressRepo) FindToBeGathered(startTime int64) ([]*entity.IBCRelayerAddress, error) {
 	query := bson.M{
 		"gather_status": entity.GatherStatusTODO,
+		"pub_key": bson.M{
+			"$ne": "",
+		},
 	}
 	if startTime > 0 {
 		query["create_at"] = bson.M{

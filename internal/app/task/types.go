@@ -40,7 +40,7 @@ const (
 	segmentStepLatest  = 24 * 3600
 	segmentStepHistory = 12 * 3600
 
-	relayerAddressGatherRangeTime = 7 * 3600
+	relayerAddressGatherRangeTime = 7 * 86400
 )
 
 var (

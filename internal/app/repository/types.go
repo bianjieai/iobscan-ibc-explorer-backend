@@ -20,8 +20,7 @@ var (
 // getChannelPairInfoByAddressPair 获取一对地址上的所有channel pair
 func GetChannelPairInfoByAddressPair(chainA, addressA, chainB, addressB string) ([]entity.ChannelPairInfo, bool, error) {
 	if chainA == "" || chainB == "" || addressA == "" || addressB == "" {
-		pair := entity.GenerateChannelPairInfo(chainA, "", addressA, chainB, "", addressB)
-		return []entity.ChannelPairInfo{pair}, false, nil
+		return []entity.ChannelPairInfo{}, false, nil
 	}
 
 	addrChannels, err := new(RelayerAddressChannelRepo).FindChannels([]string{addressA, addressB})
