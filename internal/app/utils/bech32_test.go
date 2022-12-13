@@ -82,8 +82,17 @@ func TestAddrConvert(t *testing.T) {
 }
 
 func TestGetAddressFromPubkey(t *testing.T) {
-	jsonPubKeyData := "{\"pub_key\":{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AjwlIJkU4XHZnSqhZRXHPzubO5PBfyBYjij919MBTMY5\"}}"
-	addr, err := GetAddressFromPubkey("iaa", jsonPubKeyData)
+	jsonPubKeyData := "{\"pub_key\":{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AoCSeYV5N3anty1GZv7gLAr0aQ+yaIz62n+bIAgBQvoH\"}}"
+	addr, err := GetAddressFromPubkey("kava", jsonPubKeyData)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(addr)
+}
+
+func TestGetAddressFromEthPubkey(t *testing.T) {
+	jsonPubKeyData := "{\"pub_key\":{\"@type\":\"/ethermint.crypto.v1.ethsecp256k1.PubKey\",\"key\":\"Anv7L1WQFtJDEVSNrEgjUvfonk2AsXFbVlr2E+pbVqmW\"}}"
+	addr, err := GetAddressFromPubkey("evmos", jsonPubKeyData)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

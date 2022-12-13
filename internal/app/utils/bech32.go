@@ -8,6 +8,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	enccodec "github.com/tharsis/ethermint/encoding/codec"
 )
 
 func ConvertAndEncode(hrp string, data []byte) (string, error) {
@@ -58,6 +59,7 @@ func GetProtoCodec() *codec.ProtoCodec {
 	interfaceRegistry := ctypes.NewInterfaceRegistry()
 	std.RegisterInterfaces(interfaceRegistry)
 	marshaler := codec.NewProtoCodec(interfaceRegistry)
+	enccodec.RegisterInterfaces(interfaceRegistry)
 	return marshaler
 }
 func GetAddressFromPubkey(addPrefix string, jsonPubKeyData string) (string, error) {

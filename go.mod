@@ -3,9 +3,10 @@ module github.com/bianjieai/iobscan-ibc-explorer-backend
 go 1.16
 
 require (
+	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/antchfx/htmlquery v1.2.5
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
-	github.com/cosmos/cosmos-sdk v0.44.2
+	github.com/cosmos/cosmos-sdk v0.45.1
 	github.com/gin-contrib/cache v1.1.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-redis/redis/v8 v8.11.5
@@ -19,6 +20,8 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe
 	github.com/swaggo/gin-swagger v1.5.0
+	github.com/tharsis/ethermint v0.10.3
+	github.com/tklauser/go-sysconf v0.3.7 // indirect
 	github.com/weichang-bianjie/metric-sdk v1.0.1
 	go.mongodb.org/mongo-driver v1.9.0
 	gorm.io/driver/mysql v1.3.4
