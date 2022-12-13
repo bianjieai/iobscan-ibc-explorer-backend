@@ -13,6 +13,7 @@ const (
 	ChainConfigFieldGrpcRestGateway = "grpc_rest_gateway"
 	ChainConfigFieldChainName       = "chain_name"
 	ChainConfigFieldPrettyName      = "pretty_name"
+	ChainConfigFieldAddrPrefix      = "addr_prefix"
 	ChainConfigFieldIcon            = "icon"
 	ChainConfigFieldStatus          = "status"
 	ChainConfigFieldIbcInfo         = "ibc_info"
@@ -54,7 +55,7 @@ func (repo *ChainConfigRepo) FindAllChainInfos() ([]*entity.ChainConfig, error) 
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
 		Select(bson.M{ChainConfigFieldCurrentChainId: 1, ChainConfigFieldChainName: 1, ChainConfigFieldPrettyName: 1, ChainConfigFieldIcon: 1, ChainConfigFieldGrpcRestGateway: 1,
-			ChainConfigFieldLcdApiPath: 1, ChainConfigFieldStatus: 1}).All(&res)
+			ChainConfigFieldLcdApiPath: 1, ChainConfigFieldStatus: 1, ChainConfigFieldAddrPrefix: 1}).All(&res)
 	return res, err
 }
 
