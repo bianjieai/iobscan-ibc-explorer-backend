@@ -1,9 +1,5 @@
 package utils
 
-/***
-code from page detail: https://pkg.go.dev/github.com/btcsuite/btcutil/bech32
-*/
-
 import (
 	"fmt"
 	"github.com/btcsuite/btcutil/bech32"
@@ -62,8 +58,6 @@ func GetProtoCodec() *codec.ProtoCodec {
 	interfaceRegistry := ctypes.NewInterfaceRegistry()
 	std.RegisterInterfaces(interfaceRegistry)
 	marshaler := codec.NewProtoCodec(interfaceRegistry)
-	//keyring.RegisterLegacyAminoCodec(cdc)
-	//cryptocodec.RegisterCrypto(cdc)
 	return marshaler
 }
 func GetAddressFromPubkey(addPrefix string, jsonPubKeyData string) (string, error) {
