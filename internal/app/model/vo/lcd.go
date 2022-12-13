@@ -22,6 +22,40 @@ type BalancesResp struct {
 	} `json:"pagination"`
 }
 
+type UnbondingResp struct {
+	UnbondingResponses []struct {
+		DelegatorAddress string `json:"delegator_address"`
+		ValidatorAddress string `json:"validator_address"`
+		Entries          []struct {
+			CreationHeight string `json:"creation_height"`
+			InitialBalance string `json:"initial_balance"`
+			Balance        string `json:"balance"`
+		} `json:"entries"`
+	} `json:"unbonding_responses"`
+	Pagination struct {
+		NextKey *string `json:"next_key"`
+		Total   string  `json:"total"`
+	} `json:"pagination"`
+}
+
+type DelegationResp struct {
+	DelegationResponses []struct {
+		Delegation struct {
+			DelegatorAddress string `json:"delegator_address"`
+			ValidatorAddress string `json:"validator_address"`
+			Shares           string `json:"shares"`
+		} `json:"delegation"`
+		Balance struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"balance"`
+	} `json:"delegation_responses"`
+	Pagination struct {
+		NextKey *string `json:"next_key"`
+		Total   string  `json:"total"`
+	} `json:"pagination"`
+}
+
 type StakeParams struct {
 	Params struct {
 		UnbondingTime string `json:"unbonding_time"`

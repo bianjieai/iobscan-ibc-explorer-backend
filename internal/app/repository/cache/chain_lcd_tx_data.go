@@ -45,3 +45,39 @@ func (repo *LcdTxDataCacheRepo) GetAccount(chain, addr string) (*vo.AccountResp,
 
 	return &data, nil
 }
+
+func (repo *LcdTxDataCacheRepo) SetBalances(chain, addr string, data *vo.BalancesResp) error {
+	return rc.MarshalSet(fmt.Sprintf(lcdBalances, chain, addr), data, oneMin)
+}
+
+func (repo *LcdTxDataCacheRepo) GetBalances(chain, addr string) (*vo.BalancesResp, error) {
+	var data vo.BalancesResp
+	if err := rc.UnmarshalGet(fmt.Sprintf(lcdBalances, chain, addr), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func (repo *LcdTxDataCacheRepo) SetUnbonding(chain, addr string, data *vo.UnbondingResp) error {
+	return rc.MarshalSet(fmt.Sprintf(lcdUnbonding, chain, addr), data, oneMin)
+}
+
+func (repo *LcdTxDataCacheRepo) GetUnbonding(chain, addr string) (*vo.UnbondingResp, error) {
+	var data vo.UnbondingResp
+	if err := rc.UnmarshalGet(fmt.Sprintf(lcdUnbonding, chain, addr), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func (repo *LcdTxDataCacheRepo) SetDelegation(chain, addr string, data *vo.DelegationResp) error {
+	return rc.MarshalSet(fmt.Sprintf(lcdDelegation, chain, addr), data, oneMin)
+}
+
+func (repo *LcdTxDataCacheRepo) GetDelegation(chain, addr string) (*vo.DelegationResp, error) {
+	var data vo.DelegationResp
+	if err := rc.UnmarshalGet(fmt.Sprintf(lcdDelegation, chain, addr), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
