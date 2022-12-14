@@ -43,6 +43,7 @@ type IRelayerRepo interface {
 	FindAllBycond(relayerName, relayerAddr string, skip, limit int64) ([]*entity.IBCRelayerNew, error)
 	CountBycond(relayerName, relayerAddr string) (int64, error)
 	CountChainRelayers(chain string) (int64, error)
+	CountAll() (int64, error)
 	CountChannelRelayers(chainA, channelA, chainB, channelB string) (int64, error)
 	FindOneByRelayerId(relayerId string) (*entity.IBCRelayerNew, error)
 	FindOneByRelayerName(name string) (*entity.IBCRelayerNew, error)
@@ -213,6 +214,10 @@ func (repo *IbcRelayerRepo) CountChainRelayers(chain string) (int64, error) {
 			{RelayerFieldChainB: chain},
 		},
 	}).Count()
+}
+
+func (repo *IbcRelayerRepo) CountAll() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{}).Count()
 }
 
 func (repo *IbcRelayerRepo) CountChannelRelayers(chainA, channelA, chainB, channelB string) (int64, error) {

@@ -89,10 +89,22 @@ type (
 		ProofHeight     ProofHeight `json:"proof_height" bson:"proof_height"`
 		Signer          string      `json:"signer" bson:"signer"`
 	}
+
+	PacketDataMsg struct {
+		PacketId string `json:"packet_id" bson:"packet_id"`
+		Packet   Packet `json:"packet" bson:"packet"`
+	}
 )
 
 func (m TxMsg) CommonMsg() CommonMsg {
 	var msg CommonMsg
+	bz, _ := json.Marshal(m.Msg)
+	_ = json.Unmarshal(bz, &msg)
+	return msg
+}
+
+func (m TxMsg) PacketDataMsg() PacketDataMsg {
+	var msg PacketDataMsg
 	bz, _ := json.Marshal(m.Msg)
 	_ = json.Unmarshal(bz, &msg)
 	return msg

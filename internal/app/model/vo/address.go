@@ -12,6 +12,31 @@ type BaseInfoResp struct {
 	AccountSequence string `json:"account_sequence"`
 }
 
+type AddressTxsListReq struct {
+	Page
+	UseCount bool `json:"use_count" form:"use_count"`
+}
+
+type AddressTxsListResp struct {
+	Txs      []AddressTxItem `json:"txs"`
+	PageInfo PageInfo        `json:"page_info"`
+}
+
+type AddressTxItem struct {
+	TxHash     string          `json:"tx_hash"`
+	TxStatus   entity.TxStatus `json:"tx_status"`
+	TxType     entity.TxType   `json:"tx_type"`
+	Port       string          `json:"port"`
+	Sender     string          `json:"sender"`
+	Receiver   string          `json:"receiver"`
+	ScChain    string          `json:"sc_chain"`
+	DcChain    string          `json:"dc_chain"`
+	DenomInfo  DenomInfo       `json:"denom_info"`
+	FeeInfo    CommonInfo      `json:"fee_info"`
+	TxTime     int64           `json:"tx_time"`
+	IbcVersion string          `json:"ibc_version"`
+}
+
 type AddrTokenListResp struct {
 	Tokens     []AddrToken `json:"tokens"`
 	TotalValue string      `json:"total_value"`

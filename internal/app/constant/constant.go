@@ -49,11 +49,15 @@ const (
 	TxFailedStatisticName     = "tx_failed"
 	BaseDenomAllStatisticName = "base_denom_all"
 	DenomAllStatisticName     = "denom_all"
+	RelayersStatisticName     = "relayers"
 
 	IBCConnectionChainsIconUri = "https://iobscan.io/resources/home/connection-chains/%s.png"
 
-	ETH_SECP256K1 = "eth_secp256k1"
-	SECP256K1     = "secp256k1"
+	ETHSECP256K1 = "ethsecp256k1"
+	SECP256K1    = "secp256k1"
+	ICS20        = "ics20"
+
+	ExportTxsNum = 1000
 )
 
 var HomeStatistics = []string{
