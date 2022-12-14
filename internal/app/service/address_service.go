@@ -244,6 +244,9 @@ func (svc *AddressService) TxsExport(chain, address string) (string, []byte, err
 }
 
 func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListResp, errors.Error) {
+	if state, err := addrCache.GetTokenList(chain, address); err == nil {
+		return state, nil
+	}
 	cfg, err := chainCfgRepo.FindOneChainInfo(chain)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
@@ -382,12 +385,14 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 			balanceToken[i] = val
 		}
 	}
-	return &vo.AddrTokenListResp{
+	resp := &vo.AddrTokenListResp{
 		TotalValue: totalValue.String(),
 		Tokens:     balanceToken,
 		Address:    address,
 		Chain:      chain,
-	}, nil
+	}
+	_ = addrCache.SetTokenList(chain, address, resp)
+	return resp, nil
 }
 
 func tokenType(baseDenomList entity.AuthDenomList, baseDenom, chain string) entity.TokenType {
@@ -400,6 +405,10 @@ func tokenType(baseDenomList entity.AuthDenomList, baseDenom, chain string) enti
 }
 
 func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListResp, errors.Error) {
+	if state, err := addrCache.GetAccountList(chain, address); err == nil {
+		return state, nil
+	}
+
 	cfg, err := chainCfgRepo.FindOneChainInfo(chain)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
@@ -444,7 +453,12 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 		})
 	}
 
-	return svc.doHandleAddrTokenInfo(5, chainsAddrInfo)
+	resp, err := svc.doHandleAddrTokenInfo(10, chainsAddrInfo)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	_ = addrCache.SetAccountList(chain, address, resp)
+	return resp, nil
 }
 
 func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []AccountCfg) (*vo.AccountListResp, errors.Error) {
@@ -492,11 +506,11 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 		chainTotalValue, _ := decimal.NewFromString(resData[i].TotalValue)
 		totalValue = totalValue.Add(chainTotalValue)
 		accInfo := vo.Account{
-			Address:       resData[i].Address,
-			Chain:         resData[i].Address,
-			TokenValue:    resData[i].TotalValue,
-			TokenDenomNum: len(resData[i].Tokens),
-			LastUpdateTime: 0,//todo get tx time of last tx by address
+			Address:        resData[i].Address,
+			Chain:          resData[i].Chain,
+			TokenValue:     resData[i].TotalValue,
+			TokenDenomNum:  len(resData[i].Tokens),
+			LastUpdateTime: 0, //todo get tx time of last tx by address
 		}
 		accounts = append(accounts, accInfo)
 	}

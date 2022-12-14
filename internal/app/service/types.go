@@ -23,6 +23,7 @@ var (
 	relayerDataCache           cache.RelayerDataCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
+	addrCache                  cache.AddressCacheRepo
 	relayerCache               cache.RelayerCacheRepo
 	authDenomRepo              cache.AuthDenomCacheRepo
 	chainCache                 cache.ChainCacheRepo

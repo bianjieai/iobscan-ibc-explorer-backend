@@ -40,8 +40,8 @@ type AddressTxItem struct {
 type AddrTokenListResp struct {
 	Tokens     []AddrToken `json:"tokens"`
 	TotalValue string      `json:"total_value"`
-	Address    string      `json:"-"`
-	Chain      string      `json:"-"`
+	Address    string      `json:"address"`
+	Chain      string      `json:"chain"`
 }
 
 type AddrToken struct {
