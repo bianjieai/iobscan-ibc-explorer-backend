@@ -298,6 +298,9 @@ func GetChainInfoFromChannelPair(channelPairInfo []entity.ChannelPairInfo) map[s
 			chainSetMap[val.ChainA] = item
 		}
 
+		if val.ChainB == "" {
+			continue
+		}
 		if cacheValue, ok := chainSetMap[val.ChainB]; ok {
 			if val.ChainBAddress != "" {
 				cacheValue.Addresses = append(cacheValue.Addresses, val.ChainBAddress)

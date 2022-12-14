@@ -29,13 +29,6 @@ func WrapDetail(code int, msg string) Error {
 	}
 }
 
-func WrapRelayerNoAccessDetailErr(err error) Error {
-	return vsErr{
-		code: ErrRelayerNoAccessDetail,
-		msg:  err.Error(),
-	}
-}
-
 func WrapBadRequest(err error) Error {
 	return vsErr{
 		code: ErrInvalidParams,

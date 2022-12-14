@@ -77,12 +77,8 @@ func (svc *RelayerService) TransferTypeTxs(relayerId string) (*vo.TransferTypeTx
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	//未注册的relayer的名字为空
-	if one.RelayerName == "" {
-		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
-	}
-	addrCombs := entity.ChannelPairInfoList(one.ChannelPairInfo).GetChainAddrCombs()
 
+	addrCombs := entity.ChannelPairInfoList(one.ChannelPairInfo).GetChainAddrCombs()
 	aggrRes, e := relayerDenomStatisticsRepo.AggrAmtByTxType(addrCombs)
 	if e != nil {
 		return nil, errors.Wrap(e)
@@ -135,11 +131,6 @@ func (svc *RelayerService) Detail(relayerId string) (vo.RelayerDetailResp, error
 	one, err := relayerRepo.FindOneByRelayerId(relayerId)
 	if err != nil {
 		return resp, errors.Wrap(err)
-	}
-
-	//未注册的relayer的名字为空
-	if one.RelayerName == "" {
-		return resp, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
 	}
 
 	channelPairs, err := channelRepo.FindAll()
@@ -216,10 +207,7 @@ func getRelayerChainsInfo(relayerId string) (map[string]vo.ServedChainInfo, erro
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	//未注册的relayer的名字为空
-	if one.RelayerName == "" {
-		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
-	}
+
 	servedChainsInfoMap := vo.GetChainInfoFromChannelPair(one.ChannelPairInfo)
 	return servedChainsInfoMap, nil
 }
@@ -326,10 +314,7 @@ func (svc *RelayerService) RelayerTrend(relayerId string, req *vo.RelayerTrendRe
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	//未注册的relayer的名字为空
-	if one.RelayerName == "" {
-		return nil, errors.WrapRelayerNoAccessDetailErr(fmt.Errorf("welcome to register this relayer !"))
-	}
+
 	addrCombs := entity.ChannelPairInfoList(one.ChannelPairInfo).GetChainAddrCombs()
 	if req.Days <= 0 {
 		req.Days = 30
