@@ -11,8 +11,8 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/lcd"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -22,6 +22,10 @@ import (
 
 type IAddressService interface {
 	BaseInfo(chain, address string) (*vo.BaseInfoResp, errors.Error)
+	TxsList(chain, address string, req *vo.AddressTxsListReq) (*vo.AddressTxsListResp, errors.Error)
+	TxsCount(chain, address string) (int64, errors.Error)
+	TokenList(chain, address string) (*vo.AddrTokenListResp, errors.Error)
+	TxsExport(chain, address string) (string, []byte, errors.Error)
 }
 
 type AddressService struct {
