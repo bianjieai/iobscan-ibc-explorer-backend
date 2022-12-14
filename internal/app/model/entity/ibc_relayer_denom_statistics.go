@@ -4,6 +4,8 @@ import "fmt"
 
 type TxType string
 
+var ICS20TxTypes = []TxType{TxTypeTransfer, TxTypeRecvPacket, TxTypeTimeoutPacket, TxTypeAckPacket}
+
 const (
 	TxTypeTransfer      TxType = "transfer"
 	TxTypeRecvPacket    TxType = "recv_packet"
