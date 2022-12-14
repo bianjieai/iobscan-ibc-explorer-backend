@@ -92,6 +92,7 @@ func relayerPage(r *gin.RouterGroup) {
 func addressPage(r *gin.RouterGroup) {
 	ctl := rest.AddressController{}
 	r.GET("/chain/:chain/address/:address", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.BaseInfo))
+	r.GET("/chain/:chain/address/:address/tokens", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TokenList))
 }
 
 func cacheTools(r *gin.RouterGroup) {
