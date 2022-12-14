@@ -36,3 +36,20 @@ type AddressTxItem struct {
 	TxTime     int64           `json:"tx_time"`
 	IbcVersion string          `json:"ibc_version"`
 }
+
+type AddrTokenListResp struct {
+	Tokens     []AddrToken `json:"tokens"`
+	TotalValue string      `json:"total_value"`
+}
+
+type AddrToken struct {
+	Denom                string           `json:"denom"`
+	Chain                string           `json:"chain"`
+	BaseDenom            string           `json:"base_denom"`
+	BaseDenomChain       string           `json:"base_denom_chain"`
+	DenomType            entity.TokenType `json:"denom_type"`
+	DenomAmount          string           `json:"denom_amount"`
+	DenomAvaliableAmount string           `json:"denom_avaliable_amount"`
+	Price                float64          `json:"price"`
+	DenomValue           string           `json:"denom_value"`
+}

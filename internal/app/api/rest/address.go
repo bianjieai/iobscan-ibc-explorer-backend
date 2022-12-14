@@ -79,3 +79,20 @@ func (ctl *AddressController) TxsExport(c *gin.Context) {
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", filename))
 	c.Data(http.StatusOK, "text/csv", data)
 }
+
+func (ctl *AddressController) TokenList(c *gin.Context) {
+	chain := c.Param("chain")
+	address := c.Param("address")
+
+	if chain == "" || address == "" {
+		c.JSON(http.StatusOK, response.FailBadRequest(fmt.Errorf("invalid parameters")))
+		return
+	}
+
+	resp, err := addressService.TokenList(chain, address)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailError(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(resp))
+}
