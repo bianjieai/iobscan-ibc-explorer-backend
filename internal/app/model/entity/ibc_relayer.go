@@ -46,10 +46,13 @@ type ChannelPairInfoList []ChannelPairInfo
 func (c ChannelPairInfoList) GetChainAddrCombs() []string {
 	combMap := make(map[string]struct{})
 	for _, v := range c {
-		combA := GenerateChainAddressComb(v.ChainA, v.ChainAAddress)
-		combB := GenerateChainAddressComb(v.ChainB, v.ChainBAddress)
-		combMap[combA] = struct{}{}
-		combMap[combB] = struct{}{}
+		if v.ChainA != "" && v.ChainAAddress != "" {
+			combMap[GenerateChainAddressComb(v.ChainA, v.ChainAAddress)] = struct{}{}
+		}
+
+		if v.ChainB != "" && v.ChainBAddress != "" {
+			combMap[GenerateChainAddressComb(v.ChainB, v.ChainBAddress)] = struct{}{}
+		}
 	}
 
 	combs := make([]string, 0, len(combMap))
@@ -62,8 +65,13 @@ func (c ChannelPairInfoList) GetChainAddrCombs() []string {
 func (c ChannelPairInfoList) GetChains() []string {
 	chainMap := make(map[string]struct{})
 	for _, v := range c {
-		chainMap[v.ChainA] = struct{}{}
-		chainMap[v.ChainB] = struct{}{}
+		if v.ChainA != "" {
+			chainMap[v.ChainA] = struct{}{}
+		}
+
+		if v.ChainB != "" {
+			chainMap[v.ChainB] = struct{}{}
+		}
 	}
 
 	chains := make([]string, 0, len(chainMap))
@@ -71,6 +79,21 @@ func (c ChannelPairInfoList) GetChains() []string {
 		chains = append(chains, k)
 	}
 	return chains
+}
+
+func GenerateSingleSideChannelPairInfo(chain1, channel1, chain1Address string) ChannelPairInfo {
+	res := ChannelPairInfo{
+		ChainA:        chain1,
+		ChainB:        "",
+		ChannelA:      channel1,
+		ChannelB:      "",
+		ChainAAddress: chain1Address,
+		ChainBAddress: "",
+	}
+
+	pairId := GenerateRelayerPairId(chain1, channel1, chain1Address, "", "", "")
+	res.PairId = pairId
+	return res
 }
 
 func GenerateChannelPairInfo(chain1, channel1, chain1Address, chain2, channel2, chain2Address string) ChannelPairInfo {
@@ -114,6 +137,14 @@ func GenerateRelayerPairId(chain1, channel1, chain1Address, chain2, channel2, ch
 }
 
 func ConfirmRelayerPair(chainA, chainB string) (string, string) {
+	if chainA == "" {
+		return chainB, chainA
+	}
+
+	if chainB == "" {
+		return chainA, chainB
+	}
+
 	if strings.HasPrefix(strings.ToLower(chainA), constant.Cosmos) {
 		return chainA, chainB
 	}

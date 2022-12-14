@@ -7,21 +7,24 @@ package task
       2.更新relayer的update_time。
       3.更新channel页面relayer的数量、channel的更新时间、chain页面relayer数量。
       4.增量更新(包括已注册,未注册)relayer相关信息(交易总数、成功交易总数、relayer费用总价值、交易总价值)。
+      5.relayer address 归档到relayer
 */
 import (
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
-	"go.mongodb.org/mongo-driver/mongo"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type IbcRelayerCronTask struct {
@@ -47,9 +50,10 @@ func (t *IbcRelayerCronTask) Run() int {
 	}
 
 	t.denomPriceMap = cache.TokenPriceMap()
-	doRegisterRelayer(t.denomPriceMap)
 	_ = t.todayStatistics()
 	_ = t.yesterdayStatistics()
+	t.addressGather()
+
 	t.CheckAndChangeRelayer()
 	//最后更新chains,channels信息
 	wg := sync.WaitGroup{}
@@ -127,10 +131,10 @@ func (t *IbcRelayerCronTask) CheckAndChangeRelayer() {
 }
 
 func (t *IbcRelayerCronTask) updateOneRelayer(one *entity.IBCRelayerNew) {
-	//更新statistic
-	handleRelayerStatistic(t.denomPriceMap, one)
 	//更新channel_pair
-	handleRelayerChannelPair(one)
+	t.handleRelayerChannelPair(one)
+	//更新statistic
+	t.handleRelayerStatistic(t.denomPriceMap, one)
 	//更新relayer的updateTime
 	t.updateRelayerUpdateTime(one)
 	//更新channel的updateTime
@@ -393,7 +397,6 @@ func (t *IbcRelayerCronTask) todayStatistics() error {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
-	relayerDataTask.handleNewRelayerOnce(segments, false)
 
 	return nil
 }
@@ -417,8 +420,254 @@ func (t *IbcRelayerCronTask) yesterdayStatistics() error {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
-	relayerDataTask.handleNewRelayerOnce(segments, false)
 
 	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
+}
+
+func (t *IbcRelayerCronTask) addressGather() {
+	_ = relayerAddressGatherTask.Run()
+}
+
+func (t *IbcRelayerCronTask) handleRelayerChannelPair(relayer *entity.IBCRelayerNew) {
+	channelPairs, change1, err := singleSideAddressMatchPair(relayer.ChannelPairInfo)
+	if err != nil {
+		logrus.Errorf("task %s singleSideAddressMatchPair fail, %v", t.Name(), err.Error())
+		return
+	}
+
+	channelPairs, change2, err := matchRelayerChannelPairInfo(relayer.ChannelPairInfo)
+	if err != nil {
+		logrus.Errorf("task %s matchRelayerChannelPairInfo fail, %v", t.Name(), err.Error())
+		return
+	}
+
+	if change1 || change2 {
+		relayer.ChannelPairInfo = channelPairs
+		if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil {
+			logrus.Errorf("task %s update register relayer statistic fail, %v", t.Name(), err.Error())
+		}
+	}
+	return
+}
+
+func (t *IbcRelayerCronTask) handleRelayerStatistic(denomPriceMap map[string]dto.CoinItem, relayer *entity.IBCRelayerNew) {
+	item := getRelayerStatisticData(denomPriceMap, relayer)
+	if err := relayerRepo.UpdateTxsInfo(item.RelayerId, item.RelayedTotalTxs, item.RelayedSuccessTxs,
+		item.RelayedTotalTxsValue, item.TotalFeeValue); err != nil {
+		logrus.Errorf("task %s update register relayer statistic fail, %v", t.Name(), err.Error())
+	}
+}
+
+func singleSideAddressMatchPair(pairInfoList []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
+	genKey := func(chain, channel, address, pairId string) string {
+		return fmt.Sprintf("%s:%s:%s:%s", chain, channel, address, pairId)
+	}
+
+	splitKey := func(key string) (string, string, string, string) {
+		split := strings.Split(key, ":")
+		return split[0], split[1], split[2], split[3]
+	}
+
+	pairIdMap := make(map[string]struct{}, len(pairInfoList))
+	allAddrChainCombs := make([]string, 0, len(pairInfoList))
+	var singleSideAddrChainCombs []string
+	for _, v := range pairInfoList {
+		pairIdMap[v.PairId] = struct{}{}
+		allAddrChainCombs = append(allAddrChainCombs, genKey(v.ChainA, v.ChannelA, v.ChainAAddress, v.PairId))
+		if v.ChainB == "" {
+			singleSideAddrChainCombs = append(singleSideAddrChainCombs, genKey(v.ChainA, v.ChannelA, v.ChainAAddress, v.PairId))
+		} else {
+			allAddrChainCombs = append(allAddrChainCombs, genKey(v.ChainB, v.ChannelB, v.ChainBAddress, v.PairId))
+		}
+	}
+
+	if len(singleSideAddrChainCombs) == 0 {
+		return pairInfoList, false, nil
+	}
+
+	matchedPairIdMap := make(map[string]struct{})
+	for _, sc := range singleSideAddrChainCombs {
+		chain1, channel1, address1, pairId1 := splitKey(sc)
+		for _, ac := range allAddrChainCombs {
+			chain2, _, address2, _ := splitKey(ac)
+			if chain1 == chain2 {
+				continue
+			}
+			tempPairList, matched, err := repository.GetChannelPairInfoByAddressPair(chain1, address1, chain2, address2)
+			if err != nil {
+				return nil, false, err
+			}
+
+			// 配对成功
+			if matched {
+				for _, t := range tempPairList {
+					if (t.ChainA == chain1 && t.ChainAAddress == address1 && t.ChannelA == channel1) ||
+						(t.ChainB == chain1 && t.ChainBAddress == address1 && t.ChannelB == channel1) {
+
+						if _, ok := pairIdMap[t.PairId]; !ok {
+							pairInfoList = append(pairInfoList, t)
+							pairIdMap[t.PairId] = struct{}{}
+						}
+
+						matchedPairIdMap[pairId1] = struct{}{}
+					}
+				}
+			}
+		}
+	}
+
+	// 没有匹配成功的
+	if len(matchedPairIdMap) == 0 {
+		return pairInfoList, false, nil
+	}
+
+	// 移除已经配对成功的单边relayer address
+	var newPairInfoList []entity.ChannelPairInfo
+	for _, v := range pairInfoList {
+		if _, ok := matchedPairIdMap[v.PairId]; !ok {
+			newPairInfoList = append(newPairInfoList, v)
+		}
+	}
+
+	return newPairInfoList, true, nil
+}
+
+//根据relayer的地址和链更新channel_pair_info
+func matchRelayerChannelPairInfo(pairInfoList []entity.ChannelPairInfo) ([]entity.ChannelPairInfo, bool, error) {
+	pairIds := getRelayerPairIds(pairInfoList)
+	matchedPairInfoList := make([]entity.ChannelPairInfo, 0, len(pairInfoList))
+	for _, val := range pairInfoList {
+		pairInfos, _, err := repository.GetChannelPairInfoByAddressPair(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+		if err != nil {
+			logrus.Error("GetChannelPairInfoByAddressPair fail, "+err.Error(),
+				" chainA:", val.ChainA, " chainB:", val.ChainB, " chainAAddr:", val.ChainAAddress, " chainBAddr:", val.ChainBAddress)
+			return nil, false, err
+		}
+		matchedPairInfoList = append(matchedPairInfoList, pairInfos...)
+	}
+
+	//存放新增的channel_pair
+	newPairInfoList := make([]entity.ChannelPairInfo, 0, len(pairInfoList))
+	for _, val := range matchedPairInfoList {
+		if !utils.InArray(pairIds, val.PairId) {
+			newPairInfoList = append(newPairInfoList, val)
+			pairIds = append(pairIds, val.PairId)
+		}
+	}
+
+	//没有新增的channel_pair
+	if len(newPairInfoList) == 0 {
+		return pairInfoList, false, nil
+	}
+
+	pairInfoList = append(pairInfoList, newPairInfoList...)
+	pairInfoList = removeEmptyChannelData(pairInfoList)
+	return pairInfoList, true, nil
+}
+
+func getRelayerStatisticData(denomPriceMap map[string]dto.CoinItem, data *entity.IBCRelayerNew) *entity.IBCRelayerNew {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	var (
+		totalFeeValue                      decimal.Decimal
+		totalTxsValue                      decimal.Decimal
+		relayedTotalTxs, relayedSuccessTxs int64
+	)
+	go func() {
+		defer wg.Done()
+		relayedFeeTotalTxs := int64(0)
+		relayerFeeAmt := AggrRelayerFeeAmt(data)
+		totalFeeValue = caculateRelayerTotalValue(denomPriceMap, relayerFeeAmt)
+		txsItem := make([]vo.DenomFeeItem, 0, len(relayerFeeAmt))
+		for _, val := range relayerFeeAmt {
+			relayedFeeTotalTxs += val.Txs
+			txsItem = append(txsItem, vo.DenomFeeItem{
+				Denom:      val.Denom,
+				DenomChain: val.Chain,
+				Txs:        val.Txs,
+				FeeValue:   val.AmtValue.String(),
+			})
+		}
+		res := vo.TotalFeeCostResp{
+			TotalTxs:        relayedFeeTotalTxs,
+			TotalFeeValue:   totalFeeValue.String(),
+			TotalDenomCount: int64(len(txsItem)),
+			DenomList:       txsItem,
+		}
+		_ = relayerDataCache.SetTotalFeeCost(data.RelayerId, &res)
+	}()
+
+	go func() {
+		defer wg.Done()
+		relayerTxsAmt := AggrRelayerTxsAndAmt(data)
+		txsItem := make([]vo.DenomTxsItem, 0, len(relayerTxsAmt))
+		totalTxsValue = caculateRelayerTotalValue(denomPriceMap, relayerTxsAmt)
+		for _, val := range relayerTxsAmt {
+			txsItem = append(txsItem, vo.DenomTxsItem{
+				BaseDenom:      val.Denom,
+				BaseDenomChain: val.Chain,
+				Txs:            val.Txs,
+				TxsValue:       val.AmtValue.String(),
+			})
+			relayedTotalTxs += val.Txs
+			relayedSuccessTxs += val.TxsSuccess
+		}
+
+		res := vo.TotalRelayedValueResp{
+			TotalTxs:        relayedTotalTxs,
+			TotalTxsValue:   totalTxsValue.String(),
+			TotalDenomCount: int64(len(txsItem)),
+			DenomList:       txsItem,
+		}
+		_ = relayerDataCache.SetTotalRelayedValue(data.RelayerId, &res)
+
+	}()
+	wg.Wait()
+	data.RelayedTotalTxsValue = totalTxsValue.String()
+	data.TotalFeeValue = totalFeeValue.String()
+	data.RelayedTotalTxs = relayedTotalTxs
+	data.RelayedSuccessTxs = relayedSuccessTxs
+	return data
+}
+
+func getRelayerPairIds(relayerChannelPairInfo []entity.ChannelPairInfo) []string {
+	pairIds := make([]string, 0, len(relayerChannelPairInfo))
+	for i := range relayerChannelPairInfo {
+		val := relayerChannelPairInfo[i]
+		if val.PairId != "" {
+			pairIds = append(pairIds, val.PairId)
+		}
+	}
+	return pairIds
+}
+
+func removeEmptyChannelData(addrPairInfo []entity.ChannelPairInfo) []entity.ChannelPairInfo {
+	emptyChannelData := make([]entity.ChannelPairInfo, 0, len(addrPairInfo))
+	for i := range addrPairInfo {
+		if addrPairInfo[i].ChannelA == "" || addrPairInfo[i].ChannelB == "" {
+			emptyChannelData = append(emptyChannelData, addrPairInfo[i])
+		}
+	}
+	if len(emptyChannelData) > 0 {
+		//需要清除chain,address在列表里已经存在但channel为空的数据
+		dataMap := make(map[string]struct{}, len(addrPairInfo))
+		channelPairArrs := make([]entity.ChannelPairInfo, 0, len(addrPairInfo))
+		for _, val := range addrPairInfo {
+			if val.ChannelB != "" && val.ChannelA != "" {
+				key := entity.GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+				dataMap[key] = struct{}{}
+				channelPairArrs = append(channelPairArrs, val)
+			}
+		}
+
+		for _, val := range emptyChannelData {
+			key := entity.GenerateDistRelayerId(val.ChainA, val.ChainAAddress, val.ChainB, val.ChainBAddress)
+			if _, ok := dataMap[key]; !ok {
+				channelPairArrs = append(channelPairArrs, val)
+			}
+		}
+		return channelPairArrs
+	}
+	return addrPairInfo
 }

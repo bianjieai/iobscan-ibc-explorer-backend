@@ -20,7 +20,6 @@ var (
 	tokenStatisticsTask      task.TokenStatisticsTask
 	channelStatisticsTask    task.ChannelStatisticsTask
 	relayerStatisticsTask    task.RelayerStatisticsTask
-	relayerDataTask          task.RelayerDataTask
 	addTransferDataTask      task.AddTransferDataTask
 	ibcNodeLcdCronTask       task.IbcNodeLcdCronTask
 	ibcStatisticCronTask     task.IbcStatisticCronTask
