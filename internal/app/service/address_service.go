@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils/bech32"
 	"strconv"
 	"strings"
 	"time"
@@ -439,7 +440,7 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 	}
 	chainsAddrInfo := make([]AccountCfg, 0, len(chainsCfg))
 	for _, val := range chainsCfg {
-		addr, err := utils.GetAddressFromPubkey(val.AddrPrefix, jsonPubKeyData)
+		addr, err := bech32.GetAddressFromPubkey(val.AddrPrefix, jsonPubKeyData)
 		if err != nil {
 			logrus.Error(err.Error())
 			continue
