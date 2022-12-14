@@ -29,6 +29,13 @@ func WrapDetail(code int, msg string) Error {
 	}
 }
 
+func WrapAddrNotFoundErr(err error) Error {
+	return vsErr{
+		code: ErrAddrNotFound,
+		msg:  err.Error(),
+	}
+}
+
 func WrapBadRequest(err error) Error {
 	return vsErr{
 		code: ErrInvalidParams,

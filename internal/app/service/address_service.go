@@ -2,8 +2,10 @@ package service
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -16,8 +18,6 @@ import (
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"math"
-	"sync"
 )
 
 type IAddressService interface {
@@ -37,7 +37,7 @@ func (svc *AddressService) BaseInfo(chain, address string) (*vo.BaseInfoResp, er
 	cfg, err := chainCfgRepo.FindOneChainInfo(chain)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
-			return nil, errors.WrapBadRequest(fmt.Errorf("invalid chain %s", chain))
+			return nil, errors.WrapAddrNotFoundErr(fmt.Errorf("invalid chain %s", chain))
 		}
 
 		return nil, errors.Wrap(err)
@@ -45,7 +45,7 @@ func (svc *AddressService) BaseInfo(chain, address string) (*vo.BaseInfoResp, er
 
 	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return nil, errors.WrapAddrNotFoundErr(err)
 	}
 
 	return &vo.BaseInfoResp{
