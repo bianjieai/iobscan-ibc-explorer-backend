@@ -70,4 +70,12 @@ type (
 		Message string        `json:"message"`
 		Details []interface{} `json:"details"`
 	}
+
+	AccountCfg struct {
+		Chain           string
+		GrpcRestGateway string
+		BalancesPath    string
+		AccountsPath    string
+		Address         string
+	}
 )
