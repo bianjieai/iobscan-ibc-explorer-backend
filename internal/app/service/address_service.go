@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils/bech32"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ type IAddressService interface {
 	TxsList(chain, address string, req *vo.AddressTxsListReq) (*vo.AddressTxsListResp, errors.Error)
 	TxsCount(chain, address string) (int64, errors.Error)
 	TokenList(chain, address string) (*vo.AddrTokenListResp, errors.Error)
+	AccountList(chain, address string) (*vo.AccountListResp, errors.Error)
 	TxsExport(chain, address string) (string, []byte, errors.Error)
 }
 
@@ -243,6 +245,9 @@ func (svc *AddressService) TxsExport(chain, address string) (string, []byte, err
 }
 
 func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListResp, errors.Error) {
+	if state, err := addrCache.GetTokenList(chain, address); err == nil {
+		return state, nil
+	}
 	cfg, err := chainCfgRepo.FindOneChainInfo(chain)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
@@ -381,10 +386,14 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 			balanceToken[i] = val
 		}
 	}
-	return &vo.AddrTokenListResp{
+	resp := &vo.AddrTokenListResp{
 		TotalValue: totalValue.String(),
 		Tokens:     balanceToken,
-	}, nil
+		Address:    address,
+		Chain:      chain,
+	}
+	_ = addrCache.SetTokenList(chain, address, resp)
+	return resp, nil
 }
 
 func tokenType(baseDenomList entity.AuthDenomList, baseDenom, chain string) entity.TokenType {
@@ -394,4 +403,120 @@ func tokenType(baseDenomList entity.AuthDenomList, baseDenom, chain string) enti
 		}
 	}
 	return entity.TokenTypeOther
+}
+
+func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListResp, errors.Error) {
+	if state, err := addrCache.GetAccountList(chain, address); err == nil {
+		return state, nil
+	}
+
+	cfg, err := chainCfgRepo.FindOneChainInfo(chain)
+	if err != nil {
+		if err == qmgo.ErrNoSuchDocuments {
+			return nil, errors.WrapBadRequest(fmt.Errorf("invalid chain %s", chain))
+		}
+
+		return nil, errors.Wrap(err)
+	}
+	//account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, "/cosmos/auth/v1beta1/accounts/{address}")
+	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	//get pubkey
+	var pubKey = struct {
+		PubKey struct {
+			Type string `json:"@type"`
+			Key  string `json:"key"`
+		} `json:"pub_key"`
+	}{
+		PubKey: account.Account.PubKey,
+	}
+	jsonPubKeyData := string(utils.MarshalJsonIgnoreErr(pubKey))
+	chainsCfg, err := chainCfgRepo.FindAllChainInfos()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	chainsAddrInfo := make([]AccountCfg, 0, len(chainsCfg))
+	for _, val := range chainsCfg {
+		addr, err := bech32.GetAddressFromPubkey(val.AddrPrefix, jsonPubKeyData)
+		if err != nil {
+			logrus.Error(err.Error())
+			continue
+		}
+		chainsAddrInfo = append(chainsAddrInfo, AccountCfg{
+			Address:         addr,
+			GrpcRestGateway: val.GrpcRestGateway,
+			BalancesPath:    val.LcdApiPath.BalancesPath,
+			AccountsPath:    val.LcdApiPath.AccountsPath,
+			Chain:           val.ChainName,
+		})
+	}
+
+	resp, err := svc.doHandleAddrTokenInfo(10, chainsAddrInfo)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	_ = addrCache.SetAccountList(chain, address, resp)
+	return resp, nil
+}
+
+func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []AccountCfg) (*vo.AccountListResp, errors.Error) {
+
+	checkValidAddrOk := func(chain, address, lcduri, accountsPath string) bool {
+		//_, err := lcd.GetAccount(chain, address, lcduri, "/cosmos/auth/v1beta1/accounts/{address}")
+		_, err := lcd.GetAccount(chain, address, lcduri, accountsPath)
+		if err != nil {
+			return false
+		}
+		return true
+	}
+
+	resData := make([]*vo.AddrTokenListResp, len(addrCfgs))
+	accounts := make([]vo.Account, 0, len(addrCfgs))
+	var wg sync.WaitGroup
+	wg.Add(workNum)
+	for i := 0; i < workNum; i++ {
+		num := i
+		go func(num int) {
+			defer wg.Done()
+			var err errors.Error
+			for id, v := range addrCfgs {
+				if id%workNum != num {
+					continue
+				}
+				if !checkValidAddrOk(v.Chain, v.Address, v.GrpcRestGateway, v.AccountsPath) {
+					continue
+				}
+				logrus.Infof("task %d get token list chain(%s) address(%s)", num, v.Chain, v.Address)
+				resData[id], err = svc.TokenList(v.Chain, v.Address)
+				if err != nil && err.Code() != 0 {
+					logrus.Errorf("err:%s chain:%s address:%s lcd:%s", err.Error(), v.Chain, v.Address, v.GrpcRestGateway)
+				}
+			}
+		}(num)
+	}
+	wg.Wait()
+
+	totalValue := decimal.Zero
+	for i := range resData {
+		if resData[i] == nil {
+			continue
+		}
+		chainTotalValue, _ := decimal.NewFromString(resData[i].TotalValue)
+		totalValue = totalValue.Add(chainTotalValue)
+		accInfo := vo.Account{
+			Address:        resData[i].Address,
+			Chain:          resData[i].Chain,
+			TokenValue:     resData[i].TotalValue,
+			TokenDenomNum:  len(resData[i].Tokens),
+			LastUpdateTime: 0, //todo get tx time of last tx by address
+		}
+		accounts = append(accounts, accInfo)
+	}
+	return &vo.AccountListResp{
+		Accounts:   accounts,
+		TotalValue: totalValue.String(),
+	}, nil
 }

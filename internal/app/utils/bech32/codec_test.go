@@ -1,4 +1,4 @@
-package utils
+package bech32
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestAddrConvert(t *testing.T) {
-	bech32Str := "iaa1gu65xf8eluc0g7v84qudhulalam5cm7whw3g6l"
+	bech32Str := "cosmos1gu65xf8eluc0g7v84qudhulalam5cm7wzv3ecw"
 
 	_, data, err := DecodeAndConvert(bech32Str)
 	if err != nil {

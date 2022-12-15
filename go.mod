@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/antchfx/htmlquery v1.2.5
-	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/cosmos/cosmos-sdk v0.45.1
 	github.com/gin-contrib/cache v1.1.0
 	github.com/gin-gonic/gin v1.8.1

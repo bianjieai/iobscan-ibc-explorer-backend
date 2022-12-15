@@ -40,6 +40,8 @@ type AddressTxItem struct {
 type AddrTokenListResp struct {
 	Tokens     []AddrToken `json:"tokens"`
 	TotalValue string      `json:"total_value"`
+	Address    string      `json:"address"`
+	Chain      string      `json:"chain"`
 }
 
 type AddrToken struct {
@@ -52,4 +54,17 @@ type AddrToken struct {
 	DenomAvaliableAmount string           `json:"denom_avaliable_amount"`
 	Price                float64          `json:"price"`
 	DenomValue           string           `json:"denom_value"`
+}
+
+type AccountListResp struct {
+	Accounts   []Account `json:"accounts"`
+	TotalValue string    `json:"total_value"`
+}
+
+type Account struct {
+	Chain          string `json:"chain"`
+	Address        string `json:"address"`
+	TokenDenomNum  int    `json:"token_denom_num"`
+	TokenValue     string `json:"token_value"`
+	LastUpdateTime int    `json:"last_update_time"`
 }
