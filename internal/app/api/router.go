@@ -95,6 +95,7 @@ func addressPage(r *gin.RouterGroup) {
 	r.GET("/chain/:chain/address/:address/tokens", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TokenList))
 	r.GET("/chain/:chain/address/:address/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TxsList))
 	r.GET("/chain/:chain/address/:address/txs/export", ctl.TxsExport)
+	r.GET("/chain/:chain/address/:address/accounts", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AccountList))
 }
 
 func cacheTools(r *gin.RouterGroup) {

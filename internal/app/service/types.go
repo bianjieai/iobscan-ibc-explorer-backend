@@ -23,6 +23,7 @@ var (
 	relayerDataCache           cache.RelayerDataCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
+	addrCache                  cache.AddressCacheRepo
 	relayerCache               cache.RelayerCacheRepo
 	authDenomRepo              cache.AuthDenomCacheRepo
 	chainCache                 cache.ChainCacheRepo
@@ -69,5 +70,13 @@ type (
 		Code    int           `json:"code"`
 		Message string        `json:"message"`
 		Details []interface{} `json:"details"`
+	}
+
+	AccountCfg struct {
+		Chain           string
+		GrpcRestGateway string
+		BalancesPath    string
+		AccountsPath    string
+		Address         string
 	}
 )
