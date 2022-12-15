@@ -51,7 +51,7 @@ type AddrToken struct {
 	BaseDenomChain       string           `json:"base_denom_chain"`
 	DenomType            entity.TokenType `json:"denom_type"`
 	DenomAmount          string           `json:"denom_amount"`
-	DenomAvaliableAmount string           `json:"denom_avaliable_amount"`
+	DenomAvailableAmount string           `json:"denom_available_amount"`
 	Price                float64          `json:"price"`
 	DenomValue           string           `json:"denom_value"`
 }
@@ -66,5 +66,5 @@ type Account struct {
 	Address        string `json:"address"`
 	TokenDenomNum  int    `json:"token_denom_num"`
 	TokenValue     string `json:"token_value"`
-	LastUpdateTime int    `json:"last_update_time"`
+	LastUpdateTime int64  `json:"last_update_time"`
 }

@@ -10,7 +10,7 @@ type AddressCacheRepo struct {
 }
 
 func (repo *AddressCacheRepo) SetAccountList(chain, addr string, data *vo.AccountListResp) error {
-	return rc.MarshalSet(fmt.Sprintf(addrAccounts, chain, addr), data, FiveMin)
+	return rc.MarshalSet(fmt.Sprintf(addrAccounts, chain, addr), data, oneMin)
 }
 
 func (repo *AddressCacheRepo) GetAccountList(chain, addr string) (*vo.AccountListResp, error) {
