@@ -4,13 +4,15 @@ import "fmt"
 
 type TxType string
 
-var ICS20TxTypes = []TxType{TxTypeTransfer, TxTypeRecvPacket, TxTypeTimeoutPacket, TxTypeAckPacket}
+var ICS20TransferTxTypes = []TxType{TxTypeTransfer, TxTypeRecvPacket, TxTypeTimeoutPacket, TxTypeAckPacket}
+var ICS20AllTxTypes = []TxType{TxTypeTransfer, TxTypeRecvPacket, TxTypeTimeoutPacket, TxTypeAckPacket, TxTypeUpdateClient}
 
 const (
 	TxTypeTransfer      TxType = "transfer"
 	TxTypeRecvPacket    TxType = "recv_packet"
 	TxTypeTimeoutPacket TxType = "timeout_packet"
 	TxTypeAckPacket     TxType = "acknowledge_packet"
+	TxTypeUpdateClient  TxType = "update_client"
 
 	IBCRelayerDenomStatisticsCollName    = "ibc_relayer_denom_statistics"
 	IBCRelayerDenomStatisticsNewCollName = "ibc_relayer_denom_statistics_new"

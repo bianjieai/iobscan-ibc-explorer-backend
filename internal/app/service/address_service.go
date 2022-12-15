@@ -270,6 +270,12 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		}
 	}
 
+	denomList, err := denomRepo.FindByChain(chain)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	denomMap := denomList.ConvertToMap()
+
 	var (
 		balanceToken         []vo.AddrToken
 		totalValueUnbonding  = decimal.NewFromFloat(0)
@@ -287,20 +293,24 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 			logrus.Error(err.Error())
 			return
 		}
+
 		balanceToken = make([]vo.AddrToken, 0, len(balances.Balances))
 		for _, val := range balances.Balances {
 			addrToken := vo.AddrToken{
 				Denom:                val.Denom,
 				Chain:                chain,
-				DenomAvaliableAmount: val.Amount,
+				BaseDenom:            val.Denom,
+				BaseDenomChain:       chain,
+				DenomType:            entity.TokenTypeOther,
+				DenomAmount:          val.Amount,
+				DenomAvailableAmount: val.Amount,
+				Price:                0,
+				DenomValue:           "0",
 			}
-			denom, err := denomRepo.FindByDenomChain(val.Denom, chain)
-			if err != nil && err != qmgo.ErrNoSuchDocuments {
-				logrus.Error(err.Error())
-				continue
-			}
+
 			//denom exist in ibc_denom
-			if denom != nil {
+			denom, exist := denomMap[fmt.Sprintf("%s%s", chain, val.Denom)]
+			if exist {
 				//update denom_type,base_denom,base_denom_chain
 				addrToken.DenomType = tokenType(authDenomList, denom.BaseDenom, chain)
 				if addrToken.DenomType == entity.TokenTypeAuthed && val.Denom == denom.BaseDenom {
@@ -379,12 +389,28 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 
 	totalValue := totalValueBalance.Add(totalValueDelegation).Add(totalValueUnbonding)
 	otherAmt := totalAmtUnbonding.Add(totalAmtDelegation)
+	var hasStakeDenomBalance bool
 	for i, val := range balanceToken {
-		if val.Denom == stakeDenom && val.Chain == chain {
-			avaliableAmount, _ := decimal.NewFromString(val.DenomAvaliableAmount)
-			val.DenomAmount = otherAmt.Add(avaliableAmount).String()
+		if val.Denom == stakeDenom {
+			hasStakeDenomBalance = true
+			availableAmount, _ := decimal.NewFromString(val.DenomAvailableAmount)
+			val.DenomAmount = otherAmt.Add(availableAmount).String()
 			balanceToken[i] = val
 		}
+	}
+
+	if !hasStakeDenomBalance {
+		balanceToken = append(balanceToken, vo.AddrToken{
+			Denom:                stakeDenom,
+			Chain:                chain,
+			BaseDenom:            stakeDenom,
+			BaseDenomChain:       chain,
+			DenomType:            entity.TokenTypeGenesis,
+			DenomAmount:          otherAmt.String(),
+			DenomAvailableAmount: otherAmt.String(),
+			Price:                denomPriceMap[stakeDenom+chain].Price,
+			DenomValue:           totalValue.String(),
+		})
 	}
 	resp := &vo.AddrTokenListResp{
 		TotalValue: totalValue.String(),
@@ -470,7 +496,17 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 		return true
 	}
 
+	getUpdateTime := func(chain, address string) int64 {
+		tx, err := txRepo.GetAddressLatestTx(chain, address)
+		if err != nil {
+			return 0
+		}
+
+		return tx.Time
+	}
+
 	resData := make([]*vo.AddrTokenListResp, len(addrCfgs))
+	updateTimeData := make([]int64, len(addrCfgs))
 	var wg sync.WaitGroup
 	wg.Add(workNum)
 	for i := 0; i < workNum; i++ {
@@ -489,7 +525,10 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 				resData[id], err = svc.TokenList(v.Chain, v.Address)
 				if err != nil && err.Code() != 0 {
 					logrus.Errorf("doHandleAddrTokenInfo err:%s chain:%s address:%s lcd:%s", err.Error(), v.Chain, v.Address, v.GrpcRestGateway)
+					continue
 				}
+
+				updateTimeData[id] = getUpdateTime(v.Chain, v.Address)
 			}
 		}(num)
 	}
@@ -508,7 +547,7 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 			Chain:          resData[i].Chain,
 			TokenValue:     resData[i].TotalValue,
 			TokenDenomNum:  len(resData[i].Tokens),
-			LastUpdateTime: 0, //todo get tx time of last tx by address
+			LastUpdateTime: updateTimeData[i],
 		}
 		accounts = append(accounts, accInfo)
 	}
