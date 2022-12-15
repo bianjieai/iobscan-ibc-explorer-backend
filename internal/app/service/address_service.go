@@ -2,9 +2,10 @@ package service
 
 import (
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils/bech32"
+	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -14,11 +15,10 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/lcd"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils/bech32"
 	"github.com/qiniu/qmgo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"math"
-	"sync"
 )
 
 type IAddressService interface {
@@ -39,7 +39,7 @@ func (svc *AddressService) BaseInfo(chain, address string) (*vo.BaseInfoResp, er
 	cfg, err := chainCfgRepo.FindOneChainInfo(chain)
 	if err != nil {
 		if err == qmgo.ErrNoSuchDocuments {
-			return nil, errors.WrapBadRequest(fmt.Errorf("invalid chain %s", chain))
+			return nil, errors.WrapAddrNotFoundErr(fmt.Errorf("invalid chain %s", chain))
 		}
 
 		return nil, errors.Wrap(err)
@@ -47,7 +47,7 @@ func (svc *AddressService) BaseInfo(chain, address string) (*vo.BaseInfoResp, er
 
 	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath)
 	if err != nil {
-		return nil, errors.Wrap(err)
+		return nil, errors.WrapAddrNotFoundErr(err)
 	}
 
 	return &vo.BaseInfoResp{
@@ -418,7 +418,6 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 
 		return nil, errors.Wrap(err)
 	}
-	//account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, "/cosmos/auth/v1beta1/accounts/{address}")
 	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -454,7 +453,7 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 		})
 	}
 
-	resp, err := svc.doHandleAddrTokenInfo(10, chainsAddrInfo)
+	resp, err := svc.doHandleAddrTokenInfo(len(chainsAddrInfo), chainsAddrInfo)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -463,9 +462,7 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 }
 
 func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []AccountCfg) (*vo.AccountListResp, errors.Error) {
-
 	checkValidAddrOk := func(chain, address, lcduri, accountsPath string) bool {
-		//_, err := lcd.GetAccount(chain, address, lcduri, "/cosmos/auth/v1beta1/accounts/{address}")
 		_, err := lcd.GetAccount(chain, address, lcduri, accountsPath)
 		if err != nil {
 			return false
@@ -474,7 +471,6 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 	}
 
 	resData := make([]*vo.AddrTokenListResp, len(addrCfgs))
-	accounts := make([]vo.Account, 0, len(addrCfgs))
 	var wg sync.WaitGroup
 	wg.Add(workNum)
 	for i := 0; i < workNum; i++ {
@@ -492,7 +488,7 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 				logrus.Infof("task %d get token list chain(%s) address(%s)", num, v.Chain, v.Address)
 				resData[id], err = svc.TokenList(v.Chain, v.Address)
 				if err != nil && err.Code() != 0 {
-					logrus.Errorf("err:%s chain:%s address:%s lcd:%s", err.Error(), v.Chain, v.Address, v.GrpcRestGateway)
+					logrus.Errorf("doHandleAddrTokenInfo err:%s chain:%s address:%s lcd:%s", err.Error(), v.Chain, v.Address, v.GrpcRestGateway)
 				}
 			}
 		}(num)
@@ -500,6 +496,7 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 	wg.Wait()
 
 	totalValue := decimal.Zero
+	accounts := make([]vo.Account, 0, len(addrCfgs))
 	for i := range resData {
 		if resData[i] == nil {
 			continue
