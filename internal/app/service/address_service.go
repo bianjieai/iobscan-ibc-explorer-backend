@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +44,7 @@ func (svc *AddressService) BaseInfo(chain, address string) (*vo.BaseInfoResp, er
 		return nil, errors.Wrap(err)
 	}
 
-	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath)
+	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath, true)
 	if err != nil {
 		return nil, errors.WrapAddrNotFoundErr(err)
 	}
@@ -216,7 +215,7 @@ func (svc *AddressService) TxsExport(chain, address string) (string, []byte, err
 
 	addressPrefix := address[:6]
 	addressSuffix := address[len(address)-6:]
-	filename := fmt.Sprintf("%s...%s-%s", addressPrefix, addressSuffix, time.Now().Format(constant.DateFormat))
+	filename := fmt.Sprintf("%s...%s-%s.csv", addressPrefix, addressSuffix, time.Now().Format(constant.DefaultTimeFormat))
 
 	var contentArr []string
 	header := []string{"Tx Result", "TxHash", "Type", "Port", "From", "To", "Transfer Symbol", "Transfer Amount", "Fee Symbol", "Fee Amount", "Time"}
@@ -226,17 +225,21 @@ func (svc *AddressService) TxsExport(chain, address string) (string, []byte, err
 		if v.TxStatus == entity.TxStatusSuccess {
 			txRes = "Success"
 		}
-		timeStr := strconv.FormatInt(v.TxTime, 10)
+		timeStr := time.Unix(v.TxTime, 0).Format(constant.DefaultTimeFormat)
 		symbol := v.DenomInfo.BaseDenom
+		denomAmt, _ := decimal.NewFromString(v.DenomInfo.Amount)
 		feeSymbol := v.FeeInfo.Denom
+		feeAmt, _ := decimal.NewFromString(v.FeeInfo.Amount)
 		if denom, ok := denomMap[fmt.Sprintf("%s%s", v.DenomInfo.BaseDenomChain, v.DenomInfo.BaseDenom)]; ok {
 			symbol = denom.Symbol
+			denomAmt = denomAmt.Div(decimal.NewFromFloat(math.Pow10(denom.Scale)))
 		}
 		if denom, ok := denomMap[fmt.Sprintf("%s%s", v.FeeInfo.DenomChain, v.FeeInfo.Denom)]; ok {
 			feeSymbol = denom.Symbol
+			feeAmt = feeAmt.Div(decimal.NewFromFloat(math.Pow10(denom.Scale)))
 		}
 
-		item := []string{txRes, v.TxHash, string(v.TxType), v.Port, v.Sender, v.Receiver, symbol, v.DenomInfo.Amount, feeSymbol, v.FeeInfo.Amount, timeStr}
+		item := []string{txRes, v.TxHash, string(v.TxType), v.Port, v.Sender, v.Receiver, symbol, denomAmt.String(), feeSymbol, feeAmt.String(), timeStr}
 		contentArr = append(contentArr, strings.Join(item, ","))
 	}
 
@@ -444,7 +447,7 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 
 		return nil, errors.Wrap(err)
 	}
-	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath)
+	account, err := lcd.GetAccount(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.AccountsPath, false)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -489,7 +492,7 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 
 func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []AccountCfg) (*vo.AccountListResp, errors.Error) {
 	checkValidAddrOk := func(chain, address, lcduri, accountsPath string) bool {
-		_, err := lcd.GetAccount(chain, address, lcduri, accountsPath)
+		_, err := lcd.GetAccount(chain, address, lcduri, accountsPath, false)
 		if err != nil {
 			return false
 		}

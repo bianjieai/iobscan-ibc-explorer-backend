@@ -57,7 +57,7 @@ func (t *IbcRelayerAddressInitTask) Run() int {
 
 		var pubKey string
 		if cf, ok := chainInfosMap[v.Chain]; ok {
-			if account, err := lcd.GetAccount(v.Chain, v.Address, cf.GrpcRestGateway, cf.LcdApiPath.AccountsPath); err == nil {
+			if account, err := lcd.GetAccount(v.Chain, v.Address, cf.GrpcRestGateway, cf.LcdApiPath.AccountsPath, false); err == nil {
 				pubKey = account.Account.PubKey.Key
 			}
 		}
@@ -132,7 +132,7 @@ func (t *RelayerAddressGatherTask) repairEmptyPubKey() {
 			continue
 		}
 
-		account, err := lcd.GetAccount(v.Chain, v.Address, apiHost, apiPath)
+		account, err := lcd.GetAccount(v.Chain, v.Address, apiHost, apiPath, false)
 		if err != nil {
 			if t.isFastFailErr(err) {
 				fastFailChainMap[v.Chain] = err.Error()
