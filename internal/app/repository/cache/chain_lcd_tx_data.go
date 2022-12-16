@@ -81,3 +81,15 @@ func (repo *LcdTxDataCacheRepo) GetDelegation(chain, addr string) (*vo.Delegatio
 	}
 	return &data, nil
 }
+
+func (repo *LcdTxDataCacheRepo) SetRewards(chain, addr string, data *vo.RewardsResp) error {
+	return rc.MarshalSet(fmt.Sprintf(lcdRewards, chain, addr), data, oneMin)
+}
+
+func (repo *LcdTxDataCacheRepo) GetRewards(chain, addr string) (*vo.RewardsResp, error) {
+	var data vo.RewardsResp
+	if err := rc.UnmarshalGet(fmt.Sprintf(lcdRewards, chain, addr), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
