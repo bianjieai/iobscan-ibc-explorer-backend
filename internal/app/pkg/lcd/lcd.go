@@ -16,27 +16,35 @@ const (
 	replaceHolderAddress = "{address}"
 )
 
-func GetAccount(chain, address, lcd, apiPath string) (*vo.AccountResp, error) {
+func GetAccount(chain, address, lcd, apiPath string, crossCache bool) (*vo.AccountResp, error) {
+	lcdGet := func() (*vo.AccountResp, error) {
+		apiPath = strings.ReplaceAll(apiPath, replaceHolderAddress, address)
+		url := fmt.Sprintf("%s%s", lcd, apiPath)
+
+		bz, err := utils.HttpGet(url)
+		if err != nil {
+			return nil, err
+		}
+
+		var resp vo.AccountResp
+		err = json.Unmarshal(bz, &resp)
+		if err != nil {
+			return nil, err
+		}
+
+		_ = lcdTxDataCacheRepo.SetAccount(chain, address, &resp)
+		return &resp, err
+	}
+
+	if crossCache { // 绕过缓存，取链上的最新数据
+		return lcdGet()
+	}
+
 	if state, err := lcdTxDataCacheRepo.GetAccount(chain, address); err == nil {
 		return state, nil
 	}
 
-	apiPath = strings.ReplaceAll(apiPath, replaceHolderAddress, address)
-	url := fmt.Sprintf("%s%s", lcd, apiPath)
-
-	bz, err := utils.HttpGet(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp vo.AccountResp
-	err = json.Unmarshal(bz, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = lcdTxDataCacheRepo.SetAccount(chain, address, &resp)
-	return &resp, nil
+	return lcdGet()
 }
 
 func GetBalances(chain, address, lcd, apiPath string) (*vo.BalancesResp, error) {

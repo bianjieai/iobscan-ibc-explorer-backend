@@ -76,7 +76,7 @@ func (ctl *AddressController) TxsExport(c *gin.Context) {
 	}
 
 	c.Header("Content-Type", "text/csv")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", filename))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	c.Data(http.StatusOK, "text/csv", data)
 }
 
