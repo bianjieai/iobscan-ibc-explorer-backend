@@ -284,11 +284,13 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		totalValueUnbonding  = decimal.NewFromFloat(0)
 		totalValueBalance    = decimal.NewFromFloat(0)
 		totalValueDelegation = decimal.NewFromFloat(0)
+		totalValueRewards    = decimal.NewFromFloat(0)
 		totalAmtUnbonding    = decimal.NewFromFloat(0)
 		totalAmtDelegation   = decimal.NewFromFloat(0)
+		totalAmtRewards      = decimal.NewFromFloat(0)
 	)
 	gw := sync.WaitGroup{}
-	gw.Add(3)
+	gw.Add(4)
 	go func() {
 		defer gw.Done()
 		balances, err := lcd.GetBalances(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.BalancesPath)
@@ -366,6 +368,28 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 	}()
 	go func() {
 		defer gw.Done()
+		//rewards, err := lcd.GetRewards(chain, address, cfg.GrpcRestGateway, "/cosmos/distribution/v1beta1/delegators/{address}/rewards")
+		rewards, err := lcd.GetRewards(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.RewardsPath)
+		if err != nil {
+			logrus.Error(err.Error())
+			return
+		}
+
+		for _, val := range rewards.Total {
+			//update denom_value,total_value,price
+			if coin, ok := denomPriceMap[val.Denom+chain]; ok {
+				if coin.Scale > 0 {
+					decAmt, _ := decimal.NewFromString(val.Amount)
+					baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+					totalValueRewards = totalValueRewards.Add(baseDenomValue)
+					totalAmtRewards = totalAmtRewards.Add(decAmt)
+				}
+			}
+
+		}
+	}()
+	go func() {
+		defer gw.Done()
 		//unbonding, err := lcd.GetUnbonding(chain, address, cfg.GrpcRestGateway, "/cosmos/staking/v1beta1/delegators/{address}/unbonding_delegations")
 		unbonding, err := lcd.GetUnbonding(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.UnbondingPath)
 		if err != nil {
@@ -390,8 +414,8 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 	}()
 	gw.Wait()
 
-	totalValue := totalValueBalance.Add(totalValueDelegation).Add(totalValueUnbonding)
-	otherAmt := totalAmtUnbonding.Add(totalAmtDelegation)
+	totalValue := totalValueBalance.Add(totalValueDelegation).Add(totalValueUnbonding).Add(totalValueRewards)
+	otherAmt := totalAmtUnbonding.Add(totalAmtDelegation).Add(totalAmtRewards)
 	var hasStakeDenomBalance bool
 	for i, val := range balanceToken {
 		if val.Denom == stakeDenom {
@@ -402,7 +426,7 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		}
 	}
 
-	if !hasStakeDenomBalance {
+	if !hasStakeDenomBalance && otherAmt.GreaterThan(decimal.Zero) {
 		balanceToken = append(balanceToken, vo.AddrToken{
 			Denom:                stakeDenom,
 			Chain:                chain,

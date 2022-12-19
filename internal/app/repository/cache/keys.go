@@ -46,4 +46,5 @@ const (
 	lcdBalances                 = "lcd_balances:%s_%s"
 	lcdDelegation               = "lcd_delegation:%s_%s"
 	lcdUnbonding                = "lcd_unbonding:%s_%s"
+	lcdRewards                  = "lcd_rewards:%s_%s"
 )

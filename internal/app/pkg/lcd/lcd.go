@@ -111,3 +111,24 @@ func GetDelegation(chain, address, lcd, apiPath string) (*vo.DelegationResp, err
 	_ = lcdTxDataCacheRepo.SetDelegation(chain, address, &resp)
 	return &resp, nil
 }
+
+func GetRewards(chain, address, lcd, apiPath string) (*vo.RewardsResp, error) {
+	if state, err := lcdTxDataCacheRepo.GetRewards(chain, address); err == nil {
+		return state, nil
+	}
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderAddress, address)
+	url := fmt.Sprintf("%s%s", lcd, apiPath)
+
+	bz, err := utils.HttpGet(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp vo.RewardsResp
+	err = json.Unmarshal(bz, &resp)
+	if err != nil {
+		return nil, err
+	}
+	_ = lcdTxDataCacheRepo.SetRewards(chain, address, &resp)
+	return &resp, nil
+}
