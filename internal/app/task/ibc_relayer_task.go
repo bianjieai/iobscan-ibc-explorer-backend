@@ -436,7 +436,7 @@ func (t *IbcRelayerCronTask) handleRelayerChannelPair(relayer *entity.IBCRelayer
 		return
 	}
 
-	channelPairs, change2, err := matchRelayerChannelPairInfo(relayer.ChannelPairInfo)
+	channelPairs, change2, err := matchRelayerChannelPairInfo(channelPairs)
 	if err != nil {
 		logrus.Errorf("task %s matchRelayerChannelPairInfo fail, %v", t.Name(), err.Error())
 		return

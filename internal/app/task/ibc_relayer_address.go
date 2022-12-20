@@ -48,6 +48,7 @@ func (t *IbcRelayerAddressInitTask) Run() int {
 	}
 
 	addrEntityList := make([]*entity.IBCRelayerAddress, 0, len(addrList))
+	fastFailChainMap := make(map[string]string)
 	nowTime := time.Now().Unix()
 	for _, v := range addrList {
 		gatherStatus := entity.GatherStatusTODO
@@ -56,9 +57,19 @@ func (t *IbcRelayerAddressInitTask) Run() int {
 		}
 
 		var pubKey string
-		if cf, ok := chainInfosMap[v.Chain]; ok {
+		if cf, ok := chainInfosMap[v.Chain]; ok && fastFailChainMap[v.Chain] == "" {
+			tempSt := time.Now().Unix()
 			if account, err := lcd.GetAccount(v.Chain, v.Address, cf.GrpcRestGateway, cf.LcdApiPath.AccountsPath, false); err == nil {
 				pubKey = account.Account.PubKey.Key
+			} else {
+				if isFastFailErr(err) {
+					fastFailChainMap[v.Chain] = err.Error()
+				}
+				logrus.Errorf("task %s GetAccount err, %s-%s, %v", t.Name(), v.Chain, v.Address, err)
+			}
+			tempEd := time.Now().Unix()
+			if tempEd-tempSt > 10 {
+				logrus.Warningf("task %s GetAccount too slow, %s-%s, time use: %d", t.Name(), v.Chain, v.Address, tempEd-tempSt)
 			}
 		}
 
@@ -134,7 +145,7 @@ func (t *RelayerAddressGatherTask) repairEmptyPubKey() {
 
 		account, err := lcd.GetAccount(v.Chain, v.Address, apiHost, apiPath, false)
 		if err != nil {
-			if t.isFastFailErr(err) {
+			if isFastFailErr(err) {
 				fastFailChainMap[v.Chain] = err.Error()
 			}
 
@@ -149,7 +160,7 @@ func (t *RelayerAddressGatherTask) repairEmptyPubKey() {
 	logrus.Infof("task %s repairEmptyPubKey end, time use: %d[s]", t.Name(), time.Now().Unix()-st)
 }
 
-func (t *RelayerAddressGatherTask) isFastFailErr(err error) bool {
+func isFastFailErr(err error) bool {
 	errStr := err.Error()
 	return strings.Contains(errStr, "connection refused") || strings.Contains(errStr, "i/o timeout") ||
 		strings.Contains(errStr, "unsupported protocol scheme") || strings.Contains(errStr, "501") ||
