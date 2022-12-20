@@ -422,6 +422,8 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 			hasStakeDenomBalance = true
 			availableAmount, _ := decimal.NewFromString(val.DenomAvailableAmount)
 			val.DenomAmount = otherAmt.Add(availableAmount).String()
+			stakeDenomAmount, _ := decimal.NewFromString(val.DenomValue)
+			val.DenomValue = totalValueDelegation.Add(totalValueUnbonding).Add(totalValueRewards).Add(stakeDenomAmount).String()
 			balanceToken[i] = val
 		}
 	}
