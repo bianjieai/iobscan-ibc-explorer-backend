@@ -188,6 +188,7 @@ func (w *relayerStatisticsWorker) statistics(chain string, segments []*segment, 
 			denomStatMap, addrChannelMap := w.aggrDenomStat(chain, v, denomStats)
 			_ = w.saveDenomStat(chain, denomStatMap, v, op)
 			_ = w.saveAddrChannel(addrChannelMap)
+			_ = w.saveRelayerAddr(addrChannelMap)
 		}
 
 		// fee statistics
