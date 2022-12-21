@@ -13,6 +13,7 @@ var (
 	relayerService  service.IRelayerService  = new(service.RelayerService)
 	homeService     service.IHomeService     = new(service.HomeService)
 	transferService service.ITransferService = new(service.TransferService)
+	overviewService service.IOverviewService = new(service.OverviewService)
 	cacheService    service.CacheService
 
 	// task
