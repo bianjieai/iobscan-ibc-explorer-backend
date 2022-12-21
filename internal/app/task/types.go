@@ -14,7 +14,6 @@ const (
 	OneDay               = 86400
 	RedisLockExpireTime  = 300
 	OneOffTaskLockTime   = 86400 * 30
-	ThreeHourCronJobTime = "0 0 */6 * * ?"
 	statisticsCheckTimes = 5
 )
 
@@ -31,22 +30,17 @@ const (
 	replaceHolderChannel = "CHANNEL"
 	replaceHolderPort    = "PORT"
 
-	syncTransferTxTaskWorkerNum    = 5
-	ibcTxRelateTaskWorkerNum       = 5
-	relayerStatisticsWorkerNum     = 4
-	fixDenomTraceDataTaskWorkerNum = 8
-	fixIbxTxWorkerNum              = 5
-	defaultMaxHandlerTx            = 2000
-	ibcTxTargetLatest              = "latest"
-	ibcTxTargetHistory             = "history"
+	syncTransferTxTaskWorkerNum = 5
+	ibcTxRelateTaskWorkerNum    = 5
+	relayerStatisticsWorkerNum  = 4
+	defaultMaxHandlerTx         = 2000
+	ibcTxTargetLatest           = "latest"
+	ibcTxTargetHistory          = "history"
 
 	segmentStepLatest  = 24 * 3600
-	segmentStepHistory = 24 * 3600
-)
-const (
-	channelMatchSuccess = 1
-	channelNotFound     = 0
-	channelMatchFail    = -1
+	segmentStepHistory = 12 * 3600
+
+	relayerAddressGatherRangeTime = 7 * 86400
 )
 
 var (
@@ -75,13 +69,13 @@ var (
 	relayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo   = new(repository.RelayerFeeStatisticsRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
 	relayerAddressChannelRepo  repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
+	relayerAddressRepo         repository.IRelayerAddressRepo         = new(repository.RelayerAddressRepo)
 	statisticsRepo             repository.IStatisticRepo              = new(repository.IbcStatisticRepo)
 	taskRecordRepo             repository.ITaskRecordRepo             = new(repository.TaskRecordRepo)
 	syncTaskRepo               repository.ISyncTaskRepo               = new(repository.SyncTaskRepo)
 	syncBlockRepo              repository.ISyncBlockRepo              = new(repository.SyncBlockRepo)
 	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
 	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
-	relayerAddrChannelRepo     repository.IRelayerAddressChannelRepo  = new(repository.RelayerAddressChannelRepo)
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 

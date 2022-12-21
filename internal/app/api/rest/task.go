@@ -49,15 +49,13 @@ func (ctl *TaskController) Run(c *gin.Context) {
 					logrus.Errorf("TaskController run %s err, %v", taskName, err)
 					return
 				}
-				endTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
+				endTime, err := strconv.ParseInt(c.PostForm("end_time"), 10, 64)
 				if err != nil {
 					logrus.Errorf("TaskController run %s err, %v", taskName, err)
 					return
 				}
 				res = relayerStatisticsTask.RunWithParam(chain, startTime, endTime)
 			}
-		case relayerDataTask.Name():
-			res = relayerDataTask.Run()
 		case addTransferDataTask.Name():
 			addTransferDataTask.RunWithParam(c.PostForm("new_chains"))
 		case ibcNodeLcdCronTask.Name():
@@ -69,10 +67,10 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			}
 		case ibcStatisticCronTask.Name():
 			ibcStatisticCronTask.NewRun()
-		case modifyChainIdTask.Name():
-			modifyChainIdTask.RunWithParam(c.PostForm("category"), c.PostForm("coll"))
 		case fixRelayerStatisticsTask.Name():
 			fixRelayerStatisticsTask.Run()
+		case relayerAddressInitTask.Name():
+			relayerAddressInitTask.Run()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

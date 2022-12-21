@@ -351,3 +351,8 @@ db.ibc_relayer_address_channel.createIndex({
     "chain": 1,
     "channel": 1
 }, {background: true, unique: true});
+
+db.ibc_relayer_address.createIndex({
+    "address": 1,
+    "chain": 1
+}, {background: true, unique: true});

@@ -33,7 +33,11 @@ type (
 		ClientStatePath string `bson:"client_state_path"`
 		SupplyPath      string `bson:"supply_path"`
 		BalancesPath    string `bson:"balances_path"`
+		UnbondingPath   string `bson:"unbonding_path"`
+		DelegationPath  string `bson:"delegation_path"`
+		RewardsPath     string `bson:"rewards_path"`
 		ParamsPath      string `bson:"params_path"`
+		AccountsPath    string `bson:"accounts_path"`
 	}
 	IbcInfo struct {
 		Chain string         `bson:"chain"`

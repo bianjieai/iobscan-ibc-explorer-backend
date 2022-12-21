@@ -122,16 +122,15 @@ func getAllChainMap() (map[string]*entity.ChainConfig, error) {
 	return allChainMap, err
 }
 
-// getChainIdNameMap, map key: chain id, value: chain name
-func getChainIdNameMap() (map[string]string, error) {
+func getAllChainInfosMap() (map[string]*entity.ChainConfig, error) {
 	allChainList, err := chainConfigRepo.FindAllChainInfos()
 	if err != nil {
 		return nil, err
 	}
 
-	allChainMap := make(map[string]string)
+	allChainMap := make(map[string]*entity.ChainConfig)
 	for _, v := range allChainList {
-		allChainMap[v.CurrentChainId] = v.ChainName
+		allChainMap[v.ChainName] = v
 	}
 
 	return allChainMap, err

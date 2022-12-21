@@ -58,10 +58,10 @@ func TestBech32Decode(t *testing.T) {
 }
 
 func TestPubKeyToProposerAddrHash(t *testing.T) {
-	pubKey := "icp1ulx45dfpq0rtyngruwumlgsh4ss338wk7llp7ecfv06x7vghg8vcr0n7na2qyacp8s9"
+	pubKey := "A4AhOmtQSLxYqsbT/pVT9YoAhoyZZnrvr0EAbsYlVgNY"
 	actual, err := PubKeyToProposerAddrHash(pubKey)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 
 	expected := "940F3F224C42A435327E7057D726E19F8F731252"
