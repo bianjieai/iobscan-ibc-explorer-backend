@@ -317,7 +317,7 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 			denom, exist := denomMap[fmt.Sprintf("%s%s", chain, val.Denom)]
 			if exist {
 				//update denom_type,base_denom,base_denom_chain
-				addrToken.DenomType = tokenType(authDenomList, denom.BaseDenom, chain)
+				addrToken.DenomType = tokenType(authDenomList, denom.BaseDenom, denom.BaseDenomChain)
 				if addrToken.DenomType == entity.TokenTypeAuthed && val.Denom == denom.BaseDenom {
 					addrToken.DenomType = entity.TokenTypeGenesis
 				}
