@@ -40,6 +40,7 @@ func Routers(Router *gin.Engine) {
 	cacheTools(ibcRouter)
 	taskTools(ibcRouter)
 	addressPage(ibcRouter)
+	overviewPage(ibcRouter)
 }
 
 func homePage(r *gin.RouterGroup) {
@@ -96,6 +97,14 @@ func addressPage(r *gin.RouterGroup) {
 	r.GET("/chain/:chain/address/:address/txs", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TxsList))
 	r.GET("/chain/:chain/address/:address/txs/export", ctl.TxsExport)
 	r.GET("/chain/:chain/address/:address/accounts", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AccountList))
+}
+
+func overviewPage(r *gin.RouterGroup) {
+	ctl := rest.OverviewController{}
+	r.GET("/overview/market_heatmap", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.MarketHeatmap))
+	r.GET("/overview/chain_volume", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChainVolume))
+	r.GET("/overview/chain_volume_trend", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChainVolumeTrend))
+	r.GET("/overview/token_distribution", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.TokenDistribution))
 }
 
 func cacheTools(r *gin.RouterGroup) {
