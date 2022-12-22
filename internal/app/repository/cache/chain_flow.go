@@ -27,3 +27,22 @@ func (repo *ChainFlowCacheRepo) GetInflowTrend(days int, chain string) ([]vo.Vol
 func (repo *ChainFlowCacheRepo) ExpireInflowTrend(days int, expire time.Duration) bool {
 	return rc.Expire(fmt.Sprintf(chainInflowVolumeTrend, days), expire)
 }
+
+func (repo *ChainFlowCacheRepo) SetInflowVolume(days int, chain string, value string) error {
+	_, err := rc.HSet(fmt.Sprintf(chainInflowVolume, days), chain, value)
+	return err
+}
+
+func (repo *ChainFlowCacheRepo) GetInflowVolume(days int, chain string) (string, error) {
+	return rc.HGet(fmt.Sprintf(chainInflowVolume, days), chain)
+}
+
+func (repo *ChainFlowCacheRepo) GetAllInflowVolume(days int) (map[string]string, error) {
+	var res map[string]string
+	err := rc.UnmarshalHGetAll(fmt.Sprintf(chainInflowVolume, days), &res)
+	return res, err
+}
+
+func (repo *ChainFlowCacheRepo) ExpireInflowVolume(days int, expire time.Duration) bool {
+	return rc.Expire(fmt.Sprintf(chainInflowVolume, days), expire)
+}

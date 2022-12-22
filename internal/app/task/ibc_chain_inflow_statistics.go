@@ -248,14 +248,12 @@ func (t *ChainInflowStatisticsTask) setStatisticsDataCache() {
 			continue
 		}
 
-		if len(trendList) == 0 {
-			continue
-		}
-
 		volumeItemList := make([]vo.VolumeItem, 0, len(trendList))
+		totalDenomValue := decimal.Zero
 		for _, v := range trendList {
 			denomAmount := decimal.NewFromFloat(v.DenomAmount)
 			denomValue := ibctool.CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, denomAmount)
+			totalDenomValue = totalDenomValue.Add(denomValue)
 			volumeItemList = append(volumeItemList, vo.VolumeItem{
 				Datetime: time.Unix(v.SegmentStartTime, 0).Format(constant.DateFormat),
 				Value:    denomValue.String(),
@@ -265,7 +263,12 @@ func (t *ChainInflowStatisticsTask) setStatisticsDataCache() {
 		if err = chainFlowCacheRepo.SetInflowTrend(days, chain, volumeItemList); err != nil {
 			logrus.Errorf("task %s SetInflowTrend %s err, %v", t.Name(), chain, err)
 		}
+
+		if err = chainFlowCacheRepo.SetInflowVolume(days, chain, totalDenomValue.String()); err != nil {
+			logrus.Errorf("task %s SetInflowVolume %s err, %v", t.Name(), chain, err)
+		}
 	}
 
 	chainFlowCacheRepo.ExpireInflowTrend(days, OneWeek)
+	chainFlowCacheRepo.ExpireInflowVolume(days, OneWeek)
 }
