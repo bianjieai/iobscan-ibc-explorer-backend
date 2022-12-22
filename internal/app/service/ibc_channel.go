@@ -39,7 +39,7 @@ func (svc *ChannelService) List(req *vo.ChannelListReq) (*vo.ChannelListResp, er
 			ChainB:              v.ChainB,
 			ChannelB:            v.ChannelB,
 			OperatingPeriod:     v.OperatingPeriod,
-			Relayers:            v.Relayers,
+			PendingTxs:          v.PendingTxs,
 			LastUpdated:         v.ChannelUpdateAt,
 			IbcTransferTxsValue: v.TransferTxsValue,
 			IbcTransferTxs:      v.TransferTxs,

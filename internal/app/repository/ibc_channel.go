@@ -12,7 +12,7 @@ import (
 
 type IChannelRepo interface {
 	UpdateOneUpdateTime(channelId string, updateTime int64) error
-	UpdateRelayers(channelId string, relayerCnt int64) error
+	UpdatePendingTx(channelId string, relayerCnt int64) error
 	FindAll() (entity.IBCChannelList, error)
 	InsertBatch(batch []*entity.IBCChannel) error
 	DeleteByChannelIds(channelIds []string) error
@@ -42,12 +42,12 @@ func (repo *ChannelRepo) UpdateOneUpdateTime(channelId string, updateTime int64)
 	})
 }
 
-func (repo *ChannelRepo) UpdateRelayers(channelId string, relayerCnt int64) error {
+func (repo *ChannelRepo) UpdatePendingTx(channelId string, pendingTxCnt int64) error {
 	filter := bson.M{
 		"channel_id": channelId,
 	}
 	updateData := bson.M{
-		"relayers": relayerCnt,
+		"pending_txs": pendingTxCnt,
 	}
 	return repo.coll().UpdateOne(context.Background(), filter, bson.M{
 		"$set": updateData,
@@ -151,6 +151,7 @@ func (repo *ChannelRepo) UpdateChannel(channel *entity.IBCChannel) error {
 	}
 	update := bson.M{
 		"$set": bson.M{
+			"pending_txs":        channel.PendingTxs,
 			"status":             channel.Status,
 			"operating_period":   channel.OperatingPeriod,
 			"latest_open_time":   channel.LatestOpenTime,

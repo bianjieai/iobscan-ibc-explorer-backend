@@ -7,6 +7,7 @@ import (
 
 type IOverviewService interface {
 	MarketHeatmap() (*vo.MarketHeatmapResp, errors.Error)
+	TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error)
 }
 
 var _ IOverviewService = new(OverviewService)
@@ -15,5 +16,9 @@ type OverviewService struct {
 }
 
 func (t *OverviewService) MarketHeatmap() (*vo.MarketHeatmapResp, errors.Error) {
+	return nil, nil
+}
+
+func (t *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error) {
 	return nil, nil
 }
