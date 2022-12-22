@@ -188,6 +188,7 @@ func (w *relayerStatisticsWorker) statistics(chain string, segments []*segment, 
 			denomStatMap, addrChannelMap := w.aggrDenomStat(chain, v, denomStats)
 			_ = w.saveDenomStat(chain, denomStatMap, v, op)
 			_ = w.saveAddrChannel(addrChannelMap)
+			_ = w.saveRelayerAddr(addrChannelMap)
 		}
 
 		// fee statistics
@@ -342,6 +343,36 @@ func (w *relayerStatisticsWorker) saveAddrChannel(addrChannelMap map[string]*ent
 
 	if err := relayerAddressChannelRepo.InsertMany(addrChanList); err != nil {
 		logrus.Errorf("task %s relayerAddressChannelRepo.InsertMany err, %v", w.taskName, err)
+		return err
+	}
+
+	return nil
+}
+
+func (w *relayerStatisticsWorker) saveRelayerAddr(addrChannelMap map[string]*entity.IBCRelayerAddressChannel) error {
+	if len(addrChannelMap) == 0 {
+		return nil
+	}
+
+	nowTime := time.Now().Unix()
+	filterMap := make(map[string]struct{}, len(addrChannelMap))
+	addrList := make([]*entity.IBCRelayerAddress, 0, len(addrChannelMap))
+
+	for _, v := range addrChannelMap {
+		if _, ok := filterMap[fmt.Sprintf("%s:%s", v.Chain, v.RelayerAddress)]; !ok {
+			addrList = append(addrList, &entity.IBCRelayerAddress{
+				Address:      v.RelayerAddress,
+				Chain:        v.Chain,
+				PubKey:       "",
+				GatherStatus: entity.GatherStatusTODO,
+				CreateAt:     nowTime,
+				UpdateAt:     nowTime,
+			})
+		}
+	}
+
+	if err := relayerAddressRepo.InsertMany(addrList); err != nil {
+		logrus.Errorf("task %s relayerAddressRepo.InsertMany err, %v", w.taskName, err)
 		return err
 	}
 

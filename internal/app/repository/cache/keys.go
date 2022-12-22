@@ -40,4 +40,11 @@ const (
 	BaseDenomUnauth             = "base_denom_unauth"
 	baseDenomSymbol             = "base_denom:%s"
 	clientState                 = "client_state:%s"
+	lcdAccount                  = "lcd_accounts:%s_%s"
+	addrTokens                  = "address_tokens:%s_%s"
+	addrAccounts                = "address_accounts:%s_%s"
+	lcdBalances                 = "lcd_balances:%s_%s"
+	lcdDelegation               = "lcd_delegation:%s_%s"
+	lcdUnbonding                = "lcd_unbonding:%s_%s"
+	lcdRewards                  = "lcd_rewards:%s_%s"
 )

@@ -5,8 +5,9 @@ import "fmt"
 type TokenType string
 
 const (
-	TokenTypeAuthed TokenType = "Authed"
-	TokenTypeOther  TokenType = "Other"
+	TokenTypeAuthed  TokenType = "Authed"
+	TokenTypeGenesis TokenType = "Genesis"
+	TokenTypeOther   TokenType = "Other"
 )
 
 type IBCToken struct {

@@ -22,6 +22,54 @@ type BalancesResp struct {
 	} `json:"pagination"`
 }
 
+type UnbondingResp struct {
+	UnbondingResponses []struct {
+		DelegatorAddress string `json:"delegator_address"`
+		ValidatorAddress string `json:"validator_address"`
+		Entries          []struct {
+			CreationHeight string `json:"creation_height"`
+			InitialBalance string `json:"initial_balance"`
+			Balance        string `json:"balance"`
+		} `json:"entries"`
+	} `json:"unbonding_responses"`
+	Pagination struct {
+		NextKey *string `json:"next_key"`
+		Total   string  `json:"total"`
+	} `json:"pagination"`
+}
+
+type DelegationResp struct {
+	DelegationResponses []struct {
+		Delegation struct {
+			DelegatorAddress string `json:"delegator_address"`
+			ValidatorAddress string `json:"validator_address"`
+			Shares           string `json:"shares"`
+		} `json:"delegation"`
+		Balance struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"balance"`
+	} `json:"delegation_responses"`
+	Pagination struct {
+		NextKey *string `json:"next_key"`
+		Total   string  `json:"total"`
+	} `json:"pagination"`
+}
+
+type RewardsResp struct {
+	Rewards []struct {
+		ValidatorAddress string `json:"validator_address"`
+		Reward           []struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"reward"`
+	} `json:"rewards"`
+	Total []struct {
+		Denom  string `json:"denom"`
+		Amount string `json:"amount"`
+	} `json:"total"`
+}
+
 type StakeParams struct {
 	Params struct {
 		UnbondingTime string `json:"unbonding_time"`
@@ -165,4 +213,17 @@ type StatusResp struct {
 			CatchingUp          bool  `json:"catching_up"`
 		} `json:"sync_info"`
 	} `json:"result"`
+}
+
+type AccountResp struct {
+	Account struct {
+		Type    string `json:"@type"`
+		Address string `json:"address"`
+		PubKey  struct {
+			Type string `json:"@type"`
+			Key  string `json:"key"`
+		} `json:"pub_key"`
+		AccountNumber string `json:"account_number"`
+		Sequence      string `json:"sequence"`
+	} `json:"account"`
 }

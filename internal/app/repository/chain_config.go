@@ -13,11 +13,12 @@ const (
 	ChainConfigFieldGrpcRestGateway = "grpc_rest_gateway"
 	ChainConfigFieldChainName       = "chain_name"
 	ChainConfigFieldPrettyName      = "pretty_name"
+	ChainConfigFieldAddrPrefix      = "addr_prefix"
 	ChainConfigFieldIcon            = "icon"
 	ChainConfigFieldStatus          = "status"
 	ChainConfigFieldIbcInfo         = "ibc_info"
 	ChainConfigFieldIbcInfoHashLcd  = "ibc_info_hash_lcd"
-	ChainConfigFieldLcdApiPathd     = "lcd_api_path"
+	ChainConfigFieldLcdApiPath      = "lcd_api_path"
 )
 
 type IChainConfigRepo interface {
@@ -25,6 +26,7 @@ type IChainConfigRepo interface {
 	FindAllChainInfos() ([]*entity.ChainConfig, error)
 	FindAllOpenChainInfos() ([]*entity.ChainConfig, error)
 	FindOne(chain string) (*entity.ChainConfig, error)
+	FindOneChainInfo(chain string) (*entity.ChainConfig, error)
 	UpdateIbcInfo(config *entity.ChainConfig) error
 	UpdateLcdApi(config *entity.ChainConfig) error
 	Count() (int64, error)
@@ -53,7 +55,7 @@ func (repo *ChainConfigRepo) FindAllChainInfos() ([]*entity.ChainConfig, error) 
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{}).
 		Select(bson.M{ChainConfigFieldCurrentChainId: 1, ChainConfigFieldChainName: 1, ChainConfigFieldPrettyName: 1, ChainConfigFieldIcon: 1, ChainConfigFieldGrpcRestGateway: 1,
-			ChainConfigFieldLcdApiPathd: 1, ChainConfigFieldStatus: 1}).All(&res)
+			ChainConfigFieldLcdApiPath: 1, ChainConfigFieldStatus: 1, ChainConfigFieldAddrPrefix: 1}).All(&res)
 	return res, err
 }
 
@@ -61,13 +63,22 @@ func (repo *ChainConfigRepo) FindAllOpenChainInfos() ([]*entity.ChainConfig, err
 	var res []*entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldStatus: entity.ChainStatusOpen}).
 		Select(bson.M{ChainConfigFieldCurrentChainId: 1, ChainConfigFieldChainName: 1, ChainConfigFieldPrettyName: 1, ChainConfigFieldIcon: 1, ChainConfigFieldGrpcRestGateway: 1,
-			ChainConfigFieldLcdApiPathd: 1}).All(&res)
+			ChainConfigFieldLcdApiPath: 1}).All(&res)
 	return res, err
 }
 
 func (repo *ChainConfigRepo) FindOne(chain string) (*entity.ChainConfig, error) {
 	var res *entity.ChainConfig
 	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldChainName: chain}).One(&res)
+	return res, err
+}
+
+func (repo *ChainConfigRepo) FindOneChainInfo(chain string) (*entity.ChainConfig, error) {
+	var res *entity.ChainConfig
+	err := repo.coll().Find(context.Background(), bson.M{ChainConfigFieldChainName: chain}).
+		Select(bson.M{ChainConfigFieldCurrentChainId: 1, ChainConfigFieldChainName: 1, ChainConfigFieldPrettyName: 1, ChainConfigFieldIcon: 1, ChainConfigFieldGrpcRestGateway: 1,
+			ChainConfigFieldLcdApiPath: 1}).
+		One(&res)
 	return res, err
 }
 

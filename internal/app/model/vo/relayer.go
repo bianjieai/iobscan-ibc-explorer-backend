@@ -159,10 +159,12 @@ func LoadRelayerDetailDto(relayer *entity.IBCRelayerNew, statusMap map[string]in
 
 			} else {
 				item := ChannelPairInfoDto{
-					ChainA:   val.ChainA,
-					ChainB:   val.ChainB,
-					ChannelA: val.ChannelA,
-					ChannelB: val.ChannelB,
+					ChainA:          val.ChainA,
+					ChainB:          val.ChainB,
+					ChannelA:        val.ChannelA,
+					ChannelB:        val.ChannelB,
+					ChainAAddresses: []string{},
+					ChainBAddresses: []string{},
 				}
 
 				if val.ChainAAddress != "" {
@@ -298,6 +300,9 @@ func GetChainInfoFromChannelPair(channelPairInfo []entity.ChannelPairInfo) map[s
 			chainSetMap[val.ChainA] = item
 		}
 
+		if val.ChainB == "" {
+			continue
+		}
 		if cacheValue, ok := chainSetMap[val.ChainB]; ok {
 			if val.ChainBAddress != "" {
 				cacheValue.Addresses = append(cacheValue.Addresses, val.ChainBAddress)

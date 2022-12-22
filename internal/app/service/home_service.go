@@ -107,6 +107,7 @@ func (svc HomeService) DailyChains() (vo.DailyChainsResp, errors.Error) {
 		item := vo.DailyData{
 			ChainName:      one.ChainName,
 			PrettyName:     one.PrettyName,
+			AddrPrefix:     []string{one.AddrPrefix},
 			CurrentChainId: one.CurrentChainId,
 			Icon:           one.Icon,
 			Status:         one.Status,
@@ -160,6 +161,16 @@ func (svc HomeService) Statistics() (vo.StatisticsCntResp, errors.Error) {
 	for _, val := range rets {
 		resp.Items = append(resp.Items, svc.statisticCntDto.LoadDto(val))
 	}
+
+	relayers, err := relayerRepo.CountAll()
+	if err != nil {
+		return resp, errors.Wrap(err)
+	}
+
+	resp.Items = append(resp.Items, vo.StatisticsCntDto{
+		StatisticsName: constant.RelayersStatisticName,
+		Count:          relayers,
+	})
 	resp.TimeStamp = time.Now().Unix()
 	return resp, nil
 }

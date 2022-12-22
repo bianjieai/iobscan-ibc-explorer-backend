@@ -27,6 +27,9 @@ type ITxRepo interface {
 		txTimeStart, txTimeEnd, skip, limit int64) ([]*entity.Tx, error)
 	CountRelayerTxs(chain string, relayerAddrs []string, txTypes []string,
 		txTimeStart, txTimeEnd int64) (int64, error)
+	GetAddressTxs(chain, address string, skip, limit int64) ([]*entity.Tx, error)
+	CountAddressTxs(chain, address string) (int64, error)
+	GetAddressLatestTx(chain, address string) (*entity.Tx, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -367,4 +370,38 @@ func (repo *TxRepo) GetRelayerTxs(chain string, relayerAddrs []string, txTypes [
 func (repo *TxRepo) CountRelayerTxs(chain string, relayerAddrs []string, txTypes []string, txTimeStart, txTimeEnd int64) (int64, error) {
 	query := createQueryRelayerTxs(relayerAddrs, txTypes, txTimeStart, txTimeEnd)
 	return repo.coll(chain).Find(context.Background(), query).Hint(CountRelayerTxsHintIndexName()).Count()
+}
+
+func (repo *TxRepo) GetAddressTxs(chain, address string, skip, limit int64) ([]*entity.Tx, error) {
+	var res []*entity.Tx
+	query := bson.M{
+		"addrs": address,
+		"msgs.type": bson.M{
+			"$in": entity.ICS20TransferTxTypes,
+		},
+	}
+	err := repo.coll(chain).Find(context.Background(), query).Sort("-time").Skip(skip).Limit(limit).All(&res)
+	return res, err
+}
+
+func (repo *TxRepo) CountAddressTxs(chain, address string) (int64, error) {
+	query := bson.M{
+		"addrs": address,
+		"msgs.type": bson.M{
+			"$in": entity.ICS20TransferTxTypes,
+		},
+	}
+	return repo.coll(chain).Find(context.Background(), query).Count()
+}
+
+func (repo *TxRepo) GetAddressLatestTx(chain, address string) (*entity.Tx, error) {
+	var res entity.Tx
+	query := bson.M{
+		"addrs": address,
+		"msgs.type": bson.M{
+			"$in": entity.ICS20AllTxTypes,
+		},
+	}
+	err := repo.coll(chain).Find(context.Background(), query).Sort("-time").One(&res)
+	return &res, err
 }

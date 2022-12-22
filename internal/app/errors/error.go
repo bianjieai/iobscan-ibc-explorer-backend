@@ -29,9 +29,9 @@ func WrapDetail(code int, msg string) Error {
 	}
 }
 
-func WrapRelayerNoAccessDetailErr(err error) Error {
+func WrapAddrNotFoundErr(err error) Error {
 	return vsErr{
-		code: ErrRelayerNoAccessDetail,
+		code: ErrAddrNotFound,
 		msg:  err.Error(),
 	}
 }
