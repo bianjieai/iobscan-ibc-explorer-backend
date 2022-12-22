@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -139,7 +140,7 @@ func (t TransferService) TransferTxsCount(req *vo.TranaferTxsReq) (*vo.TransferT
 		priceMap := cache.TokenPriceMap()
 		totalTxsValue := decimal.Zero
 		for _, v := range aggrTxsValue {
-			txsValue := CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, decimal.NewFromFloat(v.Amount))
+			txsValue := ibctool.CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, decimal.NewFromFloat(v.Amount))
 			totalTxsValue = totalTxsValue.Add(txsValue)
 		}
 
