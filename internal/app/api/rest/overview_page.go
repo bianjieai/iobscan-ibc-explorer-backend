@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"net/http"
 
@@ -33,6 +34,11 @@ func (ctl *OverviewController) TokenDistribution(c *gin.Context) {
 	var req vo.TokenDistributionReq
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusOK, response.FailBadRequest(err))
+		return
+	}
+
+	if req.BaseDenom == "" || req.BaseDenomChain == "" {
+		c.JSON(http.StatusOK, response.FailBadRequest(fmt.Errorf("invalid parameters")))
 		return
 	}
 

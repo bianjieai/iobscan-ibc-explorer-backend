@@ -13,10 +13,13 @@ type TokenDistributionReq struct {
 	BaseDenomChain string `json:"base_denom_chain" form:"base_denom_chain"`
 }
 
-type TokenDistributionResp struct {
-	Children []TokenDistributionResp `json:"children"`
-	Amount   string                  `json:"amount"`
-	Denom    string                  `json:"denom"`
-	Symbol   string                  `json:"symbol"`
-	Chain    string                  `json:"chain"`
-}
+type (
+	TokenDistributionResp GraphData
+	GraphData             struct {
+		Children []*GraphData `json:"children"`
+		Amount   string       `json:"amount"`
+		Denom    string       `json:"denom"`
+		Chain    string       `json:"chain"`
+		Hops     int          `json:"hops"`
+	}
+)
