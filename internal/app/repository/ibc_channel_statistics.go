@@ -90,7 +90,7 @@ func (repo *ChannelStatisticsRepo) BatchInsertToNew(batch []*entity.IBCChannelSt
 }
 
 func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, error) {
-	ibcTxUseStatus := []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusProcessing, entity.IbcTxStatusRefunded}
+	ibcTxUseStatus := []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusProcessing}
 	match := bson.M{
 		"$match": bson.M{
 			"status": bson.M{

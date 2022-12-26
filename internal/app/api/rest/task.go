@@ -71,6 +71,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			fixRelayerStatisticsTask.Run()
 		case relayerAddressInitTask.Name():
 			relayerAddressInitTask.Run()
+		case chainInflowStatisticsTask.Name():
+			res = chainInflowStatisticsTask.RunFullStatistics()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}
