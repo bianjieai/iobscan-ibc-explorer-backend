@@ -41,7 +41,8 @@ func TestMain(m *testing.M) {
 			SingleChainIbcTxRelateMax:    1000,
 		},
 		ChainConfig: conf.ChainConfig{
-			NewChains: "qa_iris_snapshot"}}
+			NewChains: "qa_iris_snapshot"},
+		Spi: conf.Spi{CoingeckoPriceUrl: "https://api.coingecko.com/api/v3/simple/price"}}
 	m.Run()
 }
 

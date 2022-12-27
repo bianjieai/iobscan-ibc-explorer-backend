@@ -39,6 +39,7 @@ const (
 	statisticsCheck             = "statistics_check:%s_%s"
 	BaseDenomUnauth             = "base_denom_unauth"
 	baseDenomSymbol             = "base_denom:%s"
+	stableCoins                 = "stable_coins"
 	clientState                 = "client_state:%s"
 	lcdAccount                  = "lcd_accounts:%s_%s"
 	addrTokens                  = "address_tokens:%s_%s"

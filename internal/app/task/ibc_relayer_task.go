@@ -445,7 +445,7 @@ func (t *IbcRelayerCronTask) handleRelayerChannelPair(relayer *entity.IBCRelayer
 	if change1 || change2 {
 		relayer.ChannelPairInfo = channelPairs
 		if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil {
-			logrus.Errorf("task %s update register relayer statistic fail, %v", t.Name(), err.Error())
+			logrus.Errorf("task %s update register relayer(%s) statistic fail, %v", t.Name(), relayer.RelayerId, err.Error())
 		}
 	}
 	return

@@ -193,6 +193,12 @@ type Aggr24hActiveChainsDTO struct {
 	DcChain string `bson:"dc_chain"`
 }
 
+type Aggr24hDenomVolumeDTO struct {
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	DenomAmount    float64 `bson:"denom_amount"`
+}
+
 type RelayerPairIdDTO struct {
 	RelayerPairId string `bson:"relayer_pair_id"`
 }

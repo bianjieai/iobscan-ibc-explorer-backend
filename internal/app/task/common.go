@@ -109,6 +109,16 @@ func lastNDaysZeroTimeUnix(n int) (int64, int64) {
 	return startUnix, endUnix
 }
 
+func last24hTimeUnix() (int64, int64) {
+	now := time.Now()
+	year, month, day := now.Date()
+	hour := now.Hour()
+	min := now.Minute()
+	endDate := time.Date(year, month, day, hour, min, 59, 0, time.Local)
+	startDate := endDate.AddDate(0, 0, -1)
+	return startDate.Unix() + 1, endDate.Unix()
+}
+
 func isConnectionErr(err error) bool {
 	return true // 直接return true, 避免task被各种奇怪的返回值问题卡死
 	//return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||

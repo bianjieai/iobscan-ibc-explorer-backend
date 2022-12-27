@@ -27,7 +27,6 @@ type TokenTask struct {
 	chainLcdApiMap   map[string]entity.ApiPath // chain lcd api地址
 	escrowAddressMap map[string][]string       // chain ibc跨链托管地址
 	baseDenomList    entity.AuthDenomList      // 所有的base denom
-	ibcChainDenomMap map[string][]string       // chain id 和其对应的跨链denom的映射关系
 	ibcReceiveTxsMap map[string]int64          // ibc hash token denom的recv txs
 }
 
@@ -100,24 +99,12 @@ func (t *TokenTask) Run() int {
 }
 
 func (t *TokenTask) initDenomData() error {
-	baseDenomList, err := baseDenomRepo.FindAll()
+	baseDenomList, err := authDenomRepo.FindAll()
 	if err != nil {
-		logrus.Errorf("task %s baseDenomRepo.FindAll error, %v", t.Name(), err)
+		logrus.Errorf("task %s authDenomRepo.FindAll error, %v", t.Name(), err)
 		return err
 	}
 	t.baseDenomList = baseDenomList
-
-	denomList, err := denomRepo.GetDenomGroupByChain()
-	if err != nil {
-		logrus.Errorf("task %s denomRepo.GetDenomGroupByBaseDenom error, %v", t.Name(), err)
-		return err
-	}
-
-	denomMap := make(map[string][]string, 0)
-	for _, v := range denomList {
-		denomMap[v.Chain] = v.Denom
-	}
-	t.ibcChainDenomMap = denomMap
 	return nil
 }
 
@@ -274,16 +261,7 @@ func (t *TokenTask) getEscrowAddress(portID, channelID, addrPrefix string) (stri
 }
 
 func (t *TokenTask) setDenomSupply(existedTokenList, newTokenList entity.IBCTokenList) error {
-	// 1、先从链上lcd上获取denom的supply，同时获取ibc denom的supply信息。ibc denom的supply在后面会用，此处一并获取了
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(len(t.chains))
-	for _, v := range t.chains {
-		go func(c string) {
-			t.getSupplyFromLcd(c)
-			waitGroup.Done()
-		}(v)
-	}
-	waitGroup.Wait()
+	// 1、从链上lcd上获取denom的supply已经在 DenomHeatmapTask 完成
 
 	// 2、给base denom设置supply的值
 	setSupply := func(list entity.IBCTokenList) {
@@ -300,54 +278,6 @@ func (t *TokenTask) setDenomSupply(existedTokenList, newTokenList entity.IBCToke
 	setSupply(existedTokenList)
 	setSupply(newTokenList)
 	return nil
-}
-
-func (t *TokenTask) getSupplyFromLcd(chain string) {
-	lcd := t.chainLcdMap[chain]
-	apiPath := t.chainLcdApiMap[chain].SupplyPath
-	denoms := t.ibcChainDenomMap[chain]
-	baseUrl := fmt.Sprintf("%s%s", lcd, apiPath)
-	limit := 500
-	key := ""
-
-	for {
-		var url string
-		if key == "" {
-			url = fmt.Sprintf("%s?pagination.limit=%d", baseUrl, limit)
-		} else {
-			url = fmt.Sprintf("%s?pagination.limit=%d&pagination.key=%s", baseUrl, limit, key)
-		}
-
-		bz, err := utils.HttpGet(url)
-		if err != nil {
-			logrus.Errorf("task %s chain: %s setSupply error, %v", t.Name(), chain, err)
-			return
-		}
-
-		var supplyResp vo.SupplyResp
-		err = json.Unmarshal(bz, &supplyResp)
-		if err != nil {
-			logrus.Errorf("task %s chain: %s setSupply error, %v", t.Name(), chain, err)
-			return
-		}
-
-		// 第一页查询成功时，清除之前的老数据
-		if key == "" {
-			_, _ = denomDataRepo.DelSupply(chain)
-		}
-
-		for _, v := range supplyResp.Supply { // ibc denom 和 链原生denom的amount 存下来
-			if strings.HasPrefix(v.Denom, constant.IBCTokenPrefix) || utils.InArray(denoms, v.Denom) {
-				_ = denomDataRepo.SetSupply(chain, v.Denom, v.Amount)
-			}
-		}
-
-		if supplyResp.Pagination.NextKey == nil {
-			break
-		} else {
-			key = *supplyResp.Pagination.NextKey
-		}
-	}
 }
 
 func (t *TokenTask) setIbcTransferTxs(existedTokenList, newTokenList entity.IBCTokenList) error {

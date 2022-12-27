@@ -12,6 +12,11 @@ func (repo *DenomDataCacheRepo) SetSupply(chain, denom, supply string) error {
 	return err
 }
 
+func (repo *DenomDataCacheRepo) BatchSetSupply(chain string, value map[string]string) error {
+	_, err := rc.HSet(fmt.Sprintf(denomSupply, chain), value)
+	return err
+}
+
 func (repo *DenomDataCacheRepo) GetSupply(chain, denom string) (string, error) {
 	return rc.HGet(fmt.Sprintf(denomSupply, chain), denom)
 }

@@ -9,6 +9,7 @@ type AuthDenom struct {
 	Scale          int    `bson:"scale"`
 	Icon           string `bson:"icon"`
 	IsStakingToken bool   `bson:"is_staking_token"`
+	IsStableCoin   bool   `bson:"is_stable_coin"`
 	//CreateAt    int64  `bson:"create_at"`
 	//UpdateAt    int64  `bson:"update_at"`
 	CoinId              string `bson:"coin_id"`

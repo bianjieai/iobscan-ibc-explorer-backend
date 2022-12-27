@@ -356,3 +356,9 @@ db.ibc_relayer_address.createIndex({
     "address": 1,
     "chain": 1
 }, {background: true, unique: true});
+
+db.denom_heatmap.createIndex({
+    "statistics_time": 1
+}, {
+    "background": true
+})

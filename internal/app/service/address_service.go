@@ -295,7 +295,7 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		defer gw.Done()
 		balances, err := lcd.GetBalances(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.BalancesPath)
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("AddressService.TokenList lcd.GetBalances %s-%s err, %v", chain, address, err.Error())
 			return
 		}
 
@@ -349,7 +349,7 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		//delegation, err := lcd.GetDelegation(chain, address, cfg.GrpcRestGateway, "/cosmos/staking/v1beta1/delegations/{address}")
 		delegation, err := lcd.GetDelegation(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.DelegationPath)
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("AddressService.TokenList lcd.GetDelegation %s-%s err, %v", chain, address, err.Error())
 			return
 		}
 
@@ -371,7 +371,7 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		//rewards, err := lcd.GetRewards(chain, address, cfg.GrpcRestGateway, "/cosmos/distribution/v1beta1/delegators/{address}/rewards")
 		rewards, err := lcd.GetRewards(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.RewardsPath)
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("AddressService.TokenList lcd.GetRewards %s-%s err, %v", chain, address, err.Error())
 			return
 		}
 
@@ -393,7 +393,7 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		//unbonding, err := lcd.GetUnbonding(chain, address, cfg.GrpcRestGateway, "/cosmos/staking/v1beta1/delegators/{address}/unbonding_delegations")
 		unbonding, err := lcd.GetUnbonding(chain, address, cfg.GrpcRestGateway, cfg.LcdApiPath.UnbondingPath)
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Errorf("AddressService.TokenList lcd.GetUnbonding %s-%s err, %v", chain, address, err.Error())
 			return
 		}
 
@@ -478,6 +478,10 @@ func (svc *AddressService) AccountList(chain, address string) (*vo.AccountListRe
 		return nil, errors.Wrap(err)
 	}
 
+	if account.Account.PubKey.Key == "" {
+		return nil, errors.WrapBadRequest(fmt.Errorf("address pub_key unknown"))
+	}
+
 	//get pubkey
 	var pubKey = struct {
 		PubKey struct {
@@ -520,6 +524,7 @@ func (svc *AddressService) doHandleAddrTokenInfo(workNum int, addrCfgs []Account
 	checkValidAddrOk := func(chain, address, lcduri, accountsPath string) bool {
 		_, err := lcd.GetAccount(chain, address, lcduri, accountsPath, false)
 		if err != nil {
+			logrus.Errorf("AddressService.doHandleAddrTokenInfo lcd.GetAccount %s-%s err, %v", chain, address, err.Error())
 			return false
 		}
 		return true
