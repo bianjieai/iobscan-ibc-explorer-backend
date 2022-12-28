@@ -14,6 +14,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/distributiontask"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -343,7 +344,7 @@ func (t *IBCDenomHopsTask) Run() int {
 	}
 
 	for _, v := range denomList {
-		hops := ibcHops(v.DenomPath)
+		hops := ibctool.IBCHops(v.DenomPath)
 		if hops == 0 {
 			continue
 		}

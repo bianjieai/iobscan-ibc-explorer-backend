@@ -14,6 +14,8 @@ var lcdTxDataCacheRepo cache.LcdTxDataCacheRepo
 
 const (
 	replaceHolderAddress = "{address}"
+	replaceHolderChannel = "CHANNEL"
+	replaceHolderPort    = "PORT"
 )
 
 func GetAccount(chain, address, lcd, apiPath string, crossCache bool) (*vo.AccountResp, error) {
@@ -130,5 +132,30 @@ func GetRewards(chain, address, lcd, apiPath string) (*vo.RewardsResp, error) {
 		return nil, err
 	}
 	_ = lcdTxDataCacheRepo.SetRewards(chain, address, &resp)
+	return &resp, nil
+}
+
+// QueryClientState 查询lcd client_state_path接口
+func QueryClientState(lcd, apiPath, port, channel string) (*vo.ClientStateResp, error) {
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
+	url := fmt.Sprintf("%s%s", lcd, apiPath)
+
+	if state, err := lcdTxDataCacheRepo.GetClientState(utils.Md5(url)); err == nil {
+		return state, nil
+	}
+
+	bz, err := utils.HttpGet(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp vo.ClientStateResp
+	err = json.Unmarshal(bz, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = lcdTxDataCacheRepo.SetClientState(utils.Md5(url), &resp)
 	return &resp, nil
 }

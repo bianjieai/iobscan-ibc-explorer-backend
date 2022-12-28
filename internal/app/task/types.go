@@ -26,10 +26,8 @@ const (
 
 	fixCreateAtErrTime = 1656950400
 
-	replaceHolderOffset  = "OFFSET"
-	replaceHolderLimit   = "LIMIT"
-	replaceHolderChannel = "CHANNEL"
-	replaceHolderPort    = "PORT"
+	replaceHolderOffset = "OFFSET"
+	replaceHolderLimit  = "LIMIT"
 
 	syncTransferTxTaskWorkerNum = 5
 	ibcTxRelateTaskWorkerNum    = 5

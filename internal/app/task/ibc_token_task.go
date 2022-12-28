@@ -484,7 +484,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 			BaseDenom:      ibcToken.BaseDenom,
 			BaseDenomChain: ibcToken.Chain,
 			Type:           denomType,
-			IBCHops:        ibcHops(v.DenomPath),
+			IBCHops:        v.IBCHops,
 			DenomAmount:    denomAmount,
 			DenomValue:     t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
 			ReceiveTxs:     t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.Chain)],

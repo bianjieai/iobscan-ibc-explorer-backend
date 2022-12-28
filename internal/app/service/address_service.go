@@ -11,6 +11,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/lcd"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
@@ -106,7 +107,7 @@ func (svc *AddressService) loadAddressTxItem(chain string, tx *entity.Tx, allCha
 				sender = tm.Sender
 				receiver = tm.Receiver
 				scChain = chain
-				dcChain, _, _ = matchDcInfo(chain, tm.SourcePort, tm.SourceChannel, allChainMap)
+				dcChain, _, _ = ibctool.MatchDcInfo(chain, tm.SourcePort, tm.SourceChannel, allChainMap)
 				ibcDenom, err := denomRepo.FindByDenomChain(denom, scChain)
 				if err == nil {
 					baseDenom = ibcDenom.BaseDenom
@@ -120,9 +121,9 @@ func (svc *AddressService) loadAddressTxItem(chain string, tx *entity.Tx, allCha
 				sender = tm.Packet.Data.Sender
 				receiver = tm.Packet.Data.Receiver
 				dcChain = chain
-				scChain, _, _ = matchDcInfo(chain, tm.Packet.DestinationPort, tm.Packet.DestinationChannel, allChainMap)
-				dcDenomFullPath, _ := calculateNextDenomPath(tm.Packet)
-				ibcDenom := traceDenom(dcDenomFullPath, chain, allChainMap)
+				scChain, _, _ = ibctool.MatchDcInfo(chain, tm.Packet.DestinationPort, tm.Packet.DestinationChannel, allChainMap)
+				dcDenomFullPath, _ := ibctool.CalculateNextDenomPath(tm.Packet)
+				ibcDenom := ibctool.TraceDenom(dcDenomFullPath, chain, allChainMap)
 				baseDenom = ibcDenom.BaseDenom
 				baseDenomChain = ibcDenom.BaseDenomChain
 				denom = ibcDenom.Denom
@@ -134,8 +135,8 @@ func (svc *AddressService) loadAddressTxItem(chain string, tx *entity.Tx, allCha
 				sender = tm.Packet.Data.Sender
 				receiver = tm.Packet.Data.Receiver
 				scChain = chain
-				dcChain, _, _ = matchDcInfo(chain, tm.Packet.SourcePort, tm.Packet.SourceChannel, allChainMap)
-				ibcDenom := traceDenom(tm.Packet.Data.Denom, chain, allChainMap)
+				dcChain, _, _ = ibctool.MatchDcInfo(chain, tm.Packet.SourcePort, tm.Packet.SourceChannel, allChainMap)
+				ibcDenom := ibctool.TraceDenom(tm.Packet.Data.Denom, chain, allChainMap)
 				baseDenom = ibcDenom.BaseDenom
 				baseDenomChain = ibcDenom.BaseDenomChain
 				denom = ibcDenom.Denom

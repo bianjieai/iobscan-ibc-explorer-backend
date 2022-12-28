@@ -12,6 +12,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -298,12 +299,12 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 			}
 			ibcTx.UpdateAt = time.Now().Unix()
 
-			dcDenomFullPath, isCrossBack := calculateNextDenomPath(msg.RecvPacketMsg().Packet)
-			dcDenom := calculateIbcHash(dcDenomFullPath)
+			dcDenomFullPath, isCrossBack := ibctool.CalculateNextDenomPath(msg.RecvPacketMsg().Packet)
+			dcDenom := ibctool.CalculateIBCHash(dcDenomFullPath)
 			ibcTx.Denoms.DcDenom = dcDenom // set ibc tx dc denom
 			if ibcTx.Status == entity.IbcTxStatusSuccess {
 				if !isCrossBack {
-					dcDenomPath, rootDenom := splitFullPath(dcDenomFullPath)
+					dcDenomPath, rootDenom := ibctool.SplitFullPath(dcDenomFullPath)
 					ibcDenom = &entity.IBCDenom{
 						Symbol:         "",
 						Chain:          ibcTx.DcChain,
@@ -313,7 +314,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 						BaseDenom:      ibcTx.BaseDenom,
 						BaseDenomChain: ibcTx.BaseDenomChain,
 						DenomPath:      dcDenomPath,
-						IBCHops:        ibcHops(dcDenomPath),
+						IBCHops:        ibctool.IBCHops(dcDenomPath),
 						IsBaseDenom:    false,
 						RootDenom:      rootDenom,
 						CreateAt:       time.Now().Unix(),
