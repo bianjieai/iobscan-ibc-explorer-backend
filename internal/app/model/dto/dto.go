@@ -110,6 +110,12 @@ type AggrChainOutflowTrendDTO struct {
 	DenomAmount      float64 `bson:"denom_amount"`
 }
 
+type AggrDenomTxsDTO struct {
+	BaseDenom      string `bson:"base_denom"`
+	BaseDenomChain string `bson:"base_denom_chain"`
+	TxsNumber      int64  `bson:"txs_number"`
+}
+
 type AggrChainInflowTrendDTO struct {
 	BaseDenom        string `bson:"base_denom"`
 	BaseDenomChain   string `bson:"base_denom_chain"`

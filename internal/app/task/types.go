@@ -26,8 +26,10 @@ const (
 
 	fixCreateAtErrTime = 1656950400
 
-	replaceHolderOffset = "OFFSET"
-	replaceHolderLimit  = "LIMIT"
+	replaceHolderOffset  = "OFFSET"
+	replaceHolderLimit   = "LIMIT"
+	replaceHolderChannel = "CHANNEL"
+	replaceHolderPort    = "PORT"
 
 	syncTransferTxTaskWorkerNum = 5
 	ibcTxRelateTaskWorkerNum    = 5
@@ -40,6 +42,8 @@ const (
 	segmentStepHistory = 12 * 3600
 
 	relayerAddressGatherRangeTime = 7 * 86400
+
+	chainFlowTrendDays = 365
 )
 
 var (

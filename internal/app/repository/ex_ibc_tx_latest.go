@@ -632,7 +632,7 @@ func (repo *ExIbcTxRepo) AggrIBCChainInflow(startTime, endTime int64, targetHist
 func (repo *ExIbcTxRepo) AggrIBCChainOutflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainOutflowDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"create_at": bson.M{
+			"tx_time": bson.M{
 				"$gte": startTime,
 				"$lte": endTime,
 			},

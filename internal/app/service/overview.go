@@ -3,12 +3,14 @@ package service
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	v8 "github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
 )
 
@@ -157,7 +159,7 @@ func (svc *OverviewService) buildMarketHeatmapResp(denomHeatmapList []*entity.De
 	}
 }
 
-func (t *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error) {
+func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error) {
 	ibcDenoms, err := denomRepo.FindByBaseDenom(req.BaseDenom, req.BaseDenomChain)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -218,7 +220,7 @@ func (t *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.T
 			Hops:   hop,
 			Amount: mapChainData[val.Chain+val.Denom],
 		}
-		children = t.FindSource(mapChainData, mapHopsData, children)
+		children = svc.FindSource(mapChainData, mapHopsData, children)
 
 		resp.Children = append(resp.Children, &children)
 	}
@@ -226,7 +228,7 @@ func (t *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.T
 	return resp, nil
 }
 
-func (t *OverviewService) FindSource(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
+func (svc *OverviewService) FindSource(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
 	hopDenoms, ok := mapHopsData[ret.Hops+1]
 	if !ok {
 		return ret
@@ -240,7 +242,7 @@ func (t *OverviewService) FindSource(mapChainData map[string]string, mapHopsData
 				Hops:   ret.Hops + 1,
 				Amount: mapChainData[val.Chain+val.Denom],
 			}
-			children = t.FindSource(mapChainData, mapHopsData, children)
+			children = svc.FindSource(mapChainData, mapHopsData, children)
 			ret.Children = append(ret.Children, &children)
 		}
 	}

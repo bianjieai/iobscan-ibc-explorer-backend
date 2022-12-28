@@ -281,18 +281,24 @@ func (t *TokenTask) setDenomSupply(existedTokenList, newTokenList entity.IBCToke
 }
 
 func (t *TokenTask) setIbcTransferTxs(existedTokenList, newTokenList entity.IBCTokenList) error {
-	txsCount, err := tokenStatisticsRepo.Aggr()
+	st := time.Now().Unix()
+	txsCount, err := chainOutflowStatisticsRepo.AggrDenomTxs()
+	et := time.Now().Unix()
+	if et-st > 10 {
+		logrus.Warningf("task %s chainOutflowStatisticsRepo.AggrDenomTxs slow(%d s)", t.Name(), et-st)
+	}
+
 	if err != nil {
 		logrus.Errorf("task %s setIbcTransferTxs error, %v", t.Name(), err)
 		return err
 	}
 
-	setTxs := func(tokenList entity.IBCTokenList, txsCount []*dto.CountBaseDenomTxsDTO) {
+	setTxs := func(tokenList entity.IBCTokenList, txsCount []*dto.AggrDenomTxsDTO) {
 		for _, v := range tokenList {
 			var count int64
 			for _, tx := range txsCount {
 				if tx.BaseDenom == v.BaseDenom && tx.BaseDenomChain == v.Chain {
-					count += tx.Count
+					count += tx.TxsNumber
 				}
 			}
 

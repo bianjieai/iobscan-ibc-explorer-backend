@@ -69,7 +69,7 @@ func (t *ChainInflowStatisticsTask) RunFullStatistics() int {
 	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
 	t.deal(segments, false, true)
 
-	if err = channelStatisticsRepo.SwitchColl(); err != nil {
+	if err = chainInflowStatisticsRepo.SwitchColl(); err != nil {
 		logrus.Errorf("task %s SwitchColl err, %v", t.Name(), err)
 		return -1
 	}
@@ -89,7 +89,6 @@ func (t *ChainInflowStatisticsTask) getSegment(targetHistory bool) ([]*segment, 
 
 // deal 对ibc tx表的数据进行统计
 //	- targetHistory true: 统计ex_ibc_tx表; false: 统计ex_ibc_tx_latest表
-//	- opMod 写表操作模式，opInsert: 直接插入统计数据到表, opUpdate: 更新表中同一分段的统计数据
 //  - fullStatistics true: 统计数据写入新表(xxx_new); 当全量统计时，此值为true
 func (t *ChainInflowStatisticsTask) deal(segments []*segment, targetHistory bool, fullStatistics bool) {
 	for _, v := range segments {
@@ -229,8 +228,7 @@ func (t *ChainInflowStatisticsTask) yesterdayStatistics() {
 }
 
 func (t *ChainInflowStatisticsTask) setStatisticsDataCache() {
-	const days = 30
-
+	days := chainFlowTrendDays
 	startTime, _ := lastNDaysZeroTimeUnix(days)
 	_, endTime := todayUnix()
 
@@ -269,6 +267,6 @@ func (t *ChainInflowStatisticsTask) setStatisticsDataCache() {
 		}
 	}
 
-	chainFlowCacheRepo.ExpireInflowTrend(days, OneWeek)
-	chainFlowCacheRepo.ExpireInflowVolume(days, OneWeek)
+	chainFlowCacheRepo.ExpireInflowTrend(days, OneWeek*time.Second)
+	chainFlowCacheRepo.ExpireInflowVolume(days, OneWeek*time.Second)
 }

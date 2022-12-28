@@ -3,12 +3,13 @@ package task
 import (
 	"testing"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 )
 
 func Test_TraceDenom(t *testing.T) {
 	chainMap, _ := getAllChainMap()
-	denom := traceDenom("transfer/channel-97/transfer/channel-10", "bigbang", chainMap)
+	denom := ibctool.TraceDenom("transfer/channel-97/transfer/channel-10", "bigbang", chainMap)
 	//denom := worker.traceDenom("uiris", "uiris", "bigbang")
 
 	t.Log(denom)
