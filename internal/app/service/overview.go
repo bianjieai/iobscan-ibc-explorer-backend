@@ -89,8 +89,6 @@ func (t *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.T
 		resp.Children = append(resp.Children, &children)
 	}
 
-	//todo caculate transfer amount from children to root
-
 	return resp, nil
 }
 
