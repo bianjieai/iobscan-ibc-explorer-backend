@@ -99,6 +99,7 @@ func startTask() {
 		&task.IbcTxMigrateTask{},
 		&task.IbcNodeLcdCronTask{},
 		&task.ChainInflowStatisticsTask{},
+		&task.ChainOutflowStatisticsTask{},
 	)
 	task.Start()
 }
