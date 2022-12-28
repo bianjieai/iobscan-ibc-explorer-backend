@@ -313,6 +313,7 @@ func (w *ibcTxRelateWorker) loadRecvPacketTx(ibcTx *entity.ExIbcTx, txs, ackTxs 
 						BaseDenom:      ibcTx.BaseDenom,
 						BaseDenomChain: ibcTx.BaseDenomChain,
 						DenomPath:      dcDenomPath,
+						IBCHops:        ibcHops(dcDenomPath),
 						IsBaseDenom:    false,
 						RootDenom:      rootDenom,
 						CreateAt:       time.Now().Unix(),

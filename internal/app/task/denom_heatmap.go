@@ -319,3 +319,39 @@ func (t *DenomHeatmapTask) volume24h() map[string]*dto.Aggr24hDenomVolumeDTO {
 	}
 	return txVolumeMap
 }
+
+// ===================================================================
+// ===================================================================
+// ===================================================================
+
+type IBCDenomHopsTask struct {
+}
+
+func (t *IBCDenomHopsTask) Name() string {
+	return "ibc_denom_hops_task"
+}
+
+func (t *IBCDenomHopsTask) Switch() bool {
+	return true
+}
+
+func (t *IBCDenomHopsTask) Run() int {
+	denomList, err := denomRepo.FindAll()
+	if err != nil {
+		logrus.Errorf("task %s denomRepo.FindAll err, %v", t.Name(), err)
+		return -1
+	}
+
+	for _, v := range denomList {
+		hops := ibcHops(v.DenomPath)
+		if hops == 0 {
+			continue
+		}
+
+		if err = denomRepo.UpdateHops(v.Chain, v.Denom, hops); err != nil {
+			logrus.Errorf("task %s UpdateHops %s-%s err, %v", t.Name(), v.Chain, v.Denom, err)
+		}
+	}
+
+	return 1
+}

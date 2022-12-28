@@ -484,7 +484,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 			BaseDenom:      ibcToken.BaseDenom,
 			BaseDenomChain: ibcToken.Chain,
 			Type:           denomType,
-			IBCHops:        t.ibcHops(v.DenomPath),
+			IBCHops:        ibcHops(v.DenomPath),
 			DenomAmount:    denomAmount,
 			DenomValue:     t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
 			ReceiveTxs:     t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.Chain)],
@@ -576,10 +576,6 @@ func (t *TokenTask) ibcTokenStatisticsType(baseDenom string, denom *entity.IBCDe
 	}
 
 	return entity.TokenTraceTypeOther
-}
-
-func (t *TokenTask) ibcHops(denomPath string) int {
-	return strings.Count(denomPath, constant.IBCHopsIndex)
 }
 
 // ==============================================================================================================

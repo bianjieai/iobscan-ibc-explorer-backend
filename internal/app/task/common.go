@@ -215,6 +215,7 @@ func traceDenom(fullDenomPath, chain string, allChainMap map[string]*entity.Chai
 			BaseDenomChain: chain,
 			DenomPath:      "",
 			RootDenom:      rootDenom,
+			IBCHops:        0,
 			IsBaseDenom:    true,
 			CreateAt:       unix,
 			UpdateAt:       unix,
@@ -280,6 +281,7 @@ func traceDenom(fullDenomPath, chain string, allChainMap map[string]*entity.Chai
 		BaseDenomChain: baseDenomChain,
 		DenomPath:      denomPath,
 		RootDenom:      rootDenom,
+		IBCHops:        ibcHops(denomPath),
 		IsBaseDenom:    isBaseDenom,
 		CreateAt:       unix,
 		UpdateAt:       unix,
@@ -396,6 +398,10 @@ func parseAckPacketTxEvents(msgIndex int, tx *entity.Tx) (existTransferEvent boo
 		}
 	}
 	return
+}
+
+func ibcHops(denomPath string) int {
+	return strings.Count(denomPath, constant.IBCHopsIndex)
 }
 
 //并发处理全量数据
