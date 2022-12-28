@@ -39,6 +39,8 @@ type IExIbcTxRepo interface {
 	GetMinTxTime(isTargetHistory bool) (int64, error)
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
+	AggrIBCChainInflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainInflowDTO, error)
+	AggrIBCChainOutflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainOutflowDTO, error)
 	Aggr24hActiveChannels(startTime int64) ([]*dto.Aggr24hActiveChannelsDTO, error)
 	Aggr24hActiveChains(startTime int64) ([]*dto.Aggr24hActiveChainsDTO, error)
 	Migrate(txs []*entity.ExIbcTx) error
@@ -566,6 +568,120 @@ func (repo *ExIbcTxRepo) AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*
 	pipe := repo.AggrIBCChannelTxsPipe(startTime, endTime)
 	var res []*dto.AggrIBCChannelTxsDTO
 	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) AggrIBCChainInflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainInflowDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+			"dc_chain": bson.M{
+				"$ne": "",
+			},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
+				"dc_chain":         "$dc_chain",
+				"status":           "$status",
+			},
+			"txs_num": bson.M{
+				"$sum": 1,
+			},
+			"denom_amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$sc_tx_info.msg_amount.amount",
+				},
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"chain":            "$_id.dc_chain",
+			"status":           "$_id.status",
+			"txs_num":          "$txs_num",
+			"denom_amount":     "$denom_amount",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+
+	var res []*dto.AggrIBCChainInflowDTO
+	var err error
+	if targetHistory {
+		err = repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	} else {
+		err = repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	}
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) AggrIBCChainOutflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainOutflowDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"create_at": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
+			"status": bson.M{
+				"$in": entity.IbcTxUsefulStatus,
+			},
+			"sc_chain": bson.M{
+				"$ne": "",
+			},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
+				"sc_chain":         "$sc_chain",
+				"status":           "$status",
+			},
+			"txs_num": bson.M{
+				"$sum": 1,
+			},
+			"denom_amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$sc_tx_info.msg_amount.amount",
+				},
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"chain":            "$_id.sc_chain",
+			"status":           "$_id.status",
+			"txs_num":          "$txs_num",
+			"denom_amount":     "$denom_amount",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+
+	var res []*dto.AggrIBCChainOutflowDTO
+	var err error
+	if targetHistory {
+		err = repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
+	} else {
+		err = repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	}
 	return res, err
 }
 

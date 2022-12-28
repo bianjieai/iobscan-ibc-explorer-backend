@@ -13,6 +13,8 @@ import (
 
 var relayerAddressInitTask IbcRelayerAddressInitTask
 
+// TODO remove this
+
 type IbcRelayerAddressInitTask struct {
 }
 

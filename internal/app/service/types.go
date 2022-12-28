@@ -27,6 +27,7 @@ var (
 	relayerCache               cache.RelayerCacheRepo
 	authDenomRepo              cache.AuthDenomCacheRepo
 	chainCache                 cache.ChainCacheRepo
+	supportCache               cache.DenomDataCacheRepo
 )
 
 type (

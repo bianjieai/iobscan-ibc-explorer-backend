@@ -20,7 +20,7 @@ type ChannelItem struct {
 	ChainB              string               `json:"chain_b"`
 	ChannelB            string               `json:"channel_b"`
 	OperatingPeriod     int64                `json:"operating_period"`
-	Relayers            int                  `json:"relayers"`
+	PendingTxs          int                  `json:"pending_txs"`
 	LastUpdated         int64                `json:"last_updated"`
 	IbcTransferTxsValue string               `json:"ibc_transfer_txs_value"`
 	IbcTransferTxs      int64                `json:"ibc_transfer_txs"`

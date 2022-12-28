@@ -102,6 +102,13 @@ func yesterdayUnix() (int64, int64) {
 	return startUnix, endUnix
 }
 
+func lastNDaysZeroTimeUnix(n int) (int64, int64) {
+	date := time.Now().AddDate(0, 0, -n+1)
+	startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
+	endUnix := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 59, time.Local).Unix()
+	return startUnix, endUnix
+}
+
 func isConnectionErr(err error) bool {
 	return true // 直接return true, 避免task被各种奇怪的返回值问题卡死
 	//return strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") ||

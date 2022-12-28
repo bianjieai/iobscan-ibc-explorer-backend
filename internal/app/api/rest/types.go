@@ -13,16 +13,18 @@ var (
 	relayerService  service.IRelayerService  = new(service.RelayerService)
 	homeService     service.IHomeService     = new(service.HomeService)
 	transferService service.ITransferService = new(service.TransferService)
+	overviewService service.IOverviewService = new(service.OverviewService)
 	cacheService    service.CacheService
 
 	// task
-	addChainTask             task.AddChainTask
-	tokenStatisticsTask      task.TokenStatisticsTask
-	channelStatisticsTask    task.ChannelStatisticsTask
-	relayerStatisticsTask    task.RelayerStatisticsTask
-	addTransferDataTask      task.AddTransferDataTask
-	ibcNodeLcdCronTask       task.IbcNodeLcdCronTask
-	ibcStatisticCronTask     task.IbcStatisticCronTask
-	fixRelayerStatisticsTask task.FixRelayerStatisticsTask
-	relayerAddressInitTask   task.IbcRelayerAddressInitTask
+	addChainTask              task.AddChainTask
+	tokenStatisticsTask       task.TokenStatisticsTask
+	channelStatisticsTask     task.ChannelStatisticsTask
+	relayerStatisticsTask     task.RelayerStatisticsTask
+	addTransferDataTask       task.AddTransferDataTask
+	ibcNodeLcdCronTask        task.IbcNodeLcdCronTask
+	ibcStatisticCronTask      task.IbcStatisticCronTask
+	fixRelayerStatisticsTask  task.FixRelayerStatisticsTask
+	relayerAddressInitTask    task.IbcRelayerAddressInitTask
+	chainInflowStatisticsTask task.ChainInflowStatisticsTask
 )

@@ -12,6 +12,7 @@ const (
 	ThreeMinute          = 180
 	EveryHour            = 3600
 	OneDay               = 86400
+	OneWeek              = 86400 * 7
 	RedisLockExpireTime  = 300
 	OneOffTaskLockTime   = 86400 * 30
 	statisticsCheckTimes = 5
@@ -51,6 +52,7 @@ var (
 	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
 	chainCache                 cache.ChainCacheRepo
 	baseDenomCache             cache.AuthDenomCacheRepo
+	chainFlowCacheRepo         cache.ChainFlowCacheRepo
 	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
 	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
 	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
@@ -76,6 +78,8 @@ var (
 	syncBlockRepo              repository.ISyncBlockRepo              = new(repository.SyncBlockRepo)
 	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
 	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
+	chainInflowStatisticsRepo  repository.IChainInflowStatisticsRepo  = new(repository.ChainInflowStatisticsRepo)
+	chainOutflowStatisticsRepo repository.IChainOutflowStatisticsRepo = new(repository.ChainOutflowStatisticsRepo)
 	relayerStatisticsTask      RelayerStatisticsTask
 )
 
