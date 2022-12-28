@@ -227,3 +227,20 @@ type AccountResp struct {
 		Sequence      string `json:"sequence"`
 	} `json:"account"`
 }
+
+type IbcPacketCommitsResp struct {
+	Height struct {
+		RevisionNumber string `json:"revision_number"`
+		RevisionHeight string `json:"revision_height"`
+	} `json:"height"`
+	Commitments []struct {
+		PortId    string `json:"port_id"`
+		ChannelId string `json:"channel_id"`
+		Sequence  string `json:"sequence"`
+		Data      string `json:"data"`
+	} `json:"commitments"`
+	Pagination struct {
+		NextKey *string `json:"next_key"`
+		Total   int     `json:"total,string"`
+	} `json:"pagination"`
+}

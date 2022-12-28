@@ -84,6 +84,7 @@ type Task struct {
 	CronTimeIbcTxRelateTask              int    `mapstructure:"cron_time_ibc_tx_relate_task"`
 	CronTimeIbcTxMigrateTask             int    `mapstructure:"cron_time_ibc_tx_migrate_task"`
 	CronTimeIBCChainInflowStatisticsTask int    `mapstructure:"cron_time_ibc_chain_inflow_statistics_task"`
+	CronTimeIBCChainOutflowStatisticsTask int `mapstructure:"cron_time_ibc_chain_outflow_statistics_task"`
 	RedisLockExpireTime                  int    `mapstructure:"redis_lock_expire_time"`
 	SingleChainSyncTransferTxMax         int    `mapstructure:"single_chain_sync_transfer_tx_max"`
 	SingleChainIbcTxRelateMax            int    `mapstructure:"single_chain_ibc_tx_relate_max"`

@@ -17,7 +17,7 @@ type IBCChannel struct {
 	OperatingPeriod  int64         `bson:"operating_period"`
 	LatestOpenTime   int64         `bson:"latest_open_time"`
 	ChannelUpdateAt  int64         `bson:"channel_update_at"`
-	Relayers         int           `bson:"relayers"`
+	PendingTxs       int           `bson:"pending_txs"`
 	TransferTxs      int64         `bson:"transfer_txs"`
 	TransferTxsValue string        `bson:"transfer_txs_value"`
 	CreateAt         int64         `bson:"create_at"`

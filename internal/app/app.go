@@ -106,6 +106,7 @@ func startTask(c conf.Redis) {
 		&task.IbcTxMigrateTask{},
 		&task.IbcNodeLcdCronTask{},
 		&task.ChainInflowStatisticsTask{},
+		&task.ChainOutflowStatisticsTask{},
 	)
 
 	distributionTask.Start()

@@ -103,6 +103,13 @@ type CountRelayerBaseDenomAmtBySegmentDTO struct {
 	TotalTxs         int64   `bson:"total_txs"`
 }
 
+type AggrChainOutflowTrendDTO struct {
+	BaseDenom        string  `bson:"base_denom"`
+	BaseDenomChain   string  `bson:"base_denom_chain"`
+	SegmentStartTime int64   `bson:"segment_start_time"`
+	DenomAmount      float64 `bson:"denom_amount"`
+}
+
 type AggrChainInflowTrendDTO struct {
 	BaseDenom        string `bson:"base_denom"`
 	BaseDenomChain   string `bson:"base_denom_chain"`
@@ -150,6 +157,15 @@ type AggrIBCChannelTxsDTO struct {
 }
 
 type AggrIBCChainInflowDTO struct {
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	Chain          string  `bson:"chain"`
+	Status         int64   `bson:"status"`
+	TxsNum         int64   `bson:"txs_num"`
+	DenomAmount    float64 `bson:"denom_amount"`
+}
+
+type AggrIBCChainOutflowDTO struct {
 	BaseDenom      string  `bson:"base_denom"`
 	BaseDenomChain string  `bson:"base_denom_chain"`
 	Chain          string  `bson:"chain"`

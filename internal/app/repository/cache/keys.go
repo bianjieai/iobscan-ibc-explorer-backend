@@ -50,4 +50,6 @@ const (
 	lcdRewards                  = "lcd_rewards:%s_%s"
 	chainInflowVolumeTrend      = "chain_inflow_volume_trend_%d"
 	chainInflowVolume           = "chain_inflow_volume_%d"
+	chainOutflowVolumeTrend     = "chain_outflow_volume_trend_%d"
+	chainOutflowVolume          = "chain_outflow_volume_%d"
 )
