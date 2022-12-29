@@ -17,6 +17,8 @@ import (
 type IOverviewService interface {
 	MarketHeatmap() (*vo.MarketHeatmapResp, errors.Error)
 	TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error)
+	ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.ChainVolumeTrendResp, errors.Error)
+	ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeResp, errors.Error)
 }
 
 var _ IOverviewService = new(OverviewService)
@@ -160,6 +162,9 @@ func (svc *OverviewService) buildMarketHeatmapResp(denomHeatmapList []*entity.De
 }
 
 func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error) {
+	if data, err := overviewCache.GetTokenDistribution(req.BaseDenom, req.BaseDenomChain); err == nil {
+		return data, nil
+	}
 	ibcDenoms, err := denomRepo.FindByBaseDenom(req.BaseDenom, req.BaseDenomChain)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -225,6 +230,7 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 		resp.Children = append(resp.Children, &children)
 	}
 
+	_ = overviewCache.SetTokenDistribution(req.BaseDenom, req.BaseDenomChain, *resp)
 	return resp, nil
 }
 
@@ -248,4 +254,117 @@ func (svc *OverviewService) FindSource(mapChainData map[string]string, mapHopsDa
 	}
 
 	return ret
+}
+
+func (t *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.ChainVolumeTrendResp, errors.Error) {
+	if req.Chain != "" {
+		//check chain if exists
+		_, err := chainCfgRepo.FindOne(req.Chain)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		inVolumes, err := chainFlowCacheRepo.GetInflowTrend(365, req.Chain)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		outVolumes, err := chainFlowCacheRepo.GetOutflowTrend(365, req.Chain)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		return &vo.ChainVolumeTrendResp{
+			VolumeIn:  inVolumes,
+			VolumeOut: outVolumes,
+			Chain:     req.Chain,
+		}, nil
+	}
+
+	chainsCfg, err := chainCfgRepo.FindAllChainInfos()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	inVolumeMap := make(map[string]decimal.Decimal, 1)
+	outVolumeMap := make(map[string]decimal.Decimal, 1)
+	for _, val := range chainsCfg {
+		inVolumes, err := chainFlowCacheRepo.GetInflowTrend(365, val.ChainName)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+
+		for _, volu := range inVolumes {
+			value, _ := decimal.NewFromString(volu.Value)
+			if data, ok := inVolumeMap[volu.Datetime]; ok {
+				data = data.Add(value)
+				inVolumeMap[volu.Datetime] = data
+			} else {
+				inVolumeMap[volu.Datetime] = value
+			}
+		}
+
+		outVolumes, err := chainFlowCacheRepo.GetOutflowTrend(365, val.ChainName)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+
+		for _, volu := range outVolumes {
+			value, _ := decimal.NewFromString(volu.Value)
+			if data, ok := outVolumeMap[volu.Datetime]; ok {
+				data = data.Add(value)
+				outVolumeMap[volu.Datetime] = data
+			} else {
+				outVolumeMap[volu.Datetime] = value
+			}
+		}
+	}
+	inVolumes := make([]vo.VolumeItem, 0, len(inVolumeMap))
+	for datetime, value := range inVolumeMap {
+		inVolumes = append(inVolumes, vo.VolumeItem{
+			Datetime: datetime,
+			Value:    value.String(),
+		})
+	}
+	outVolumes := make([]vo.VolumeItem, 0, len(outVolumeMap))
+	for datetime, value := range outVolumeMap {
+		outVolumes = append(outVolumes, vo.VolumeItem{
+			Datetime: datetime,
+			Value:    value.String(),
+		})
+	}
+
+	return &vo.ChainVolumeTrendResp{
+		VolumeIn:  inVolumes,
+		VolumeOut: outVolumes,
+		Chain:     req.Chain,
+	}, nil
+}
+
+func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeResp, errors.Error) {
+	chainInVolumesMap, err := chainFlowCacheRepo.GetAllInflowVolume(365)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	chainOutVolumesMap, err := chainFlowCacheRepo.GetAllOutflowVolume(365)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	chainsCfg, err := chainCfgRepo.FindAllChainInfos()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	resp := make(vo.ChainVolumeResp, 0, len(chainsCfg))
+	for _, val := range chainsCfg {
+		inVolume := chainInVolumesMap[val.ChainName]
+		outVolume := chainOutVolumesMap[val.ChainName]
+		totalVolume := inVolume + outVolume
+		item := vo.ChainVolumeItem{
+			Chain:               val.ChainName,
+			TransferVolumeIn:    inVolume,
+			TransferVolumeOut:   outVolume,
+			TransferVolumeTotal: totalVolume,
+		}
+		resp = append(resp, item)
+	}
+	return &resp, nil
 }

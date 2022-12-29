@@ -52,4 +52,5 @@ const (
 	chainInflowVolume           = "chain_inflow_volume_%d"
 	chainOutflowVolumeTrend     = "chain_outflow_volume_trend_%d"
 	chainOutflowVolume          = "chain_outflow_volume_%d"
+	overviewTokenDistribution   = "token_distribution:%s_%s"
 )
