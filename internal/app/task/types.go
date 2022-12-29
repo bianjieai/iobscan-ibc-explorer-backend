@@ -42,6 +42,8 @@ const (
 	segmentStepHistory = 12 * 3600
 
 	relayerAddressGatherRangeTime = 7 * 86400
+
+	chainFlowTrendDays = 365
 )
 
 var (
@@ -51,14 +53,14 @@ var (
 	relayerDataCache           cache.RelayerDataCacheRepo
 	statisticsCheckRepo        cache.StatisticsCheckCacheRepo
 	chainCache                 cache.ChainCacheRepo
-	baseDenomCache             cache.AuthDenomCacheRepo
+	authDenomCache             cache.AuthDenomCacheRepo
 	chainFlowCacheRepo         cache.ChainFlowCacheRepo
 	lcdTxDataCacheRepo         cache.LcdTxDataCacheRepo
 	tokenRepo                  repository.ITokenRepo                  = new(repository.TokenRepo)
 	tokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
 	tokenStatisticsRepo        repository.ITokenStatisticsRepo        = new(repository.TokenStatisticsRepo)
 	tokenTraceStatisticsRepo   repository.ITokenTraceStatisticsRepo   = new(repository.TokenTraceStatisticsRepo)
-	baseDenomRepo              repository.IAuthDenomRepo              = new(repository.AuthDenomRepo)
+	authDenomRepo              repository.IAuthDenomRepo              = new(repository.AuthDenomRepo)
 	denomRepo                  repository.IDenomRepo                  = new(repository.DenomRepo)
 	chainConfigRepo            repository.IChainConfigRepo            = new(repository.ChainConfigRepo)
 	ibcTxRepo                  repository.IExIbcTxRepo                = new(repository.ExIbcTxRepo)
@@ -78,6 +80,7 @@ var (
 	syncBlockRepo              repository.ISyncBlockRepo              = new(repository.SyncBlockRepo)
 	txNewRepo                  repository.ITxNewRepo                  = new(repository.TxNewRepo)
 	chainRegistryRepo          repository.IChainRegistryRepo          = new(repository.ChainRegistryRepo)
+	denomHeatmap               repository.IDenomHeatmap               = new(repository.DenomHeatmap)
 	chainInflowStatisticsRepo  repository.IChainInflowStatisticsRepo  = new(repository.ChainInflowStatisticsRepo)
 	chainOutflowStatisticsRepo repository.IChainOutflowStatisticsRepo = new(repository.ChainOutflowStatisticsRepo)
 	relayerStatisticsTask      RelayerStatisticsTask

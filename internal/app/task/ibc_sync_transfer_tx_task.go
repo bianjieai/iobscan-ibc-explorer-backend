@@ -8,6 +8,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -201,14 +202,14 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 			scPort := transferTxMsg.SourcePort
 			scChannel := transferTxMsg.SourceChannel
 			scDenom := transferTxMsg.Token.Denom
-			dcChain, dcPort, dcChannel := matchDcInfo(chain, scPort, scChannel, w.chainMap)
+			dcChain, dcPort, dcChannel := ibctool.MatchDcInfo(chain, scPort, scChannel, w.chainMap)
 
 			var fullDenomPath, sequence, scConnection string
 			ibcDenom, isExisted := denomMap[scDenom]
 			if ibcTxStatus != entity.IbcTxStatusFailed {
 				dcPort, dcChannel, fullDenomPath, sequence, scConnection = parseTransferTxEvents(msgIndex, tx)
 				if !isExisted { // denom 不存在
-					ibcDenom = traceDenom(fullDenomPath, chain, w.chainMap)
+					ibcDenom = ibctool.TraceDenom(fullDenomPath, chain, w.chainMap)
 				}
 			}
 

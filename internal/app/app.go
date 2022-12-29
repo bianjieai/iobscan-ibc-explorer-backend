@@ -12,6 +12,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/distributiontask"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
@@ -35,11 +36,11 @@ func Serve(cfg *conf.Config) {
 		go monitor.Start(cfg.App.Prometheus)
 	}
 	if cfg.App.StartTask {
-		go startTask()
+		go startTask(cfg.Redis)
 	}
-	if cfg.App.StartOneOffTask {
-		go startOneOffTask()
-	}
+	//if cfg.App.StartOneOffTask {
+	//	go startOneOffTask()
+	//}
 	logrus.Fatal(r.Run(cfg.App.Addr))
 }
 
@@ -82,13 +83,19 @@ func initLogger(logCfg *conf.Log) {
 	}
 }
 
-func startTask() {
+func startTask(c conf.Redis) {
+	distributionTask, err := distributiontask.NewDistributedTaskWithRedis(c.Addrs, c.User, c.Password, string(c.Mode), c.Db)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	distributionTask.RegisterTasks(new(task.DenomHeatmapTask))
+
 	task.RegisterTasks(
 		&task.TokenTask{},
 		&task.ChannelTask{},
 		&task.IbcChainCronTask{},
 		&task.IbcRelayerCronTask{},
-		&task.TokenPriceTask{},
 		&task.IbcStatisticCronTask{},
 		&task.IbcSyncAcknowledgeTxTask{},
 		&task.IbcChainConfigTask{},
@@ -101,6 +108,8 @@ func startTask() {
 		&task.ChainInflowStatisticsTask{},
 		&task.ChainOutflowStatisticsTask{},
 	)
+
+	distributionTask.Start()
 	task.Start()
 }
 

@@ -57,7 +57,7 @@ func (t *ChannelTask) Run() int {
 
 	_ = t.yesterdayStatistics()
 
-	baseDenomList, err := baseDenomRepo.FindAll()
+	baseDenomList, err := authDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
 		return -1

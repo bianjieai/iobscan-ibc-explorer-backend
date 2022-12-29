@@ -42,6 +42,12 @@ func (repo *ChainInflowStatisticsRepo) CreateNew() error {
 		return err
 	}
 
+	indexOpts2 := officialOpts.Index()
+	key2 := []string{"chain", "status", "segment_start_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key2, IndexOptions: indexOpts2}); err != nil {
+		return err
+	}
+
 	return nil
 }
 

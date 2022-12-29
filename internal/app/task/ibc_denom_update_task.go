@@ -40,9 +40,9 @@ func (t *IbcDenomUpdateTask) Run() int {
 }
 
 func (t *IbcDenomUpdateTask) getBaseDenomSysbolMap() (map[string]string, error) {
-	baseDenomList, err := baseDenomRepo.FindAll()
+	baseDenomList, err := authDenomRepo.FindAll()
 	if err != nil {
-		logrus.Errorf("task %s baseDenomRepo.FindAll error, %v", t.Name(), err)
+		logrus.Errorf("task %s authDenomRepo.FindAll error, %v", t.Name(), err)
 		return nil, err
 	}
 

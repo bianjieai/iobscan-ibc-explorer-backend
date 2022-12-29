@@ -110,6 +110,12 @@ type AggrChainOutflowTrendDTO struct {
 	DenomAmount      float64 `bson:"denom_amount"`
 }
 
+type AggrDenomTxsDTO struct {
+	BaseDenom      string `bson:"base_denom"`
+	BaseDenomChain string `bson:"base_denom_chain"`
+	TxsNumber      int64  `bson:"txs_number"`
+}
+
 type AggrChainInflowTrendDTO struct {
 	BaseDenom        string `bson:"base_denom"`
 	BaseDenomChain   string `bson:"base_denom_chain"`
@@ -207,6 +213,12 @@ type Aggr24hActiveChannelsDTO struct {
 type Aggr24hActiveChainsDTO struct {
 	ScChain string `bson:"sc_chain"`
 	DcChain string `bson:"dc_chain"`
+}
+
+type Aggr24hDenomVolumeDTO struct {
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	DenomAmount    float64 `bson:"denom_amount"`
 }
 
 type RelayerPairIdDTO struct {

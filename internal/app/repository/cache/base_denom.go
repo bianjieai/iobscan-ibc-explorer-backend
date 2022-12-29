@@ -43,3 +43,18 @@ func (repo *AuthDenomCacheRepo) FindBySymbol(symbol string) (entity.AuthDenom, e
 	utils.UnmarshalJsonIgnoreErr([]byte(value), &data)
 	return data, nil
 }
+
+func (repo *AuthDenomCacheRepo) FindStableCoins() (entity.AuthDenomList, error) {
+	value, err := rc.Get(stableCoins)
+	if err != nil && err == v8.Nil || len(value) == 0 {
+		authDenom, err := repo.authDenom.FindStableCoins()
+		if err != nil {
+			return entity.AuthDenomList{}, err
+		}
+		_ = rc.Set(stableCoins, utils.MarshalJsonIgnoreErr(authDenom), oneDay)
+		return authDenom, nil
+	}
+	var data entity.AuthDenomList
+	utils.UnmarshalJsonIgnoreErr([]byte(value), &data)
+	return data, nil
+}

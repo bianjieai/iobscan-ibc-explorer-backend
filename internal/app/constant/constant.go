@@ -20,9 +20,14 @@ const (
 	OtherDenom            = "others"
 	AllChain              = "allchain"
 	Cosmos                = "cosmos"
+	ChainNameCosmosHub    = "cosmoshub"
+	DenomAtom             = "uatom"
 	Iris                  = "iris"
 	PortTransfer          = "transfer"
 	DefaultUnboundTime    = 1209600
+
+	IncreaseSymbol = "+"
+	DecreaseSymbol = "-"
 
 	DefaultLimit = 500
 	IncreHeight  = 5000

@@ -3,13 +3,13 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/qiniu/qmgo"
 	opts "github.com/qiniu/qmgo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
-	"github.com/qiniu/qmgo"
 )
 
 type IChainOutflowStatisticsRepo interface {
@@ -20,6 +20,7 @@ type IChainOutflowStatisticsRepo interface {
 	SwitchColl() error
 	BatchSwapNew(segmentStartTime, segmentEndTime int64, batch []*entity.IBCChainOutflowStatistics) error
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCChainOutflowStatistics) error
+	AggrDenomTxs() ([]*dto.AggrDenomTxsDTO, error)
 }
 
 var _ IChainOutflowStatisticsRepo = new(ChainOutflowStatisticsRepo)
@@ -62,6 +63,12 @@ func (repo *ChainOutflowStatisticsRepo) CreateNew() error {
 	indexOpts := officialOpts.Index()
 	key := []string{"segment_start_time", "segment_end_time"}
 	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts}); err != nil {
+		return err
+	}
+
+	indexOpts2 := officialOpts.Index()
+	key2 := []string{"chain", "status", "segment_start_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key2, IndexOptions: indexOpts2}); err != nil {
 		return err
 	}
 
@@ -150,6 +157,40 @@ func (repo *ChainOutflowStatisticsRepo) AggrTrend(chain string, segmentStartTime
 	var pipe []bson.M
 	pipe = append(pipe, match, group, project)
 	var res []*dto.AggrChainOutflowTrendDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
+
+func (repo *ChainOutflowStatisticsRepo) AggrDenomTxs() ([]*dto.AggrDenomTxsDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"status": bson.M{
+				"$in": []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusProcessing},
+			},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
+			},
+			"txs_number": bson.M{
+				"$sum": "$txs_number",
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"txs_number":       "$txs_number",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	var res []*dto.AggrDenomTxsDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

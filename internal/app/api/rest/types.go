@@ -27,4 +27,5 @@ var (
 	fixRelayerStatisticsTask  task.FixRelayerStatisticsTask
 	relayerAddressInitTask    task.IbcRelayerAddressInitTask
 	chainInflowStatisticsTask task.ChainInflowStatisticsTask
+	ibcDenomHopsTask          task.IBCDenomHopsTask
 )

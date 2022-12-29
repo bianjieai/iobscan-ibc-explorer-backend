@@ -19,6 +19,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/lcd"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
@@ -330,7 +331,7 @@ func (t *IbcRelayerCronTask) getChannelClient(chain, channelId string) (string, 
 	}
 
 	port := chainConf.GetPortId(channelId)
-	state, err := queryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
+	state, err := lcd.QueryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
 	if err != nil {
 		return "", err
 	}
@@ -399,7 +400,7 @@ func (t *IbcRelayerCronTask) handleRelayerChannelPair(relayer *entity.IBCRelayer
 	if change1 || change2 {
 		relayer.ChannelPairInfo = channelPairs
 		if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil {
-			logrus.Errorf("task %s update register relayer statistic fail, %v", t.Name(), err.Error())
+			logrus.Errorf("task %s update register relayer(%s) statistic fail, %v", t.Name(), relayer.RelayerId, err.Error())
 		}
 	}
 	return

@@ -27,8 +27,8 @@ type IDenomRepo interface {
 	UpdateSymbol(chain, denom, symbol string) error
 	Insert(denom *entity.IBCDenom) error
 	InsertBatch(denoms entity.IBCDenomList) error
-	InsertBatchToNew(denoms entity.IBCDenomList) error
 	UpdateDenom(denom *entity.IBCDenom) error
+	UpdateHops(chain, denom string, hops int) error
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -38,10 +38,6 @@ type DenomRepo struct {
 
 func (repo *DenomRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCDenom{}.CollectionName(false))
-}
-
-func (repo *DenomRepo) collNew() *qmgo.Collection {
-	return mgo.Database(ibcDatabase).Collection(entity.IBCDenom{}.CollectionName(true))
 }
 
 func (repo *DenomRepo) FindAll() (entity.IBCDenomList, error) {
@@ -130,15 +126,6 @@ func (repo *DenomRepo) InsertBatch(denoms entity.IBCDenomList) error {
 	return err
 }
 
-func (repo *DenomRepo) InsertBatchToNew(denoms entity.IBCDenomList) error {
-	_, err := repo.collNew().InsertMany(context.Background(), denoms, insertIgnoreErrOpt)
-	if mongo.IsDuplicateKeyError(err) {
-		return nil
-	}
-
-	return err
-}
-
 func (repo *DenomRepo) UpdateDenom(denom *entity.IBCDenom) error {
 	return repo.coll().UpdateOne(context.Background(), bson.M{"chain": denom.Chain, "denom": denom.Denom}, bson.M{
 		"$set": bson.M{
@@ -185,4 +172,11 @@ func (repo *DenomRepo) GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDT
 	var res []*dto.GetBaseDenomFromIbcDenomDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *DenomRepo) UpdateHops(chain, denom string, hops int) error {
+	return repo.coll().UpdateOne(context.Background(), bson.M{"chain": chain, "denom": denom}, bson.M{
+		"$set": bson.M{
+			"ibc_hops": hops,
+		}})
 }

@@ -43,6 +43,7 @@ type IExIbcTxRepo interface {
 	AggrIBCChainOutflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainOutflowDTO, error)
 	Aggr24hActiveChannels(startTime int64) ([]*dto.Aggr24hActiveChannelsDTO, error)
 	Aggr24hActiveChains(startTime int64) ([]*dto.Aggr24hActiveChainsDTO, error)
+	Aggr24hDenomVolume(startTime int64) ([]*dto.Aggr24hDenomVolumeDTO, error)
 	Migrate(txs []*entity.ExIbcTx) error
 
 	// special method
@@ -574,7 +575,7 @@ func (repo *ExIbcTxRepo) AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*
 func (repo *ExIbcTxRepo) AggrIBCChainInflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainInflowDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"create_at": bson.M{
+			"tx_time": bson.M{
 				"$gte": startTime,
 				"$lte": endTime,
 			},
@@ -631,7 +632,7 @@ func (repo *ExIbcTxRepo) AggrIBCChainInflow(startTime, endTime int64, targetHist
 func (repo *ExIbcTxRepo) AggrIBCChainOutflow(startTime, endTime int64, targetHistory bool) ([]*dto.AggrIBCChainOutflowDTO, error) {
 	match := bson.M{
 		"$match": bson.M{
-			"create_at": bson.M{
+			"tx_time": bson.M{
 				"$gte": startTime,
 				"$lte": endTime,
 			},
@@ -682,6 +683,46 @@ func (repo *ExIbcTxRepo) AggrIBCChainOutflow(startTime, endTime int64, targetHis
 	} else {
 		err = repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	}
+	return res, err
+}
+
+func (repo *ExIbcTxRepo) Aggr24hDenomVolume(startTime int64) ([]*dto.Aggr24hDenomVolumeDTO, error) {
+	match := bson.M{
+		"$match": bson.M{
+			"tx_time": bson.M{
+				"$gte": startTime,
+			},
+			"status": bson.M{
+				"$in": []entity.IbcTxStatus{entity.IbcTxStatusProcessing, entity.IbcTxStatusSuccess},
+			},
+		},
+	}
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
+			},
+			"denom_amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$sc_tx_info.msg_amount.amount",
+				},
+			},
+		},
+	}
+	project := bson.M{
+		"$project": bson.M{
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"denom_amount":     "$denom_amount",
+		},
+	}
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+
+	var res []*dto.Aggr24hDenomVolumeDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }
 
