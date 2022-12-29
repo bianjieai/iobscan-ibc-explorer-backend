@@ -344,16 +344,32 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 		return nil, errors.Wrap(err)
 	}
 
+	allInVolumes := float64(0)
+	for _, val := range chainInVolumesMap {
+		allInVolumes += val
+	}
+
 	chainOutVolumesMap, err := chainFlowCacheRepo.GetAllOutflowVolume(365)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
+	allOutVolumes := float64(0)
+	for _, val := range chainInVolumesMap {
+		allOutVolumes += val
+	}
+
 	chainsCfg, err := chainCfgRepo.FindAllChainInfos()
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
 	resp := make(vo.ChainVolumeResp, 0, len(chainsCfg))
+	resp = append(resp, vo.ChainVolumeItem{
+		Chain:               "all_chain",
+		TransferVolumeIn:    allInVolumes,
+		TransferVolumeOut:   allOutVolumes,
+		TransferVolumeTotal: allInVolumes + allOutVolumes,
+	})
 	for _, val := range chainsCfg {
 		inVolume := chainInVolumesMap[val.ChainName]
 		outVolume := chainOutVolumesMap[val.ChainName]
