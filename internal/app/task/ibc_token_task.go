@@ -618,7 +618,7 @@ func (t *TokenTask) todayStatistics() error {
 			EndTime:   endTime,
 		},
 	}
-	if err := tokenStatisticsTask.deal(segments, opUpdate); err != nil {
+	if err := TokenIncrementStatistics(segments); err != nil {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
@@ -627,25 +627,16 @@ func (t *TokenTask) todayStatistics() error {
 }
 
 func (t *TokenTask) yesterdayStatistics() error {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
-	if incr > statisticsCheckTimes {
+	ok, seg := whetherCheckYesterdayStatistics(t.Name(), t.Cron())
+	if !ok {
 		return nil
 	}
 
-	logrus.Infof("task %s check yeaterday statistics, times: %d", t.Name(), incr)
-	startTime, endTime := yesterdayUnix()
-	segments := []*segment{
-		{
-			StartTime: startTime,
-			EndTime:   endTime,
-		},
-	}
-	if err := tokenStatisticsTask.deal(segments, opUpdate); err != nil {
+	logrus.Infof("task %s check yeaterday statistics", t.Name())
+	if err := TokenIncrementStatistics([]*segment{seg}); err != nil {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
 
-	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
 }

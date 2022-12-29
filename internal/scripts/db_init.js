@@ -69,15 +69,15 @@ db.ibc_channel.createIndex({
 // ibc_channel_statistics表
 
 db.ibc_channel_statistics.createIndex({
-    "channel_id": 1,
-    "base_denom": 1,
-    "base_denom_chain": 1,
-    "status": 1,
-    "segment_start_time": -1,
-    "segment_end_time": -1
+    "segment_start_time": 1,
+    "segment_end_time": 1
 }, {
-    name: "channel_statistics_unique",
-    unique: true,
+    background: true
+});
+
+db.ibc_channel_statistics.createIndex({
+    "channel_id": 1,
+}, {
     background: true
 });
 
@@ -111,12 +111,9 @@ db.ibc_token_trace.createIndex({
 
 // ibc_token_trace_statistics表
 db.ibc_token_trace_statistics.createIndex({
-    "denom": 1,
-    "chain": 1,
-    "segment_start_time": -1,
-    "segment_end_time": -1
+    "segment_start_time": 1,
+    "segment_end_time": 1
 }, {
-    unique: true,
     background: true
 });
 

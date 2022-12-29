@@ -1,6 +1,8 @@
 package task
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
@@ -10,6 +12,8 @@ import (
 )
 
 type TokenStatisticsTask struct {
+	segmentMinTime    int64
+	segmentRecvTxsMap map[string][]*dto.CountIBCTokenRecvTxsDTO
 }
 
 var tokenStatisticsTask TokenStatisticsTask
@@ -22,7 +26,14 @@ func (t *TokenStatisticsTask) Switch() bool {
 	return global.Config.Task.SwitchIbcTokenStatisticsTask
 }
 
+func TokenIncrementStatistics(segments []*segment) error {
+	return tokenStatisticsTask.deal(segments, false)
+}
+
 func (t *TokenStatisticsTask) Run() int {
+	t.segmentMinTime = math.MaxInt64
+	t.segmentRecvTxsMap = make(map[string][]*dto.CountIBCTokenRecvTxsDTO)
+
 	if err := tokenTraceStatisticsRepo.CreateNew(); err != nil {
 		logrus.Errorf("task %s tokenTraceStatisticsRepo.CreateNew err, %v", t.Name(), err)
 		return -1
@@ -33,24 +44,28 @@ func (t *TokenStatisticsTask) Run() int {
 	//	return -1
 	//}
 
-	historySegments, err := getHistorySegment(segmentStepHistory)
+	segments, err := getTxTimeSegment(false, segmentStepLatest)
+	if err != nil {
+		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
+		return -1
+	}
+
+	historySegments, err := getTxTimeSegment(true, segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
 	}
+
+	t.segmentMinTime = segments[0].StartTime
+	// 优先处理历史分段
 	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
 	if err = t.dealHistory(historySegments); err != nil {
 		logrus.Errorf("task %s dealHistory err, %v", t.Name(), err)
 		return -1
 	}
 
-	segments, err := getSegment(segmentStepLatest)
-	if err != nil {
-		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
-		return -1
-	}
 	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
-	if err = t.deal(segments, opInsert); err != nil {
+	if err = t.deal(segments, true); err != nil {
 		logrus.Errorf("task %s deal err, %v", t.Name(), err)
 		return -1
 	}
@@ -71,6 +86,7 @@ func (t *TokenStatisticsTask) Run() int {
 // dealHistory 处理历史记录，针对ex_ibc_tx
 func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
 	for _, v := range segments {
+		logrus.Infof("task %s dealHistory segment [%d, %d]", t.Name(), v.StartTime, v.EndTime)
 		//transferTxs, err := ibcTxRepo.CountBaseDenomHistoryTransferTxs(v.StartTime, v.EndTime)
 		//if err != nil {
 		//	logrus.Errorf("task %s CountBaseDenomHistoryTransferTxs err, %v", t.Name(), err)
@@ -90,7 +106,11 @@ func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
 		}
 
 		if len(traceReceiveTxs) > 0 {
-			if err = t.saveTraceReceiveData(traceReceiveTxs, v.StartTime, v.EndTime, opInsert); err != nil {
+			// 将新老表重叠的分段数据记录到map
+			if v.StartTime >= t.segmentMinTime {
+				t.segmentRecvTxsMap[fmt.Sprintf("%d-%d", v.StartTime, v.EndTime)] = traceReceiveTxs
+			}
+			if err = t.saveTraceReceiveData(traceReceiveTxs, v, true, true); err != nil {
 				logrus.Errorf("task %s dealHistory saveTraceReceiveData err, %v", t.Name(), err)
 			}
 		}
@@ -100,8 +120,9 @@ func (t *TokenStatisticsTask) dealHistory(segments []*segment) error {
 }
 
 // deal 处理最新的记录，针对ex_ibc_tx_latest
-func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
+func (t *TokenStatisticsTask) deal(segments []*segment, fullStatistics bool) error {
 	for _, v := range segments {
+		logrus.Infof("task %s deal segment [%d, %d]", t.Name(), v.StartTime, v.EndTime)
 		//transferTxs, err := ibcTxRepo.CountBaseDenomTransferTxs(v.StartTime, v.EndTime)
 		//if err != nil {
 		//	logrus.Errorf("task %s CountBaseDenomTransferTxs err, %v", t.Name(), err)
@@ -121,13 +142,49 @@ func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
 		}
 
 		if len(traceReceiveTxs) > 0 {
-			if err = t.saveTraceReceiveData(traceReceiveTxs, v.StartTime, v.EndTime, op); err != nil {
+			if fullStatistics {
+				traceReceiveTxs = t.integrationStatisticsData(traceReceiveTxs, v)
+			}
+			if err = t.saveTraceReceiveData(traceReceiveTxs, v, false, fullStatistics); err != nil {
 				logrus.Errorf("task %s deal saveTraceReceiveData err, %v", t.Name(), err)
 			}
 		}
 		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
+}
+
+func (t *TokenStatisticsTask) integrationStatisticsData(aggrRes []*dto.CountIBCTokenRecvTxsDTO, seg *segment) []*dto.CountIBCTokenRecvTxsDTO {
+	// 新表中的段与历史表重和，需要整合数据
+	hirtoryAggrRes, ok := t.segmentRecvTxsMap[fmt.Sprintf("%d-%d", seg.StartTime, seg.EndTime)]
+	if !ok {
+		return aggrRes
+	}
+
+	integrationDataMap := make(map[string]*dto.CountIBCTokenRecvTxsDTO, len(aggrRes))
+	for _, v := range aggrRes {
+		key := fmt.Sprintf("%s%s", v.Chain, v.Denom)
+		if data, ok := integrationDataMap[key]; !ok {
+			integrationDataMap[key] = v
+		} else {
+			data.Count += v.Count
+		}
+	}
+
+	for _, v := range hirtoryAggrRes {
+		key := fmt.Sprintf("%s%s", v.Chain, v.Denom)
+		if data, ok := integrationDataMap[key]; !ok {
+			integrationDataMap[key] = v
+		} else {
+			data.Count += v.Count
+		}
+	}
+
+	integrationDataList := make([]*dto.CountIBCTokenRecvTxsDTO, 0, len(integrationDataMap))
+	for _, v := range integrationDataMap {
+		integrationDataList = append(integrationDataList, v)
+	}
+	return integrationDataList
 }
 
 //func (t *TokenStatisticsTask) saveTokenTransferData(dtoList []*dto.CountBaseDenomTxsDTO, segmentStart, segmentEnd int64, op int) error {
@@ -158,29 +215,30 @@ func (t *TokenStatisticsTask) deal(segments []*segment, op int) error {
 //	return err
 //}
 
-func (t *TokenStatisticsTask) saveTraceReceiveData(dtoList []*dto.CountIBCTokenRecvTxsDTO, segmentStart, segmentEnd int64, op int) error {
+func (t *TokenStatisticsTask) saveTraceReceiveData(dtoList []*dto.CountIBCTokenRecvTxsDTO, seg *segment, targetHistory, fullStatistics bool) error {
 	var statistics = make([]*entity.IBCTokenTraceStatistics, 0, len(dtoList))
+	timeUnix := time.Now().Unix()
 	for _, v := range dtoList {
 		statistics = append(statistics, &entity.IBCTokenTraceStatistics{
 			Denom:            v.Denom,
 			Chain:            v.Chain,
 			ReceiveTxs:       v.Count,
-			SegmentStartTime: segmentStart,
-			SegmentEndTime:   segmentEnd,
-			CreateAt:         time.Now().Unix(),
-			UpdateAt:         time.Now().Unix(),
+			SegmentStartTime: seg.StartTime,
+			SegmentEndTime:   seg.EndTime,
+			CreateAt:         timeUnix,
+			UpdateAt:         timeUnix,
 		})
 	}
 
 	var err error
-	if op == opInsert {
-		if err = tokenTraceStatisticsRepo.BatchInsertToNew(statistics); err != nil {
-			logrus.Errorf("task %s tokenTraceStatisticsRepo.BatchInsertToNew err, %v", t.Name(), err)
+	if fullStatistics {
+		if targetHistory {
+			err = tokenTraceStatisticsRepo.BatchInsertToNew(statistics)
+		} else {
+			err = tokenTraceStatisticsRepo.BatchSwapNew(seg.StartTime, seg.EndTime, statistics)
 		}
 	} else {
-		if err = tokenTraceStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {
-			logrus.Errorf("task %s tokenTraceStatisticsRepo.BatchSwap err, %v", t.Name(), err)
-		}
+		err = tokenTraceStatisticsRepo.BatchSwap(seg.StartTime, seg.EndTime, statistics)
 	}
 
 	return err

@@ -484,7 +484,7 @@ func (t *ChannelTask) todayStatistics() error {
 			EndTime:   endTime,
 		},
 	}
-	if err := channelStatisticsTask.deal(segments, opUpdate); err != nil {
+	if err := ChannelIncrementStatistics(segments); err != nil {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
@@ -493,25 +493,16 @@ func (t *ChannelTask) todayStatistics() error {
 }
 
 func (t *ChannelTask) yesterdayStatistics() error {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
-	if incr > statisticsCheckTimes {
+	ok, seg := whetherCheckYesterdayStatistics(t.Name(), t.Cron())
+	if !ok {
 		return nil
 	}
 
-	logrus.Infof("task %s check yeaterday statistics, time: %d", t.Name(), incr)
-	startTime, endTime := yesterdayUnix()
-	segments := []*segment{
-		{
-			StartTime: startTime,
-			EndTime:   endTime,
-		},
-	}
-	if err := channelStatisticsTask.deal(segments, opUpdate); err != nil {
-		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+	logrus.Infof("task %s check yeaterday statistics", t.Name())
+	if err := ChannelIncrementStatistics([]*segment{seg}); err != nil {
+		logrus.Errorf("task %s yesterdayStatistics error, %v", t.Name(), err)
 		return err
 	}
 
-	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
 }

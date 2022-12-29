@@ -1,6 +1,8 @@
 package task
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
@@ -11,6 +13,8 @@ import (
 )
 
 type ChannelStatisticsTask struct {
+	segmentMinTime              int64
+	segmentChannelStatisticsMap map[string][]*dto.ChannelStatisticsDTO
 }
 
 var channelStatisticsTask ChannelStatisticsTask
@@ -23,30 +27,41 @@ func (t *ChannelStatisticsTask) Switch() bool {
 	return global.Config.Task.SwitchIbcChannelStatisticsTask
 }
 
+func ChannelIncrementStatistics(segments []*segment) error {
+	return channelStatisticsTask.deal(segments, false)
+}
+
 func (t *ChannelStatisticsTask) Run() int {
+	t.segmentMinTime = math.MaxInt64
+	t.segmentChannelStatisticsMap = make(map[string][]*dto.ChannelStatisticsDTO)
+
 	if err := channelStatisticsRepo.CreateNew(); err != nil {
 		logrus.Errorf("task %s CreateNew err, %v", t.Name(), err)
 		return -1
 	}
 
-	historySegments, err := getHistorySegment(segmentStepHistory)
+	segments, err := getTxTimeSegment(false, segmentStepLatest)
+	if err != nil {
+		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
+		return -1
+	}
+
+	historySegments, err := getTxTimeSegment(true, segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
 	}
+
+	t.segmentMinTime = segments[0].StartTime
+	// 优先处理历史分段
 	logrus.Infof("task %s deal history segment total: %d", t.Name(), len(historySegments))
 	if err = t.dealHistory(historySegments); err != nil {
 		logrus.Errorf("task %s dealHistory err, %v", t.Name(), err)
 		return -1
 	}
 
-	segments, err := getSegment(segmentStepLatest)
-	if err != nil {
-		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
-		return -1
-	}
 	logrus.Infof("task %s deal segment total: %d", t.Name(), len(segments))
-	if err = t.deal(segments, opInsert); err != nil {
+	if err = t.deal(segments, true); err != nil {
 		logrus.Errorf("task %s deal err, %v", t.Name(), err)
 		return -1
 	}
@@ -62,6 +77,7 @@ func (t *ChannelStatisticsTask) Run() int {
 // dealHistory 处理历史记录，针对ex_ibc_tx
 func (t *ChannelStatisticsTask) dealHistory(segments []*segment) error {
 	for _, v := range segments {
+		logrus.Infof("task %s dealHistory segment [%d, %d]", t.Name(), v.StartTime, v.EndTime)
 		txs, err := ibcTxRepo.AggrIBCChannelHistoryTxs(v.StartTime, v.EndTime)
 		if err != nil {
 			logrus.Errorf("task %s AggrIBCChannelHistoryTxs err, %v", t.Name(), err)
@@ -72,18 +88,22 @@ func (t *ChannelStatisticsTask) dealHistory(segments []*segment) error {
 			continue
 		}
 
-		aggr := t.aggr(txs)
-		if err = t.saveData(aggr, v.StartTime, v.EndTime, opInsert); err != nil {
+		channelStatisticsAggr := t.aggr(txs)
+		if v.StartTime >= t.segmentMinTime {
+			// 将新老表重叠的分段数据记录到map
+			t.segmentChannelStatisticsMap[fmt.Sprintf("%d-%d", v.StartTime, v.EndTime)] = channelStatisticsAggr
+		}
+		if err = t.saveData(channelStatisticsAggr, v, true, true); err != nil {
 			logrus.Errorf("task %s dealHistory saveData err, %v", t.Name(), err)
 		}
-		logrus.Debugf("dealHistory task %s scan ex_ibc_tx finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
 }
 
 // deal 处理最新的记录，针对ex_ibc_tx_latest
-func (t *ChannelStatisticsTask) deal(segments []*segment, op int) error {
+func (t *ChannelStatisticsTask) deal(segments []*segment, fullStatistics bool) error {
 	for _, v := range segments {
+		logrus.Infof("task %s deal segment [%d, %d]", t.Name(), v.StartTime, v.EndTime)
 		txs, err := ibcTxRepo.AggrIBCChannelTxs(v.StartTime, v.EndTime)
 		if err != nil {
 			logrus.Errorf("task %s AggrIBCChannelTxs err, %v", t.Name(), err)
@@ -94,13 +114,50 @@ func (t *ChannelStatisticsTask) deal(segments []*segment, op int) error {
 			continue
 		}
 
-		aggr := t.aggr(txs)
-		if err = t.saveData(aggr, v.StartTime, v.EndTime, op); err != nil {
+		channelStatisticsAggr := t.aggr(txs)
+		if fullStatistics {
+			channelStatisticsAggr = t.integrationStatisticsData(channelStatisticsAggr, v)
+		}
+		if err = t.saveData(channelStatisticsAggr, v, false, fullStatistics); err != nil {
 			logrus.Errorf("task %s deal saveData err, %v", t.Name(), err)
 		}
-		logrus.Debugf("deal task %s scan ex_ibc_tx_latest finish segment [%v:%v]", t.Name(), v.StartTime, v.EndTime)
 	}
 	return nil
+}
+
+func (t *ChannelStatisticsTask) integrationStatisticsData(aggrRes []*dto.ChannelStatisticsDTO, seg *segment) []*dto.ChannelStatisticsDTO {
+	// 新表中的段与历史表重和，需要整合数据
+	hirtoryAggrRes, ok := t.segmentChannelStatisticsMap[fmt.Sprintf("%d-%d", seg.StartTime, seg.EndTime)]
+	if !ok {
+		return aggrRes
+	}
+
+	integrationDataMap := make(map[string]*dto.ChannelStatisticsDTO, len(aggrRes))
+	for _, v := range aggrRes {
+		key := fmt.Sprintf("%s%s%s%d", v.ChannelId, v.BaseDenom, v.BaseDenomChain, v.Status)
+		if data, ok := integrationDataMap[key]; !ok {
+			integrationDataMap[key] = v
+		} else {
+			data.TxsCount += v.TxsCount
+			data.TxsAmount = data.TxsAmount.Add(v.TxsAmount)
+		}
+	}
+
+	for _, v := range hirtoryAggrRes {
+		key := fmt.Sprintf("%s%s%s%d", v.ChannelId, v.BaseDenom, v.BaseDenomChain, v.Status)
+		if data, ok := integrationDataMap[key]; !ok {
+			integrationDataMap[key] = v
+		} else {
+			data.TxsCount += v.TxsCount
+			data.TxsAmount = data.TxsAmount.Add(v.TxsAmount)
+		}
+	}
+
+	integrationDataList := make([]*dto.ChannelStatisticsDTO, 0, len(integrationDataMap))
+	for _, v := range integrationDataMap {
+		integrationDataList = append(integrationDataList, v)
+	}
+	return integrationDataList
 }
 
 func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.ChannelStatisticsDTO {
@@ -133,7 +190,7 @@ func (t *ChannelStatisticsTask) aggr(txs []*dto.AggrIBCChannelTxsDTO) []*dto.Cha
 	return cl
 }
 
-func (t *ChannelStatisticsTask) saveData(dtoList []*dto.ChannelStatisticsDTO, segmentStart, segmentEnd int64, op int) error {
+func (t *ChannelStatisticsTask) saveData(dtoList []*dto.ChannelStatisticsDTO, seg *segment, targetHistory, fullStatistics bool) error {
 	var statistics = make([]*entity.IBCChannelStatistics, 0, len(dtoList))
 	for _, v := range dtoList {
 		statistics = append(statistics, &entity.IBCChannelStatistics{
@@ -143,22 +200,22 @@ func (t *ChannelStatisticsTask) saveData(dtoList []*dto.ChannelStatisticsDTO, se
 			TransferTxs:      v.TxsCount,
 			TransferAmount:   v.TxsAmount.String(),
 			Status:           entity.IbcTxStatus(v.Status),
-			SegmentStartTime: segmentStart,
-			SegmentEndTime:   segmentEnd,
+			SegmentStartTime: seg.StartTime,
+			SegmentEndTime:   seg.EndTime,
 			CreateAt:         time.Now().Unix(),
 			UpdateAt:         time.Now().Unix(),
 		})
 	}
 
 	var err error
-	if op == opInsert {
-		if err = channelStatisticsRepo.BatchInsertToNew(statistics); err != nil {
-			logrus.Errorf("task %s channelStatisticsRepo.BatchInsertToNew err, %v", t.Name(), err)
+	if fullStatistics {
+		if targetHistory {
+			err = channelStatisticsRepo.BatchInsertToNew(statistics)
+		} else {
+			err = channelStatisticsRepo.BatchSwapNew(seg.StartTime, seg.EndTime, statistics)
 		}
 	} else {
-		if err = channelStatisticsRepo.BatchSwap(segmentStart, segmentEnd, statistics); err != nil {
-			logrus.Errorf("task %s channelStatisticsRepo.BatchSwap err, %v", t.Name(), err)
-		}
+		err = channelStatisticsRepo.BatchSwap(seg.StartTime, seg.EndTime, statistics)
 	}
 
 	return err

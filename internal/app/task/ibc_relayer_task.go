@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
@@ -357,26 +356,17 @@ func (t *IbcRelayerCronTask) todayStatistics() error {
 }
 
 func (t *IbcRelayerCronTask) yesterdayStatistics() error {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
-	if incr > statisticsCheckTimes {
+	ok, seg := whetherCheckYesterdayStatistics(t.Name(), t.Cron())
+	if !ok {
 		return nil
 	}
 
-	logrus.Infof("task %s check yeaterday statistics, time: %d", t.Name(), incr)
-	startTime, endTime := yesterdayUnix()
-	segments := []*segment{
-		{
-			StartTime: startTime,
-			EndTime:   endTime,
-		},
-	}
-	if err := relayerStatisticsTask.RunIncrement(segments[0]); err != nil {
+	logrus.Infof("task %s check yeaterday statistics", t.Name())
+	if err := relayerStatisticsTask.RunIncrement(seg); err != nil {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
 
-	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
 }
 
