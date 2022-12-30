@@ -45,3 +45,28 @@ type (
 		Hops     int          `json:"hops"`
 	}
 )
+
+type ChainVolumeTrendReq struct {
+	Chain string `json:"chain" form:"chain"`
+}
+
+type (
+	ChainVolumeTrendResp struct {
+		VolumeIn  []VolumeItem `json:"volume_in"`
+		VolumeOut []VolumeItem `json:"volume_out"`
+		Chain     string       `json:"chain"`
+	}
+)
+
+type ChainVolumeReq struct {
+}
+
+type (
+	ChainVolumeResp []ChainVolumeItem
+	ChainVolumeItem struct {
+		Chain               string  `json:"chain"`
+		TransferVolumeIn    float64 `json:"transfer_volume_in"`
+		TransferVolumeOut   float64 `json:"transfer_volume_out"`
+		TransferVolumeTotal float64 `json:"transfer_volume_total"`
+	}
+)

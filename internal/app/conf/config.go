@@ -72,24 +72,24 @@ type Log struct {
 }
 
 type Task struct {
-	CronTimeChainTask                    int    `mapstructure:"cron_time_chain_task"`
-	CronTimeChannelTask                  int    `mapstructure:"cron_time_channel_task"`
-	CronTimeRelayerTask                  int    `mapstructure:"cron_time_relayer_task"`
-	CronTimeStatisticTask                int    `mapstructure:"cron_time_statistic_task"`
-	CronTimeTokenTask                    int    `mapstructure:"cron_time_token_task"`
-	CronTimeTokenPriceTask               int    `mapstructure:"cron_time_token_price_task"`
-	CronTimeChainConfigTask              int    `mapstructure:"cron_time_chain_config_task"`
-	CronTimeDenomUpdateTask              int    `mapstructure:"cron_time_denom_update_task"`
-	CronTimeSyncTransferTxTask           int    `mapstructure:"cron_time_sync_transfer_tx_task"`
-	CronTimeIbcTxRelateTask              int    `mapstructure:"cron_time_ibc_tx_relate_task"`
-	CronTimeIbcTxMigrateTask             int    `mapstructure:"cron_time_ibc_tx_migrate_task"`
-	CronTimeIBCChainInflowStatisticsTask int    `mapstructure:"cron_time_ibc_chain_inflow_statistics_task"`
-	CronTimeIBCChainOutflowStatisticsTask int `mapstructure:"cron_time_ibc_chain_outflow_statistics_task"`
-	RedisLockExpireTime                  int    `mapstructure:"redis_lock_expire_time"`
-	SingleChainSyncTransferTxMax         int    `mapstructure:"single_chain_sync_transfer_tx_max"`
-	SingleChainIbcTxRelateMax            int    `mapstructure:"single_chain_ibc_tx_relate_max"`
-	CronTimeSyncAckTxTask                int    `mapstructure:"cron_time_sync_ack_tx_task"`
-	CronDenomHeatmapTask                 string `mapstructure:"cron_denom_heatmap_task"`
+	CronTimeChainTask                     int    `mapstructure:"cron_time_chain_task"`
+	CronTimeChannelTask                   int    `mapstructure:"cron_time_channel_task"`
+	CronTimeRelayerTask                   int    `mapstructure:"cron_time_relayer_task"`
+	CronTimeStatisticTask                 int    `mapstructure:"cron_time_statistic_task"`
+	CronTimeTokenTask                     int    `mapstructure:"cron_time_token_task"`
+	CronTimeTokenPriceTask                int    `mapstructure:"cron_time_token_price_task"`
+	CronTimeChainConfigTask               int    `mapstructure:"cron_time_chain_config_task"`
+	CronTimeDenomUpdateTask               int    `mapstructure:"cron_time_denom_update_task"`
+	CronTimeSyncTransferTxTask            int    `mapstructure:"cron_time_sync_transfer_tx_task"`
+	CronTimeIbcTxRelateTask               int    `mapstructure:"cron_time_ibc_tx_relate_task"`
+	CronTimeIbcTxMigrateTask              int    `mapstructure:"cron_time_ibc_tx_migrate_task"`
+	CronTimeIBCChainInflowStatisticsTask  int    `mapstructure:"cron_time_ibc_chain_inflow_statistics_task"`
+	CronTimeIBCChainOutflowStatisticsTask int    `mapstructure:"cron_time_ibc_chain_outflow_statistics_task"`
+	RedisLockExpireTime                   int    `mapstructure:"redis_lock_expire_time"`
+	SingleChainSyncTransferTxMax          int    `mapstructure:"single_chain_sync_transfer_tx_max"`
+	SingleChainIbcTxRelateMax             int    `mapstructure:"single_chain_ibc_tx_relate_max"`
+	CronTimeSyncAckTxTask                 int    `mapstructure:"cron_time_sync_ack_tx_task"`
+	CronDenomHeatmapTask                  string `mapstructure:"cron_denom_heatmap_task"`
 
 	SwitchAddChainTask             bool `mapstructure:"switch_add_chain_task"`
 	SwitchOnlyInitRelayerData      bool `mapstructure:"switch_only_init_relayer_data"`

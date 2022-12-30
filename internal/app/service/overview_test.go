@@ -16,3 +16,19 @@ func TestOverviewService_TokenDistribution(t *testing.T) {
 	}
 	t.Log(string(utils.MarshalJsonIgnoreErr(resp)))
 }
+
+func TestOverviewService_ChainVolume(t *testing.T) {
+	resp, err := new(OverviewService).ChainVolume(&vo.ChainVolumeReq{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(resp)))
+}
+
+func TestOverviewService_ChainVolumeTrend(t *testing.T) {
+	resp, err := new(OverviewService).ChainVolumeTrend(&vo.ChainVolumeTrendReq{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(resp)))
+}

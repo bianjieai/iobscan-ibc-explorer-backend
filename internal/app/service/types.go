@@ -21,6 +21,7 @@ var (
 	exSearchRecordRepo         repository.IUbaSearchRecordRepo        = new(repository.UbaSearchRecordRepo)
 	relayerDenomStatisticsRepo repository.IRelayerDenomStatisticsRepo = new(repository.RelayerDenomStatisticsRepo)
 	denomHeatmapRepo           repository.IDenomHeatmap               = new(repository.DenomHeatmap)
+	chainFlowCacheRepo         cache.ChainFlowCacheRepo
 	relayerDataCache           cache.RelayerDataCacheRepo
 	lcdTxDataCache             cache.LcdTxDataCacheRepo
 	lcdAddrCache               cache.LcdAddrCacheRepo
@@ -29,6 +30,7 @@ var (
 	authDenomRepo              cache.AuthDenomCacheRepo
 	chainCache                 cache.ChainCacheRepo
 	supportCache               cache.DenomDataCacheRepo
+	overviewCache              cache.OverviewCacheRepo
 )
 
 type (
