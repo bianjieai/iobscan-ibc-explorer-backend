@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -170,9 +169,9 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 		return nil, errors.Wrap(err)
 	}
 
-	getHops := func(denomPath string) int {
-		return strings.Count(denomPath, "/channel")
-	}
+	//getHops := func(denomPath string) int {
+	//	return strings.Count(denomPath, "/channel")
+	//}
 	mapHopsData := make(map[int]entity.IBCDenomList, 1)
 	mapChainData := make(map[string]string, 1)
 	for _, val := range ibcDenoms {
@@ -189,8 +188,8 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 			mapChainData[val.Chain+val.Denom] = amount
 		}
 
-		//todo replace with val.hops
-		hop := getHops(val.DenomPath)
+		//hop := getHops(val.DenomPath)
+		hop := val.IBCHops
 
 		if val.DenomPath == "" || hop == 0 {
 			continue
@@ -206,9 +205,10 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 	}
 
 	resp := &vo.TokenDistributionResp{
-		Chain: req.BaseDenomChain,
-		Denom: req.BaseDenom,
-		Hops:  0,
+		Chain:  req.BaseDenomChain,
+		Denom:  req.BaseDenom,
+		Hops:   0,
+		Amount: mapChainData[req.BaseDenomChain+req.BaseDenom],
 	}
 	//hop get ibc denom
 	hop := 1
@@ -225,7 +225,7 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 			Hops:   hop,
 			Amount: mapChainData[val.Chain+val.Denom],
 		}
-		children = svc.FindSource(mapChainData, mapHopsData, children)
+		children = svc.FindChildrens(mapChainData, mapHopsData, children)
 
 		resp.Children = append(resp.Children, &children)
 	}
@@ -234,7 +234,7 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 	return resp, nil
 }
 
-func (svc *OverviewService) FindSource(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
+func (svc *OverviewService) FindChildrens(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
 	hopDenoms, ok := mapHopsData[ret.Hops+1]
 	if !ok {
 		return ret
@@ -248,7 +248,7 @@ func (svc *OverviewService) FindSource(mapChainData map[string]string, mapHopsDa
 				Hops:   ret.Hops + 1,
 				Amount: mapChainData[val.Chain+val.Denom],
 			}
-			children = svc.FindSource(mapChainData, mapHopsData, children)
+			children = svc.FindChildrens(mapChainData, mapHopsData, children)
 			ret.Children = append(ret.Children, &children)
 		}
 	}
