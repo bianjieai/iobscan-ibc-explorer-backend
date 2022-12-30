@@ -230,7 +230,7 @@ func (repo *ExIbcTxRepo) UpdateIbcHistoryTx(ibcTx *entity.ExIbcTx, repaired bool
 func (repo *ExIbcTxRepo) countBaseDenomTransferTxsPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
-			"create_at": bson.M{
+			"tx_time": bson.M{
 				"$gte": startTime,
 				"$lte": endTime,
 			},
@@ -283,7 +283,7 @@ func (repo *ExIbcTxRepo) CountBaseDenomHistoryTransferTxs(startTime, endTime int
 func (repo *ExIbcTxRepo) countIBCTokenRecvTxsPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
-			"create_at": bson.M{
+			"tx_time": bson.M{
 				"$gte": startTime,
 				"$lte": endTime,
 			},
@@ -509,7 +509,7 @@ func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount(startTime, endTime int6
 func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.M {
 	match := bson.M{
 		"$match": bson.M{
-			"create_at": bson.M{
+			"tx_time": bson.M{
 				"$gte": startTime,
 				"$lte": endTime,
 			},

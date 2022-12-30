@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,15 @@ import (
 type segment struct {
 	StartTime int64 `json:"start_time"`
 	EndTime   int64 `json:"end_time"`
+}
+
+func getTxTimeSegment(targetHistory bool, step int64) ([]*segment, error) {
+	minTxTime, err := ibcTxRepo.GetMinTxTime(targetHistory)
+	if err != nil {
+		return nil, err
+	}
+
+	return segmentTool(step, minTxTime, time.Now().Unix()), nil
 }
 
 func getHistorySegment(step int64) ([]*segment, error) {
@@ -94,6 +104,43 @@ func yesterdayUnix() (int64, int64) {
 	startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
 	endUnix := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 59, time.Local).Unix()
 	return startUnix, endUnix
+}
+
+// whetherCheckYesterdayStatistics 判断当前是否需要check 昨日的统计数据
+func whetherCheckYesterdayStatistics(taskName string, cronTime int) (bool, *segment) {
+	mmdd := time.Now().Format(constant.TimeFormatMMDD)
+	incr, err := statisticsCheckRepo.Incr(taskName, mmdd)
+	if err != nil {
+		logrus.Errorf("task %s statistics incr err, %v", taskName, err)
+		return false, nil
+	}
+
+	startTime, endTime := yesterdayUnix()
+	seg := &segment{
+		StartTime: startTime,
+		EndTime:   endTime,
+	}
+
+	if incr == 1 {
+		return true, seg
+	}
+
+	var mod int64
+	if cronTime <= ThreeMinute {
+		mod = 5
+	} else if cronTime <= TenMinute {
+		mod = 3
+	} else if cronTime <= EveryHour {
+		mod = 2
+	} else {
+		mod = 1
+	}
+
+	if incr%mod == 0 {
+		return true, seg
+	} else {
+		return false, nil
+	}
 }
 
 func lastNDaysZeroTimeUnix(n int) (int64, int64) {

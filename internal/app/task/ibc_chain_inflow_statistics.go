@@ -43,13 +43,13 @@ func (t *ChainInflowStatisticsTask) Run() int {
 func (t *ChainInflowStatisticsTask) RunFullStatistics() int {
 	t.segmentMinTime = math.MaxInt64
 	t.segmentStatisticsMap = make(map[string][]*dto.AggrIBCChainInflowDTO)
-	segments, err := t.getSegment(false)
+	segments, err := getTxTimeSegment(false, segmentStepLatest)
 	if err != nil {
 		logrus.Errorf("task %s getSegment err, %v", t.Name(), err)
 		return -1
 	}
 
-	historySegments, err := t.getSegment(true)
+	historySegments, err := getTxTimeSegment(true, segmentStepHistory)
 	if err != nil {
 		logrus.Errorf("task %s getHistorySegment err, %v", t.Name(), err)
 		return -1
@@ -76,15 +76,6 @@ func (t *ChainInflowStatisticsTask) RunFullStatistics() int {
 
 	t.setStatisticsDataCache()
 	return 1
-}
-
-func (t *ChainInflowStatisticsTask) getSegment(targetHistory bool) ([]*segment, error) {
-	minTxTime, err := ibcTxRepo.GetMinTxTime(targetHistory)
-	if err != nil {
-		return nil, err
-	}
-
-	return segmentTool(segmentStepLatest, minTxTime, time.Now().Unix()), nil
 }
 
 // deal 对ibc tx表的数据进行统计
@@ -184,11 +175,7 @@ func (t *ChainInflowStatisticsTask) saveData(aggrRes []*dto.AggrIBCChainInflowDT
 			err = chainInflowStatisticsRepo.BatchSwapNew(seg.StartTime, seg.EndTime, entityList)
 		}
 	} else {
-		if targetHistory {
-			err = chainInflowStatisticsRepo.InsertMany(entityList)
-		} else {
-			err = chainInflowStatisticsRepo.BatchSwap(seg.StartTime, seg.EndTime, entityList)
-		}
+		err = chainInflowStatisticsRepo.BatchSwap(seg.StartTime, seg.EndTime, entityList)
 	}
 
 	return err
@@ -208,23 +195,13 @@ func (t *ChainInflowStatisticsTask) todayStatistics() {
 }
 
 func (t *ChainInflowStatisticsTask) yesterdayStatistics() {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
-	if incr > statisticsCheckTimes {
+	ok, seg := whetherCheckYesterdayStatistics(t.Name(), t.Cron())
+	if !ok {
 		return
 	}
 
-	logrus.Infof("task %s check yeaterday statistics, time: %d", t.Name(), incr)
-	startTime, endTime := yesterdayUnix()
-	segments := []*segment{
-		{
-			StartTime: startTime,
-			EndTime:   endTime,
-		},
-	}
-
-	t.deal(segments, false, false)
-	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
+	logrus.Infof("task %s check yeaterday statistics", t.Name())
+	t.deal([]*segment{seg}, false, false)
 }
 
 func (t *ChainInflowStatisticsTask) setStatisticsDataCache() {

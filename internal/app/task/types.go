@@ -10,6 +10,7 @@ import (
 const (
 	EveryMinute          = 60
 	ThreeMinute          = 180
+	TenMinute            = 600
 	EveryHour            = 3600
 	OneDay               = 86400
 	OneWeek              = 86400 * 7
@@ -39,7 +40,7 @@ const (
 	ibcTxTargetHistory          = "history"
 
 	segmentStepLatest  = 24 * 3600
-	segmentStepHistory = 12 * 3600
+	segmentStepHistory = 24 * 3600
 
 	relayerAddressGatherRangeTime = 7 * 86400
 
