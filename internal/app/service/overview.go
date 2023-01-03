@@ -107,7 +107,7 @@ func (svc *OverviewService) buildMarketHeatmapResp(denomHeatmapList []*entity.De
 	heatmapItemList := make([]vo.HeatmapItem, 0, len(denomHeatmapList))
 	totalMarketCap := decimal.Zero
 	stablecoinsMarketCap := decimal.Zero
-	transferVolumeTotal := decimal.Zero
+	TotalTransferVolume := decimal.Zero
 	var atomPrice float64
 	atomMarketCap := decimal.Zero
 
@@ -116,7 +116,7 @@ func (svc *OverviewService) buildMarketHeatmapResp(denomHeatmapList []*entity.De
 		totalMarketCap = totalMarketCap.Add(marketCapDecimal)
 
 		transferVolume24hDecimal, _ := decimal.NewFromString(v.TransferVolume24h)
-		transferVolumeTotal = transferVolumeTotal.Add(transferVolume24hDecimal)
+		TotalTransferVolume = TotalTransferVolume.Add(transferVolume24hDecimal)
 
 		if _, ok := stableCoinMap[fmt.Sprintf("%s%s", v.Chain, v.Denom)]; ok {
 			stablecoinsMarketCap = stablecoinsMarketCap.Add(marketCapDecimal)
@@ -147,9 +147,10 @@ func (svc *OverviewService) buildMarketHeatmapResp(denomHeatmapList []*entity.De
 	heatmapTotalInfo := vo.HeatmapTotalInfo{
 		StablecoinsMarketCap: stablecoinsMarketCap.String(),
 		TotalMarketCap:       totalMarketCap.String(),
+		TotalDenomNumber:     len(heatmapItemList),
 		MarketCapGrowthRate:  0,
 		MarketCapTrend:       constant.IncreaseSymbol,
-		TransferVolumeTotal:  transferVolumeTotal.String(),
+		TotalTransferVolume:  TotalTransferVolume.String(),
 		AtomPrice:            atomPrice,
 		AtomDominance:        atomDominance,
 	}

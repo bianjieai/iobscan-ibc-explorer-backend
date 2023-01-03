@@ -18,9 +18,10 @@ type HeatmapItem struct {
 type HeatmapTotalInfo struct {
 	StablecoinsMarketCap string  `json:"stablecoins_market_cap"`
 	TotalMarketCap       string  `json:"total_market_cap"`
+	TotalDenomNumber     int     `json:"total_denom_number"`
 	MarketCapGrowthRate  float64 `json:"market_cap_growth_rate"`
 	MarketCapTrend       string  `json:"market_cap_trend"`
-	TransferVolumeTotal  string  `json:"transfer_volume_total"`
+	TotalTransferVolume  string  `json:"total_transfer_volume"`
 	AtomPrice            float64 `json:"atom_price"`
 	AtomDominance        float64 `json:"atom_dominance"`
 }
