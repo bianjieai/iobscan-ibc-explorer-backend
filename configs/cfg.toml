@@ -57,6 +57,7 @@ single_chain_ibc_tx_relate_max = 5000
 cron_time_ibc_tx_migrate_task = 3600
 cron_time_sync_ack_tx_task = 120
 cron_time_ibc_chain_inflow_statistics_task = 3600
+cron_time_ibc_chain_outflow_statistics_task = 3600
 cron_denom_heatmap_task = "0 * * * * ?"
 # task switch
 switch_add_chain_task = false

@@ -542,14 +542,26 @@ func (t *TokenTask) ibcDenomValue(amount string, price float64, scale int) decim
 }
 
 func (t *TokenTask) ibcDenomAmount(chain, denom string) string {
-	amount, err := denomDataRepo.GetSupply(chain, denom)
+	supplyAmount, err := denomDataRepo.GetSupply(chain, denom)
 	if err != nil {
 		if err == v8.Nil {
 			return constant.ZeroDenomAmount
 		}
 		return constant.UnknownDenomAmount
 	}
-	return amount
+
+	transferAmount, err := denomDataRepo.GetTransferAmount(chain, denom)
+	if err != nil {
+		transferAmount = constant.ZeroDenomAmount
+	}
+
+	sd, _ := decimal.NewFromString(supplyAmount)
+	td, _ := decimal.NewFromString(transferAmount)
+	if sd.GreaterThanOrEqual(td) {
+		return sd.Sub(td).String()
+	}
+
+	return supplyAmount
 }
 
 func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
