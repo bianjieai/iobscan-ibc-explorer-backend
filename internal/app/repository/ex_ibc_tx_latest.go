@@ -34,8 +34,6 @@ type IExIbcTxRepo interface {
 	CountBaseDenomHistoryTransferTxs(startTime, endTime int64) ([]*dto.CountBaseDenomTxsDTO, error)
 	CountIBCTokenRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
 	CountIBCTokenHistoryRecvTxs(startTime, endTime int64) ([]*dto.CountIBCTokenRecvTxsDTO, error)
-	GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
-	GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error)
 	GetMinTxTime(isTargetHistory bool) (int64, error)
 	AggrIBCChannelTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
 	AggrIBCChannelHistoryTxs(startTime, endTime int64) ([]*dto.AggrIBCChannelTxsDTO, error)
@@ -331,64 +329,6 @@ func (repo *ExIbcTxRepo) CountIBCTokenHistoryRecvTxs(startTime, endTime int64) (
 	return res, err
 }
 
-func (repo *ExIbcTxRepo) GetRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error) {
-	pipe := repo.relayerInfoPipe(startTime, endTime)
-	var res []*dto.GetRelayerInfoDTO
-	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) GetHistoryRelayerInfo(startTime, endTime int64) ([]*dto.GetRelayerInfoDTO, error) {
-	pipe := repo.relayerInfoPipe(startTime, endTime)
-	var res []*dto.GetRelayerInfoDTO
-	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *ExIbcTxRepo) relayerInfoPipe(startTime, endTime int64) []bson.M {
-	match := bson.M{
-		"$match": bson.M{
-			"create_at": bson.M{
-				"$gte": startTime,
-				"$lte": endTime,
-			},
-			"dc_tx_info.status": 1,
-		},
-	}
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"sc_relayer": "$ack_timeout_tx_info.msg.msg.signer",
-				"dc_relayer": "$dc_tx_info.msg.msg.signer",
-				"sc_chain":   "$sc_chain",
-				"sc_channel": "$sc_channel",
-				"dc_chain":   "$dc_chain",
-				"dc_channel": "$dc_channel",
-			},
-		},
-	}
-	project := bson.M{
-		"$project": bson.M{
-			"_id":              0,
-			"sc_chain_address": "$_id.sc_relayer",
-			"dc_chain_address": "$_id.dc_relayer",
-			"sc_chain":         "$_id.sc_chain",
-			"dc_chain":         "$_id.dc_chain",
-			"sc_channel":       "$_id.sc_channel",
-			"dc_channel":       "$_id.dc_channel",
-		},
-	}
-	sort := bson.M{
-		"$sort": bson.M{
-			"tx_time": 1,
-		},
-	}
-	var pipe []bson.M
-	pipe = append(pipe, match, group, project, sort)
-	return pipe
-
-}
-
 func (repo *ExIbcTxRepo) GetMinTxTime(isTargetHistory bool) (int64, error) {
 	var res *entity.ExIbcTx
 	var err error
@@ -402,108 +342,6 @@ func (repo *ExIbcTxRepo) GetMinTxTime(isTargetHistory bool) (int64, error) {
 		return 0, err
 	}
 	return res.TxTime, nil
-}
-
-func (repo *ExIbcTxRepo) relayerSuccessPacketCond(startTime, endTime int64) []bson.M {
-	match := bson.M{
-		"$match": bson.M{
-			"create_at": bson.M{
-				"$gte": startTime,
-				"$lte": endTime,
-			},
-			"status": entity.IbcTxStatusSuccess,
-		},
-	}
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"dc_chain":         "$dc_chain",
-				"dc_channel":       "$dc_channel",
-				"sc_chain":         "$sc_chain",
-				"sc_channel":       "$sc_channel",
-				"relayer":          "$dc_tx_info.msg.msg.signer",
-				"base_denom":       "$base_denom",
-				"base_denom_chain": "$base_denom_chain",
-			},
-			"count": bson.M{
-				"$sum": 1,
-			},
-		},
-	}
-	project := bson.M{
-		"$project": bson.M{
-			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
-			"dc_chain":         "$_id.dc_chain",
-			"dc_channel":       "$_id.dc_channel",
-			"sc_chain":         "$_id.sc_chain",
-			"sc_channel":       "$_id.sc_channel",
-			"base_denom":       "$_id.base_denom",
-			"base_denom_chain": "$_id.base_denom_chain",
-			"count":            "$count",
-		},
-	}
-	var pipe []bson.M
-	pipe = append(pipe, match, group, project)
-	return pipe
-}
-
-func (repo *ExIbcTxRepo) relayerPacketAmountCond(startTime, endTime int64) []bson.M {
-	match := bson.M{
-		"$match": bson.M{
-			"create_at": bson.M{
-				"$gte": startTime,
-				"$lte": endTime,
-			},
-			"status": bson.M{
-				"$in": entity.IbcTxUsefulStatus,
-			},
-			"sc_tx_info.status": entity.TxStatusSuccess,
-		},
-	}
-	group := bson.M{
-		"$group": bson.M{
-			"_id": bson.M{
-				"dc_chain":         "$dc_chain",
-				"dc_channel":       "$dc_channel",
-				"sc_chain":         "$sc_chain",
-				"sc_channel":       "$sc_channel",
-				"relayer":          "$dc_tx_info.msg.msg.signer",
-				"base_denom":       "$base_denom",
-				"base_denom_chain": "$base_denom_chain",
-			},
-			"amount": bson.M{
-				"$sum": bson.M{"$toDouble": "$sc_tx_info.msg_amount.amount"},
-			},
-			"count": bson.M{
-				"$sum": 1,
-			},
-		},
-	}
-	project := bson.M{
-		"$project": bson.M{
-			"_id":              0,
-			"dc_chain_address": "$_id.relayer",
-			"dc_chain":         "$_id.dc_chain",
-			"dc_channel":       "$_id.dc_channel",
-			"sc_chain":         "$_id.sc_chain",
-			"sc_channel":       "$_id.sc_channel",
-			"base_denom":       "$_id.base_denom",
-			"base_denom_chain": "$_id.base_denom_chain",
-			"amount":           "$amount",
-			"count":            "$count",
-		},
-	}
-	var pipe []bson.M
-	pipe = append(pipe, match, group, project)
-	return pipe
-}
-
-func (repo *ExIbcTxRepo) CountHistoryRelayerPacketAmount(startTime, endTime int64) ([]*dto.CountRelayerPacketAmountDTO, error) {
-	pipe := repo.relayerPacketAmountCond(startTime, endTime)
-	var res []*dto.CountRelayerPacketAmountDTO
-	err := repo.collHistory().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
 }
 
 func (repo *ExIbcTxRepo) AggrIBCChannelTxsPipe(startTime, endTime int64) []bson.M {

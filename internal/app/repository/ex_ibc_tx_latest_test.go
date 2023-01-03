@@ -8,9 +8,8 @@ import (
 	"time"
 )
 
-func TestExIbcTxRepo_GetRelayerInfo(t *testing.T) {
-	now := time.Now().Unix()
-	data, err := new(ExIbcTxRepo).GetRelayerInfo(now-86400, now)
+func TestExIbcTxRepo_AggrIBCChainInflow(t *testing.T) {
+	data, err := new(ExIbcTxRepo).AggrIBCChainInflow(1672386690, 1672386691, false)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

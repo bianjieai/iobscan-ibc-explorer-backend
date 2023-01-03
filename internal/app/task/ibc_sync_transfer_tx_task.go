@@ -230,10 +230,6 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chain, tx.TxHash, msgIndex)
 			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
-			createAt := nowUnix
-			if global.Config.Task.CreateAtUseTxTime {
-				createAt = tx.Time
-			}
 
 			exIbcTx := &entity.ExIbcTx{
 				Id:             primitive.NewObjectID(),
@@ -267,9 +263,6 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 				},
 				DcTxInfo:         nil,
 				AckTimeoutTxInfo: nil,
-				//Log: &entity.Log{
-				//	ScLog: tx.Log,
-				//},
 				Denoms: &entity.Denoms{
 					ScDenom: scDenom,
 					DcDenom: "",
@@ -278,8 +271,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 				BaseDenomChain: baseDenomChain,
 				RetryTimes:     0,
 				NextTryTime:    nowUnix,
-				CreateAt:       createAt,
-				UpdateAt:       createAt,
+				CreateAt:       nowUnix,
+				UpdateAt:       nowUnix,
 			}
 			w.setClientId(exIbcTx) // set ScClientId, DcClientId
 			ibcTxList = append(ibcTxList, exIbcTx)
