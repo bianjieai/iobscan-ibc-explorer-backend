@@ -121,7 +121,7 @@ func (svc *TxService) ics20Transfer(scChain, dcChain, packetId string) (*vo.Ics2
 		return nil, errors.Wrap(err)
 	}
 
-	transferTx, ackTxs, timeoutTxs := svc.parseScChainTxs(scChain, scTxs)
+	transferTx, ackTxs, timeoutTxs := svc.parseScChainTxs(scChain, packetId, scTxs)
 	if transferTx == nil {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func (svc *TxService) ics20Transfer(scChain, dcChain, packetId string) (*vo.Ics2
 			return nil, errors.Wrap(err)
 		}
 
-		recvPacketTxs = svc.parseDcChainTxs(dcChain, DcTxs)
+		recvPacketTxs = svc.parseDcChainTxs(dcChain, packetId, DcTxs)
 	}
 
 	transferMsg := transferTx.Msg.TransferMsg()
@@ -164,11 +164,15 @@ func (svc *TxService) ics20Transfer(scChain, dcChain, packetId string) (*vo.Ics2
 	}, nil
 }
 
-func (svc *TxService) parseScChainTxs(chain string, txs []*entity.Tx) (transferTx *vo.SimpleTx, ackTxs, timeoutTxs []vo.SimpleTxExt) {
+func (svc *TxService) parseScChainTxs(chain, packetId string, txs []*entity.Tx) (transferTx *vo.SimpleTx, ackTxs, timeoutTxs []vo.SimpleTxExt) {
 	ackTxs = make([]vo.SimpleTxExt, 0)
 	timeoutTxs = make([]vo.SimpleTxExt, 0)
 	for _, tx := range txs {
 		for msgIndex, msg := range tx.DocTxMsgs {
+			if msg.CommonMsg().PacketId != packetId {
+				continue
+			}
+
 			simpleTx := vo.SimpleTx{
 				Chain:  chain,
 				TxHash: tx.TxHash,
@@ -198,10 +202,14 @@ func (svc *TxService) parseScChainTxs(chain string, txs []*entity.Tx) (transferT
 	return
 }
 
-func (svc *TxService) parseDcChainTxs(chain string, txs []*entity.Tx) (recvPacketTxs []vo.SimpleTxExt) {
+func (svc *TxService) parseDcChainTxs(chain, packetId string, txs []*entity.Tx) (recvPacketTxs []vo.SimpleTxExt) {
 	recvPacketTxs = make([]vo.SimpleTxExt, 0)
 	for _, tx := range txs {
 		for msgIndex, msg := range tx.DocTxMsgs {
+			if msg.CommonMsg().PacketId != packetId {
+				continue
+			}
+
 			simpleTx := vo.SimpleTx{
 				Chain:  chain,
 				TxHash: tx.TxHash,
