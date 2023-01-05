@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -370,9 +371,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 	resp := make(vo.ChainVolumeResp, 0, len(chainsCfg))
 	resp = append(resp, vo.ChainVolumeItem{
 		Chain:               "all_chain",
-		TransferVolumeIn:    allInVolumes,
-		TransferVolumeOut:   allOutVolumes,
-		TransferVolumeTotal: allInVolumes + allOutVolumes,
+		TransferVolumeIn:    strconv.FormatFloat(allInVolumes, 'g', 8, 64),
+		TransferVolumeOut:   strconv.FormatFloat(allOutVolumes, 'g', 8, 64),
+		TransferVolumeTotal: strconv.FormatFloat(allInVolumes+allOutVolumes, 'g', 8, 64),
 	})
 	for _, val := range chainsCfg {
 		inVolume := chainInVolumesMap[val.ChainName]
@@ -380,9 +381,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 		totalVolume := inVolume + outVolume
 		item := vo.ChainVolumeItem{
 			Chain:               val.ChainName,
-			TransferVolumeIn:    inVolume,
-			TransferVolumeOut:   outVolume,
-			TransferVolumeTotal: totalVolume,
+			TransferVolumeIn:    strconv.FormatFloat(inVolume, 'g', 8, 64),
+			TransferVolumeOut:   strconv.FormatFloat(outVolume, 'g', 8, 64),
+			TransferVolumeTotal: strconv.FormatFloat(totalVolume, 'g', 8, 64),
 		}
 		resp = append(resp, item)
 	}

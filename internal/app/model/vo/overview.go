@@ -65,9 +65,9 @@ type ChainVolumeReq struct {
 type (
 	ChainVolumeResp []ChainVolumeItem
 	ChainVolumeItem struct {
-		Chain               string  `json:"chain"`
-		TransferVolumeIn    float64 `json:"transfer_volume_in"`
-		TransferVolumeOut   float64 `json:"transfer_volume_out"`
-		TransferVolumeTotal float64 `json:"transfer_volume_total"`
+		Chain               string `json:"chain"`
+		TransferVolumeIn    string `json:"transfer_volume_in"`
+		TransferVolumeOut   string `json:"transfer_volume_out"`
+		TransferVolumeTotal string `json:"transfer_volume_total"`
 	}
 )
