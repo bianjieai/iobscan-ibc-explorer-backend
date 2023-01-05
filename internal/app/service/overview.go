@@ -238,6 +238,9 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 func (svc *OverviewService) FindChildrens(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
 	hopDenoms, ok := mapHopsData[ret.Hops+1]
 	if !ok {
+		if ret.Children == nil {
+			ret.Children = make([]*vo.GraphData, 0, 1)
+		}
 		return ret
 	}
 	ret.Children = make([]*vo.GraphData, 0, 1)

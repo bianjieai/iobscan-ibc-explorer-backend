@@ -17,15 +17,16 @@ var (
 	cacheService    service.CacheService
 
 	// task
-	addChainTask              task.AddChainTask
-	tokenStatisticsTask       task.TokenStatisticsTask
-	channelStatisticsTask     task.ChannelStatisticsTask
-	relayerStatisticsTask     task.RelayerStatisticsTask
-	addTransferDataTask       task.AddTransferDataTask
-	ibcNodeLcdCronTask        task.IbcNodeLcdCronTask
-	ibcStatisticCronTask      task.IbcStatisticCronTask
-	fixRelayerStatisticsTask  task.FixRelayerStatisticsTask
-	relayerAddressInitTask    task.IbcRelayerAddressInitTask
-	chainInflowStatisticsTask task.ChainInflowStatisticsTask
-	ibcDenomHopsTask          task.IBCDenomHopsTask
+	addChainTask               task.AddChainTask
+	tokenStatisticsTask        task.TokenStatisticsTask
+	channelStatisticsTask      task.ChannelStatisticsTask
+	relayerStatisticsTask      task.RelayerStatisticsTask
+	addTransferDataTask        task.AddTransferDataTask
+	ibcNodeLcdCronTask         task.IbcNodeLcdCronTask
+	ibcStatisticCronTask       task.IbcStatisticCronTask
+	fixRelayerStatisticsTask   task.FixRelayerStatisticsTask
+	relayerAddressInitTask     task.IbcRelayerAddressInitTask
+	chainInflowStatisticsTask  task.ChainInflowStatisticsTask
+	chainOutflowStatisticsTask task.ChainOutflowStatisticsTask
+	ibcDenomHopsTask           task.IBCDenomHopsTask
 )
