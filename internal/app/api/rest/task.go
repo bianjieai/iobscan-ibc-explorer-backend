@@ -73,6 +73,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			relayerAddressInitTask.Run()
 		case chainInflowStatisticsTask.Name():
 			res = chainInflowStatisticsTask.RunFullStatistics()
+		case chainOutflowStatisticsTask.Name():
+			res = chainOutflowStatisticsTask.RunFullStatistics()
 		case ibcDenomHopsTask.Name():
 			res = ibcDenomHopsTask.Run()
 		default:

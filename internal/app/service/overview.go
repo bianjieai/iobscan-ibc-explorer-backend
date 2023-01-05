@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -238,6 +239,9 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 func (svc *OverviewService) FindChildrens(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
 	hopDenoms, ok := mapHopsData[ret.Hops+1]
 	if !ok {
+		if ret.Children == nil {
+			ret.Children = make([]*vo.GraphData, 0, 1)
+		}
 		return ret
 	}
 	ret.Children = make([]*vo.GraphData, 0, 1)
@@ -367,9 +371,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 	resp := make(vo.ChainVolumeResp, 0, len(chainsCfg))
 	resp = append(resp, vo.ChainVolumeItem{
 		Chain:               "all_chain",
-		TransferVolumeIn:    allInVolumes,
-		TransferVolumeOut:   allOutVolumes,
-		TransferVolumeTotal: allInVolumes + allOutVolumes,
+		TransferVolumeIn:    strconv.FormatFloat(allInVolumes, 'f', -1, 64),
+		TransferVolumeOut:   strconv.FormatFloat(allOutVolumes, 'f', -1, 64),
+		TransferVolumeTotal: strconv.FormatFloat(allInVolumes+allOutVolumes, 'f', -1, 64),
 	})
 	for _, val := range chainsCfg {
 		inVolume := chainInVolumesMap[val.ChainName]
@@ -377,9 +381,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 		totalVolume := inVolume + outVolume
 		item := vo.ChainVolumeItem{
 			Chain:               val.ChainName,
-			TransferVolumeIn:    inVolume,
-			TransferVolumeOut:   outVolume,
-			TransferVolumeTotal: totalVolume,
+			TransferVolumeIn:    strconv.FormatFloat(inVolume, 'f', -1, 64),
+			TransferVolumeOut:   strconv.FormatFloat(outVolume, 'f', -1, 64),
+			TransferVolumeTotal: strconv.FormatFloat(totalVolume, 'f', -1, 64),
 		}
 		resp = append(resp, item)
 	}
