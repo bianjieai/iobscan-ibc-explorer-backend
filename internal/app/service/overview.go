@@ -371,9 +371,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 	resp := make(vo.ChainVolumeResp, 0, len(chainsCfg))
 	resp = append(resp, vo.ChainVolumeItem{
 		Chain:               "all_chain",
-		TransferVolumeIn:    strconv.FormatFloat(allInVolumes, 'g', 8, 64),
-		TransferVolumeOut:   strconv.FormatFloat(allOutVolumes, 'g', 8, 64),
-		TransferVolumeTotal: strconv.FormatFloat(allInVolumes+allOutVolumes, 'g', 8, 64),
+		TransferVolumeIn:    strconv.FormatFloat(allInVolumes, 'f', -1, 64),
+		TransferVolumeOut:   strconv.FormatFloat(allOutVolumes, 'f', -1, 64),
+		TransferVolumeTotal: strconv.FormatFloat(allInVolumes+allOutVolumes, 'f', -1, 64),
 	})
 	for _, val := range chainsCfg {
 		inVolume := chainInVolumesMap[val.ChainName]
@@ -381,9 +381,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 		totalVolume := inVolume + outVolume
 		item := vo.ChainVolumeItem{
 			Chain:               val.ChainName,
-			TransferVolumeIn:    strconv.FormatFloat(inVolume, 'g', 8, 64),
-			TransferVolumeOut:   strconv.FormatFloat(outVolume, 'g', 8, 64),
-			TransferVolumeTotal: strconv.FormatFloat(totalVolume, 'g', 8, 64),
+			TransferVolumeIn:    strconv.FormatFloat(inVolume, 'f', -1, 64),
+			TransferVolumeOut:   strconv.FormatFloat(outVolume, 'f', -1, 64),
+			TransferVolumeTotal: strconv.FormatFloat(totalVolume, 'f', -1, 64),
 		}
 		resp = append(resp, item)
 	}
