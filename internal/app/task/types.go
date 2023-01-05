@@ -43,8 +43,6 @@ const (
 	segmentStepHistory = 24 * 3600
 
 	relayerAddressGatherRangeTime = 7 * 86400
-
-	chainFlowTrendDays = 365
 )
 
 var (

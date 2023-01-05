@@ -261,24 +261,46 @@ func (svc *OverviewService) FindChildrens(mapChainData map[string]string, mapHop
 	return ret
 }
 
-func (t *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.ChainVolumeTrendResp, errors.Error) {
+func (svc *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.ChainVolumeTrendResp, errors.Error) {
+	fillVolumeItems := func(items []vo.VolumeItem) []vo.VolumeItem { // 若items 不足365个，则补足至365个
+		volumeMap := make(map[string]string, len(items))
+		for _, v := range items {
+			volumeMap[v.Datetime] = v.Value
+		}
+		date := time.Now().AddDate(0, 0, -constant.ChainFlowTrendDays+1)
+		startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
+		newItems := make([]vo.VolumeItem, 0, constant.ChainFlowTrendDays)
+		for i := 0; i < constant.ChainFlowTrendDays; i++ {
+			dt := time.Unix(startUnix+int64(i*86400), 0).Format(constant.DateFormat)
+			value := "0"
+			if _, ok := volumeMap[dt]; ok {
+				value = volumeMap[dt]
+			}
+			newItems = append(newItems, vo.VolumeItem{
+				Datetime: dt,
+				Value:    value,
+			})
+		}
+		return newItems
+	}
+
 	if req.Chain != "" {
 		//check chain if exists
 		_, err := chainCfgRepo.FindOne(req.Chain)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		inVolumes, err := chainFlowCacheRepo.GetInflowTrend(365, req.Chain)
+		inVolumes, err := chainFlowCacheRepo.GetInflowTrend(constant.ChainFlowTrendDays, req.Chain)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
-		outVolumes, err := chainFlowCacheRepo.GetOutflowTrend(365, req.Chain)
+		outVolumes, err := chainFlowCacheRepo.GetOutflowTrend(constant.ChainFlowTrendDays, req.Chain)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
 		return &vo.ChainVolumeTrendResp{
-			VolumeIn:  inVolumes,
-			VolumeOut: outVolumes,
+			VolumeIn:  fillVolumeItems(inVolumes),
+			VolumeOut: fillVolumeItems(outVolumes),
 			Chain:     req.Chain,
 		}, nil
 	}
@@ -291,7 +313,7 @@ func (t *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.Cha
 	inVolumeMap := make(map[string]decimal.Decimal, 1)
 	outVolumeMap := make(map[string]decimal.Decimal, 1)
 	for _, val := range chainsCfg {
-		inVolumes, err := chainFlowCacheRepo.GetInflowTrend(365, val.ChainName)
+		inVolumes, err := chainFlowCacheRepo.GetInflowTrend(constant.ChainFlowTrendDays, val.ChainName)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
@@ -306,7 +328,7 @@ func (t *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.Cha
 			}
 		}
 
-		outVolumes, err := chainFlowCacheRepo.GetOutflowTrend(365, val.ChainName)
+		outVolumes, err := chainFlowCacheRepo.GetOutflowTrend(constant.ChainFlowTrendDays, val.ChainName)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
@@ -321,18 +343,28 @@ func (t *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.Cha
 			}
 		}
 	}
-	inVolumes := make([]vo.VolumeItem, 0, len(inVolumeMap))
-	for datetime, value := range inVolumeMap {
+
+	date := time.Now().AddDate(0, 0, -constant.ChainFlowTrendDays+1)
+	startUnix := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local).Unix()
+	inVolumes := make([]vo.VolumeItem, 0, constant.ChainFlowTrendDays)
+	outVolumes := make([]vo.VolumeItem, 0, constant.ChainFlowTrendDays)
+	for i := 0; i < constant.ChainFlowTrendDays; i++ {
+		dt := time.Unix(startUnix+int64(i*86400), 0).Format(constant.DateFormat)
+		inValue := "0"
+		outValue := "0"
+		if _, ok := inVolumeMap[dt]; ok {
+			inValue = inVolumeMap[dt].String()
+		}
+		if _, ok := outVolumeMap[dt]; ok {
+			outValue = outVolumeMap[dt].String()
+		}
 		inVolumes = append(inVolumes, vo.VolumeItem{
-			Datetime: datetime,
-			Value:    value.String(),
+			Datetime: dt,
+			Value:    inValue,
 		})
-	}
-	outVolumes := make([]vo.VolumeItem, 0, len(outVolumeMap))
-	for datetime, value := range outVolumeMap {
 		outVolumes = append(outVolumes, vo.VolumeItem{
-			Datetime: datetime,
-			Value:    value.String(),
+			Datetime: dt,
+			Value:    outValue,
 		})
 	}
 
@@ -343,8 +375,8 @@ func (t *OverviewService) ChainVolumeTrend(req *vo.ChainVolumeTrendReq) (*vo.Cha
 	}, nil
 }
 
-func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeResp, errors.Error) {
-	chainInVolumesMap, err := chainFlowCacheRepo.GetAllInflowVolume(365)
+func (svc *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeResp, errors.Error) {
+	chainInVolumesMap, err := chainFlowCacheRepo.GetAllInflowVolume(constant.ChainFlowTrendDays)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -354,12 +386,12 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 		allInVolumes += val
 	}
 
-	chainOutVolumesMap, err := chainFlowCacheRepo.GetAllOutflowVolume(365)
+	chainOutVolumesMap, err := chainFlowCacheRepo.GetAllOutflowVolume(constant.ChainFlowTrendDays)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 	allOutVolumes := float64(0)
-	for _, val := range chainInVolumesMap {
+	for _, val := range chainOutVolumesMap {
 		allOutVolumes += val
 	}
 
@@ -371,9 +403,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 	resp := make(vo.ChainVolumeResp, 0, len(chainsCfg))
 	resp = append(resp, vo.ChainVolumeItem{
 		Chain:               "all_chain",
-		TransferVolumeIn:    strconv.FormatFloat(allInVolumes, 'f', -1, 64),
-		TransferVolumeOut:   strconv.FormatFloat(allOutVolumes, 'f', -1, 64),
-		TransferVolumeTotal: strconv.FormatFloat(allInVolumes+allOutVolumes, 'f', -1, 64),
+		TransferVolumeIn:    strconv.FormatFloat(allInVolumes, 'f', 4, 64),
+		TransferVolumeOut:   strconv.FormatFloat(allOutVolumes, 'f', 4, 64),
+		TransferVolumeTotal: strconv.FormatFloat(allInVolumes+allOutVolumes, 'f', 4, 64),
 	})
 	for _, val := range chainsCfg {
 		inVolume := chainInVolumesMap[val.ChainName]
@@ -381,9 +413,9 @@ func (t *OverviewService) ChainVolume(req *vo.ChainVolumeReq) (*vo.ChainVolumeRe
 		totalVolume := inVolume + outVolume
 		item := vo.ChainVolumeItem{
 			Chain:               val.ChainName,
-			TransferVolumeIn:    strconv.FormatFloat(inVolume, 'f', -1, 64),
-			TransferVolumeOut:   strconv.FormatFloat(outVolume, 'f', -1, 64),
-			TransferVolumeTotal: strconv.FormatFloat(totalVolume, 'f', -1, 64),
+			TransferVolumeIn:    strconv.FormatFloat(inVolume, 'f', 4, 64),
+			TransferVolumeOut:   strconv.FormatFloat(outVolume, 'f', 4, 64),
+			TransferVolumeTotal: strconv.FormatFloat(totalVolume, 'f', 4, 64),
 		}
 		resp = append(resp, item)
 	}
