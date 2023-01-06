@@ -205,7 +205,7 @@ func (t *ChainInflowStatisticsTask) yesterdayStatistics() {
 }
 
 func (t *ChainInflowStatisticsTask) setStatisticsDataCache() {
-	days := chainFlowTrendDays
+	days := constant.ChainFlowTrendDays
 	startTime, _ := lastNDaysZeroTimeUnix(days)
 	_, endTime := todayUnix()
 

@@ -109,8 +109,8 @@ func startTask(c conf.Redis) {
 		&task.ChainOutflowStatisticsTask{},
 	)
 
-	distributionTask.Start()
-	task.Start()
+	go distributionTask.Start()
+	go task.Start()
 }
 
 func startOneOffTask() {
