@@ -222,15 +222,25 @@ func (t *ChainOutflowStatisticsTask) setStatisticsDataCache() {
 			continue
 		}
 
-		volumeItemList := make([]vo.VolumeItem, 0, len(trendList))
+		volumeMap := make(map[string]decimal.Decimal, len(trendList))
 		totalDenomValue := decimal.Zero
 		for _, v := range trendList {
 			denomAmount := decimal.NewFromFloat(v.DenomAmount)
 			denomValue := ibctool.CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, denomAmount)
+			dt := time.Unix(v.SegmentStartTime, 0).Format(constant.DateFormat)
+			if vol, ok := volumeMap[dt]; ok {
+				volumeMap[dt] = vol.Add(denomValue)
+			} else {
+				volumeMap[dt] = denomValue
+			}
 			totalDenomValue = totalDenomValue.Add(denomValue)
+		}
+
+		volumeItemList := make([]vo.VolumeItem, 0, len(volumeMap))
+		for dt, vol := range volumeMap {
 			volumeItemList = append(volumeItemList, vo.VolumeItem{
-				Datetime: time.Unix(v.SegmentStartTime, 0).Format(constant.DateFormat),
-				Value:    denomValue.String(),
+				Datetime: dt,
+				Value:    vol.String(),
 			})
 		}
 
