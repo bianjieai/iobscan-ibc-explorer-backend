@@ -122,7 +122,7 @@ func (t *ChainInflowStatisticsTask) integrationStatisticsData(aggrRes []*dto.Agg
 
 	integrationDataMap := make(map[string]*dto.AggrIBCChainInflowDTO, len(aggrRes))
 	for _, v := range aggrRes {
-		key := fmt.Sprintf("%s%s%s%d", v.Chain, v.BaseDenomChain, v.BaseDenomChain, v.Status)
+		key := fmt.Sprintf("%s%s%s%d", v.Chain, v.BaseDenomChain, v.BaseDenom, v.Status)
 		if data, ok := integrationDataMap[key]; !ok {
 			integrationDataMap[key] = v
 		} else {
@@ -132,7 +132,7 @@ func (t *ChainInflowStatisticsTask) integrationStatisticsData(aggrRes []*dto.Agg
 	}
 
 	for _, v := range hirtoryAggrRes {
-		key := fmt.Sprintf("%s%s%s%d", v.Chain, v.BaseDenomChain, v.BaseDenomChain, v.Status)
+		key := fmt.Sprintf("%s%s%s%d", v.Chain, v.BaseDenomChain, v.BaseDenom, v.Status)
 		if data, ok := integrationDataMap[key]; !ok {
 			integrationDataMap[key] = v
 		} else {
