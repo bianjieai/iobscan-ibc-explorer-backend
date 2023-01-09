@@ -20,3 +20,11 @@ func Test_chainInflowStatisticsTaskRunFullStatistics(t *testing.T) {
 func Test_chainInflowStatisticsTaskRun(t *testing.T) {
 	chainInflowStatisticsTask.Run()
 }
+
+func Test_chainInflowSetStatisticsDataCache(t *testing.T) {
+	chainInflowStatisticsTask.setStatisticsDataCache()
+}
+
+func Test_chainOutflowSetStatisticsDataCache(t *testing.T) {
+	chainOutflowStatisticsTask.setStatisticsDataCache()
+}
