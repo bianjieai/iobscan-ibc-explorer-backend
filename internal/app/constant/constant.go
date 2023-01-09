@@ -20,9 +20,14 @@ const (
 	OtherDenom            = "others"
 	AllChain              = "allchain"
 	Cosmos                = "cosmos"
+	ChainNameCosmosHub    = "cosmoshub"
+	DenomAtom             = "uatom"
 	Iris                  = "iris"
 	PortTransfer          = "transfer"
 	DefaultUnboundTime    = 1209600
+
+	IncreaseSymbol = "+"
+	DecreaseSymbol = "-"
 
 	DefaultLimit = 500
 	IncreHeight  = 5000
@@ -56,6 +61,8 @@ const (
 	ETHSECP256K1 = "ethsecp256k1"
 	SECP256K1    = "secp256k1"
 	ICS20        = "ics20"
+
+	ChainFlowTrendDays = 365
 
 	ExportTxsNum = 1000
 )

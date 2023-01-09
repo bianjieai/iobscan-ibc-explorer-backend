@@ -16,6 +16,7 @@ type IChannelStatisticsRepo interface {
 	CreateNew() error
 	SwitchColl() error
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCChannelStatistics) error
+	BatchSwapNew(segmentStartTime, segmentEndTime int64, batch []*entity.IBCChannelStatistics) error
 	BatchInsert(batch []*entity.IBCChannelStatistics) error
 	BatchInsertToNew(batch []*entity.IBCChannelStatistics) error
 	Aggr() ([]*dto.ChannelStatisticsAggrDTO, error)
@@ -35,9 +36,19 @@ func (repo *ChannelStatisticsRepo) collNew() *qmgo.Collection {
 }
 
 func (repo *ChannelStatisticsRepo) CreateNew() error {
-	indexOpts := officialOpts.Index().SetUnique(true).SetName("channel_statistics_unique")
-	key := []string{"channel_id", "base_denom", "base_denom_chain", "status", "-segment_start_time", "-segment_end_time"}
-	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+	indexOpts := officialOpts.Index()
+	key := []string{"segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts}); err != nil {
+		return err
+	}
+
+	indexOpts2 := officialOpts.Index()
+	key2 := []string{"channel_id"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key2, IndexOptions: indexOpts2}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (repo *ChannelStatisticsRepo) SwitchColl() error {
@@ -71,6 +82,30 @@ func (repo *ChannelStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTime in
 	return err
 }
 
+func (repo *ChannelStatisticsRepo) BatchSwapNew(segmentStartTime, segmentEndTime int64, batch []*entity.IBCChannelStatistics) error {
+	callback := func(sessCtx context.Context) (interface{}, error) {
+		query := bson.M{
+			"segment_start_time": segmentStartTime,
+			"segment_end_time":   segmentEndTime,
+		}
+		if _, err := repo.collNew().RemoveAll(sessCtx, query); err != nil {
+			return nil, err
+		}
+
+		if len(batch) == 0 {
+			return nil, nil
+		}
+
+		if _, err := repo.collNew().InsertMany(sessCtx, batch); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
+}
+
 func (repo *ChannelStatisticsRepo) BatchInsert(batch []*entity.IBCChannelStatistics) error {
 	if len(batch) == 0 {
 		return nil
@@ -90,7 +125,7 @@ func (repo *ChannelStatisticsRepo) BatchInsertToNew(batch []*entity.IBCChannelSt
 }
 
 func (repo *ChannelStatisticsRepo) Aggr() ([]*dto.ChannelStatisticsAggrDTO, error) {
-	ibcTxUseStatus := []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusProcessing, entity.IbcTxStatusRefunded}
+	ibcTxUseStatus := []entity.IbcTxStatus{entity.IbcTxStatusSuccess, entity.IbcTxStatusProcessing}
 	match := bson.M{
 		"$match": bson.M{
 			"status": bson.M{

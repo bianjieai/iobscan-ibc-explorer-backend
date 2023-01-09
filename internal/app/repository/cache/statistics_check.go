@@ -17,15 +17,15 @@ func (repo *StatisticsCheckCacheRepo) GetIncr(task, date string) (int, error) {
 	return strconv.Atoi(incr)
 }
 
-func (repo *StatisticsCheckCacheRepo) Incr(task, date string) error {
+func (repo *StatisticsCheckCacheRepo) Incr(task, date string) (int64, error) {
 	key := fmt.Sprintf(statisticsCheck, task, date)
 	incr, err := rc.Incr(key)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if incr == 1 { // 第一次设置过期时间
 		rc.Expire(key, oneDay)
 	}
-	return nil
+	return incr, nil
 }

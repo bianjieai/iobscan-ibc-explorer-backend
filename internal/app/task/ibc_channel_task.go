@@ -1,9 +1,12 @@
 package task
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
@@ -54,7 +57,7 @@ func (t *ChannelTask) Run() int {
 
 	_ = t.yesterdayStatistics()
 
-	baseDenomList, err := baseDenomRepo.FindAll()
+	baseDenomList, err := authDenomRepo.FindAll()
 	if err != nil {
 		logrus.Errorf("task %s run error, %v", t.Name(), err)
 		return -1
@@ -63,6 +66,25 @@ func (t *ChannelTask) Run() int {
 
 	if err = t.setTransferTxs(existedChannelList, newChannelList); err != nil { // 计算txs和交易价值，同时更新ibc_channel_statistics
 		logrus.Errorf("task %s setTransferTxs error, %v", t.Name(), err)
+		return -1
+	}
+
+	chainConfList, err := chainConfigRepo.FindAllChainInfos()
+	if err != nil {
+		logrus.Errorf("task %s chainConfList error, %v", t.Name(), err)
+		return -1
+	}
+
+	chainCfgMap := make(map[string]*entity.ChainConfig, len(chainConfList))
+	for _, v := range chainConfList {
+		if v.Status == entity.ChannelStatusClosed {
+			continue
+		}
+		chainCfgMap[v.ChainName] = v
+	}
+
+	if err = t.setPendingTxs(chainCfgMap, existedChannelList, newChannelList); err != nil { // 统计pendingTx数量
+		logrus.Errorf("task %s setPendingTxs error, %v", t.Name(), err)
 		return -1
 	}
 
@@ -209,7 +231,7 @@ func (t *ChannelTask) getAllChannel() (entity.IBCChannelList, entity.IBCChannelL
 			Status:           entity.ChannelStatusOpened, // 默认开启状态
 			OperatingPeriod:  0,
 			LatestOpenTime:   0,
-			Relayers:         0,
+			PendingTxs:       0,
 			TransferTxs:      0,
 			TransferTxsValue: "",
 			CreateAt:         time.Now().Unix(),
@@ -320,6 +342,89 @@ func (t *ChannelTask) setTransferTxs(existedChannelList entity.IBCChannelList, n
 	return nil
 }
 
+func (t *ChannelTask) setPendingTxs(chainCfgMap map[string]*entity.ChainConfig, existedChannelList entity.IBCChannelList, newChannelList entity.IBCChannelList) error {
+	chainPendingTxs := func(channel *entity.IBCChannel) {
+		wg := sync.WaitGroup{}
+		var chainAPendingTxs, chainBPendingTxs int
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			chainACfg := chainCfgMap[channel.ChainA]
+			if chainACfg != nil && channel.ChannelA != "" {
+				//todo not only support 'transfer' port
+				//pendingTxCnt, err := t.getPengingTxsFromLcd(channel.ChannelA, "transfer", chainACfg.GrpcRestGateway, chainACfg.LcdApiPath.PacketCommitsPath)
+				pendingTxCnt, err := t.getPengingTxsFromLcd(channel.ChannelA, "transfer", chainACfg.GrpcRestGateway, strings.ReplaceAll(chainACfg.LcdApiPath.ClientStatePath, "client_state", "packet_commitments"))
+				if err != nil {
+					logrus.Error(err.Error())
+					return
+				}
+				if pendingTxCnt != nil {
+					chainAPendingTxs = *pendingTxCnt
+				}
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			chainBCfg := chainCfgMap[channel.ChainB]
+			if chainBCfg != nil && channel.ChannelB != "" {
+				//todo not only support 'transfer' port
+				//pendingTxCnt, err := t.getPengingTxsFromLcd(channel.ChannelB, "transfer", chainBCfg.GrpcRestGateway, chainBCfg.LcdApiPath.PacketCommitsPath)
+				pendingTxCnt, err := t.getPengingTxsFromLcd(channel.ChannelB, "transfer", chainBCfg.GrpcRestGateway, strings.ReplaceAll(chainBCfg.LcdApiPath.ClientStatePath, "client_state", "packet_commitments"))
+				if err != nil {
+					logrus.Error(err.Error())
+					return
+				}
+				if pendingTxCnt != nil {
+					chainBPendingTxs = *pendingTxCnt
+				}
+			}
+		}()
+		wg.Wait()
+		channel.PendingTxs = chainAPendingTxs + chainBPendingTxs
+		return
+	}
+
+	doHandle := func(workNum int, channels []*entity.IBCChannel, dowork func(channel *entity.IBCChannel)) {
+		var wg sync.WaitGroup
+		wg.Add(workNum)
+		for i := 0; i < workNum; i++ {
+			num := i
+			go func(num int) {
+				defer wg.Done()
+
+				for id, v := range channels {
+					if id%workNum != num {
+						continue
+					}
+					dowork(v)
+				}
+			}(num)
+		}
+		wg.Wait()
+	}
+	doHandle(5, existedChannelList, chainPendingTxs)
+	doHandle(5, newChannelList, chainPendingTxs)
+	return nil
+}
+
+func (t *ChannelTask) getPengingTxsFromLcd(channel, port, lcd, apiPath string) (*int, error) {
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderChannel, channel)
+	apiPath = strings.ReplaceAll(apiPath, replaceHolderPort, port)
+	url := fmt.Sprintf("%s%s", lcd, apiPath)
+
+	bz, err := utils.HttpGet(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp vo.IbcPacketCommitsResp
+	err = json.Unmarshal(bz, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp.Pagination.Total, nil
+}
+
 func (t *ChannelTask) calculateChannelStatistics(channelId string, statistics []*dto.ChannelStatisticsAggrDTO) (int64, decimal.Decimal) {
 	var txsCount int64 = 0
 	var txsValue = decimal.Zero
@@ -379,7 +484,7 @@ func (t *ChannelTask) todayStatistics() error {
 			EndTime:   endTime,
 		},
 	}
-	if err := channelStatisticsTask.deal(segments, opUpdate); err != nil {
+	if err := ChannelIncrementStatistics(segments); err != nil {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
@@ -388,25 +493,16 @@ func (t *ChannelTask) todayStatistics() error {
 }
 
 func (t *ChannelTask) yesterdayStatistics() error {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
-	if incr > statisticsCheckTimes {
+	ok, seg := whetherCheckYesterdayStatistics(t.Name(), t.Cron())
+	if !ok {
 		return nil
 	}
 
-	logrus.Infof("task %s check yeaterday statistics, time: %d", t.Name(), incr)
-	startTime, endTime := yesterdayUnix()
-	segments := []*segment{
-		{
-			StartTime: startTime,
-			EndTime:   endTime,
-		},
-	}
-	if err := channelStatisticsTask.deal(segments, opUpdate); err != nil {
-		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
+	logrus.Infof("task %s check yeaterday statistics", t.Name())
+	if err := ChannelIncrementStatistics([]*segment{seg}); err != nil {
+		logrus.Errorf("task %s yesterdayStatistics error, %v", t.Name(), err)
 		return err
 	}
 
-	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
 }

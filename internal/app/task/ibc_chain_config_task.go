@@ -3,7 +3,6 @@ package task
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/lcd"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -184,7 +185,7 @@ func (t *IbcChainConfigTask) setChainAndCounterpartyState(chain *entity.ChainCon
 			v.ClientId = existChannelState.ClientId
 		} else {
 			if !lcdConnectionErr { // 如果遇到lcd连接问题，则不再请求lcd.
-				stateResp, err := queryClientState(chain.GrpcRestGateway, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
+				stateResp, err := lcd.QueryClientState(chain.GrpcRestGateway, chain.LcdApiPath.ClientStatePath, v.PortId, v.ChannelId)
 				if err != nil {
 					lcdConnectionErr = isConnectionErr(err)
 					logrus.Errorf("task %s %s queryClientState error, %v", t.Name(), chain.ChainName, err)

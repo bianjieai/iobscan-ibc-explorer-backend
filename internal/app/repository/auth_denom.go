@@ -11,6 +11,7 @@ import (
 type IAuthDenomRepo interface {
 	FindAll() (entity.AuthDenomList, error)
 	FindBySymbol(symbol string) (entity.AuthDenom, error)
+	FindStableCoins() (entity.AuthDenomList, error)
 }
 
 var _ IAuthDenomRepo = new(AuthDenomRepo)
@@ -31,5 +32,11 @@ func (repo *AuthDenomRepo) FindAll() (entity.AuthDenomList, error) {
 func (repo *AuthDenomRepo) FindBySymbol(symbol string) (entity.AuthDenom, error) {
 	var res entity.AuthDenom
 	err := repo.coll().Find(context.Background(), bson.M{"symbol": symbol}).One(&res)
+	return res, err
+}
+
+func (repo *AuthDenomRepo) FindStableCoins() (entity.AuthDenomList, error) {
+	var res entity.AuthDenomList
+	err := repo.coll().Find(context.Background(), bson.M{"is_stable_coin": true}).All(&res)
 	return res, err
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -201,14 +202,14 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 			scPort := transferTxMsg.SourcePort
 			scChannel := transferTxMsg.SourceChannel
 			scDenom := transferTxMsg.Token.Denom
-			dcChain, dcPort, dcChannel := matchDcInfo(chain, scPort, scChannel, w.chainMap)
+			dcChain, dcPort, dcChannel := ibctool.MatchDcInfo(chain, scPort, scChannel, w.chainMap)
 
 			var fullDenomPath, sequence, scConnection string
 			ibcDenom, isExisted := denomMap[scDenom]
 			if ibcTxStatus != entity.IbcTxStatusFailed {
 				dcPort, dcChannel, fullDenomPath, sequence, scConnection = parseTransferTxEvents(msgIndex, tx)
 				if !isExisted { // denom 不存在
-					ibcDenom = traceDenom(fullDenomPath, chain, w.chainMap)
+					ibcDenom = ibctool.TraceDenom(fullDenomPath, chain, w.chainMap)
 				}
 			}
 
@@ -229,10 +230,6 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 			recordIdStr := fmt.Sprintf("%s%s%s%s%s%s%s%d", scPort, scChannel, dcPort, dcChannel, sequence, chain, tx.TxHash, msgIndex)
 			recordId := utils.Md5(recordIdStr)
 			nowUnix := time.Now().Unix()
-			createAt := nowUnix
-			if global.Config.Task.CreateAtUseTxTime {
-				createAt = tx.Time
-			}
 
 			exIbcTx := &entity.ExIbcTx{
 				Id:             primitive.NewObjectID(),
@@ -266,9 +263,6 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 				},
 				DcTxInfo:         nil,
 				AckTimeoutTxInfo: nil,
-				//Log: &entity.Log{
-				//	ScLog: tx.Log,
-				//},
 				Denoms: &entity.Denoms{
 					ScDenom: scDenom,
 					DcDenom: "",
@@ -277,8 +271,8 @@ func (w *syncTransferTxWorker) handleSourceTx(chain string, txList []*entity.Tx,
 				BaseDenomChain: baseDenomChain,
 				RetryTimes:     0,
 				NextTryTime:    nowUnix,
-				CreateAt:       createAt,
-				UpdateAt:       createAt,
+				CreateAt:       nowUnix,
+				UpdateAt:       nowUnix,
 			}
 			w.setClientId(exIbcTx) // set ScClientId, DcClientId
 			ibcTxList = append(ibcTxList, exIbcTx)

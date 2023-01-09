@@ -8,6 +8,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/sirupsen/logrus"
 )
 
@@ -154,7 +155,7 @@ func (t *AddChainTask) updateDenom(denomList entity.IBCDenomList, chainMap map[s
 		}
 
 		denomFullPath := fmt.Sprintf("%s/%s", v.DenomPath, v.RootDenom)
-		denomNew := traceDenom(denomFullPath, v.Chain, chainMap)
+		denomNew := ibctool.TraceDenom(denomFullPath, v.Chain, chainMap)
 		if v.BaseDenom != denomNew.BaseDenom || v.BaseDenomChain != denomNew.BaseDenomChain || v.PrevDenom != denomNew.PrevDenom ||
 			v.PrevChain != denomNew.PrevChain || v.IsBaseDenom != denomNew.IsBaseDenom {
 			logrus.WithField("denom", v).WithField("denom_new", denomNew).Infof("task %s denom trace path is changed", t.Name())

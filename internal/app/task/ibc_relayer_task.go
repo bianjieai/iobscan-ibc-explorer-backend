@@ -15,10 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/lcd"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
@@ -55,18 +55,8 @@ func (t *IbcRelayerCronTask) Run() int {
 	t.addressGather()
 
 	t.CheckAndChangeRelayer()
-	//最后更新chains,channels信息
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		t.updateIbcChainsRelayer()
-	}()
-	go func() {
-		defer wg.Done()
-		t.updateIbcChannelRelayer()
-	}()
-	wg.Wait()
+	//最后更新chains信息
+	t.updateIbcChainsRelayer()
 
 	return 1
 }
@@ -156,23 +146,6 @@ func (t *IbcRelayerCronTask) updateIbcChannelRelayerInfo(channelId string) {
 	}
 }
 
-func getRelayerAddrAndChains(channelPairInfo []entity.ChannelPairInfo) (addrs []string, chains []string) {
-	addrs = make([]string, 0, len(channelPairInfo))
-	chains = make([]string, 0, len(channelPairInfo))
-	for i := range channelPairInfo {
-		if len(channelPairInfo[i].ChainAAddress) > 0 {
-			addrs = append(addrs, channelPairInfo[i].ChainAAddress)
-		}
-		if len(channelPairInfo[i].ChainBAddress) > 0 {
-			addrs = append(addrs, channelPairInfo[i].ChainBAddress)
-		}
-		chains = append(chains, channelPairInfo[i].ChainA, channelPairInfo[i].ChainB)
-	}
-	addrs = utils.DistinctSliceStr(addrs)
-	chains = utils.DistinctSliceStr(chains)
-	return
-}
-
 //获取每个relayer的txs、txs_success、amount
 func AggrRelayerTxsAndAmt(relayerNew *entity.IBCRelayerNew) map[string]dto.TxsAmtItem {
 	combs := entity.ChannelPairInfoList(relayerNew.ChannelPairInfo).GetChainAddrCombs()
@@ -259,25 +232,6 @@ func (t *IbcRelayerCronTask) updateIbcChainsRelayer() {
 		}
 		if err := chainRepo.UpdateRelayers(val.Chain, relayerCnt); err != nil {
 			logrus.Error("update ibc_chain relayers fail, ", err.Error())
-		}
-	}
-	return
-}
-
-func (t *IbcRelayerCronTask) updateIbcChannelRelayer() {
-	res, err := channelRepo.FindAll()
-	if err != nil {
-		logrus.Error("find ibc_channel data fail, ", err.Error())
-		return
-	}
-	for _, val := range res {
-		relayerCnt, err := relayerRepo.CountChannelRelayers(val.ChainA, val.ChannelA, val.ChainB, val.ChannelB)
-		if err != nil {
-			logrus.Error("count relayers of channel fail, ", err.Error())
-			continue
-		}
-		if err := channelRepo.UpdateRelayers(val.ChannelId, relayerCnt); err != nil {
-			logrus.Error("update ibc_channel relayers fail, ", err.Error())
 		}
 	}
 	return
@@ -376,7 +330,7 @@ func (t *IbcRelayerCronTask) getChannelClient(chain, channelId string) (string, 
 	}
 
 	port := chainConf.GetPortId(channelId)
-	state, err := queryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
+	state, err := lcd.QueryClientState(chainConf.GrpcRestGateway, chainConf.LcdApiPath.ClientStatePath, port, channelId)
 	if err != nil {
 		return "", err
 	}
@@ -402,26 +356,17 @@ func (t *IbcRelayerCronTask) todayStatistics() error {
 }
 
 func (t *IbcRelayerCronTask) yesterdayStatistics() error {
-	mmdd := time.Now().Format(constant.TimeFormatMMDD)
-	incr, _ := statisticsCheckRepo.GetIncr(t.Name(), mmdd)
-	if incr > statisticsCheckTimes {
+	ok, seg := whetherCheckYesterdayStatistics(t.Name(), t.Cron())
+	if !ok {
 		return nil
 	}
 
-	logrus.Infof("task %s check yeaterday statistics, time: %d", t.Name(), incr)
-	startTime, endTime := yesterdayUnix()
-	segments := []*segment{
-		{
-			StartTime: startTime,
-			EndTime:   endTime,
-		},
-	}
-	if err := relayerStatisticsTask.RunIncrement(segments[0]); err != nil {
+	logrus.Infof("task %s check yeaterday statistics", t.Name())
+	if err := relayerStatisticsTask.RunIncrement(seg); err != nil {
 		logrus.Errorf("task %s todayStatistics error, %v", t.Name(), err)
 		return err
 	}
 
-	_ = statisticsCheckRepo.Incr(t.Name(), mmdd)
 	return nil
 }
 
@@ -445,7 +390,7 @@ func (t *IbcRelayerCronTask) handleRelayerChannelPair(relayer *entity.IBCRelayer
 	if change1 || change2 {
 		relayer.ChannelPairInfo = channelPairs
 		if err := relayerRepo.UpdateChannelPairInfo(relayer.RelayerId, relayer.ChannelPairInfo); err != nil {
-			logrus.Errorf("task %s update register relayer statistic fail, %v", t.Name(), err.Error())
+			logrus.Errorf("task %s update register relayer(%s) statistic fail, %v", t.Name(), relayer.RelayerId, err.Error())
 		}
 	}
 	return

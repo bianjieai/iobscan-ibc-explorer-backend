@@ -16,6 +16,7 @@ type ITokenTraceStatisticsRepo interface {
 	CreateNew() error
 	SwitchColl() error
 	BatchSwap(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenTraceStatistics) error
+	BatchSwapNew(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenTraceStatistics) error
 	BatchInsert(batch []*entity.IBCTokenTraceStatistics) error
 	BatchInsertToNew(batch []*entity.IBCTokenTraceStatistics) error
 	Aggr() ([]*dto.TokenTraceStatisticsDTO, error)
@@ -35,9 +36,13 @@ func (repo *TokenTraceStatisticsRepo) collNew() *qmgo.Collection {
 }
 
 func (repo *TokenTraceStatisticsRepo) CreateNew() error {
-	indexOpts := officialOpts.Index().SetUnique(true)
-	key := []string{"denom", "chain", "-segment_start_time", "-segment_end_time"}
-	return repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts})
+	indexOpts := officialOpts.Index()
+	key := []string{"segment_start_time", "segment_end_time"}
+	if err := repo.collNew().CreateOneIndex(context.Background(), opts.IndexModel{Key: key, IndexOptions: indexOpts}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (repo *TokenTraceStatisticsRepo) SwitchColl() error {
@@ -62,6 +67,30 @@ func (repo *TokenTraceStatisticsRepo) BatchSwap(segmentStartTime, segmentEndTime
 		}
 
 		if _, err := repo.coll().InsertMany(sessCtx, batch); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+	_, err := mgo.DoTransaction(context.Background(), callback)
+	return err
+}
+
+func (repo *TokenTraceStatisticsRepo) BatchSwapNew(segmentStartTime, segmentEndTime int64, batch []*entity.IBCTokenTraceStatistics) error {
+	callback := func(sessCtx context.Context) (interface{}, error) {
+		query := bson.M{
+			"segment_start_time": segmentStartTime,
+			"segment_end_time":   segmentEndTime,
+		}
+		if _, err := repo.collNew().RemoveAll(sessCtx, query); err != nil {
+			return nil, err
+		}
+
+		if len(batch) == 0 {
+			return nil, nil
+		}
+
+		if _, err := repo.collNew().InsertMany(sessCtx, batch); err != nil {
 			return nil, err
 		}
 

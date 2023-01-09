@@ -39,6 +39,7 @@ const (
 	statisticsCheck             = "statistics_check:%s_%s"
 	BaseDenomUnauth             = "base_denom_unauth"
 	baseDenomSymbol             = "base_denom:%s"
+	stableCoins                 = "stable_coins"
 	clientState                 = "client_state:%s"
 	lcdAccount                  = "lcd_accounts:%s_%s"
 	addrTokens                  = "address_tokens:%s_%s"
@@ -47,4 +48,9 @@ const (
 	lcdDelegation               = "lcd_delegation:%s_%s"
 	lcdUnbonding                = "lcd_unbonding:%s_%s"
 	lcdRewards                  = "lcd_rewards:%s_%s"
+	chainInflowVolumeTrend      = "chain_inflow_volume_trend_%d"
+	chainInflowVolume           = "chain_inflow_volume_%d"
+	chainOutflowVolumeTrend     = "chain_outflow_volume_trend_%d"
+	chainOutflowVolume          = "chain_outflow_volume_%d"
+	overviewTokenDistribution   = "token_distribution:%s_%s"
 )

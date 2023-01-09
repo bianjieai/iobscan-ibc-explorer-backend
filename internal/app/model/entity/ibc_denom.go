@@ -12,6 +12,7 @@ type IBCDenom struct {
 	BaseDenomChain string `bson:"base_denom_chain"`
 	DenomPath      string `bson:"denom_path"`
 	RootDenom      string `bson:"root_denom"`
+	IBCHops        int    `bson:"ibc_hops"`
 	IsBaseDenom    bool   `bson:"is_base_denom"`
 	CreateAt       int64  `bson:"create_at"`
 	UpdateAt       int64  `bson:"update_at"`

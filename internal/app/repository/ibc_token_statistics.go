@@ -12,6 +12,8 @@ import (
 	officialOpts "go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// ITokenStatisticsRepo
+// Warning: ITokenStatisticsRepo is deprecated
 type ITokenStatisticsRepo interface {
 	CreateNew() error
 	SwitchColl() error
@@ -24,6 +26,8 @@ type ITokenStatisticsRepo interface {
 
 var _ ITokenStatisticsRepo = new(TokenStatisticsRepo)
 
+// TokenStatisticsRepo
+// Warning: TokenStatisticsRepo is deprecated
 type TokenStatisticsRepo struct {
 }
 

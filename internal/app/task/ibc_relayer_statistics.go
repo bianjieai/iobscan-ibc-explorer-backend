@@ -8,6 +8,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/global"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/pkg/ibctool"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -220,7 +221,7 @@ func (w *relayerStatisticsWorker) aggrDenomStat(chain string, segment *segment, 
 			denomChain = w.chainMap[chain].GetDcChain(v.DcChannel, v.ScChannel)
 		}
 
-		denomEntity := traceDenom(v.Denom, denomChain, w.chainMap)
+		denomEntity := ibctool.TraceDenom(v.Denom, denomChain, w.chainMap)
 		dsmk := fmt.Sprintf("%s%s%d%s%s", v.Signer, v.TxType, v.Status, denomEntity.BaseDenom, denomEntity.BaseDenomChain)
 		if _, ok := denomStatMap[dsmk]; ok {
 			denomStatMap[dsmk].RelayedAmount += v.DenomAmount
