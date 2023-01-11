@@ -166,11 +166,17 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
+	if len(ibcDenoms) == 0 {
+		return nil, errors.WrapNoDataErr()
+	}
 
 	ibcDenomMap := ibcDenoms.ConvertToMap()
 	ibcTokens, err := tokenStatisticsRepo.FindByBaseDenom(req.BaseDenom, req.BaseDenomChain)
 	if err != nil {
 		return nil, errors.Wrap(err)
+	}
+	if len(ibcTokens) == 0 {
+		return nil, errors.WrapNoDataErr()
 	}
 
 	var genesisDenomElem *vo.GraphElem
