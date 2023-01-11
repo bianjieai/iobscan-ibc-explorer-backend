@@ -285,7 +285,7 @@ func (svc *OverviewService) fillJumpHopsElem(ibcTokens []*entity.IBCTokenTrace, 
 			continue
 		}
 		token, ok := tokenMap[k]
-		if !ok || token.IBCHops <= 1 {
+		if !ok || token.IBCHops <= 1 || token.DenomSupply == constant.ZeroDenomAmount || token.DenomSupply == constant.UnknownDenomAmount {
 			continue
 		}
 
