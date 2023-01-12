@@ -316,8 +316,8 @@ func (t *TokenTask) setIbcTransferAmount(existedTokenList, newTokenList entity.I
 	waitGroup.Add(len(t.chains))
 	for _, v := range t.chains {
 		go func(c string, addrs []string) {
+			defer waitGroup.Done()
 			t.getTransAmountFromLcd(c, addrs)
-			waitGroup.Done()
 		}(v, t.escrowAddressMap[v])
 	}
 	waitGroup.Wait()
@@ -472,14 +472,16 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 	chainsSet := utils.NewStringSet()
 	for _, v := range denomList {
 		denomType := t.ibcTokenStatisticsType(ibcToken.BaseDenom, v)
-		var denomAmount string
+		var denomAmount, denomSupply string
 		if denomType == entity.TokenTraceTypeGenesis {
+			denomSupply = ibcToken.Supply
 			denomAmount = t.ibcDenomAmountGenesis(ibcToken.Supply, ibcToken.TransferAmount)
 		} else {
-			denomAmount = t.ibcDenomAmount(v.Chain, v.Denom)
+			denomSupply = t.ibcDenomSupply(v.Chain, v.Denom)
+			denomAmount = t.ibcDenomAmount(v.Chain, v.Denom, denomSupply)
 		}
 
-		if denomAmount == constant.ZeroDenomAmount { // 为0说明此链已经没有这个ibc denom
+		if denomSupply == constant.ZeroDenomAmount { // 为0说明此链已经没有这个ibc denom
 			continue
 		}
 
@@ -491,6 +493,7 @@ func (t *TokenTask) ibcTokenStatistics(ibcToken *entity.IBCToken) (int64, error)
 			BaseDenomChain: ibcToken.Chain,
 			Type:           denomType,
 			IBCHops:        v.IBCHops,
+			DenomSupply:    denomSupply,
 			DenomAmount:    denomAmount,
 			DenomValue:     t.ibcDenomValue(denomAmount, ibcToken.Price, scale).Round(constant.DefaultValuePrecision).String(),
 			ReceiveTxs:     t.ibcReceiveTxsMap[fmt.Sprintf("%s%s", v.Denom, v.Chain)],
@@ -541,7 +544,7 @@ func (t *TokenTask) ibcDenomValue(amount string, price float64, scale int) decim
 	return value
 }
 
-func (t *TokenTask) ibcDenomAmount(chain, denom string) string {
+func (t *TokenTask) ibcDenomSupply(chain, denom string) string {
 	supplyAmount, err := denomDataRepo.GetSupply(chain, denom)
 	if err != nil {
 		if err == v8.Nil {
@@ -550,18 +553,22 @@ func (t *TokenTask) ibcDenomAmount(chain, denom string) string {
 		return constant.UnknownDenomAmount
 	}
 
+	return supplyAmount
+}
+
+func (t *TokenTask) ibcDenomAmount(chain, denom, supply string) string {
 	transferAmount, err := denomDataRepo.GetTransferAmount(chain, denom)
 	if err != nil {
 		transferAmount = constant.ZeroDenomAmount
 	}
 
-	sd, _ := decimal.NewFromString(supplyAmount)
+	sd, _ := decimal.NewFromString(supply)
 	td, _ := decimal.NewFromString(transferAmount)
 	if sd.GreaterThanOrEqual(td) {
 		return sd.Sub(td).String()
 	}
 
-	return supplyAmount
+	return constant.UnknownDenomAmount
 }
 
 func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
@@ -579,7 +586,11 @@ func (t *TokenTask) ibcDenomAmountGenesis(supply, transAmount string) string {
 		return constant.UnknownDenomAmount
 	}
 
-	return sd.Sub(td).String()
+	if sd.GreaterThanOrEqual(td) {
+		return sd.Sub(td).String()
+	}
+
+	return constant.UnknownDenomAmount
 }
 
 func (t *TokenTask) ibcTokenStatisticsType(baseDenom string, denom *entity.IBCDenom) entity.TokenTraceType {

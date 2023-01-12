@@ -134,15 +134,17 @@ func (svc *TokenService) IBCTokenList(req *vo.IBCTokenListReq) (*vo.IBCTokenList
 
 	items := make([]vo.IBCTokenItem, 0, len(list))
 	for _, v := range list {
-		items = append(items, vo.IBCTokenItem{
-			Denom:      v.Denom,
-			DenomPath:  v.DenomPath,
-			Chain:      v.Chain,
-			TokenType:  v.Type,
-			IBCHops:    v.IBCHops,
-			Amount:     v.DenomAmount,
-			ReceiveTxs: v.ReceiveTxs,
-		})
+		if v.DenomAmount != constant.ZeroDenomAmount {
+			items = append(items, vo.IBCTokenItem{
+				Denom:      v.Denom,
+				DenomPath:  v.DenomPath,
+				Chain:      v.Chain,
+				TokenType:  v.Type,
+				IBCHops:    v.IBCHops,
+				Amount:     v.DenomAmount,
+				ReceiveTxs: v.ReceiveTxs,
+			})
+		}
 	}
 
 	return &vo.IBCTokenListResp{
