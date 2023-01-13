@@ -17,6 +17,7 @@ type ITokenTraceRepo interface {
 	AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, error)
 	List(req *vo.IBCTokenListReq) ([]*entity.IBCTokenTrace, error)
 	CountList(req *vo.IBCTokenListReq) (int64, error)
+	FindByBaseDenom(baseDenom, baseDenomChain string) ([]*entity.IBCTokenTrace, error)
 }
 
 var _ ITokenTraceRepo = new(TokenTraceRepo)
@@ -123,4 +124,14 @@ func (repo *TokenTraceRepo) CountList(req *vo.IBCTokenListReq) (int64, error) {
 	param := repo.analyzeListParam(req)
 	count, err := repo.coll().Find(context.Background(), param).Count()
 	return count, err
+}
+
+func (repo *TokenTraceRepo) FindByBaseDenom(baseDenom, baseDenomChain string) ([]*entity.IBCTokenTrace, error) {
+	q := bson.M{
+		"base_denom":       baseDenom,
+		"base_denom_chain": baseDenomChain,
+	}
+	var res []*entity.IBCTokenTrace
+	err := repo.coll().Find(context.Background(), q).All(&res)
+	return res, err
 }
