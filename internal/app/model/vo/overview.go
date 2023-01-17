@@ -37,13 +37,22 @@ type TokenDistributionReq struct {
 }
 
 type (
-	TokenDistributionResp GraphData
-	GraphData             struct {
+	TokenDistributionResp struct {
+		*GraphData
+	}
+	GraphData struct {
 		Children []*GraphData `json:"children"`
-		Amount   string       `json:"amount"`
-		Denom    string       `json:"denom"`
-		Chain    string       `json:"chain"`
-		Hops     int          `json:"hops"`
+		*GraphElem
+	}
+
+	GraphElem struct {
+		Supply    string `json:"supply"`
+		Amount    string `json:"amount"`
+		Denom     string `json:"denom"`
+		Chain     string `json:"chain"`
+		Hops      int    `json:"hops"`
+		PrevChain string `json:"-"`
+		PrevDenom string `json:"-"`
 	}
 )
 

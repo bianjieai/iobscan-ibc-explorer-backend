@@ -50,6 +50,13 @@ func WrapLcdNodeErr(errMsg string) Error {
 	}
 }
 
+func WrapNoDataErr() Error {
+	return vsErr{
+		code: ErrNoData,
+		msg:  "no data",
+	}
+}
+
 type vsErr struct {
 	code int
 	msg  string

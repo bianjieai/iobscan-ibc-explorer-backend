@@ -16,6 +16,7 @@ type IBCTokenTrace struct {
 	BaseDenomChain string         `bson:"base_denom_chain"`
 	Type           TokenTraceType `bson:"type"`
 	IBCHops        int            `bson:"ibc_hops"`
+	DenomSupply    string         `bson:"denom_supply"`
 	DenomAmount    string         `bson:"denom_amount"`
 	DenomValue     string         `bson:"denom_value"`
 	ReceiveTxs     int64          `bson:"receive_txs"`

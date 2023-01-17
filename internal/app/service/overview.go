@@ -10,7 +10,6 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
-	v8 "github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
 )
 
@@ -163,99 +162,166 @@ func (svc *OverviewService) buildMarketHeatmapResp(denomHeatmapList []*entity.De
 }
 
 func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo.TokenDistributionResp, errors.Error) {
-	if data, err := overviewCache.GetTokenDistribution(req.BaseDenom, req.BaseDenomChain); err == nil {
-		return data, nil
-	}
 	ibcDenoms, err := denomRepo.FindByBaseDenom(req.BaseDenom, req.BaseDenomChain)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
+	if len(ibcDenoms) == 0 {
+		return nil, errors.WrapNoDataErr()
+	}
 
-	//getHops := func(denomPath string) int {
-	//	return strings.Count(denomPath, "/channel")
-	//}
-	mapHopsData := make(map[int]entity.IBCDenomList, 1)
-	mapChainData := make(map[string]string, 1)
-	for _, val := range ibcDenoms {
+	ibcDenomMap := ibcDenoms.ConvertToMap()
+	ibcTokens, err := tokenStatisticsRepo.FindByBaseDenom(req.BaseDenom, req.BaseDenomChain)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	if len(ibcTokens) == 0 {
+		return nil, errors.WrapNoDataErr()
+	}
 
-		amount, err := supportCache.GetSupply(val.Chain, val.Denom)
-		if err != nil {
-			if err == v8.Nil {
-				amount = constant.ZeroDenomAmount
+	var genesisDenomElem *vo.GraphElem
+	mapHopsData := make(map[int][]*vo.GraphElem, len(ibcTokens))
+	usedDenomFlagMap := make(map[string]bool, len(ibcTokens))
+	for _, val := range ibcTokens {
+		if val.Denom == req.BaseDenom && val.Chain == req.BaseDenomChain {
+			genesisDenomElem = &vo.GraphElem{
+				Supply: val.DenomSupply,
+				Amount: val.DenomAmount,
+				Denom:  val.Denom,
+				Chain:  val.Chain,
+				Hops:   val.IBCHops,
 			}
-			amount = constant.UnknownDenomAmount
-		}
-		_, ok := mapChainData[val.Chain+val.Denom]
-		if !ok {
-			mapChainData[val.Chain+val.Denom] = amount
 		}
 
-		//hop := getHops(val.DenomPath)
 		hop := val.IBCHops
-
-		if val.DenomPath == "" || hop == 0 {
+		if hop == 0 {
 			continue
+		}
+
+		elem := &vo.GraphElem{
+			Supply: val.DenomSupply,
+			Amount: val.DenomAmount,
+			Denom:  val.Denom,
+			Chain:  val.Chain,
+			Hops:   val.IBCHops,
+		}
+		uk := fmt.Sprintf("%s%s", val.Chain, val.Denom)
+		usedDenomFlagMap[uk] = false
+		if td, ok := ibcDenomMap[uk]; ok {
+			elem.PrevChain = td.PrevChain
+			elem.PrevDenom = td.PrevDenom
 		}
 
 		hopDatas, exist := mapHopsData[hop]
 		if exist {
-			hopDatas = append(hopDatas, val)
-			mapHopsData[hop] = hopDatas
+			mapHopsData[hop] = append(hopDatas, elem)
 		} else {
-			mapHopsData[hop] = entity.IBCDenomList{val}
+			mapHopsData[hop] = []*vo.GraphElem{elem}
 		}
 	}
 
-	resp := &vo.TokenDistributionResp{
-		Chain:  req.BaseDenomChain,
-		Denom:  req.BaseDenom,
-		Hops:   0,
-		Amount: mapChainData[req.BaseDenomChain+req.BaseDenom],
+	if genesisDenomElem == nil || genesisDenomElem.Supply == constant.UnknownDenomAmount || genesisDenomElem.Supply == constant.ZeroDenomAmount {
+		return nil, errors.WrapNoDataErr()
 	}
-	//hop get ibc denom
+
+	graphData := &vo.GraphData{
+		Children:  []*vo.GraphData{},
+		GraphElem: genesisDenomElem,
+	}
 	hop := 1
-	resp.Children = make([]*vo.GraphData, 0, 1)
-	hopDenoms, ok := mapHopsData[hop]
+	oneHopDenoms, ok := mapHopsData[hop]
 	if !ok {
-		return resp, nil
+		graphData = svc.fillJumpHopsElem(ibcTokens, usedDenomFlagMap, graphData)
+		return &vo.TokenDistributionResp{GraphData: graphData}, nil
 	}
-	for _, val := range hopDenoms {
 
+	for _, val := range oneHopDenoms {
 		children := vo.GraphData{
-			Denom:  val.Denom,
-			Chain:  val.Chain,
-			Hops:   hop,
-			Amount: mapChainData[val.Chain+val.Denom],
+			Children:  nil,
+			GraphElem: val,
 		}
-		children = svc.FindChildrens(mapChainData, mapHopsData, children)
-
-		resp.Children = append(resp.Children, &children)
+		children = svc.findChildrens(mapHopsData, usedDenomFlagMap, children)
+		graphData.Children = append(graphData.Children, &children)
+		usedDenomFlagMap[fmt.Sprintf("%s%s", val.Chain, val.Denom)] = true
 	}
 
-	_ = overviewCache.SetTokenDistribution(req.BaseDenom, req.BaseDenomChain, *resp)
-	return resp, nil
+	graphData = svc.fillJumpHopsElem(ibcTokens, usedDenomFlagMap, graphData)
+	resp := vo.TokenDistributionResp{GraphData: graphData}
+	return &resp, nil
 }
 
-func (svc *OverviewService) FindChildrens(mapChainData map[string]string, mapHopsData map[int]entity.IBCDenomList, ret vo.GraphData) vo.GraphData {
+func (svc *OverviewService) findChildrens(mapHopsData map[int][]*vo.GraphElem, usedDenomFlagMap map[string]bool, ret vo.GraphData) vo.GraphData {
 	hopDenoms, ok := mapHopsData[ret.Hops+1]
 	if !ok {
-		if ret.Children == nil {
-			ret.Children = make([]*vo.GraphData, 0, 1)
-		}
+		ret.Children = []*vo.GraphData{}
 		return ret
 	}
-	ret.Children = make([]*vo.GraphData, 0, 1)
+
+	if ret.Supply == constant.ZeroDenomAmount || ret.Supply == constant.UnknownDenomAmount {
+		ret.Children = []*vo.GraphData{}
+		return ret
+	}
+
+	ret.Children = make([]*vo.GraphData, 0)
 	for _, val := range hopDenoms {
 		if val.PrevDenom == ret.Denom && val.PrevChain == ret.Chain {
 			children := vo.GraphData{
-				Denom:  val.Denom,
-				Chain:  val.Chain,
-				Hops:   ret.Hops + 1,
-				Amount: mapChainData[val.Chain+val.Denom],
+				Children:  nil,
+				GraphElem: val,
 			}
-			children = svc.FindChildrens(mapChainData, mapHopsData, children)
+			children = svc.findChildrens(mapHopsData, usedDenomFlagMap, children)
 			ret.Children = append(ret.Children, &children)
+			usedDenomFlagMap[fmt.Sprintf("%s%s", val.Chain, val.Denom)] = true
 		}
+	}
+
+	return ret
+}
+
+func (svc *OverviewService) fillJumpHopsElem(ibcTokens []*entity.IBCTokenTrace, usedDenomFlagMap map[string]bool, ret *vo.GraphData) *vo.GraphData {
+	tokenMap := make(map[string]*entity.IBCTokenTrace)
+	for _, v := range ibcTokens {
+		tokenMap[fmt.Sprintf("%s%s", v.Chain, v.Denom)] = v
+	}
+
+	for k, flag := range usedDenomFlagMap {
+		if flag {
+			continue
+		}
+		token, ok := tokenMap[k]
+		if !ok || token.IBCHops <= 1 || token.DenomSupply == constant.ZeroDenomAmount || token.DenomSupply == constant.UnknownDenomAmount {
+			continue
+		}
+
+		var gdp = &vo.GraphData{
+			Children: nil,
+			GraphElem: &vo.GraphElem{
+				Supply: token.DenomSupply,
+				Amount: "0",
+				Hops:   1,
+			},
+		}
+		rootGdp := gdp
+		for i := 2; i <= token.IBCHops; i++ {
+			elem := &vo.GraphElem{
+				Supply: token.DenomSupply,
+				Amount: "0",
+				Hops:   i,
+			}
+			if i == token.IBCHops {
+				elem.Chain = token.Chain
+				elem.Denom = token.Denom
+				elem.Amount = token.DenomAmount
+			}
+
+			gdp.Children = append(gdp.Children, &vo.GraphData{
+				Children:  []*vo.GraphData{},
+				GraphElem: elem,
+			})
+			gdp = gdp.Children[0]
+		}
+
+		ret.Children = append(ret.Children, rootGdp)
 	}
 
 	return ret
