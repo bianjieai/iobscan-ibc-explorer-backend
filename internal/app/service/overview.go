@@ -220,6 +220,10 @@ func (svc *OverviewService) TokenDistribution(req *vo.TokenDistributionReq) (*vo
 		}
 	}
 
+	if genesisDenomElem == nil || genesisDenomElem.Supply == constant.UnknownDenomAmount || genesisDenomElem.Supply == constant.ZeroDenomAmount {
+		return nil, errors.WrapNoDataErr()
+	}
+
 	graphData := &vo.GraphData{
 		Children:  []*vo.GraphData{},
 		GraphElem: genesisDenomElem,
