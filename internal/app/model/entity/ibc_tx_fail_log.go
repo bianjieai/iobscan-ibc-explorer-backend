@@ -14,6 +14,15 @@ const (
 	TxFailCodeInsufficientFunds           TxFailCode = "insufficient_funds"
 	TxFailCodeClientNotActive             TxFailCode = "client_is_not_active"
 	TxFailCodeParsePacketFowradingInfoErr TxFailCode = "cannot_parse_packet_fowrading_information"
+	TxFailCodeChannelNotFound             TxFailCode = "channel_not_found"
+	TxFailCodeDecodingBech32Failed        TxFailCode = "decoding_bech32_failed" // decoding bech32 failed
+	TxFailCodeInvalidBech32Prefix         TxFailCode = "invalid_bech32_prefix"  // invalid Bech32 prefix
+	TxFailCodeUnauthorized                TxFailCode = "unauthorized"
+	TxFailCodeInvalidCoins                TxFailCode = "invalid_coins"
+	TxFailCodeErrorHandlingPacket         TxFailCode = "error_handling_packet"                          // error handling packet
+	TxFailCodeIncorrectAccountSequence    TxFailCode = "incorrect_account_sequence"                     // incorrect account sequence
+	TxFailCodeDenominationTraceNotFound   TxFailCode = "denomination_trace_not_found"                   // denomination trace not found
+	TxFailCodeParsedChannelNotMatchPacket TxFailCode = "parsed_channel_from_denom_doesn't_match_packet" // Parsed channel from denom (channel-42) doesn't match packet
 )
 
 type IBCTxFailLog struct {
