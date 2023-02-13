@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -106,6 +107,14 @@ func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool, op int) erro
 		}
 	}
 
+	parseAckTimeoutTxInfo := func(tx *entity.ExIbcTx) (string, string) {
+		if tx.AckTimeoutTxInfo == nil || tx.AckTimeoutTxInfo.Msg == nil {
+			return "", ""
+		}
+
+		return tx.AckTimeoutTxInfo.Msg.Type, tx.AckTimeoutTxInfo.Msg.AckPacketMsg().Acknowledgement
+	}
+
 	logrus.Infof("task %s deal isTargetHistory: %t, segment: %d-%d", t.Name(), isTargetHistory, seg.StartTime, seg.EndTime)
 	for {
 		txs, err := ibcTxRepo.FindFailLog(seg.StartTime, seg.EndTime, skip, limit, isTargetHistory)
@@ -121,11 +130,10 @@ func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool, op int) erro
 				aggrFunc(failCode, tx.DcChain, tx.ScTxInfo.Log)
 			} else { // refund
 				var failCode entity.TxFailCode
-				var failLog string
-				if tx.AckTimeoutTxInfo.Msg.Type == string(entity.TxTypeTimeoutPacket) {
+				msgType, failLog := parseAckTimeoutTxInfo(tx)
+				if msgType == string(entity.TxTypeTimeoutPacket) {
 					failCode = entity.TxFailCodeTimeout
 				} else {
-					failLog = tx.AckTimeoutTxInfo.Msg.AckPacketMsg().Acknowledgement
 					failCode = t.failType(failLog)
 				}
 
@@ -168,6 +176,15 @@ func (t *IBCTxFailLogTask) deal(seg *segment, isTargetHistory bool, op int) erro
 }
 
 func (t *IBCTxFailLogTask) failType(log string) entity.TxFailCode {
+	parsedChannelNotMatchPacketFunc := func() bool {
+		compile, err := regexp.Compile(`parsed channel from denom [\s\S]* doesn't match packet`)
+		if err != nil {
+			return false
+		}
+
+		return compile.MatchString(strings.ToLower(log))
+	}
+
 	if strings.Contains(log, "packet timeout") {
 		return entity.TxFailCodeTimeout
 	} else if strings.Contains(log, "out of gas") {
@@ -178,6 +195,26 @@ func (t *IBCTxFailLogTask) failType(log string) entity.TxFailCode {
 		return entity.TxFailCodeClientNotActive
 	} else if strings.Contains(log, "cannot parse packet fowrading information") {
 		return entity.TxFailCodeParsePacketFowradingInfoErr
+	} else if strings.Contains(log, "channel not found") {
+		return entity.TxFailCodeChannelNotFound
+	} else if strings.Contains(strings.ToLower(log), "invalid bech32 prefix") {
+		return entity.TxFailCodeInvalidBech32Prefix
+	} else if strings.Contains(strings.ToLower(log), "decoding bech32 failed") {
+		return entity.TxFailCodeDecodingBech32Failed
+	} else if strings.Contains(log, "unauthorized") {
+		return entity.TxFailCodeUnauthorized
+	} else if strings.Contains(log, "invalid coins") {
+		return entity.TxFailCodeInvalidCoins
+	} else if strings.Contains(log, "error handling packet") {
+		return entity.TxFailCodeErrorHandlingPacket
+	} else if strings.Contains(log, "incorrect account sequence") {
+		return entity.TxFailCodeIncorrectAccountSequence
+	} else if strings.Contains(log, "denomination trace not found") {
+		return entity.TxFailCodeDenominationTraceNotFound
+	} else if parsedChannelNotMatchPacketFunc() { // regex
+		return entity.TxFailCodeParsedChannelNotMatchPacket
+	} else if strings.Contains(log, "wrong sequence") {
+		return entity.TxFailCodeWrongSeq
 	} else {
 		return entity.TxFailCodeOther
 	}
