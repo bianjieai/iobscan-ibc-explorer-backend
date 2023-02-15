@@ -261,3 +261,9 @@ type FailureStatisticsSDTO struct {
 	Code   string `bson:"_id"`
 	TxsNum int64  `bson:"txs_num"`
 }
+
+type FlowStatisticsDTO struct {
+	BaseDenom   string `bson:"base_denom"`
+	DenomAmount int64  `bson:"denom_amount"`
+	TxsCount    int64  `bson:"txs_count"`
+}

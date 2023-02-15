@@ -135,3 +135,19 @@ type TaskReq struct {
 	EndTime         int64 `json:"end_time"`
 	IsTargetHistory bool  `json:"is_target_history"`
 }
+
+type (
+	FlowInfoStatisticsReq struct {
+		StartDate string `json:"start_date" form:"start_date"`
+		EndDate   string `json:"end_date" form:"end_date"`
+	}
+
+	FlowInfoStatisticsResp struct {
+		TransferTxsNumber   int    `json:"transfer_txs_number"`
+		TransferTxsUSDValue string `json:"transfer_txs_usd_value"`
+		InflowTxsNumber     int    `json:"inflow_txs_number"`
+		InflowTxsUSDValue   string `json:"inflow_txs_usd_value"`
+		OutflowTxsNumber    int    `json:"outflow_txs_number"`
+		OutflowTxsUSDValue  string `json:"outflow_txs_usd_value"`
+	}
+)

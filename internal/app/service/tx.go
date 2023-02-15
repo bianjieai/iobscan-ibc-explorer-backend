@@ -16,6 +16,7 @@ import (
 type ITxService interface {
 	Query(hash string, req vo.TxReq) (*vo.TxResp, errors.Error)
 	FailureStatistics(chain string, startTime, endTime int64) (*vo.FailureStatisticsResp, errors.Error)
+	FlowInfoStatistics(chain string, startTime, endTime int64) (*vo.FlowInfoStatisticsResp, errors.Error)
 }
 
 var _ ITxService = new(TxService)
@@ -447,4 +448,8 @@ func (svc *TxService) FailureStatistics(chain string, startTime, endTime int64) 
 			TxTimeEnd:   endTime,
 		},
 	}, nil
+}
+
+func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64) (*vo.FlowInfoStatisticsResp, errors.Error) {
+	return nil, nil
 }

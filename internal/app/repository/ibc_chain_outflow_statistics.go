@@ -1,0 +1,68 @@
+package repository
+
+import (
+	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
+	"github.com/qiniu/qmgo"
+	"github.com/qiniu/qmgo/operator"
+	"go.mongodb.org/mongo-driver/bson"
+)
+
+type IChainOutflowStatisticsRepo interface {
+	OutflowStatistics(chain string, startTime, endTime int64) ([]*dto.FlowStatisticsDTO, error)
+}
+
+var _ IChainOutflowStatisticsRepo = new(ChainOutflowStatisticsRepo)
+
+type ChainOutflowStatisticsRepo struct {
+}
+
+func (repo *ChainOutflowStatisticsRepo) coll() *qmgo.Collection {
+	return mgo.Database(ibcDatabase).Collection(entity.IBCChainOutflowStatisticsCollName)
+}
+
+func (repo *ChainOutflowStatisticsRepo) OutflowStatistics(chain string, startTime, endTime int64) ([]*dto.FlowStatisticsDTO, error) {
+	match := bson.M{
+		operator.Match: bson.M{
+			"status": entity.IbcTxStatusSuccess,
+			"chain":  chain,
+			"segment_start_time": bson.M{
+				operator.Gte: startTime,
+			},
+			"segment_end_time": bson.M{
+				operator.Lte: endTime,
+			},
+		},
+	}
+
+	group := bson.M{
+		operator.Group: bson.M{
+			"_id": bson.M{
+				"base_denom":       "$base_denom",
+				"base_denom_chain": "$base_denom_chain",
+			},
+			"denom_account": bson.M{
+				operator.Sum: "$denom_account",
+			},
+			"txs_count": bson.M{
+				operator.Sum: "$txs_number",
+			},
+		},
+	}
+
+	project := bson.M{
+		operator.Project: bson.M{
+			"_id":           0,
+			"base_denom":    "$_id.base_denom",
+			"denom_account": "$denom_account",
+			"txs_count":     "$txs_count",
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match, group, project)
+	var res []*dto.FlowStatisticsDTO
+	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
+	return res, err
+}
