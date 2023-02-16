@@ -38,3 +38,4 @@ coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
 
 [task]
 ibc_tx_fail_log_task = "0 0 2 * * ?"
+ibc_chain_fee_statistic_task = "0 */5 * * * ?"

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -27,6 +28,7 @@ type ITxRepo interface {
 		txTimeStart, txTimeEnd int64) (int64, error)
 	GetIbcTxsByHash(chain string, hash string) ([]*entity.Tx, error)
 	FindByPacketId(chain, packetId string) ([]*entity.Tx, error)
+	ChainFeeStatistics(chain string, startTime, endTime int64) ([]*dto.ChainFeeStatisticsDTO, error)
 }
 
 var _ ITxRepo = new(TxRepo)
@@ -258,5 +260,67 @@ func (repo *TxRepo) FindByPacketId(chain, packetId string) ([]*entity.Tx, error)
 	}
 
 	err := repo.coll(chain).Find(context.Background(), query).All(&res)
+	return res, err
+}
+func (repo *TxRepo) aggTransferTxsFeePipe(startTime, endTime int64) []bson.M {
+	match1 := bson.M{
+		"$match": bson.M{
+			"time": bson.M{
+				"$gte": startTime,
+				"$lte": endTime,
+			},
+			"msgs.type": bson.M{
+				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket, entity.TxTypeTransfer},
+			},
+		},
+	}
+	unwindMsg := bson.M{
+		"$unwind": "$msgs",
+	}
+	match2 := bson.M{
+		"$match": bson.M{
+			"msgs.type": bson.M{
+				"$in": []entity.TxType{entity.TxTypeRecvPacket, entity.TxTypeAckPacket, entity.TxTypeTimeoutPacket, entity.TxTypeTransfer},
+			},
+		},
+	}
+	unwindFee := bson.M{
+		"$unwind": "$fee.amount",
+	}
+
+	group := bson.M{
+		"$group": bson.M{
+			"_id": bson.M{
+				"denom":   "$fee.amount.denom",
+				"status":  "$status",
+				"tx_type": "$msgs.type",
+			},
+			"denom_amount": bson.M{
+				"$sum": bson.M{
+					"$toDouble": "$fee.amount.amount",
+				},
+			},
+		},
+	}
+
+	project := bson.M{
+		"$project": bson.M{
+			"_id":          0,
+			"status":       "$_id.status",
+			"tx_type":      "$_id.tx_type",
+			"denom":        "$_id.denom",
+			"denom_amount": "$denom_amount",
+		},
+	}
+
+	var pipe []bson.M
+	pipe = append(pipe, match1, unwindMsg, match2, unwindFee, group, project)
+	return pipe
+}
+
+func (repo *TxRepo) ChainFeeStatistics(chain string, startTime, endTime int64) ([]*dto.ChainFeeStatisticsDTO, error) {
+	pipe := repo.aggTransferTxsFeePipe(startTime, endTime)
+	var res []*dto.ChainFeeStatisticsDTO
+	err := repo.coll(chain).Aggregate(context.Background(), pipe).All(&res)
 	return res, err
 }

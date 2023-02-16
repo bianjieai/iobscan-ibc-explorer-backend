@@ -3,6 +3,7 @@ package rest
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
@@ -41,6 +42,23 @@ func (ctl *TaskController) Run(c *gin.Context) {
 				return
 			}
 			res = ibcTxFailLogTask.RunWithParam(req.StartTime, req.EndTime, req.IsTargetHistory)
+		case iBCChainFeeStatisticTask.Name():
+			chain := c.PostForm("chain")
+			if chain == "" {
+				iBCChainFeeStatisticTask.RunAllChain()
+			} else {
+				startTime, err := strconv.ParseInt(c.PostForm("start_time"), 10, 64)
+				if err != nil {
+					logrus.Errorf("TaskController run %s err, %v", taskName, err)
+					return
+				}
+				endTime, err := strconv.ParseInt(c.PostForm("end_time"), 10, 64)
+				if err != nil {
+					logrus.Errorf("TaskController run %s err, %v", taskName, err)
+					return
+				}
+				res = iBCChainFeeStatisticTask.RunWithParam(chain, startTime, endTime)
+			}
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

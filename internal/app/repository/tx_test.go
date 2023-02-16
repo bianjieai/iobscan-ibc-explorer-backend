@@ -1,6 +1,9 @@
 package repository
 
-import "testing"
+import (
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"testing"
+)
 
 func TestTxRepo_GetTimePeriodByUpdateClient(t *testing.T) {
 	val1, err := new(TxRepo).GetUpdateTimeByUpdateClient("irishub_qa", "iaa1u3tpcx5088rx3lzzt0gg73lt9zugrjp730apj8", "adb", 1656557855)
@@ -16,4 +19,12 @@ func TestTxRepo_GetChannelOpenConfirmTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(val)
+}
+
+func TestTxRepo_ChainFeeStatistics(t *testing.T) {
+	val, err := new(TxRepo).ChainFeeStatistics("osmosis", 1673222400, 1673308799)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(val)))
 }
