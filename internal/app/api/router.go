@@ -43,6 +43,7 @@ func Routers(Router *gin.Engine) {
 	txCtl(ibcRouter)
 	chainCtl(ibcRouter)
 	taskTools(ibcRouter)
+	feeCtl(ibcRouter)
 }
 
 func txCtl(r *gin.RouterGroup) {
@@ -60,4 +61,9 @@ func chainCtl(r *gin.RouterGroup) {
 func taskTools(r *gin.RouterGroup) {
 	ctl := rest.TaskController{}
 	r.POST("/task/:task_name", ctl.Run)
+}
+
+func feeCtl(r *gin.RouterGroup) {
+	ctl := rest.IbcFeeController{}
+	r.GET("/fee/statistics/:chain/paid", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChinFeeStatistics))
 }

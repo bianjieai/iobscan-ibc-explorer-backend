@@ -24,7 +24,7 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	relayerFeeStatistics, err := ibcRelayerFeeStatisticsRepo.AggrRelayerFeeStatistics(chain, startTime, endTime)
+	relayerFeeStatistics, err := ibcChainFeeStatisticsRepo.RelayerFeeStatistics(chain, startTime, endTime)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

@@ -42,8 +42,8 @@ func (repo *ChainInflowStatisticsRepo) InflowStatistics(chain string, startTime,
 				"base_denom":       "$base_denom",
 				"base_denom_chain": "$base_denom_chain",
 			},
-			"denom_account": bson.M{
-				operator.Sum: "$denom_account",
+			"denom_amount": bson.M{
+				operator.Sum: "$denom_amount",
 			},
 			"txs_count": bson.M{
 				operator.Sum: "$txs_number",
@@ -53,10 +53,11 @@ func (repo *ChainInflowStatisticsRepo) InflowStatistics(chain string, startTime,
 
 	project := bson.M{
 		operator.Project: bson.M{
-			"_id":           0,
-			"base_denom":    "$_id.base_denom",
-			"denom_account": "$denom_account",
-			"txs_count":     "$txs_count",
+			"_id":              0,
+			"base_denom":       "$_id.base_denom",
+			"base_denom_chain": "$_id.base_denom_chain",
+			"denom_amount":     "$denom_amount",
+			"txs_count":        "$txs_count",
 		},
 	}
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"strconv"
 	"strings"
 
@@ -451,5 +452,41 @@ func (svc *TxService) FailureStatistics(chain string, startTime, endTime int64) 
 }
 
 func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64) (*vo.FlowInfoStatisticsResp, errors.Error) {
-	return nil, nil
+	var (
+		totalTxsNum        int64
+		totalInflowTxsNum  int64
+		totalOutflowTxsNum int64
+		totalTxsUSDValue   string
+	)
+	inflowStatistics, err := ibcChainInflowStatisticsRepo.InflowStatistics(chain, startTime, endTime)
+
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	outflowStatistics, err := ibcChainOutflowStatisticsRepo.OutflowStatistics(chain, startTime, endTime)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	denomPriceMap := cache.TokenPriceMap()
+
+	inflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, inflowStatistics)
+	outflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, outflowStatistics)
+	totalTxsUSDValue = inflowTotalValue.Add(outflowTotalValue).String()
+
+	for _, inflowInfo := range inflowStatistics {
+		totalInflowTxsNum += inflowInfo.TxsCount
+	}
+	for _, outflowInfo := range outflowStatistics {
+		totalOutflowTxsNum += outflowInfo.TxsCount
+	}
+	totalTxsNum = totalInflowTxsNum + totalOutflowTxsNum
+
+	return &vo.FlowInfoStatisticsResp{
+		TransferTxsNumber:   totalTxsNum,
+		TransferTxsUSDValue: totalTxsUSDValue,
+		InflowTxsNumber:     totalInflowTxsNum,
+		InflowTxsUSDValue:   inflowTotalValue.String(),
+		OutflowTxsNumber:    totalOutflowTxsNum,
+		OutflowTxsUSDValue:  outflowTotalValue.String(),
+	}, nil
 }

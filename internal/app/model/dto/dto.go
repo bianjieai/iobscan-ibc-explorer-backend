@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/shopspring/decimal"
 	"math"
@@ -249,6 +250,21 @@ func CaculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsData
 	return totalValue
 }
 
+func CaculateChainTotalValue(denomPriceMap map[string]CoinItem, flowStatistics []*FlowStatisticsDTO) decimal.Decimal {
+	totalValue := decimal.NewFromFloat(0)
+	for _, inflowInfo := range flowStatistics {
+		baseDenomValue := decimal.NewFromFloat(0)
+		decAmt := decimal.NewFromFloat(inflowInfo.DenomAmount)
+		if coin, ok := denomPriceMap[fmt.Sprintf("%s%s", inflowInfo.BaseDenom, inflowInfo.BaseDenomChain)]; ok {
+			if coin.Scale > 0 {
+				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+			}
+		}
+		totalValue = totalValue.Add(baseDenomValue)
+	}
+	return totalValue
+}
+
 type BaseDenomAmountDTO struct {
 	BaseDenom      string  `bson:"base_denom"`
 	BaseDenomChain string  `bson:"base_denom_chain"`
@@ -269,7 +285,13 @@ type FailureStatisticsSDTO struct {
 }
 
 type FlowStatisticsDTO struct {
-	BaseDenom   string `bson:"base_denom"`
-	DenomAmount int64  `bson:"denom_amount"`
-	TxsCount    int64  `bson:"txs_count"`
+	BaseDenom      string  `bson:"base_denom"`
+	BaseDenomChain string  `bson:"base_denom_chain"`
+	DenomAmount    float64 `bson:"denom_amount"`
+	TxsCount       int64   `bson:"txs_count"`
+}
+
+type DenomAmountStatisticsDTO struct {
+	FeeDenom  string  `bson:"fee_denom"`
+	FeeAmount float64 `bson:"fee_amount"`
 }

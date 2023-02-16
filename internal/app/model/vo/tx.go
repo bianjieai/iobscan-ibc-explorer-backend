@@ -143,11 +143,31 @@ type (
 	}
 
 	FlowInfoStatisticsResp struct {
-		TransferTxsNumber   int    `json:"transfer_txs_number"`
+		TransferTxsNumber   int64  `json:"transfer_txs_number"`
 		TransferTxsUSDValue string `json:"transfer_txs_usd_value"`
-		InflowTxsNumber     int    `json:"inflow_txs_number"`
+		InflowTxsNumber     int64  `json:"inflow_txs_number"`
 		InflowTxsUSDValue   string `json:"inflow_txs_usd_value"`
-		OutflowTxsNumber    int    `json:"outflow_txs_number"`
+		OutflowTxsNumber    int64  `json:"outflow_txs_number"`
 		OutflowTxsUSDValue  string `json:"outflow_txs_usd_value"`
+	}
+)
+
+type (
+	ChainFeeStatisticsReq struct {
+		StartDate string `json:"start_date" form:"start_date"`
+		EndDate   string `json:"end_date" form:"end_date"`
+	}
+
+	ChainFeeStatisticsResp struct {
+		Fee []ChainDenomFeeStatistics `json:"fee"`
+	}
+
+	ChainDenomFeeStatistics struct {
+		Denom           string `json:"denom"`
+		DenomUSDPrice   string `json:"denom_usd_price"`
+		TotalAmount     string `json:"total_amount"`
+		TotalUSDValue   string `json:"total_usd_value"`
+		RelayerAmount   string `json:"relayer_amount"`
+		RelayerUSDValue string `json:"relayer_usd_value"`
 	}
 )
