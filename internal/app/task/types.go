@@ -18,11 +18,16 @@ const (
 
 	opInsert = 1
 	opUpdate = 2
+
+	segmentStep = 24 * 3600
 )
 
 var (
-	ibcTxRepo        repository.IExIbcTxRepo      = new(repository.ExIbcTxRepo)
-	ibcTxFailLogRepo repository.IIBCTxFailLogRepo = new(repository.IBCTxFailLogRepo)
+	chainConfigRepo        repository.IChainConfigRepo        = new(repository.ChainConfigRepo)
+	chainFeeStatisticsRepo repository.IChainFeeStatisticsRepo = new(repository.ChainFeeStatisticsRepo)
+	ibcTxRepo              repository.IExIbcTxRepo            = new(repository.ExIbcTxRepo)
+	txRepo                 repository.ITxRepo                 = new(repository.TxRepo)
+	ibcTxFailLogRepo       repository.IIBCTxFailLogRepo       = new(repository.IBCTxFailLogRepo)
 )
 
 type stringQueueCoordinator struct {

@@ -33,6 +33,12 @@ type AggregateIBCChainDTO struct {
 	Count      int64   `bson:"count"`
 }
 
+type ChainFeeStatisticsDTO struct {
+	Status      int64   `bson:"status"`
+	Denom       string  `bson:"denom"`
+	DenomAmount float64 `bson:"denom_amount"`
+}
+
 type RelayerDenomStatisticsDTO struct {
 	Signer      string  `bson:"signer"`
 	Status      int64   `bson:"status"`
