@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/monitor"
 	"os"
 	"path"
 	"strings"
@@ -31,9 +32,9 @@ func Serve(cfg *conf.Config) {
 
 	r := gin.Default()
 	api.Routers(r)
-	//if cfg.App.StartMonitor {
-	//	go monitor.Start(cfg.App.Prometheus)
-	//}
+	if cfg.App.StartMonitor {
+		go monitor.Start(cfg.App.Prometheus)
+	}
 	if cfg.App.StartTask {
 		go startTask(cfg.Redis, cfg.Task)
 	}
@@ -57,6 +58,7 @@ func startTask(c conf.Redis, tc conf.Task) {
 	}
 
 	distributionTask.RegisterTasks(new(task.IBCTxFailLogTask))
+	distributionTask.RegisterTasks(new(task.IBCChainFeeStatisticTask))
 	distributionTask.Start()
 }
 

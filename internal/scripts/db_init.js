@@ -351,3 +351,19 @@ db.ibc_relayer_address_channel.createIndex({
     "chain": 1,
     "channel": 1
 }, {background: true, unique: true});
+
+// chain statistics
+db.ibc_chain_fee_statistics.createIndex({
+    "chain_name": 1,
+    "payer_type": 1,
+    "tx_status": 1,
+    "fee_denom": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {name: "statistics_unique", background: true, unique: true});
+
+db.ibc_chain_fee_statistics.createIndex({
+    "chain_name": 1,
+    "segment_start_time": 1,
+    "segment_end_time": 1,
+}, {background: true});

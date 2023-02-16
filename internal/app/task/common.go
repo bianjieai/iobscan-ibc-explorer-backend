@@ -264,15 +264,10 @@ func parseAckPacketTxEvents(msgIndex int, tx *entity.Tx) (existTransferEvent boo
 }
 
 //并发处理全量数据
-func doHandleSegments(taskName string, workNum int, segments []*segment, isTargetHistory bool, dowork WorkerExecHandler) {
+func doHandleSegments(taskName string, workNum int, segments []*segment, dowork WorkerExecHandler) {
 	if workNum <= 0 {
 		return
 	}
-	st := time.Now().Unix()
-	logrus.Infof("task %s worker group start, target history: %t", taskName, isTargetHistory)
-	defer func() {
-		logrus.Infof("task %s worker group end, target history: %t, time use: %d(s)", taskName, isTargetHistory, time.Now().Unix()-st)
-	}()
 	var wg sync.WaitGroup
 	wg.Add(workNum)
 	for i := 0; i < workNum; i++ {
@@ -284,12 +279,26 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, isTarge
 				if id%workNum != num {
 					continue
 				}
-				logrus.Infof("task %s worker %d fix %d-%d, target history: %t", taskName, num, v.StartTime, v.EndTime, isTargetHistory)
-				dowork(v, isTargetHistory)
+				logrus.Infof("task %s worker %d finish %d-%d", taskName, num, v.StartTime, v.EndTime)
+				dowork(v)
 			}
 		}(num)
 	}
 	wg.Wait()
 }
 
-type WorkerExecHandler func(seg *segment, isTargetHistory bool)
+type WorkerExecHandler func(seg *segment)
+
+func getAllChainMap() (map[string]*entity.ChainConfig, error) {
+	allChainList, err := chainConfigRepo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+
+	allChainMap := make(map[string]*entity.ChainConfig)
+	for _, v := range allChainList {
+		allChainMap[v.ChainName] = v
+	}
+
+	return allChainMap, err
+}

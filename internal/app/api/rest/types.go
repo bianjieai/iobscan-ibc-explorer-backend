@@ -12,5 +12,6 @@ var (
 
 var (
 	// task
-	ibcTxFailLogTask task.IBCTxFailLogTask
+	ibcTxFailLogTask         task.IBCTxFailLogTask
+	iBCChainFeeStatisticTask task.IBCChainFeeStatisticTask
 )
