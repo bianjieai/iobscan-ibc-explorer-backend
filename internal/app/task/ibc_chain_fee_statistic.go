@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/sirupsen/logrus"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -210,12 +211,69 @@ func (w *chainStatisticsWorker) statistics(chain string, segments []*segment, op
 	logrus.Infof("task %s worker %s statistics chain: %s, total segments: %d", w.taskName, w.workerName, chain, len(segments))
 	doHandleSegments(w.workerName, 5, segments, func(seg *segment) {
 		// fee statistics
-		feeStats, err := txRepo.ChainFeeStatistics(chain, seg.StartTime, seg.EndTime)
-		if err != nil {
-			logrus.Errorf("task %s worker %s ChainFeeStatistics err, %s-%d-%d, %v", w.taskName, w.workerName, chain, seg.StartTime, seg.EndTime, err)
+		var userFeeStats, totalFeeStats []*dto.ChainFeeStatisticsDTO
+		gw := sync.WaitGroup{}
+		gw.Add(2)
+		go func() {
+			defer gw.Done()
+			var err error
+			userFeeStats, err = txRepo.ChainUserFeeStatistics(chain, seg.StartTime, seg.EndTime)
+			if err != nil {
+				logrus.Errorf("task %s worker %s ChainUserFeeStatistics err, %s-%d-%d, %v", w.taskName, w.workerName, chain, seg.StartTime, seg.EndTime, err)
+			}
+		}()
+		go func() {
+			defer gw.Done()
+			var err error
+			totalFeeStats, err = txRepo.ChainFeeStatistics(chain, seg.StartTime, seg.EndTime)
+			if err != nil {
+				logrus.Errorf("task %s worker %s ChainFeeStatistics err, %s-%d-%d, %v", w.taskName, w.workerName, chain, seg.StartTime, seg.EndTime, err)
+			}
+		}()
+		gw.Wait()
+		feeStatList := make([]*entity.IBCChainFeeStatistics, 0, len(userFeeStats))
+		userPayeMap := make(map[string]float64, len(userFeeStats))
+		if len(userFeeStats) > 0 {
+			for _, v := range userFeeStats {
+				item := entity.IBCChainFeeStatistics{
+					ChainName:        chain,
+					TxStatus:         entity.TxStatus(v.Status),
+					PayerType:        entity.UserPay,
+					FeeDenom:         v.Denom,
+					FeeAmount:        v.DenomAmount,
+					SegmentStartTime: seg.StartTime,
+					SegmentEndTime:   seg.EndTime,
+					CreateAt:         time.Now().Unix(),
+					UpdateAt:         time.Now().Unix(),
+				}
+				key := strconv.FormatInt(v.Status, 10) + v.Denom + strconv.FormatInt(seg.StartTime, 10) + strconv.FormatInt(seg.EndTime, 10)
+				userPayeMap[key] = v.DenomAmount
+				feeStatList = append(feeStatList, &item)
+			}
+		}
+
+		if len(totalFeeStats) > 0 {
+			for _, v := range totalFeeStats {
+				key := strconv.FormatInt(v.Status, 10) + v.Denom + strconv.FormatInt(seg.StartTime, 10) + strconv.FormatInt(seg.EndTime, 10)
+				item := entity.IBCChainFeeStatistics{
+					ChainName:        chain,
+					TxStatus:         entity.TxStatus(v.Status),
+					PayerType:        entity.RelayerPay,
+					FeeDenom:         v.Denom,
+					FeeAmount:        v.DenomAmount - userPayeMap[key],
+					SegmentStartTime: seg.StartTime,
+					SegmentEndTime:   seg.EndTime,
+					CreateAt:         time.Now().Unix(),
+					UpdateAt:         time.Now().Unix(),
+				}
+				feeStatList = append(feeStatList, &item)
+			}
+
+		}
+		if len(feeStatList) == 0 {
 			return
 		}
-		err = w.saveFeeStat(chain, feeStats, seg, op)
+		err := w.saveFeeStat(chain, feeStatList, seg, op)
 		if err != nil {
 			logrus.Errorf("task %s worker %s saveFeeStat err, %s-%d-%d, %v", w.taskName, w.workerName, chain, seg.StartTime, seg.EndTime, err)
 		}
@@ -224,24 +282,7 @@ func (w *chainStatisticsWorker) statistics(chain string, segments []*segment, op
 	logrus.Infof("task %s worker %s statistics chain %s end,time use: %d(s)", w.taskName, w.workerName, chain, time.Now().Unix()-startTime)
 }
 
-func (w *chainStatisticsWorker) saveFeeStat(chain string, feeStats []*dto.ChainFeeStatisticsDTO, segment *segment, op int) error {
-	if len(feeStats) == 0 {
-		return nil
-	}
-	feeStatList := make([]*entity.IBCChainFeeStatistics, 0, len(feeStats))
-	for _, v := range feeStats {
-		feeStatList = append(feeStatList, &entity.IBCChainFeeStatistics{
-			ChainName:        chain,
-			TxStatus:         entity.TxStatus(v.Status),
-			TxType:           entity.TxType(v.TxType),
-			FeeDenom:         v.Denom,
-			FeeAmount:        v.DenomAmount,
-			SegmentStartTime: segment.StartTime,
-			SegmentEndTime:   segment.EndTime,
-			CreateAt:         time.Now().Unix(),
-			UpdateAt:         time.Now().Unix(),
-		})
-	}
+func (w *chainStatisticsWorker) saveFeeStat(chain string, feeStatList []*entity.IBCChainFeeStatistics, segment *segment, op int) error {
 
 	var err error
 	if op == opInsert {

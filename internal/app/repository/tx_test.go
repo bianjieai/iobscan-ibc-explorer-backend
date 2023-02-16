@@ -22,7 +22,15 @@ func TestTxRepo_GetChannelOpenConfirmTime(t *testing.T) {
 }
 
 func TestTxRepo_ChainFeeStatistics(t *testing.T) {
-	val, err := new(TxRepo).ChainFeeStatistics("osmosis", 1673222400, 1673308799)
+	val, err := new(TxRepo).ChainFeeStatistics("cosmoshub_4", 1662249600, 1662335999)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(utils.MarshalJsonIgnoreErr(val)))
+}
+
+func TestTxRepo_ChainUserFeeStatistics(t *testing.T) {
+	val, err := new(TxRepo).ChainUserFeeStatistics("cosmoshub_4", 1662249600, 1662335999)
 	if err != nil {
 		t.Fatal(err)
 	}

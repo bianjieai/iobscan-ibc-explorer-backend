@@ -355,7 +355,7 @@ db.ibc_relayer_address_channel.createIndex({
 // chain statistics
 db.ibc_chain_fee_statistics.createIndex({
     "chain_name": 1,
-    "tx_type": 1,
+    "payer_type": 1,
     "tx_status": 1,
     "fee_denom": 1,
     "segment_start_time": 1,

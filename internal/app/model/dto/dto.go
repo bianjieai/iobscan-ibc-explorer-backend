@@ -35,7 +35,6 @@ type AggregateIBCChainDTO struct {
 
 type ChainFeeStatisticsDTO struct {
 	Status      int64   `bson:"status"`
-	TxType      string  `bson:"tx_type"`
 	Denom       string  `bson:"denom"`
 	DenomAmount float64 `bson:"denom_amount"`
 }
