@@ -142,8 +142,8 @@ func (t *IBCChainFeeStatisticTask) RunWithParam(chain string, startTime, endTime
 		return -1
 	}
 	if _, ok := chainMap[chain]; !ok {
-		logrus.Errorf("this chain[%s] no found in chain_config", chain)
-		return -1
+		logrus.Warnf("this chain[%s] no found in chain_config", chain)
+		return 1
 	}
 
 	workerName := fmt.Sprintf("%s-%s", "cus", chain)
@@ -187,8 +187,8 @@ func (w *chainStatisticsWorker) exec() {
 			break
 		}
 
-		if cf, ok := w.chainMap[chain]; ok && cf.Status == entity.ChainStatusClosed {
-			logrus.Infof("task %s worker %s chain %s is closed", w.taskName, w.workerName, chain)
+		if _, ok := w.chainMap[chain]; !ok {
+			logrus.Warnf("task %s worker %s chain %s is no found in chainMap", w.taskName, w.workerName, chain)
 			continue
 		}
 
