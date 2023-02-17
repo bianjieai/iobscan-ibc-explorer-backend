@@ -371,9 +371,7 @@ func (svc *RelayerService) getDayofRelayerTxsAmt(addrCombs []string, denomPriceM
 		decAmt := decimal.NewFromFloat(item.Amount)
 		priceKey := item.BaseDenom + item.BaseDenomChain
 		if coin, ok := denomPriceMap[priceKey]; ok {
-			if coin.Scale > 0 {
-				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-			}
+			baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
 		}
 
 		key := time.Unix(item.SegmentStartTime, 0).Format(constant.DateFormat)

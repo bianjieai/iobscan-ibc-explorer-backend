@@ -228,11 +228,9 @@ func CaculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsData
 		baseDenomValue := decimal.NewFromFloat(0)
 		decAmt := data.Amt
 		if coin, ok := denomPriceMap[key]; ok {
-			if coin.Scale > 0 {
-				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-				data.AmtValue = baseDenomValue
-				relayerTxsDataMap[key] = data
-			}
+			baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+			data.AmtValue = baseDenomValue
+			relayerTxsDataMap[key] = data
 		}
 		totalValue = totalValue.Add(baseDenomValue)
 	}

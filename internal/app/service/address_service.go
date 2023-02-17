@@ -327,13 +327,11 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 
 				//update denom_value,total_value,price
 				if coin, ok := denomPriceMap[denom.BaseDenom+denom.BaseDenomChain]; ok {
-					if coin.Scale > 0 {
-						addrToken.Price = coin.Price
-						decAmt, _ := decimal.NewFromString(val.Amount)
-						baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-						addrToken.DenomValue = baseDenomValue.String()
-						totalValueBalance = totalValueBalance.Add(baseDenomValue)
-					}
+					addrToken.Price = coin.Price
+					decAmt, _ := decimal.NewFromString(val.Amount)
+					baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+					addrToken.DenomValue = baseDenomValue.String()
+					totalValueBalance = totalValueBalance.Add(baseDenomValue)
 				}
 			} else {
 				addrToken.DenomType = entity.TokenTypeOther
@@ -357,12 +355,10 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		for _, val := range delegation.DelegationResponses {
 			//update denom_value,total_value,price
 			if coin, ok := denomPriceMap[val.Balance.Denom+chain]; ok {
-				if coin.Scale > 0 {
-					decAmt, _ := decimal.NewFromString(val.Balance.Amount)
-					baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-					totalValueDelegation = totalValueDelegation.Add(baseDenomValue)
-					totalAmtDelegation = totalAmtDelegation.Add(decAmt)
-				}
+				decAmt, _ := decimal.NewFromString(val.Balance.Amount)
+				baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+				totalValueDelegation = totalValueDelegation.Add(baseDenomValue)
+				totalAmtDelegation = totalAmtDelegation.Add(decAmt)
 			}
 
 		}
@@ -379,12 +375,10 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 		for _, val := range rewards.Total {
 			//update denom_value,total_value,price
 			if coin, ok := denomPriceMap[val.Denom+chain]; ok {
-				if coin.Scale > 0 {
-					decAmt, _ := decimal.NewFromString(val.Amount)
-					baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-					totalValueRewards = totalValueRewards.Add(baseDenomValue)
-					totalAmtRewards = totalAmtRewards.Add(decAmt)
-				}
+				decAmt, _ := decimal.NewFromString(val.Amount)
+				baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+				totalValueRewards = totalValueRewards.Add(baseDenomValue)
+				totalAmtRewards = totalAmtRewards.Add(decAmt)
 			}
 
 		}
@@ -403,12 +397,10 @@ func (svc *AddressService) TokenList(chain, address string) (*vo.AddrTokenListRe
 				denomAmount := val.Entries[0].InitialBalance
 				//update denom_value,total_value,price
 				if coin, ok := denomPriceMap[stakeDenom+chain]; ok {
-					if coin.Scale > 0 {
-						decAmt, _ := decimal.NewFromString(denomAmount)
-						baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
-						totalValueUnbonding = totalValueUnbonding.Add(baseDenomValue)
-						totalAmtUnbonding = totalAmtUnbonding.Add(decAmt)
-					}
+					decAmt, _ := decimal.NewFromString(denomAmount)
+					baseDenomValue := decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+					totalValueUnbonding = totalValueUnbonding.Add(baseDenomValue)
+					totalAmtUnbonding = totalAmtUnbonding.Add(decAmt)
 				}
 			}
 		}
