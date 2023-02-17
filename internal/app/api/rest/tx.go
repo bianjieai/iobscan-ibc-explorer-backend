@@ -2,7 +2,6 @@ package rest
 
 import (
 	"fmt"
-	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
 	"net/http"
 	"time"
 
@@ -99,12 +98,12 @@ func (ctl *IbcTxController) FlowInfoStatistics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest("parameter chain is required"))
 		return
 	}
-	chainMap, err := task.GetAllChainMap()
+	exists, err := chainService.ChainExists(chain)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest(err.Error()))
 		return
 	}
-	if _, ok := chainMap[chain]; !ok {
+	if !exists {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest("this chain is not supported, please check or contact us by twitter(https://twitter.com/iobscan_ibc)"))
 		return
 	}

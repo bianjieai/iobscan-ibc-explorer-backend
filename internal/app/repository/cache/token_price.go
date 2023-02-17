@@ -52,7 +52,7 @@ func TokenPriceMap() map[string]dto.CoinItem {
 	denomPriceMap := make(map[string]dto.CoinItem, len(baseDenoms))
 	for _, val := range baseDenoms {
 		if price, ok := coinIdPriceMap[val.CoinId]; ok {
-			denomPriceMap[val.Denom+val.Chain] = dto.CoinItem{Price: price, Scale: val.Scale}
+			denomPriceMap[val.Denom+val.Chain] = dto.CoinItem{Price: price, Scale: val.Scale, Symbol: val.Symbol}
 		}
 	}
 	return denomPriceMap
