@@ -7,7 +7,7 @@ import (
 
 func (s IntegrationTestSuite) TestChainFeeStatistics() {
 	for {
-		res, err := feeService.ChainFeeStatistics("bigbang", 0, 99999999999999)
+		res, err := feeService.ChainFeeStatistics("cosmoshub_4", 1644768000, 1676390399)
 		if err != nil {
 			fmt.Println(err.Error())
 		}

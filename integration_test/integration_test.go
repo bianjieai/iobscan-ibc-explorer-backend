@@ -27,7 +27,6 @@ type IntegrationTestSuite struct {
 	ibcChainInflowStatisticsRepo  repository.IChainInflowStatisticsRepo
 	ibcChainOutflowStatisticsRepo repository.IChainOutflowStatisticsRepo
 	ibcChainFeeStatisticsRepo     repository.IChainFeeStatisticsRepo
-	ibcRelayerFeeStatisticsRepo   repository.IRelayerFeeStatisticsRepo
 	suite.Suite
 }
 

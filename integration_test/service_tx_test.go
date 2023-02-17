@@ -7,7 +7,7 @@ import (
 
 func (s IntegrationTestSuite) TestFlowInfoStatistics() {
 	for {
-		res, err := txService.FlowInfoStatistics("cosmoshub", 0, 99999999999999)
+		res, err := txService.FlowInfoStatistics("cosmoshub", 1644768000, 1676390399)
 		if err != nil {
 			fmt.Println(err.Error())
 		}

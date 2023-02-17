@@ -139,7 +139,7 @@ func (repo *ChainFeeStatisticsRepo) RelayerFeeStatistics(chain string, startTime
 	match := bson.M{
 		operator.Match: bson.M{
 			"chain_name": chain,
-			"payer_type": 2,
+			"payer_type": entity.RelayerPay,
 			"segment_start_time": bson.M{
 				operator.Gte: startTime,
 			},

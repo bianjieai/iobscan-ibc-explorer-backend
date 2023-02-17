@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"golang.org/x/sync/errgroup"
 	"strconv"
 	"strings"
 
@@ -457,16 +458,63 @@ func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64)
 		totalInflowTxsNum  int64
 		totalOutflowTxsNum int64
 		totalTxsUSDValue   string
+		inflowStatistics   []*dto.FlowStatisticsDTO
+		outflowStatistics  []*dto.FlowStatisticsDTO
 	)
-	inflowStatistics, err := ibcChainInflowStatisticsRepo.InflowStatistics(chain, startTime, endTime)
+	responseChannel := make(chan map[string][]*dto.FlowStatisticsDTO, 1)
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		inflow, err := ibcChainInflowStatisticsRepo.InflowStatistics(chain, startTime, endTime)
+		if err != nil {
+			return err
+		} else {
+			select {
+			case tagMap := <-responseChannel:
+				tagMap["inflow"] = inflow
+				responseChannel <- tagMap
+			default:
+				tagMap := make(map[string][]*dto.FlowStatisticsDTO)
+				tagMap["inflow"] = inflow
+				responseChannel <- tagMap
+			}
+		}
+		return nil
+	})
+	g.Go(func() error {
+		outflow, err := ibcChainOutflowStatisticsRepo.OutflowStatistics(chain, startTime, endTime)
+		if err != nil {
+			return err
+		} else {
+			select {
+			case tagMap := <-responseChannel:
+				tagMap["outflow"] = outflow
+				responseChannel <- tagMap
+			default:
+				tagMap := make(map[string][]*dto.FlowStatisticsDTO)
+				tagMap["outflow"] = outflow
+				responseChannel <- tagMap
+			}
+		}
+		return nil
+	})
 
-	if err != nil {
+	if err := g.Wait(); err != nil {
 		return nil, errors.Wrap(err)
+	} else {
+		close(responseChannel)
 	}
-	outflowStatistics, err := ibcChainOutflowStatisticsRepo.OutflowStatistics(chain, startTime, endTime)
-	if err != nil {
-		return nil, errors.Wrap(err)
+
+	for response := range responseChannel {
+		for k, v := range response {
+			if k == "inflow" {
+				inflowStatistics = v
+			}
+			if k == "outflow" {
+				outflowStatistics = v
+			}
+		}
 	}
+
 	denomPriceMap := cache.TokenPriceMap()
 
 	inflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, inflowStatistics)
