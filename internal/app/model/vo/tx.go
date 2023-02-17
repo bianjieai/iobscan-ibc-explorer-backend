@@ -135,3 +135,39 @@ type TaskReq struct {
 	EndTime         int64 `json:"end_time"`
 	IsTargetHistory bool  `json:"is_target_history"`
 }
+
+type (
+	FlowInfoStatisticsReq struct {
+		StartDate string `json:"start_date" form:"start_date" binding:"required"`
+		EndDate   string `json:"end_date" form:"end_date" binding:"required"`
+	}
+
+	FlowInfoStatisticsResp struct {
+		TransferTxsNumber   int64  `json:"transfer_txs_number"`
+		TransferTxsUSDValue string `json:"transfer_txs_usd_value"`
+		InflowTxsNumber     int64  `json:"inflow_txs_number"`
+		InflowTxsUSDValue   string `json:"inflow_txs_usd_value"`
+		OutflowTxsNumber    int64  `json:"outflow_txs_number"`
+		OutflowTxsUSDValue  string `json:"outflow_txs_usd_value"`
+	}
+)
+
+type (
+	ChainFeeStatisticsReq struct {
+		StartDate string `json:"start_date" form:"start_date" binding:"required"`
+		EndDate   string `json:"end_date" form:"end_date" binding:"required"`
+	}
+
+	ChainFeeStatisticsResp struct {
+		Fee []ChainDenomFeeStatistics `json:"fee"`
+	}
+
+	ChainDenomFeeStatistics struct {
+		Denom           string `json:"denom"`
+		DenomUSDPrice   string `json:"denom_usd_price"`
+		TotalAmount     string `json:"total_amount"`
+		TotalUSDValue   string `json:"total_usd_value"`
+		RelayerAmount   string `json:"relayer_amount"`
+		RelayerUSDValue string `json:"relayer_usd_value"`
+	}
+)

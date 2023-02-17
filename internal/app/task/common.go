@@ -289,7 +289,7 @@ func doHandleSegments(taskName string, workNum int, segments []*segment, dowork 
 
 type WorkerExecHandler func(seg *segment)
 
-func getAllChainMap() (map[string]*entity.ChainConfig, error) {
+func GetAllChainMap() (map[string]*entity.ChainConfig, error) {
 	allChainList, err := chainConfigRepo.FindAll()
 	if err != nil {
 		return nil, err

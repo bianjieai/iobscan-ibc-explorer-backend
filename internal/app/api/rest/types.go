@@ -8,6 +8,7 @@ import (
 var (
 	txService    service.ITxService    = new(service.TxService)
 	chainService service.IChainService = new(service.ChainService)
+	feeService   service.IFeeService   = new(service.FeeService)
 )
 
 var (

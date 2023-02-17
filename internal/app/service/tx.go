@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
+	"golang.org/x/sync/errgroup"
 	"strconv"
 	"strings"
 
@@ -16,6 +18,7 @@ import (
 type ITxService interface {
 	Query(hash string, req vo.TxReq) (*vo.TxResp, errors.Error)
 	FailureStatistics(chain string, startTime, endTime int64) (*vo.FailureStatisticsResp, errors.Error)
+	FlowInfoStatistics(chain string, startTime, endTime int64) (*vo.FlowInfoStatisticsResp, errors.Error)
 }
 
 var _ ITxService = new(TxService)
@@ -446,5 +449,92 @@ func (svc *TxService) FailureStatistics(chain string, startTime, endTime int64) 
 			TxTimeStart: startTime,
 			TxTimeEnd:   endTime,
 		},
+	}, nil
+}
+
+func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64) (*vo.FlowInfoStatisticsResp, errors.Error) {
+	var (
+		totalTxsNum        int64
+		totalInflowTxsNum  int64
+		totalOutflowTxsNum int64
+		totalTxsUSDValue   string
+		inflowStatistics   []*dto.FlowStatisticsDTO
+		outflowStatistics  []*dto.FlowStatisticsDTO
+	)
+	responseChannel := make(chan map[string][]*dto.FlowStatisticsDTO, 1)
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		inflow, err := ibcChainInflowStatisticsRepo.InflowStatistics(chain, startTime, endTime)
+		if err != nil {
+			return err
+		} else {
+			select {
+			case tagMap := <-responseChannel:
+				tagMap["inflow"] = inflow
+				responseChannel <- tagMap
+			default:
+				tagMap := make(map[string][]*dto.FlowStatisticsDTO)
+				tagMap["inflow"] = inflow
+				responseChannel <- tagMap
+			}
+		}
+		return nil
+	})
+	g.Go(func() error {
+		outflow, err := ibcChainOutflowStatisticsRepo.OutflowStatistics(chain, startTime, endTime)
+		if err != nil {
+			return err
+		} else {
+			select {
+			case tagMap := <-responseChannel:
+				tagMap["outflow"] = outflow
+				responseChannel <- tagMap
+			default:
+				tagMap := make(map[string][]*dto.FlowStatisticsDTO)
+				tagMap["outflow"] = outflow
+				responseChannel <- tagMap
+			}
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, errors.Wrap(err)
+	} else {
+		close(responseChannel)
+	}
+
+	for response := range responseChannel {
+		for k, v := range response {
+			if k == "inflow" {
+				inflowStatistics = v
+			}
+			if k == "outflow" {
+				outflowStatistics = v
+			}
+		}
+	}
+
+	denomPriceMap := cache.TokenPriceMap()
+
+	inflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, inflowStatistics)
+	outflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, outflowStatistics)
+	totalTxsUSDValue = inflowTotalValue.Add(outflowTotalValue).String()
+
+	for _, inflowInfo := range inflowStatistics {
+		totalInflowTxsNum += inflowInfo.TxsCount
+	}
+	for _, outflowInfo := range outflowStatistics {
+		totalOutflowTxsNum += outflowInfo.TxsCount
+	}
+	totalTxsNum = totalInflowTxsNum + totalOutflowTxsNum
+
+	return &vo.FlowInfoStatisticsResp{
+		TransferTxsNumber:   totalTxsNum,
+		TransferTxsUSDValue: totalTxsUSDValue,
+		InflowTxsNumber:     totalInflowTxsNum,
+		InflowTxsUSDValue:   inflowTotalValue.String(),
+		OutflowTxsNumber:    totalOutflowTxsNum,
+		OutflowTxsUSDValue:  outflowTotalValue.String(),
 	}, nil
 }
