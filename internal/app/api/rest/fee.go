@@ -5,6 +5,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/api/response"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/task"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -20,18 +21,12 @@ func (ctl *IbcFeeController) ChinFeeStatistics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest("parameter chain is required"))
 		return
 	}
-	chainList, err := chainService.List()
+	chainMap, err := task.GetAllChainMap()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest(err.Error()))
 		return
 	}
-	support := false
-	for _, v := range chainList.Items {
-		if chain == v.Chain {
-			support = true
-		}
-	}
-	if !support {
+	if _, ok := chainMap[chain]; !ok {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest("this chain is not supported, please check or contact us by twitter(https://twitter.com/iobscan_ibc)"))
 		return
 	}

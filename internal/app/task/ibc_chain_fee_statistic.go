@@ -49,7 +49,7 @@ func (t *IBCChainFeeStatisticTask) Run() {
 
 // Run 全量更新
 func (t *IBCChainFeeStatisticTask) RunAllChain() {
-	chainMap, err := getAllChainMap()
+	chainMap, err := GetAllChainMap()
 	if err != nil {
 		logrus.Errorf("task %s Run getAllChainMap err, %v", t.Name(), err)
 		return
@@ -119,7 +119,7 @@ func (t *IBCChainFeeStatisticTask) yesterdayStatistics() error {
 
 // RunIncrement 增量统计
 func (t *IBCChainFeeStatisticTask) RunIncrement(seg *segment) error {
-	chainMap, err := getAllChainMap()
+	chainMap, err := GetAllChainMap()
 	if err != nil {
 		logrus.Errorf("task %s IncrementRun getAllChainMap err, %v", t.Name(), err)
 		return err
@@ -137,7 +137,7 @@ func (t *IBCChainFeeStatisticTask) RunIncrement(seg *segment) error {
 // RunWithParam 自定义统计
 func (t *IBCChainFeeStatisticTask) RunWithParam(chain string, startTime, endTime int64) int {
 	segments := segmentTool(segmentStep, startTime, endTime)
-	chainMap, err := getAllChainMap()
+	chainMap, err := GetAllChainMap()
 	if err != nil {
 		logrus.Errorf("task %s RunWithParam getAllChainMap err, %v", t.Name(), err)
 		return -1
