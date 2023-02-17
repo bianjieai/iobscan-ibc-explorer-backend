@@ -4,10 +4,12 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/constant"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
+	"github.com/qiniu/qmgo"
 )
 
 type IChainService interface {
 	List() (*vo.ChainListResp, errors.Error)
+	ChainExists(chain string) (bool, errors.Error)
 }
 
 var _ IChainService = new(ChainService)
@@ -42,4 +44,15 @@ func (svc *ChainService) List() (*vo.ChainListResp, errors.Error) {
 		Items:   chainItems,
 		Comment: constant.ContactUs,
 	}, nil
+}
+
+func (svc *ChainService) ChainExists(chain string) (bool, errors.Error) {
+	_, err := chainConfigRepo.FindOne(chain)
+	if err == qmgo.ErrNoSuchDocuments {
+		return false, nil
+	}
+	if err != nil {
+		return true, errors.Wrap(err)
+	}
+	return true, nil
 }

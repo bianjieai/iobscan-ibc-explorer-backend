@@ -227,8 +227,9 @@ type (
 	}
 
 	CoinItem struct {
-		Price float64
-		Scale int
+		Price  float64
+		Scale  int
+		Symbol string
 	}
 )
 
