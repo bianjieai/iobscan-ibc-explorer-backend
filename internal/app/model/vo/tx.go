@@ -138,8 +138,8 @@ type TaskReq struct {
 
 type (
 	FlowInfoStatisticsReq struct {
-		StartDate string `json:"start_date" form:"start_date"`
-		EndDate   string `json:"end_date" form:"end_date"`
+		StartDate string `json:"start_date" form:"start_date" binding:"required"`
+		EndDate   string `json:"end_date" form:"end_date" binding:"required"`
 	}
 
 	FlowInfoStatisticsResp struct {
@@ -154,8 +154,8 @@ type (
 
 type (
 	ChainFeeStatisticsReq struct {
-		StartDate string `json:"start_date" form:"start_date"`
-		EndDate   string `json:"end_date" form:"end_date"`
+		StartDate string `json:"start_date" form:"start_date" binding:"required"`
+		EndDate   string `json:"end_date" form:"end_date" binding:"required"`
 	}
 
 	ChainFeeStatisticsResp struct {

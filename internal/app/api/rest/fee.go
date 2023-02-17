@@ -20,6 +20,21 @@ func (ctl *IbcFeeController) ChinFeeStatistics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.FailBadRequest("parameter chain is required"))
 		return
 	}
+	chainList, err := chainService.List()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.FailBadRequest(err.Error()))
+		return
+	}
+	support := false
+	for _, v := range chainList.Items {
+		if chain == v.Chain {
+			support = true
+		}
+	}
+	if !support {
+		c.JSON(http.StatusBadRequest, response.FailBadRequest("this chain is not supported, please check or contact us by twitter(https://twitter.com/iobscan_ibc)"))
+		return
+	}
 
 	var req vo.ChainFeeStatisticsReq
 	if err := c.ShouldBind(&req); err != nil {
