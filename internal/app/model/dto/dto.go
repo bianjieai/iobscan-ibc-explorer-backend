@@ -251,19 +251,24 @@ func CaculateRelayerTotalValue(denomPriceMap map[string]CoinItem, relayerTxsData
 	return totalValue
 }
 
-func CaculateChainTotalValue(denomPriceMap map[string]CoinItem, flowStatistics []*FlowStatisticsDTO) decimal.Decimal {
+func CaculateChainTotalValue(denomPriceMap map[string]CoinItem, flowStatistics []*FlowStatisticsDTO) (decimal.Decimal, bool) {
+	isPriceZero := false
 	totalValue := decimal.NewFromFloat(0)
 	for _, inflowInfo := range flowStatistics {
 		baseDenomValue := decimal.NewFromFloat(0)
 		decAmt := decimal.NewFromFloat(inflowInfo.DenomAmount)
 		if coin, ok := denomPriceMap[fmt.Sprintf("%s%s", inflowInfo.BaseDenom, inflowInfo.BaseDenomChain)]; ok {
-			if coin.Scale > 0 {
-				baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
+			if coin.Price == 0 {
+				isPriceZero = true
 			}
+			baseDenomValue = decAmt.Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price))
 		}
 		totalValue = totalValue.Add(baseDenomValue)
 	}
-	return totalValue
+	if totalValue.IsZero() && !isPriceZero {
+		return totalValue, true
+	}
+	return totalValue, false
 }
 
 type BaseDenomAmountDTO struct {

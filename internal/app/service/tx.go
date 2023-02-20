@@ -458,6 +458,8 @@ func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64)
 		totalInflowTxsNum  int64
 		totalOutflowTxsNum int64
 		totalTxsUSDValue   string
+		inflowTxsUSDValue  string
+		outflowTxsUSDValue string
 		inflowStatistics   []*dto.FlowStatisticsDTO
 		outflowStatistics  []*dto.FlowStatisticsDTO
 	)
@@ -517,9 +519,22 @@ func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64)
 
 	denomPriceMap := cache.TokenPriceMap()
 
-	inflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, inflowStatistics)
-	outflowTotalValue := dto.CaculateChainTotalValue(denomPriceMap, outflowStatistics)
+	inflowTotalValue, isNullIn := dto.CaculateChainTotalValue(denomPriceMap, inflowStatistics)
+	outflowTotalValue, isNullOut := dto.CaculateChainTotalValue(denomPriceMap, outflowStatistics)
 	totalTxsUSDValue = inflowTotalValue.Add(outflowTotalValue).String()
+	if inflowTotalValue.IsZero() && isNullIn {
+		inflowTxsUSDValue = ""
+	} else {
+		inflowTxsUSDValue = inflowTotalValue.String()
+	}
+	if outflowTotalValue.IsZero() && isNullOut {
+		outflowTxsUSDValue = ""
+	} else {
+		outflowTxsUSDValue = outflowTotalValue.String()
+	}
+	if inflowTxsUSDValue == "" && outflowTxsUSDValue == "" {
+		totalTxsUSDValue = ""
+	}
 
 	for _, inflowInfo := range inflowStatistics {
 		totalInflowTxsNum += inflowInfo.TxsCount
@@ -533,8 +548,8 @@ func (svc *TxService) FlowInfoStatistics(chain string, startTime, endTime int64)
 		TransferTxsNumber:   totalTxsNum,
 		TransferTxsUSDValue: totalTxsUSDValue,
 		InflowTxsNumber:     totalInflowTxsNum,
-		InflowTxsUSDValue:   inflowTotalValue.String(),
+		InflowTxsUSDValue:   inflowTxsUSDValue,
 		OutflowTxsNumber:    totalOutflowTxsNum,
-		OutflowTxsUSDValue:  outflowTotalValue.String(),
+		OutflowTxsUSDValue:  outflowTxsUSDValue,
 	}, nil
 }
