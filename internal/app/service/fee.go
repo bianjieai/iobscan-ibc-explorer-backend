@@ -80,6 +80,11 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 	}
 
 	denomPriceMap := cache.TokenPriceMap()
+	authDenoms, err := authDenomRepo.FindAll()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	denomSymbolMap := authDenoms.ConvertToMap()
 
 	for _, chainFee := range chainStatistics {
 		var chainDenom vo.ChainDenomFeeStatistics
@@ -89,6 +94,12 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 			chainDenom.DenomUSDPrice = decimal.NewFromFloat(coin.Price).String()
 			chainDenom.TotalUSDValue = decimal.NewFromFloat(chainFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price)).String()
 			denomFeeMap[chainFee.FeeDenom] = chainDenom
+		} else {
+			if denomSymbol, exists := denomSymbolMap[fmt.Sprintf("%s%s", chain, chainFee.FeeDenom)]; exists {
+				chainDenom.Denom = denomSymbol.Symbol
+				chainDenom.TotalAmount = decimal.NewFromFloat(chainFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(denomSymbol.Scale))).String()
+				denomFeeMap[chainFee.FeeDenom] = chainDenom
+			}
 		}
 	}
 	for _, relayerFee := range relayerStatistics {
@@ -97,6 +108,11 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 				chainDenom.RelayerAmount = decimal.NewFromFloat(relayerFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).String()
 				chainDenom.RelayerUSDValue = decimal.NewFromFloat(relayerFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price)).String()
 				denomFeeMap[relayerFee.FeeDenom] = chainDenom
+			} else {
+				if denomSymbol, has := denomSymbolMap[fmt.Sprintf("%s%s", chain, relayerFee.FeeDenom)]; has {
+					chainDenom.RelayerAmount = decimal.NewFromFloat(relayerFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(denomSymbol.Scale))).String()
+					denomFeeMap[relayerFee.FeeDenom] = chainDenom
+				}
 			}
 		}
 	}
