@@ -80,6 +80,11 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 	}
 
 	denomPriceMap := cache.TokenPriceMap()
+	authDenoms, err := authDenomRepo.FindAll()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	denomSymbolMap := authDenoms.ConvertToMap()
 
 	for _, chainFee := range chainStatistics {
 		var chainDenom vo.ChainDenomFeeStatistics
@@ -90,8 +95,13 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 			chainDenom.TotalUSDValue = decimal.NewFromFloat(chainFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price)).String()
 			denomFeeMap[chainFee.FeeDenom] = chainDenom
 		} else {
-			chainDenom.Denom = chainFee.FeeDenom
-			chainDenom.TotalAmount = decimal.NewFromFloat(chainFee.FeeAmount).String()
+			if denomSymbol, exists := denomSymbolMap[fmt.Sprintf("%s%s", chain, chainFee.FeeDenom)]; exists {
+				chainDenom.Denom = denomSymbol.Symbol
+				chainDenom.TotalAmount = decimal.NewFromFloat(chainFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(denomSymbol.Scale))).String()
+			} else {
+				chainDenom.Denom = chainFee.FeeDenom
+				chainDenom.TotalAmount = decimal.NewFromFloat(chainFee.FeeAmount).String()
+			}
 			denomFeeMap[chainFee.FeeDenom] = chainDenom
 		}
 	}
@@ -102,7 +112,11 @@ func (svc *FeeService) ChainFeeStatistics(chain string, startTime, endTime int64
 				chainDenom.RelayerUSDValue = decimal.NewFromFloat(relayerFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(coin.Scale))).Mul(decimal.NewFromFloat(coin.Price)).String()
 				denomFeeMap[relayerFee.FeeDenom] = chainDenom
 			} else {
-				chainDenom.RelayerAmount = decimal.NewFromFloat(relayerFee.FeeAmount).String()
+				if denomSymbol, has := denomSymbolMap[fmt.Sprintf("%s%s", chain, relayerFee.FeeDenom)]; has {
+					chainDenom.RelayerAmount = decimal.NewFromFloat(relayerFee.FeeAmount).Div(decimal.NewFromFloat(math.Pow10(denomSymbol.Scale))).String()
+				} else {
+					chainDenom.RelayerAmount = decimal.NewFromFloat(relayerFee.FeeAmount).String()
+				}
 				denomFeeMap[relayerFee.FeeDenom] = chainDenom
 			}
 		}

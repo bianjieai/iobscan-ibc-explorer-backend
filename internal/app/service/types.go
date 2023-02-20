@@ -10,4 +10,5 @@ var (
 	ibcChainInflowStatisticsRepo  repository.IChainInflowStatisticsRepo  = new(repository.ChainInflowStatisticsRepo)
 	ibcChainOutflowStatisticsRepo repository.IChainOutflowStatisticsRepo = new(repository.ChainOutflowStatisticsRepo)
 	ibcChainFeeStatisticsRepo     repository.IChainFeeStatisticsRepo     = new(repository.ChainFeeStatisticsRepo)
+	authDenomRepo                 repository.IAuthDenomRepo              = new(repository.AuthDenomRepo)
 )
