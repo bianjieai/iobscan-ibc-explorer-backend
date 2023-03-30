@@ -9,7 +9,6 @@ BINARY_NAME=iobscan-ibc-openapi
 export GO111MODULE = on
 export GOSUMDB=off
 export GIT_TERMINAL_PROMPT=1
-export GOPROXY=https://goproxy.cn,direct
 
 all: get_vendor build
 
