@@ -59,6 +59,7 @@ func startTask(c conf.Redis, tc conf.Task) {
 
 	distributionTask.RegisterTasks(new(task.IBCTxFailLogTask))
 	distributionTask.RegisterTasks(new(task.IBCChainFeeStatisticTask))
+	distributionTask.RegisterTasks(new(task.IBCAddressStatisticTask))
 	distributionTask.Start()
 }
 
