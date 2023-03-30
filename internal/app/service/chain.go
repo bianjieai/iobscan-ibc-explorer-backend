@@ -10,6 +10,7 @@ import (
 type IChainService interface {
 	List() (*vo.ChainListResp, errors.Error)
 	ChainExists(chain string) (bool, errors.Error)
+	ActiveChainNum() (*vo.ActiveChainNumResp, errors.Error)
 }
 
 var _ IChainService = new(ChainService)
@@ -55,4 +56,14 @@ func (svc *ChainService) ChainExists(chain string) (bool, errors.Error) {
 		return true, errors.Wrap(err)
 	}
 	return true, nil
+}
+
+func (svc *ChainService) ActiveChainNum() (*vo.ActiveChainNumResp, errors.Error) {
+	res, err := ibcChainRepo.CountActiveChainNum()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	var resp vo.ActiveChainNumResp
+	resp.ActiveChainNumber = res
+	return &resp, nil
 }

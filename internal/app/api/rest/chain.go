@@ -18,3 +18,13 @@ func (ctl *ChainController) List(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response.Success(list))
 }
+
+func (ctl *ChainController) ActiveChainNum(c *gin.Context) {
+	resp, e := chainService.ActiveChainNum()
+	if e != nil {
+		c.JSON(response.HttpCode(e), response.FailError(e))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.Success(resp))
+}

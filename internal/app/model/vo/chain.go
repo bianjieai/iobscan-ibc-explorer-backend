@@ -9,3 +9,7 @@ type ChainItem struct {
 	Chain            string `json:"chain"`
 	ChainRegistryUrl string `json:"chain_registry_url"`
 }
+
+type ActiveChainNumResp struct {
+	ActiveChainNumber int64 `json:"active_chain_number"`
+}

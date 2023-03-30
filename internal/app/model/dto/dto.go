@@ -301,3 +301,12 @@ type DenomAmountStatisticsDTO struct {
 	FeeDenom  string  `bson:"fee_denom"`
 	FeeAmount float64 `bson:"fee_amount"`
 }
+
+type ChainActiveAddressStatisticsDTO struct {
+	AddressAmount int64 `bson:"address_amount"`
+}
+
+type ChainActiveAddressesDTO struct {
+	Chain     string   `bson:"chain"`
+	Addresses []string `bson:"addresses"`
+}
