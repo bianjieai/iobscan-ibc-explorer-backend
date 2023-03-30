@@ -76,6 +76,7 @@ type Log struct {
 type Task struct {
 	IBCTxFailLogTask         string `mapstructure:"ibc_tx_fail_log_task"`
 	IBCChainFeeStatisticTask string `mapstructure:"ibc_chain_fee_statistic_task"`
+	IBCAddressStatisticTask  string `mapstructure:"ibc_address_statistic_task"`
 }
 
 type Spi struct {

@@ -44,6 +44,7 @@ func Routers(Router *gin.Engine) {
 	chainCtl(ibcRouter)
 	taskTools(ibcRouter)
 	feeCtl(ibcRouter)
+	addressCtl(ibcRouter)
 }
 
 func txCtl(r *gin.RouterGroup) {
@@ -56,6 +57,7 @@ func txCtl(r *gin.RouterGroup) {
 func chainCtl(r *gin.RouterGroup) {
 	ctl := rest.ChainController{}
 	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
+	r.GET("/chains/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ActiveChainNum))
 }
 
 func taskTools(r *gin.RouterGroup) {
@@ -66,4 +68,10 @@ func taskTools(r *gin.RouterGroup) {
 func feeCtl(r *gin.RouterGroup) {
 	ctl := rest.IbcFeeController{}
 	r.GET("/fee/statistics/:chain/paid", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChinFeeStatistics))
+}
+
+func addressCtl(r *gin.RouterGroup) {
+	ctl := rest.AddressController{}
+	r.GET("/addresses/statistics/:chain", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChainAddressStatistics))
+	r.GET("/addresses/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AllChainAddressStatistics))
 }

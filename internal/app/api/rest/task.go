@@ -59,6 +59,17 @@ func (ctl *TaskController) Run(c *gin.Context) {
 				}
 				res = iBCChainFeeStatisticTask.RunWithParam(chain, startTime, endTime)
 			}
+		case ibcAddressStatisticTask.Name():
+			var req vo.TaskAddressStatisticReq
+			if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
+				logrus.Errorf("TaskController run %s err, %v", taskName, err)
+				return
+			}
+			if req.Chain == "" {
+				iBCChainFeeStatisticTask.RunAllChain()
+			} else {
+				res = ibcAddressStatisticTask.RunWithParam(req.Chain, req.StartTime, req.EndTime)
+			}
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

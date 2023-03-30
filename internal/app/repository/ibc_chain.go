@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/qiniu/qmgo/operator"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/entity"
@@ -28,6 +29,7 @@ type IChainRepo interface {
 	UpdateRelayers(chain string, relayers int64) error
 	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
 	Count() (int64, error)
+	CountActiveChainNum() (int64, error)
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -103,4 +105,8 @@ func (repo *IbcChainRepo) UpdateTransferTxs(chain string, txs int64, txsValue st
 
 func (repo *IbcChainRepo) Count() (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{}).Count()
+}
+
+func (repo *IbcChainRepo) CountActiveChainNum() (int64, error) {
+	return repo.coll().Find(context.Background(), bson.M{"transfer_txs": bson.M{operator.Gt: 0}}).Count()
 }

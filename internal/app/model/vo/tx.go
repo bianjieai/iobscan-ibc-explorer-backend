@@ -171,3 +171,20 @@ type (
 		RelayerUSDValue string `json:"relayer_usd_value"`
 	}
 )
+
+type TaskAddressStatisticReq struct {
+	StartTime int64  `json:"start_time"`
+	EndTime   int64  `json:"end_time"`
+	Chain     string `json:"chain"`
+}
+
+type (
+	ChainAddressStatisticsReq struct {
+		Date string `json:"date" form:"date" binding:"required"`
+	}
+
+	ChainAddressStatisticsResp struct {
+		Date                string `json:"date"`
+		ActiveAddressNumber int64  `json:"active_address_number"`
+	}
+)
