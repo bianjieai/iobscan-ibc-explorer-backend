@@ -66,7 +66,7 @@ func (ctl *TaskController) Run(c *gin.Context) {
 				return
 			}
 			if req.Chain == "" {
-				iBCChainFeeStatisticTask.RunAllChain()
+				ibcAddressStatisticTask.RunAllChain()
 			} else {
 				res = ibcAddressStatisticTask.RunWithParam(req.Chain, req.StartTime, req.EndTime)
 			}
