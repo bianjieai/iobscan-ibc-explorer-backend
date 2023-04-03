@@ -107,6 +107,7 @@ type Task struct {
 
 type Spi struct {
 	CoingeckoPriceUrl string `mapstructure:"coingecko_price_url"`
+	CcDataPriceUrl    string `mapstructure:"ccdata_price_url"`
 }
 
 type ChainConfig struct {
