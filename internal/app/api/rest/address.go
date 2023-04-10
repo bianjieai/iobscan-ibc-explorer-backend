@@ -41,7 +41,7 @@ func (ctl *AddressController) ChainAddressStatistics(c *gin.Context) {
 		startTimeStr := fmt.Sprintf("%s %s", req.Date, "00:00:00")
 		startTimeParse, err := time.Parse(constant.DefaultTimeFormat, startTimeStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid start_date"))
+			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid date"))
 			return
 		}
 		startTime = startTimeParse.Unix()
@@ -51,7 +51,7 @@ func (ctl *AddressController) ChainAddressStatistics(c *gin.Context) {
 		endTimeStr := fmt.Sprintf("%s %s", req.Date, "23:59:59")
 		endTimeParse, err := time.Parse(constant.DefaultTimeFormat, endTimeStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid end_date"))
+			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid date"))
 			return
 		}
 		endTime = endTimeParse.Unix()
@@ -86,7 +86,7 @@ func (ctl *AddressController) AllChainAddressStatistics(c *gin.Context) {
 		startTimeStr := fmt.Sprintf("%s %s", req.Date, "00:00:00")
 		startTimeParse, err := time.Parse(constant.DefaultTimeFormat, startTimeStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid start_date"))
+			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid date"))
 			return
 		}
 		startTime = startTimeParse.Unix()
@@ -96,7 +96,7 @@ func (ctl *AddressController) AllChainAddressStatistics(c *gin.Context) {
 		endTimeStr := fmt.Sprintf("%s %s", req.Date, "23:59:59")
 		endTimeParse, err := time.Parse(constant.DefaultTimeFormat, endTimeStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid end_date"))
+			c.JSON(http.StatusBadRequest, response.FailBadRequest("invalid date"))
 			return
 		}
 		endTime = endTimeParse.Unix()
