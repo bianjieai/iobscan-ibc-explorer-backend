@@ -117,7 +117,7 @@ func (t *DenomHeatmapTask) coinPriceHandler() (map[string]float64, error) {
 	bz, err := utils.HttpGet(url)
 	if err != nil {
 		logrus.Errorf("task %s get coin price error, %v", t.Name(), err)
-		return nil, err
+		return t.coinPriceHandlerBackup()
 	}
 
 	var priceResp map[string]map[string]float64
@@ -146,6 +146,90 @@ func (t *DenomHeatmapTask) coinPriceHandler() (map[string]float64, error) {
 		logrus.Errorf("task %s set coin price cache error, %v", t.Name(), err)
 	}
 	return priceFloatMap, nil
+}
+
+func (t *DenomHeatmapTask) coinPriceHandlerBackup() (map[string]float64, error) {
+	var symbols []string
+	coinIdSymbolMap := make(map[string]string)
+	for _, v := range t.authDenomList {
+		if v.CoinId != "" {
+			symbols = append(symbols, v.Symbol)
+			coinIdSymbolMap[v.CoinId] = v.Symbol
+		}
+	}
+
+	if len(symbols) == 0 {
+		return nil, fmt.Errorf("no symbol")
+	}
+
+	getPriceFunc := func(fsyms string) (map[string]map[string]float64, error) {
+		url := fmt.Sprintf("%s&fsyms=%s&tsyms=USD", global.Config.Spi.CcDataPriceUrl, fsyms)
+		bz, err := utils.HttpGet(url)
+		if err != nil {
+			logrus.Errorf("task %s get coin price from ccdata error, %v", t.Name(), err)
+			return nil, err
+		}
+		var symbolPriceResp map[string]map[string]float64
+		err = json.Unmarshal(bz, &symbolPriceResp)
+		if err != nil {
+			logrus.Errorf("task %s get coin ccdata price error, %v", t.Name(), err)
+			return nil, err
+		}
+		return symbolPriceResp, nil
+	}
+	// fsyms param maxlength is 300, so we need request in two steps
+	segment1Resp, err := getPriceFunc(strings.Join(symbols[:len(symbols)/2], ","))
+	if err != nil {
+		return nil, err
+	}
+	segment2Resp, err := getPriceFunc(strings.Join(symbols[len(symbols)/2:], ","))
+	if err != nil {
+		return nil, err
+	}
+	symbolPriceResp := make(map[string]map[string]float64)
+	for k, v := range segment1Resp {
+		symbolPriceResp[k] = v
+	}
+	for k, v := range segment2Resp {
+		symbolPriceResp[k] = v
+	}
+
+	cachePriceMap, err := tokenPriceRepo.GetAll()
+	if err != nil {
+		logrus.Errorf("task %s get coin price from cache error, %v", t.Name(), err)
+		return nil, err
+	}
+	priceMap := make(map[string]string, len(cachePriceMap))
+	for k, v := range cachePriceMap {
+		if symbol, ok := coinIdSymbolMap[k]; ok {
+			if price, exists := symbolPriceResp[symbol]; exists {
+				cachePriceMap[k] = price["USD"]
+
+				result := strconv.FormatFloat(price["USD"], 'f', 12, 64)
+				for strings.HasSuffix(result, "0") {
+					result = strings.TrimSuffix(result, "0")
+				}
+				if strings.HasSuffix(result, ".") {
+					result = strings.TrimSuffix(result, ".")
+				}
+				priceMap[k] = result
+				continue
+			}
+		}
+		result := strconv.FormatFloat(v, 'f', 12, 64)
+		for strings.HasSuffix(result, "0") {
+			result = strings.TrimSuffix(result, "0")
+		}
+		if strings.HasSuffix(result, ".") {
+			result = strings.TrimSuffix(result, ".")
+		}
+		priceMap[k] = result
+	}
+
+	if err = tokenPriceRepo.BatchSet(priceMap); err != nil {
+		logrus.Errorf("task %s set coin price cache error, %v", t.Name(), err)
+	}
+	return cachePriceMap, nil
 }
 
 // supplyHandler Get supply of denoms, then save supply info to cache
