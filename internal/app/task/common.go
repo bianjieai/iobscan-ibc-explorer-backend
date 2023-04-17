@@ -256,6 +256,7 @@ func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetA
 					switch attr.Key {
 					case "status":
 						status = attr.Value
+						existPacketAck = true
 					case "message":
 						message = attr.Value
 					default:
@@ -263,10 +264,8 @@ func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetA
 				}
 				if status == "\"STATUS_SUCCESS\"" {
 					packetAck = status
-					existPacketAck = true
 				} else {
 					packetAck = fmt.Sprintf("error:\"%s\" ", message)
-					existPacketAck = true
 				}
 			}
 		}
