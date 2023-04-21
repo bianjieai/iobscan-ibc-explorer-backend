@@ -40,6 +40,7 @@ const (
 	BaseDenomUnauth             = "base_denom_unauth"
 	baseDenomSymbol             = "base_denom:%s"
 	clientState                 = "client_state:%s"
+	TokenReceiveTxs             = "token_receive_txs"
 )
 
 // Keys of open api

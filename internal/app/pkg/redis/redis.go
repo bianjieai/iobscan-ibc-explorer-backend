@@ -309,3 +309,8 @@ func (r *Client) XLen(stream string) (length int64, err error) {
 	length, err = r.redisClient.XLen(context.Background(), stream).Result()
 	return
 }
+
+func (r *Client) TTL(key string) (time.Duration, error) {
+	keys := r.redisClient.TTL(context.Background(), key)
+	return keys.Result()
+}

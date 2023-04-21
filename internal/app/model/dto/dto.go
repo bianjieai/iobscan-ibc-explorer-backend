@@ -310,3 +310,9 @@ type ChainActiveAddressesDTO struct {
 	Chain     string   `bson:"chain"`
 	Addresses []string `bson:"addresses"`
 }
+
+type DenomHopsDTO struct {
+	Symbol string `bson:"symbol"`
+	Chain  string `bson:"chain"`
+	Denom  string `bson:"denom"`
+}
