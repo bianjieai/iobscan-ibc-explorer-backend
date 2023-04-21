@@ -10,6 +10,7 @@ var (
 	chainService   service.IChainService   = new(service.ChainService)
 	feeService     service.IFeeService     = new(service.FeeService)
 	addressService service.IAddressService = new(service.AddressService)
+	tokenService   service.ITokenService   = new(service.TokenService)
 )
 
 var (

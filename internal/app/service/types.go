@@ -13,4 +13,5 @@ var (
 	authDenomRepo                 repository.IAuthDenomRepo              = new(repository.AuthDenomRepo)
 	ibcChainAddressStatisticsRepo repository.IAddressStatisticsRepo      = new(repository.AddressStatisticsRepo)
 	ibcChainRepo                  repository.IChainRepo                  = new(repository.IbcChainRepo)
+	ibcDenomRepo                  repository.IDenomRepo                  = new(repository.DenomRepo)
 )

@@ -2,7 +2,6 @@ package conf
 
 import (
 	"bytes"
-
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/enum"
 	"github.com/spf13/viper"
 )
@@ -74,9 +73,10 @@ type Log struct {
 }
 
 type Task struct {
-	IBCTxFailLogTask         string `mapstructure:"ibc_tx_fail_log_task"`
-	IBCChainFeeStatisticTask string `mapstructure:"ibc_chain_fee_statistic_task"`
-	IBCAddressStatisticTask  string `mapstructure:"ibc_address_statistic_task"`
+	IBCTxFailLogTask                string `mapstructure:"ibc_tx_fail_log_task"`
+	IBCChainFeeStatisticTask        string `mapstructure:"ibc_chain_fee_statistic_task"`
+	IBCAddressStatisticTask         string `mapstructure:"ibc_address_statistic_task"`
+	IBCCacheTokenTraceStatisticTask string `mapstructure:"ibc_cache_token_trace_statistics_task"`
 }
 
 type Spi struct {

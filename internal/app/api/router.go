@@ -45,6 +45,7 @@ func Routers(Router *gin.Engine) {
 	taskTools(ibcRouter)
 	feeCtl(ibcRouter)
 	addressCtl(ibcRouter)
+	tokenCtl(ibcRouter)
 }
 
 func txCtl(r *gin.RouterGroup) {
@@ -74,4 +75,9 @@ func addressCtl(r *gin.RouterGroup) {
 	ctl := rest.AddressController{}
 	r.GET("/addresses/statistics/:chain", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ChainAddressStatistics))
 	r.GET("/addresses/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.AllChainAddressStatistics))
+}
+
+func tokenCtl(r *gin.RouterGroup) {
+	ctl := rest.TokenController{}
+	r.GET("/tokens/popular-symbols", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.PopularSymbols))
 }
