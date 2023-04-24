@@ -5,7 +5,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
-	"time"
+	"sort"
 )
 
 type ITokenService interface {
@@ -19,33 +19,45 @@ type TokenService struct {
 
 func (svc *TokenService) PopularSymbols(minHops int, minReceiveTxs int64) (*vo.PopularSymbolsResp, errors.Error) {
 	var resp vo.PopularSymbolsResp
-	hopsTokens, err := ibcDenomRepo.FindSymbolDenomsByHops(minHops)
+	tokens, err := ibcTokenTraceRepo.FindByHopsAndReceiveTcs(minHops, minReceiveTxs)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	var tokenReceiveTxsMap map[string]int64
-	err = cache.GetRedisClient().UnmarshalHGetAll(cache.TokenReceiveTxs, &tokenReceiveTxsMap)
+	var tokenSymbolMap map[string]string
+	err = cache.GetRedisClient().UnmarshalHGetAll(cache.DenomSymbol, &tokenSymbolMap)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	ttl, err := cache.GetRedisClient().TTL(cache.TokenReceiveTxs)
+	maxUpdateAt, err := ibcTokenTraceRepo.FindMaxUpdateAt()
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	timestamp := time.Now().Unix() - (360 - int64(ttl.Seconds()))
-	resp.TimeStamp = timestamp
+	resp.TimeStamp = maxUpdateAt
 	symbols := utils.NewStringSet()
-	for _, token := range hopsTokens {
-		if count, ok := tokenReceiveTxsMap[token.Chain+"/"+token.Denom]; ok {
-			if count >= minReceiveTxs {
-				symbols.Add(token.Symbol)
-			}
-		} else {
-			if minReceiveTxs == 0 {
-				symbols.Add(token.Symbol)
+	symbolReceiveTxsAmountMap := make(map[string]int64)
+	for _, token := range tokens {
+		if symbol, ok := tokenSymbolMap[token.Chain+"/"+token.Denom]; ok {
+			if symbol == "" {
+				symbols.Add(token.BaseDenom)
+				symbolReceiveTxsAmountMap[token.BaseDenom] += token.ReceiveTxs
+			} else {
+				symbols.Add(symbol)
+				symbolReceiveTxsAmountMap[symbol] += token.ReceiveTxs
 			}
 		}
 	}
-	resp.Symbols = symbols.ToSlice()
+	symbolsList := symbols.ToSlice()
+	var symbolDetails []vo.SymbolDetail
+	for _, symbol := range symbolsList {
+		var symbolDetail vo.SymbolDetail
+		symbolDetail.Symbol = symbol
+		symbolDetail.TotalReceiveTxs = symbolReceiveTxsAmountMap[symbol]
+		symbolDetails = append(symbolDetails, symbolDetail)
+	}
+
+	sort.Slice(symbolDetails, func(i, j int) bool {
+		return symbolDetails[i].TotalReceiveTxs > symbolDetails[j].TotalReceiveTxs
+	})
+	resp.Symbols = symbolDetails
 	return &resp, nil
 }

@@ -311,8 +311,10 @@ type ChainActiveAddressesDTO struct {
 	Addresses []string `bson:"addresses"`
 }
 
-type DenomHopsDTO struct {
-	Symbol string `bson:"symbol"`
-	Chain  string `bson:"chain"`
-	Denom  string `bson:"denom"`
+type TokenTraceDTO struct {
+	Chain          string `bson:"chain"`
+	Denom          string `bson:"denom"`
+	BaseDenom      string `bson:"base_denom"`
+	BaseDenomChain string `bson:"base_denom_chain"`
+	ReceiveTxs     int64  `bson:"receive_txs"`
 }
