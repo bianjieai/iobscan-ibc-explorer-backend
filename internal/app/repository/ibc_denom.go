@@ -29,7 +29,6 @@ type IDenomRepo interface {
 	InsertBatch(denoms entity.IBCDenomList) error
 	InsertBatchToNew(denoms entity.IBCDenomList) error
 	UpdateDenom(denom *entity.IBCDenom) error
-	FindSymbolDenomsByHops(hops int) ([]*dto.DenomHopsDTO, error)
 }
 
 var _ IDenomRepo = new(DenomRepo)
@@ -185,21 +184,5 @@ func (repo *DenomRepo) GetBaseDenomNoSymbol() ([]*dto.GetBaseDenomFromIbcDenomDT
 	pipe = append(pipe, match, group)
 	var res []*dto.GetBaseDenomFromIbcDenomDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
-	return res, err
-}
-
-func (repo *DenomRepo) FindSymbolDenomsByHops(hops int) ([]*dto.DenomHopsDTO, error) {
-	filter := bson.M{
-		"symbol":   bson.M{"$ne": ""},
-		"ibc_hops": bson.M{"$gte": hops},
-	}
-	selector := bson.M{
-		"_id":    0,
-		"symbol": 1,
-		"chain":  1,
-		"denom":  1,
-	}
-	var res []*dto.DenomHopsDTO
-	err := repo.coll().Find(context.Background(), filter).Select(selector).All(&res)
 	return res, err
 }

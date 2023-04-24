@@ -23,13 +23,13 @@ const (
 )
 
 var (
-	chainConfigRepo             repository.IChainConfigRepo          = new(repository.ChainConfigRepo)
-	chainFeeStatisticsRepo      repository.IChainFeeStatisticsRepo   = new(repository.ChainFeeStatisticsRepo)
-	addressStatisticsRepo       repository.IAddressStatisticsRepo    = new(repository.AddressStatisticsRepo)
-	ibcTxRepo                   repository.IExIbcTxRepo              = new(repository.ExIbcTxRepo)
-	txRepo                      repository.ITxRepo                   = new(repository.TxRepo)
-	ibcTxFailLogRepo            repository.IIBCTxFailLogRepo         = new(repository.IBCTxFailLogRepo)
-	ibcTokenTraceStatisticsRepo repository.ITokenTraceStatisticsRepo = new(repository.TokenTraceStatisticsRepo)
+	chainConfigRepo        repository.IChainConfigRepo        = new(repository.ChainConfigRepo)
+	chainFeeStatisticsRepo repository.IChainFeeStatisticsRepo = new(repository.ChainFeeStatisticsRepo)
+	addressStatisticsRepo  repository.IAddressStatisticsRepo  = new(repository.AddressStatisticsRepo)
+	ibcTxRepo              repository.IExIbcTxRepo            = new(repository.ExIbcTxRepo)
+	txRepo                 repository.ITxRepo                 = new(repository.TxRepo)
+	ibcTxFailLogRepo       repository.IIBCTxFailLogRepo       = new(repository.IBCTxFailLogRepo)
+	ibcDenomRepo           repository.IDenomRepo              = new(repository.DenomRepo)
 )
 
 type stringQueueCoordinator struct {

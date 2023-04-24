@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/qiniu/qmgo/operator"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
@@ -14,6 +15,8 @@ type ITokenTraceRepo interface {
 	DelByBaseDenom(baseDenom, BaseDenomChain string) error
 	BatchSwap(batch []*entity.IBCTokenTrace, baseDenom, BaseDenomChain string) error
 	AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, error)
+	FindByHopsAndReceiveTcs(hops int, receivesTxs int64) ([]*dto.TokenTraceDTO, error)
+	FindMaxUpdateAt() (int64, error)
 }
 
 var _ ITokenTraceRepo = new(TokenTraceRepo)
@@ -90,4 +93,37 @@ func (repo *TokenTraceRepo) AggregateIBCChain() ([]*dto.AggregateIBCChainDTO, er
 	var res []*dto.AggregateIBCChainDTO
 	err := repo.coll().Aggregate(context.Background(), pipe).All(&res)
 	return res, err
+}
+
+func (repo *TokenTraceRepo) FindByHopsAndReceiveTcs(hops int, receivesTxs int64) ([]*dto.TokenTraceDTO, error) {
+	filter := bson.M{
+		"ibc_hops": bson.M{
+			operator.Gte: hops,
+		},
+		"receive_txs": bson.M{
+			operator.Gte: receivesTxs,
+		},
+		"denom_amount": bson.M{
+			operator.Ne: "0",
+		},
+	}
+
+	selector := bson.M{
+		"_id":              0,
+		"chain":            1,
+		"denom":            1,
+		"base_denom_chain": 1,
+		"base_denom":       1,
+		"receive_txs":      1,
+	}
+
+	var res []*dto.TokenTraceDTO
+	err := repo.coll().Find(context.Background(), filter).Select(selector).All(&res)
+	return res, err
+}
+
+func (repo *TokenTraceRepo) FindMaxUpdateAt() (int64, error) {
+	var res entity.IBCTokenTrace
+	err := repo.coll().Find(context.Background(), bson.M{}).Select(bson.M{"_id": 0, "update_at": 1}).Sort("-update_at").One(&res)
+	return res.UpdateAt, err
 }

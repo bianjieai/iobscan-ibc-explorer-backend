@@ -6,6 +6,11 @@ type PopularSymbolsReq struct {
 }
 
 type PopularSymbolsResp struct {
-	TimeStamp int64    `json:"timestamp"`
-	Symbols   []string `json:"symbols"`
+	TimeStamp int64          `json:"timestamp"`
+	Symbols   []SymbolDetail `json:"symbols"`
+}
+
+type SymbolDetail struct {
+	Symbol          string `json:"symbol"`
+	TotalReceiveTxs int64  `json:"total_receive_txs"`
 }

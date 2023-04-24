@@ -21,15 +21,17 @@ log_rotation_time_day = 1
 log_output = "std"
 
 [mongo]
-url = "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805"
-database = "iobscan-ibc_0805"
+#url = "mongodb://iobscan:iobscanPassword@192.168.150.40:27017/?connect=direct&authSource=iobscan-ibc_0805"
+#database = "iobscan-ibc_0805"
 #url = "mongodb://ibc:ibcpassword@192.168.0.135:27017/?connect=direct&authSource=iobscan-ibc"
 #database = "iobscan-ibc"
+url = "mongodb://ibcreader:idy45Eth@34.81.245.189:27017/?connect=direct&authSource=iobscan_ibc"
+database = "iobscan_ibc"
 
 [redis]
 addrs = "127.0.0.1:6379"
 user = ""
-password = ""
+password = "12345"
 mode = "single"
 db = 0
 
@@ -40,4 +42,4 @@ coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
 ibc_tx_fail_log_task = "0 0 2 * * ?"
 ibc_chain_fee_statistic_task = "0 */5 * * * ?"
 ibc_address_statistic_task = "0 */5 * * * ?"
-ibc_cache_token_trace_statistics_task = "0 */3 * * * ?"
+ibc_cache_denom_symbol_task = "0 */3 * * * ?"
