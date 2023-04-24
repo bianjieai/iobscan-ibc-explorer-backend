@@ -37,10 +37,7 @@ func (svc *TokenService) PopularSymbols(minHops int, minReceiveTxs int64) (*vo.P
 	symbolReceiveTxsAmountMap := make(map[string]int64)
 	for _, token := range tokens {
 		if symbol, ok := tokenSymbolMap[token.Chain+"/"+token.Denom]; ok {
-			if symbol == "" {
-				symbols.Add(token.BaseDenom)
-				symbolReceiveTxsAmountMap[token.BaseDenom] += token.ReceiveTxs
-			} else {
+			if symbol != "" {
 				symbols.Add(symbol)
 				symbolReceiveTxsAmountMap[symbol] += token.ReceiveTxs
 			}
