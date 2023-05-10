@@ -115,6 +115,7 @@ func (repo *TokenTraceRepo) FindByHopsAndReceiveTcs(hops int, receivesTxs int64)
 		"base_denom_chain": 1,
 		"base_denom":       1,
 		"receive_txs":      1,
+		"denom_amount":     1,
 	}
 
 	var res []*dto.TokenTraceDTO

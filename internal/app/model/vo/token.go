@@ -13,4 +13,5 @@ type PopularSymbolsResp struct {
 type SymbolDetail struct {
 	Symbol          string `json:"symbol"`
 	TotalReceiveTxs int64  `json:"total_receive_txs"`
+	TotalAmount     string `json:"total_amount"`
 }

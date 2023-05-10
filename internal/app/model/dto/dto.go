@@ -317,4 +317,5 @@ type TokenTraceDTO struct {
 	BaseDenom      string `bson:"base_denom"`
 	BaseDenomChain string `bson:"base_denom_chain"`
 	ReceiveTxs     int64  `bson:"receive_txs"`
+	DenomAmount    string `bson:"denom_amount"`
 }

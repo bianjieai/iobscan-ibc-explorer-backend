@@ -1,10 +1,13 @@
 package service
 
 import (
+	"fmt"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/errors"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/repository/cache"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
+	"github.com/shopspring/decimal"
+	"math"
 	"sort"
 )
 
@@ -35,11 +38,24 @@ func (svc *TokenService) PopularSymbols(minHops int, minReceiveTxs int64) (*vo.P
 	resp.TimeStamp = maxUpdateAt
 	symbols := utils.NewStringSet()
 	symbolReceiveTxsAmountMap := make(map[string]int64)
+	symbolAmountMap := make(map[string]decimal.Decimal)
+	authDenomList, err := authDenomRepo.FindAll()
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	authDenomMap := authDenomList.ConvertToMap()
 	for _, token := range tokens {
 		if symbol, ok := tokenSymbolMap[token.Chain+"/"+token.Denom]; ok {
 			if symbol != "" {
 				symbols.Add(symbol)
 				symbolReceiveTxsAmountMap[symbol] += token.ReceiveTxs
+				amount, _ := decimal.NewFromString(token.DenomAmount)
+				if denom, exists := authDenomMap[fmt.Sprintf("%s%s", token.BaseDenomChain, token.BaseDenom)]; exists {
+					scale := decimal.NewFromFloat(math.Pow10(denom.Scale))
+					symbolAmountMap[symbol] = symbolAmountMap[symbol].Add(amount.Div(scale).Round(2))
+				} else {
+					symbolAmountMap[symbol] = symbolAmountMap[symbol].Add(amount.Round(2))
+				}
 			}
 		}
 	}
@@ -49,6 +65,7 @@ func (svc *TokenService) PopularSymbols(minHops int, minReceiveTxs int64) (*vo.P
 		var symbolDetail vo.SymbolDetail
 		symbolDetail.Symbol = symbol
 		symbolDetail.TotalReceiveTxs = symbolReceiveTxsAmountMap[symbol]
+		symbolDetail.TotalAmount = symbolAmountMap[symbol].String()
 		symbolDetails = append(symbolDetails, symbolDetail)
 	}
 
