@@ -29,7 +29,7 @@ type IChainRepo interface {
 	UpdateRelayers(chain string, relayers int64) error
 	FindAll(skip, limit int64) ([]*entity.IBCChain, error)
 	Count() (int64, error)
-	CountActiveChainNum() (int64, error)
+	CountIbcChainsNum() (int64, error)
 }
 
 var _ IChainRepo = new(IbcChainRepo)
@@ -107,6 +107,6 @@ func (repo *IbcChainRepo) Count() (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{}).Count()
 }
 
-func (repo *IbcChainRepo) CountActiveChainNum() (int64, error) {
+func (repo *IbcChainRepo) CountIbcChainsNum() (int64, error) {
 	return repo.coll().Find(context.Background(), bson.M{"transfer_txs": bson.M{operator.Gt: 0}}).Count()
 }

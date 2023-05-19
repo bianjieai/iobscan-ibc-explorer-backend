@@ -11,6 +11,7 @@ import (
 
 type IChainInflowStatisticsRepo interface {
 	InflowStatistics(chain string, startTime, endTime int64) ([]*dto.FlowStatisticsDTO, error)
+	GetLatestUpdate(time int64) (*entity.IBCChainInflowStatistics, error)
 }
 
 var _ IChainInflowStatisticsRepo = new(ChainInflowStatisticsRepo)
@@ -20,6 +21,12 @@ type ChainInflowStatisticsRepo struct {
 
 func (repo *ChainInflowStatisticsRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCChainInflowStatisticsCollName)
+}
+
+func (repo *ChainInflowStatisticsRepo) GetLatestUpdate(time int64) (*entity.IBCChainInflowStatistics, error) {
+	var res entity.IBCChainInflowStatistics
+	err := repo.coll().Find(context.Background(), bson.M{"segment_start_time": time}).Sort("-update_at").One(&res)
+	return &res, err
 }
 
 func (repo *ChainInflowStatisticsRepo) InflowStatistics(chain string, startTime, endTime int64) ([]*dto.FlowStatisticsDTO, error) {

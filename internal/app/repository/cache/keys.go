@@ -41,6 +41,8 @@ const (
 	baseDenomSymbol             = "base_denom:%s"
 	clientState                 = "client_state:%s"
 	DenomSymbol                 = "denom_symbol"
+	chainInflowVolume           = "chain_inflow_volume_%d"
+	chainOutflowVolume          = "chain_outflow_volume_%d"
 )
 
 // Keys of open api
