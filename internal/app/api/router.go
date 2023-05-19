@@ -58,7 +58,10 @@ func txCtl(r *gin.RouterGroup) {
 func chainCtl(r *gin.RouterGroup) {
 	ctl := rest.ChainController{}
 	r.GET("/chains", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.List))
-	r.GET("/chains/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.ActiveChainNum))
+	r.GET("/chains/statistics", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcChainsNum))
+	r.GET("/chains/volume", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcChainsVolume))
+	r.GET("/chains/active", cache.CachePage(store, time.Duration(aliveSeconds)*time.Second, ctl.IbcChainsActive))
+
 }
 
 func taskTools(r *gin.RouterGroup) {

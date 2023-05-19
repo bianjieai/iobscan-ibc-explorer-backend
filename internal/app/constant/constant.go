@@ -59,6 +59,8 @@ const (
 	NetworkDelay    = 15
 
 	ContactUs = "If you don't find the chain you need, you can contact us by twitter(https://twitter.com/iobscan_ibc)"
+
+	ChainFlowVolumeDays = 10000
 )
 
 var HomeStatistics = []string{

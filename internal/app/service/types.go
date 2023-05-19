@@ -17,4 +17,6 @@ var (
 	ibcChainAddressStatisticsRepo repository.IAddressStatisticsRepo      = new(repository.AddressStatisticsRepo)
 	ibcChainRepo                  repository.IChainRepo                  = new(repository.IbcChainRepo)
 	ibcTokenTraceRepo             repository.ITokenTraceRepo             = new(repository.TokenTraceRepo)
+	chainFlowCacheRepo            cache.ChainFlowCacheRepo
+	statisticRepo                 repository.IStatisticRepo = new(repository.IbcStatisticRepo)
 )
