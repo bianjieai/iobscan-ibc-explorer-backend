@@ -208,6 +208,9 @@ func (t *ChainOutflowStatisticsTask) setStatisticsDataCache() {
 	startTime, _ := lastNDaysZeroTimeUnix(days)
 	_, endTime := todayUnix()
 
+	allDays := constant.ChainFlowVolumeDays
+	allStartTime, _ := lastNDaysZeroTimeUnix(allDays)
+
 	chainInfosMap, err := getAllChainInfosMap()
 	if err != nil {
 		logrus.Errorf("task %s getAllChainInfosMap err, %v", t.Name(), err)
@@ -216,7 +219,7 @@ func (t *ChainOutflowStatisticsTask) setStatisticsDataCache() {
 
 	priceMap := cache.TokenPriceMap()
 	for chain, _ := range chainInfosMap {
-		trendList, err := chainOutflowStatisticsRepo.AggrTrend(chain, startTime, endTime)
+		trendList, err := chainOutflowStatisticsRepo.AggrTrend(chain, allStartTime, endTime)
 		if err != nil {
 			logrus.Errorf("task %s AggrTrend %s err, %v", t.Name(), chain, err)
 			continue
@@ -224,16 +227,20 @@ func (t *ChainOutflowStatisticsTask) setStatisticsDataCache() {
 
 		volumeMap := make(map[string]decimal.Decimal, len(trendList))
 		totalDenomValue := decimal.Zero
+		allDaysTotalDenomValue := decimal.Zero
 		for _, v := range trendList {
 			denomAmount := decimal.NewFromFloat(v.DenomAmount)
 			denomValue := ibctool.CalculateDenomValue(priceMap, v.BaseDenom, v.BaseDenomChain, denomAmount)
-			dt := time.Unix(v.SegmentStartTime, 0).Format(constant.DateFormat)
-			if vol, ok := volumeMap[dt]; ok {
-				volumeMap[dt] = vol.Add(denomValue)
-			} else {
-				volumeMap[dt] = denomValue
+			if v.SegmentStartTime >= startTime {
+				dt := time.Unix(v.SegmentStartTime, 0).Format(constant.DateFormat)
+				if vol, ok := volumeMap[dt]; ok {
+					volumeMap[dt] = vol.Add(denomValue)
+				} else {
+					volumeMap[dt] = denomValue
+				}
+				totalDenomValue = totalDenomValue.Add(denomValue)
 			}
-			totalDenomValue = totalDenomValue.Add(denomValue)
+			allDaysTotalDenomValue = allDaysTotalDenomValue.Add(denomValue)
 		}
 
 		volumeItemList := make([]vo.VolumeItem, 0, len(volumeMap))
@@ -251,8 +258,13 @@ func (t *ChainOutflowStatisticsTask) setStatisticsDataCache() {
 		if err = chainFlowCacheRepo.SetOutflowVolume(days, chain, totalDenomValue.String()); err != nil {
 			logrus.Errorf("task %s SetOutflowVolume %s err, %v", t.Name(), chain, err)
 		}
+
+		if err = chainFlowCacheRepo.SetOutflowVolume(allDays, chain, allDaysTotalDenomValue.String()); err != nil {
+			logrus.Errorf("task %s SetOutflowVolume all %s err, %v", t.Name(), chain, err)
+		}
 	}
 
 	chainFlowCacheRepo.ExpireOutflowTrend(days, OneWeek*time.Second)
 	chainFlowCacheRepo.ExpireOutflowVolume(days, OneWeek*time.Second)
+	chainFlowCacheRepo.ExpireOutflowVolume(allDays, OneWeek*time.Second)
 }
