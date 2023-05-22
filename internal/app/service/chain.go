@@ -6,6 +6,7 @@ import (
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/vo"
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/utils"
 	"github.com/qiniu/qmgo"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -114,7 +115,11 @@ func (svc *ChainService) IbcChainsVolume(chainName string) (*vo.IbcChainsVolumeR
 			}
 			items = append(items, item)
 		}
-
+		sort.Slice(items, func(i, j int) bool {
+			iv, _ := strconv.ParseFloat(items[i].IbcTransferVolumeTotal, 64)
+			jv, _ := strconv.ParseFloat(items[j].IbcTransferVolumeTotal, 64)
+			return iv > jv
+		})
 		var resp vo.IbcChainsVolumeResp
 		resp.Chains = items
 		resp.TimeStamp = res.UpdateAt
@@ -151,6 +156,11 @@ func (svc *ChainService) IbcChainsActive() (*vo.IbcChainsActiveResp, errors.Erro
 		return nil, errors.Wrap(err)
 	}
 	var resp vo.IbcChainsActiveResp
-	resp.ChainNameList = strings.Split(data.StatisticsInfo, ",")
+	if data.StatisticsInfo != "" {
+		resp.ChainNameList = strings.Split(data.StatisticsInfo, ",")
+	} else {
+		resp.ChainNameList = []string{}
+	}
+	resp.TotalActiveChainsNumber = len(resp.ChainNameList)
 	return &resp, nil
 }
