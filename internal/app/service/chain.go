@@ -151,7 +151,11 @@ func (svc *ChainService) IbcChainsActive() (*vo.IbcChainsActiveResp, errors.Erro
 		return nil, errors.Wrap(err)
 	}
 	var resp vo.IbcChainsActiveResp
-	resp.ChainNameList = strings.Split(data.StatisticsInfo, ",")
+	if data.StatisticsInfo != "" {
+		resp.ChainNameList = strings.Split(data.StatisticsInfo, ",")
+	} else {
+		resp.ChainNameList = []string{}
+	}
 	resp.TotalActiveChainsNumber = len(resp.ChainNameList)
 	return &resp, nil
 }
