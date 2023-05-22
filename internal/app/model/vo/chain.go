@@ -30,5 +30,6 @@ type IbcChainsVolumeResp struct {
 }
 
 type IbcChainsActiveResp struct {
-	ChainNameList []string `json:"chain_name_list"`
+	TotalActiveChainsNumber int      `json:"total_active_chains_number"`
+	ChainNameList           []string `json:"chain_name_list"`
 }
