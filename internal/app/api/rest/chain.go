@@ -37,6 +37,18 @@ func (ctl *ChainController) IbcChainsVolume(c *gin.Context) {
 		return
 	}
 
+	if req.Chain != "" {
+		exists, err := chainService.ChainExists(req.Chain)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.FailBadRequest(err.Error()))
+			return
+		}
+		if !exists {
+			c.JSON(http.StatusBadRequest, response.FailBadRequest("this chain is not supported, please check or contact us by twitter(https://twitter.com/iobscan_ibc)"))
+			return
+		}
+	}
+
 	resp, e := chainService.IbcChainsVolume(req.Chain)
 	if e != nil {
 		c.JSON(response.HttpCode(e), response.FailError(e))
