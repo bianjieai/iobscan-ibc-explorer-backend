@@ -62,7 +62,8 @@ const (
 	SECP256K1    = "secp256k1"
 	ICS20        = "ics20"
 
-	ChainFlowTrendDays = 365
+	ChainFlowTrendDays  = 365
+	ChainFlowVolumeDays = 10000
 
 	ExportTxsNum = 1000
 )
