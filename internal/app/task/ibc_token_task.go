@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/qiniu/qmgo"
 	"math"
 	"strings"
 	"sync"
@@ -662,4 +663,23 @@ func (t *TokenTask) yesterdayStatistics() error {
 	}
 
 	return nil
+}
+
+func (t *TokenTask) CorrectTokenTrace() int {
+	denoms, err := denomRepo.FindAll()
+	if err != nil {
+		logrus.Errorf("task %s correct token to find all denom fail, err:%s", t.Name(), err.Error())
+		return 0
+	}
+	for _, denom := range denoms {
+		err = tokenTraceRepo.UpdateBaseDenomAndChain(denom.Chain, denom.Denom, denom.BaseDenom, denom.BaseDenomChain)
+		if err != nil {
+			if err == qmgo.ErrNoSuchDocuments {
+				continue
+			}
+			logrus.Errorf("task %s update token trace %s chain,%s denom fail, err:%s", t.Name(), denom.Chain, denom.Denom, err.Error())
+			continue
+		}
+	}
+	return 1
 }
