@@ -39,6 +39,7 @@ db = 0
 
 [spi]
 coingecko_price_url = "https://api.coingecko.com/api/v3/simple/price"
+ccdata_price_url = "https://min-api.cryptocompare.com/data/pricemulti?api_key=f58cdd6f5d9cf0f6c0f44a1036924e2b17391ef3aea75e2be5f6133ff4c1ed84"
 
 [task]
 cron_time_statistic_task = 5

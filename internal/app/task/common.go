@@ -2,6 +2,7 @@ package task
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -245,6 +246,26 @@ func parseRecvPacketTxEvents(msgIndex int, tx *entity.Tx) (dcConnection, packetA
 						existPacketAck = true
 					default:
 					}
+				}
+			}
+
+			if evt.Type == "uptick.erc20.v1.EventIBCERC20" {
+				var message string
+				var status string
+				for _, attr := range evt.Attributes {
+					switch attr.Key {
+					case "status":
+						status = attr.Value
+						existPacketAck = true
+					case "message":
+						message = attr.Value
+					default:
+					}
+				}
+				if status == "\"STATUS_SUCCESS\"" {
+					packetAck = status
+				} else {
+					packetAck = fmt.Sprintf("error:\"%s\" ", message)
 				}
 			}
 		}
