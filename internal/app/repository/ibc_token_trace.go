@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/qiniu/qmgo/operator"
 	"time"
 
 	"github.com/bianjieai/iobscan-ibc-explorer-backend/internal/app/model/dto"
@@ -18,6 +19,7 @@ type ITokenTraceRepo interface {
 	List(req *vo.IBCTokenListReq) ([]*entity.IBCTokenTrace, error)
 	CountList(req *vo.IBCTokenListReq) (int64, error)
 	FindByBaseDenom(baseDenom, baseDenomChain string) ([]*entity.IBCTokenTrace, error)
+	UpdateBaseDenomAndChain(chain, denom, baseDenom, baseDenomChain string) error
 }
 
 var _ ITokenTraceRepo = new(TokenTraceRepo)
@@ -27,6 +29,20 @@ type TokenTraceRepo struct {
 
 func (repo *TokenTraceRepo) coll() *qmgo.Collection {
 	return mgo.Database(ibcDatabase).Collection(entity.IBCTokenTrace{}.CollectionName())
+}
+
+func (repo *TokenTraceRepo) UpdateBaseDenomAndChain(chain, denom, baseDenom, baseDenomChain string) error {
+	query := bson.M{
+		"chain": chain,
+		"denom": denom,
+	}
+	err := repo.coll().UpdateOne(context.Background(), query, bson.M{
+		operator.Set: bson.M{
+			"base_denom":       baseDenom,
+			"base_denom_chain": baseDenomChain,
+		},
+	})
+	return err
 }
 
 func (repo *TokenTraceRepo) DelByBaseDenom(baseDenom, BaseDenomChain string) error {

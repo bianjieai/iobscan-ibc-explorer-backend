@@ -77,6 +77,8 @@ func (ctl *TaskController) Run(c *gin.Context) {
 			res = chainOutflowStatisticsTask.RunFullStatistics()
 		case ibcDenomHopsTask.Name():
 			res = ibcDenomHopsTask.Run()
+		case ibcTokenTask.Name():
+			res = ibcTokenTask.CorrectTokenTrace()
 		default:
 			logrus.Errorf("TaskController run %s err, %s", taskName, "unknown task")
 		}

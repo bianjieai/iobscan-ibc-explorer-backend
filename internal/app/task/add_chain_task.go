@@ -162,6 +162,9 @@ func (t *AddChainTask) updateDenom(denomList entity.IBCDenomList, chainMap map[s
 			if err := denomRepo.UpdateDenom(denomNew); err != nil {
 				logrus.Errorf("task %s update denom %s-%s error, %v", t.Name(), denomNew.Chain, denomNew.Denom, err)
 			}
+			if err := tokenTraceRepo.UpdateBaseDenomAndChain(denomNew.Chain, denomNew.Denom, denomNew.BaseDenom, denomNew.BaseDenomChain); err != nil {
+				logrus.Errorf("task %s update token trace denom %s-%s error, %v", t.Name(), denomNew.Chain, denomNew.Denom, err)
+			}
 		}
 
 		if v.BaseDenom != denomNew.BaseDenom || v.BaseDenomChain != denomNew.BaseDenomChain {

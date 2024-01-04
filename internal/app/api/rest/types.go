@@ -29,4 +29,5 @@ var (
 	chainInflowStatisticsTask  task.ChainInflowStatisticsTask
 	chainOutflowStatisticsTask task.ChainOutflowStatisticsTask
 	ibcDenomHopsTask           task.IBCDenomHopsTask
+	ibcTokenTask               task.TokenTask
 )
