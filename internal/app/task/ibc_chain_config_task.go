@@ -107,7 +107,7 @@ func (t *IbcChainConfigTask) getChainConf() ([]*entity.ChainConfig, error) {
 }
 
 // getIbcChannels 通过lcd channels_path 接口获取链上存在的所有channel信息
-func (t *IbcChainConfigTask) getIbcChannels(chain, lcd, apiPath string) ([]*entity.ChannelPath, error) {
+func (t *IbcChainConfigTask) getIbcChannels(chain, lcd, originApiPath string) ([]*entity.ChannelPath, error) {
 	if lcd == "" {
 		logrus.Errorf("task %s %s getIbcChannels error, lcd error", t.Name(), chain)
 		return nil, fmt.Errorf("lcd error")
@@ -118,7 +118,7 @@ func (t *IbcChainConfigTask) getIbcChannels(chain, lcd, apiPath string) ([]*enti
 	var channelPathList []*entity.ChannelPath
 
 	for {
-		apiPath = strings.ReplaceAll(apiPath, replaceHolderOffset, strconv.Itoa(offset))
+		apiPath := strings.ReplaceAll(originApiPath, replaceHolderOffset, strconv.Itoa(offset))
 		apiPath = strings.ReplaceAll(apiPath, replaceHolderLimit, strconv.Itoa(limit))
 		url := fmt.Sprintf("%s%s", lcd, apiPath)
 		bz, err := utils.HttpGet(url)
